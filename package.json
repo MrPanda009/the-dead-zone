@@ -1,0 +1,10 @@
+{
+  "name": "the-dead-zone",
+  "private": true,
+  "scripts": {
+    "dev:web": "pnpm --filter web dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "generate:types": "pnpm --filter web generate:types"
+  }
+}

@@ -1,0 +1,18 @@
+[project]
+name = "the-dead-zone"
+version = "0.1.0"
+description = "SETU-DRR — hazard red zone & relocation decision support"
+requires-python = ">=3.11"
+dependencies = ["core", "api", "pipeline"]
+
+[tool.uv.workspace]
+members = ["core", "api", "pipeline"]
+
+[tool.uv.sources]
+core = { workspace = true }
+api = { workspace = true }
+pipeline = { workspace = true }
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
