@@ -38,14 +38,31 @@ class HabitationsService:
         # Query repository
         raw_items, total = self.repo.query_habitations(admin_id=admin, limit=500, offset=0)
 
+        # Batch load disaster events once to eliminate N+1 database round trips
+        all_disasters = self.repo.get_all_disaster_events()
+
+        def _distance_km(lon1: float, lat1: float, lon2: float, lat2: float) -> float:
+            import math
+            r = 6371.0
+            dlat = math.radians(lat2 - lat1)
+            dlon = math.radians(lon2 - lon1)
+            a = (
+                math.sin(dlat / 2.0) ** 2
+                + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2.0) ** 2
+            )
+            return r * 2.0 * math.atan2(math.sqrt(a), math.sqrt(1.0 - a))
+
         # Process each habitation through domain priority and triage rules
         processed_items = []
         for r in raw_items:
             pop = int(r.get("population") or 0)
             v_index = float(r.get("v_index") or 0.5)
 
-            # Retrieve nearby loss events for loss history decay
-            nearby_events = self.repo.get_nearby_disaster_events(r["lon"], r["lat"], radius_km=10.0)
+            # Match nearby loss events within 10 km
+            nearby_events = [
+                ev for ev in all_disasters
+                if _distance_km(r["lon"], r["lat"], ev["lon"], ev["lat"]) <= 10.0
+            ]
             decayed_loss = compute_time_decayed_loss(nearby_events, reference_date=date.today())
 
             # Baseline hazard intensity & PRZ overlap percentage

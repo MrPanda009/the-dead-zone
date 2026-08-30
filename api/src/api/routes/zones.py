@@ -30,7 +30,7 @@ def get_zones(
     bbox: Optional[str] = Query(
         None,
         description="Bounding box as 'min_lon,min_lat,max_lon,max_lat' (e.g. '75.8,11.5,76.3,11.9')",
-        example="75.8,11.5,76.3,11.9",
+        examples=["75.8,11.5,76.3,11.9"],
     ),
     res: int = Query(
         8,
@@ -74,7 +74,7 @@ def get_zone_detail(
     h3: str = Path(
         ...,
         description="H3 index as hexadecimal string (e.g. '8860064989fffff')",
-        example="8860064989fffff",
+        examples=["8860064989fffff"],
     ),
     db: Session = Depends(get_db),
 ) -> ZoneCellDetail:

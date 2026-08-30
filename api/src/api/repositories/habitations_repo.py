@@ -92,6 +92,27 @@ class HabitationsRepository:
             return None
         return dict(result)
 
+    def get_all_disaster_events(self) -> list[dict[str, Any]]:
+        """Retrieves all disaster events with coordinates for efficient in-memory spatial matching."""
+        query = text("""
+            SELECT 
+                id,
+                ts,
+                hazard_type,
+                fatalities,
+                injured,
+                houses_damaged,
+                severity,
+                source,
+                source_ref,
+                ST_X(geom::geometry) as lon,
+                ST_Y(geom::geometry) as lat
+            FROM disaster_event
+            ORDER BY ts DESC;
+        """)
+        results = self.db.execute(query).mappings().all()
+        return [dict(r) for r in results]
+
     def get_nearby_disaster_events(self, lon: float, lat: float, radius_km: float = 15.0) -> list[dict[str, Any]]:
         """Queries historical disaster events within radius of habitation."""
         query = text("""

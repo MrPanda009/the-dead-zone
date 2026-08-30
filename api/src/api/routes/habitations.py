@@ -73,7 +73,7 @@ def get_habitation_risk_dossier(
     id: int = Path(
         ...,
         description="Habitation ID (integer primary key).",
-        example=1,
+        examples=[1],
     ),
     db: Session = Depends(get_db),
 ) -> HabitationRiskDossier:
