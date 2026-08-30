@@ -59,3 +59,11 @@ LPCD_URBAN_SEWERED: int = 135
 PHC_POP_PLAINS: int = 30_000
 PHC_POP_HILLY_TRIBAL: int = 20_000
 LIVELIHOOD_MULTIPLIER_RANGE: tuple[float, float] = (0.6, 1.0)
+
+# NFR-8 & PRD §1.3 — persistent screening grade notice
+SCREENING_GRADE_NOTICE: str = (
+    "Screening Grade: Cell-level screening and prioritisation tool. "
+    "Geotechnical investigation, hydraulic study, and community consultation "
+    "required before executing relocation orders."
+)
+

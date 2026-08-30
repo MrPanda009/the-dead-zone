@@ -111,6 +111,46 @@ class PipelineNotReadyError(AppError):
         )
 
 
+class InvalidBboxError(AppError):
+    def __init__(self, message: str, details: dict[str, Any] | None = None) -> None:
+        super().__init__(
+            code=ErrorCode.INVALID_BBOX,
+            message=message,
+            status_code=400,
+            details=details or {},
+        )
+
+
+class InvalidResolutionError(AppError):
+    def __init__(self, res: int | str, allowed: list[int] = [6, 7, 8, 9]) -> None:
+        super().__init__(
+            code=ErrorCode.INVALID_RESOLUTION,
+            message=f"Invalid H3 resolution '{res}'. Allowed resolutions are {allowed}.",
+            status_code=400,
+            details={"resolution": str(res), "allowed": allowed},
+        )
+
+
+class InvalidTimeError(AppError):
+    def __init__(self, time_val: str, details: dict[str, Any] | None = None) -> None:
+        super().__init__(
+            code=ErrorCode.INVALID_TIME,
+            message=f"Invalid timestamp format or out of bounds: '{time_val}'.",
+            status_code=400,
+            details={"time": time_val, **(details or {})},
+        )
+
+
+class DataUnavailableError(AppError):
+    def __init__(self, message: str = "Requested data is unavailable.", details: dict[str, Any] | None = None) -> None:
+        super().__init__(
+            code=ErrorCode.DATA_UNAVAILABLE,
+            message=message,
+            status_code=404,
+            details=details or {},
+        )
+
+
 class AllocationFailedError(AppError):
     def __init__(self, reason: str, details: dict[str, Any] | None = None) -> None:
         super().__init__(
@@ -119,3 +159,4 @@ class AllocationFailedError(AppError):
             status_code=422,
             details=details,
         )
+
