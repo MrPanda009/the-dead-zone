@@ -4,7 +4,7 @@
 **Working name:** SETU-DRR
 **Problem statement:** Intelligent Identification of Hazard-Based Red Zones, Carrying Capacity Assessment, and Immediate Relocation Needs for Vulnerable Habitations
 **Organisation:** Ministry of Home Affairs — National Disaster Response Force (NDRF), DM Division
-**Document version:** 1.1 · August 2026
+**Document version:** 1.3 · August 2026
 **Status:** Approved for build
 
 > **v1.1 revision — authenticated access permitted.** The "no API keys" selection rule
@@ -13,6 +13,25 @@
 > Microsoft Planetary Computer as a STAC catalogue for Sentinel-1 RTC (§8.2a); Forecast
 > Alert Zones in scope at a 72-hour horizon (FR-3.12–3.15); and vulnerability downscaled
 > within district rather than scraped or flattened (FR-5.5–5.8, closing Q-1).
+
+> **v1.2 revision — database host and repository layout.** The Postgres host is now named:
+> **Neon** (§9.7). Supabase was evaluated first and rejected — it does not ship `h3` or
+> `h3_postgis`, which FR-2.5 requires, and §2.2 rules out authentication, so every Supabase
+> differentiator is out of scope. Recorded in `docs/adr/0001-neon-as-database-host.md`.
+> The repository layout (§9.8) is flattened: `apps/` and `packages/` collapse to top-level
+> `web/`, `api/`, `pipeline/`, and `packages/schemas` becomes `core/`. Alembic is dropped in
+> favour of numbered SQL under `infra/migrate.sh`. Frontend is Next.js 16, not 15.
+
+> **v1.3 revision — flood layer verified, pilot build order inverted.** Three changes, each
+> forced by a measurement rather than an argument. First, the MSPC `sentinel-1-rtc`
+> collection was probed and **cleared** (§8.2a): live, CC BY 4.0, anonymous SAS token, 632
+> scenes over Wayanad and 1,697 over Barpeta, all dual-pol. The CDSE fallback and its day of
+> pyroSAR terrain correction leave the critical path. Second, the empirical flood pipeline is
+> **built on Barpeta and then run over Wayanad**, not the reverse (§9.4, §11) — Barpeta
+> yields ~55 acquisitions coinciding with a flood day against Wayanad's ~8, because Wayanad's
+> floods last a median 1.5 days and S1 cannot see them (§8.6). Third, that pipeline writes
+> `riverine_flood`, never `flash_flood` (FR-3.16); flash flood is carried by the I–D
+> threshold path (FR-4.2), now anchored on the INDOFLOODS event catalogue (§8.2b).
 
 **Companion documents**
 - Technical architecture — https://claude.ai/code/artifact/1249cb1b-e3f8-4dcc-b599-35ae920b69bf
@@ -136,6 +155,7 @@ interface as a persistent label on every output, not buried in documentation.
 | M-4 | API p95 latency, `/habitations` and `/zones/{h3}` | < 300 ms |
 | M-5 | Full pipeline rerun for one pilot district | < 45 min |
 | M-6 | Demo runs end-to-end with zero live external API calls | Pass/fail |
+| M-7 | SAR water-detection rule scored against Sen1Floods11 hand-labelled India chips | Precision and recall reported, not visually asserted |
 
 > **Note on M-1:** an AUC above 0.90 under *random* k-fold cross-validation is a red flag,
 > not a success. Spatial autocorrelation leaks between folds and inflates the score. See §7.2.
@@ -228,6 +248,8 @@ in-situ mitigation cost engineering · multi-state deployment · Hindi and regio
 | FR-3.13 | Forecast Alert Zones render as a visually distinct state — a different treatment, not a darker shade of the observed ramp — and always display the issuing model, cycle time and horizon |
 | FR-3.14 | FR-3.11 applies doubly to Forecast Alert Zones. They never influence tier assignment |
 | FR-3.15 | Forecast output is attributed to the meteorological agency. The system's claim is the threshold crossing, never the weather. No interface string may state or imply that the system predicts disasters |
+| FR-3.16 | The empirical Sentinel-1 inundation-frequency layer is stored as `hazard_type = 'riverine_flood'`. It measures standing water at satellite overpass and is **never** written as `flash_flood`. Mislabelling it applies the wrong FR-3.5 weight (1.0 instead of 0.8) and corrupts `dominant_hazard` in FR-3.7 |
+| FR-3.17 | Flood susceptibility is hard-zeroed where `HAND > 30 m` **or** `slope > 15°`, applied before any normalisation. Min–max normalised HAND otherwise gives every ridge top a non-zero flood score which FR-3.2 then amplifies by the trigger. FR-3.3 protects zeros; this requirement is what creates them |
 
 ### 6.4 Trigger computation
 
@@ -240,6 +262,7 @@ in-situ mitigation cost engineering · multi-state deployment · Hindi and regio
 | FR-4.5 | Rainfall sources are split by role: **CHIRPS v3** for climatology and I–D threshold fitting; **GPM IMERG Early** (half-hourly, 0.1°, ~4 h latency) for operational ARI and live trigger; **ECMWF open-data** for forecast trigger. CHIRPS is daily with multi-day latency and cannot satisfy FR-4.4 |
 | FR-4.6 | Fallback chain: IMERG → CHIRPS at degraded cadence (FR-4.4 relaxes to daily, and the degradation is surfaced in the UI). ECMWF → IMD basin QPF → Open-Meteo. Open-Meteo is Tier C: its free tier is non-commercial, permitted for the build window only and flagged for replacement before any deployment |
 | FR-4.7 | Observed and forecast trigger values are stored as separate quantities and never merged into a single displayed number |
+| FR-4.8 | I–D thresholds are fitted on INDOFLOODS event dates (§8.2b) against **CHIRPS v3**, the source FR-4.5 assigns to threshold fitting. The `T1d`–`T10d` columns shipped inside INDOFLOODS are derived from **EM-Earth 0.1°**, a different rainfall climatology; they may be used for cross-checking but must not be substituted for a CHIRPS fit without a documented bias comparison. A curve fitted on one product and served against another fires on the wrong days |
 
 ### 6.5 Exposure and vulnerability
 
@@ -337,10 +360,10 @@ in-situ mitigation cost engineering · multi-state deployment · Hindi and regio
 | Model | Method | Labels | Features |
 |---|---|---|---|
 | **Landslide susceptibility** | XGBoost binary classifier, one per physiographic zone | ~5,500 open India records (§8.3) | Slope, aspect, plan & profile curvature, TWI, SPI, local relief, soil class, distance to fault, distance to stream, **distance to road**, NDVI, land cover, mean annual rainfall |
-| **Flood susceptibility** | Empirical, not modelled — Sentinel-1 SAR water-mask stack → inundation frequency, combined with HAND. Scenes from the **pre-terrain-corrected S1 RTC collection via STAC** (§8.2a) | Sen1Floods11, India Flood Inventory v3 | HAND, flow accumulation, TWI, elevation above river, historical frequency |
+| **Flood susceptibility** | Empirical, not modelled — Sentinel-1 SAR water-mask stack → inundation frequency, combined with HAND. Scenes from the **pre-terrain-corrected S1 RTC collection via STAC** (§8.2a). Built on Barpeta, then run over the remaining pilots (§9.4). Writes `riverine_flood` (FR-3.16) | Sen1Floods11 India chips score the water-detection rule (M-7, ML-6); India Flood Inventory v3 and INDOFLOODS for event-date corroboration | HAND, flow accumulation, TWI, elevation above river, historical frequency |
 | **Coastal erosion** | Shoreline change rate (EPR/LRR) from Landsat/Sentinel-2 time series, projected to a 25-year setback line. Tractable via STAC rather than local bulk download | Derived | Shoreline transects |
 | **Encroachment detection** | Annual diff of Open Buildings 2.5D Temporal inside Permanent Red Zones, with Sentinel-2 via STAC where the annual product is too coarse | N/A | Building presence, height, count 2016–2023 |
-| **Trigger thresholds** | Power-law fit `I = α·D^(−β)` per zone | Historical event dates vs CHIRPS v3 gridded rainfall | Rainfall intensity, duration |
+| **Trigger thresholds** | Power-law fit `I = α·D^(−β)` per zone | INDOFLOODS event dates (§8.2b) vs CHIRPS v3 gridded rainfall — see FR-4.8 | Rainfall intensity, duration |
 | **Vulnerability downscaling** | Dasymetric redistribution of district PCA ratios, constrained to reproduce the district mean | Census 2011 district PCA (anchor) | Building height & density, distance to road/school/health, VIIRS nightlights |
 
 ### 7.2 Validation protocol
@@ -352,6 +375,7 @@ in-situ mitigation cost engineering · multi-state deployment · Hindi and regio
 | ML-3 | Negative class sampled from low-slope, inventory-free cells with spatial stratification; ratio 1:1 to 1:3 |
 | ML-4 | **Never train on IIT Delhi's India Landslide Susceptibility Map.** It is a model output; training on it leaks. Use it for benchmark comparison only |
 | ML-5 | Publish a model card documenting label count, feature list, validation scheme and known weak features |
+| ML-6 | The SAR water-detection rule is scored **quantitatively** against Sen1Floods11 hand-labelled India chips and reported as precision/recall. Visual inspection selects candidate rules; it does not validate them. Radar shadow is spectrally indistinguishable from open water, so an unscored threshold in hilly terrain is an unmeasured error, not a small one |
 
 ### 7.3 Known model limitations to state explicitly
 
@@ -420,7 +444,7 @@ Himalayan label gap and the train/infer pilot split in §9.4.
 
 | Source | Auth | Used for | Fallback |
 |---|---|---|---|
-| **Microsoft Planetary Computer** (STAC catalogue) | Token / anonymous SAS | Sentinel-1 **RTC**, Sentinel-2, Landsat | CDSE → AWS Open Data |
+| **Microsoft Planetary Computer** (STAC catalogue) | **Anonymous SAS — verified 2026-08-31, no key** | Sentinel-1 **RTC**, Sentinel-2, Landsat | CDSE → AWS Open Data |
 | Copernicus Data Space Ecosystem | Instant registration | S1 GRD, S2 L2A | AWS Open Data (`sentinel-s1-l1c`, `sentinel-cogs`) |
 | GPM IMERG Early (NASA GESDISC) | Earthdata Login | Live ARI, live trigger | CHIRPS v3 at degraded cadence |
 | IMD district APIs | Registration; turnaround unknown | Nowcast, warnings, basin QPF | Recorded snapshot + ECMWF |
@@ -433,10 +457,65 @@ Himalayan label gap and the train/infer pilot split in §9.4.
 COGs, process on our own machines, land the result in Postgres. The pre-terrain-
 corrected S1 RTC collection removes the SNAP orbit-correct → calibrate →
 terrain-correct chain from the flood pipeline, which is the largest single time saving
-available. Verify the collection is live on Day 0: Microsoft wound down the free hosted
-Hub while retaining the catalogue and STAC endpoint, so the terms warrant a check
-rather than an assumption. Falling back to CDSE costs roughly one day of pyroSAR
-terrain correction and probably fewer scenes in the inundation-frequency stack.
+available.
+
+**Verified 2026-08-31 — the Day-0 check is done and the collection cleared.** Recorded
+so nobody re-runs it:
+
+| Check | Result |
+|---|---|
+| STAC endpoint | `planetarycomputer.microsoft.com/api/stac/v1` — HTTP 200 |
+| Collection `sentinel-1-rtc` | Live, licensed **CC BY 4.0** on the collection |
+| Asset auth | `GET /api/sas/v1/token/sentinel-1-rtc` issues an **anonymous** SAS token, ~1 h expiry. No subscription key, no login |
+| Unsigned asset read | HTTP 409 — assets **must** be signed; sign per session and refresh on expiry |
+| Signed read | HTTP 200; HTTP 206 on range request, valid COG header — windowed reads work |
+| Scenes over **Barpeta** | **1,697** (2015–2025); tracks 41 asc / 150 desc / 114 asc / 77 desc; 557 in JJAS; 1,583 dual-pol VV+VH, 114 VV-only |
+| Scenes over **Wayanad** | **632** (2015–2025); tracks 63 desc (327) / 165 desc (304); 225 in JJAS; all dual-pol |
+| Asset size | ~1.9 GB per band per full swath — read an overview level, never the full COG |
+
+Two consequences. The CDSE fallback and its ~1 day of pyroSAR terrain correction leave
+the critical path, and the §12 risk row for this is closed. The 114 VV-only scenes over
+Barpeta are a real inhomogeneity: a stack mixing VV-only and dual-pol dates silently
+changes the detection rule mid-series, so pick one polarisation configuration and hold it.
+
+### 8.2b INDOFLOODS — gauge flood-event catalogue
+
+Zenodo record `14584655`, downloaded and audited. A gauge **stage-exceedance** catalogue,
+not an inundation dataset: `Flood` means peak stage above the station's Warning Level,
+`Severe Flood` above its Danger Level.
+
+| Contents | Figures |
+|---|---|
+| Gauges | 214 total — **155 Open**, 59 Restricted (no events released) |
+| Events | **4,548**, across the 155 open gauges, 1965-07 → 2020-09 |
+| Event-scale precipitation | `T1d`–`T10d` antecedent rainfall, from **EM-Earth 0.1°** — see FR-4.8 |
+| Catchment attributes | 107 columns × 155 catchments, plus catchment polygons |
+| Class split | 2,919 `Flood` / 1,629 `Severe Flood`; no missing values in events or precipitation |
+
+**What it is used for.** Three roles, all real:
+
+1. **I–D threshold fitting (FR-4.2, FR-4.8).** 4,548 dated events give the
+   intensity–duration cloud per physiographic zone. This is the slot that previously had
+   no data behind it, and a positives-only lower-envelope fit is the standard method.
+2. **`disaster_event` and loss history (FR-6.2).** 4,548 dated, severity-tiered,
+   geolocated events feed `L̂_j`. It carries no fatality or damage counts, so FR-3.8's
+   "fatal event in the cell" still requires India Flood Inventory v3 and COOLR.
+3. **Corroborating the empirical flood surface.** Event dates select which S1 scenes to
+   pull, and catchment-level event frequency is an independent check on inundation
+   frequency.
+
+**What it is not used for.** It is **not** a training set for a per-cell flood classifier
+and must not become one. It contains **zero negatives** — all 4,548 rows are floods, so
+ML-3's 1:1–1:3 negative sampling has nothing to sample. Its labels are catchment-integrated
+over a median catchment of 4,400 km² (≈ 850 H3 res-7 cells, mean 22,623 km²), so a cell-level
+target is undefined. And the effective spatial sample size is **155, not 4,548** — events
+cluster at up to 419 per gauge with a median of 10, so any per-cell AUC computed on the row
+count is spatial pseudo-replication of exactly the kind the M-1 note warns about.
+
+**Licence — unresolved, blocking.** Nothing in the download states a licence: no LICENSE
+file, nothing in `variables_description_indofloods.pdf`. §8.1 Rule 1 is absolute, so the
+Zenodo record must be checked before this enters `sources.yaml`, and the derived EM-Earth
+precipitation columns need their own check. Tracked as Q-7.
 
 ### 8.3 Training labels
 
@@ -449,6 +528,7 @@ terrain correction and probably fewer scenes in the inundation-frequency stack.
 | India Flood Inventory v3 | CC BY 4.0 | Event records + district impact | 1967–2023 | All India |
 | Sen1Floods11 | Unstated upstream; mirrors CC BY 4.0 | Segmentation masks 10 m | 467 weak + 68 hand-labeled India chips | India is 3rd largest contributor |
 | MMFlood | CC BY 4.0 | S1 GRD + flood masks | 1,748 pairs | India coverage unconfirmed |
+| INDOFLOODS (§8.2b) | **Unstated — verify, Q-7** | Gauge stage-exceedance events + 107 catchment attributes | 4,548 events / 155 catchments | 15 states; none in Assam, Sikkim or the restricted Ganga basin |
 
 ### 8.4 Live feeds (with recorded fallback)
 
@@ -502,6 +582,9 @@ to re-add anything merely *reachable* — these are still poison for the same re
 |---|---|
 | **Lithology** — no open map at usable resolution; full-res GLiM has no stated licence | SoilGrids WRB soil class (250 m) as proxy + GLiM 0.5° as coarse regional categorical. Declare weakest feature in the model card |
 | **Himalayan landslide labels** — none open for Uttarakhand, Himachal, Darjeeling, Mizoram | Train in Western Ghats + Sikkim; run held-out inference on Uttarakhand; benchmark against published ILSM |
+| **Flash floods are shorter than the S1 revisit** — near Wayanad, 2015–2020, flood events run a median 1.5 days and occupy 51 of 2,191 days (a 2.3% duty cycle). Against 355 RTC scenes in that window, ~8 acquisitions coincide with a flood day; Barpeta's floodplain regime gives ~55 from 869 scenes. Inundation frequency cannot measure a hazard it never observes | Build the empirical pipeline on Barpeta where the signal exists (§9.4, §11). Over Wayanad, weight HAND primary, drive `confidence` off `valid_observation_count`, and let NFR-9 hatching carry the sparsity. Wayanad's flash-flood hazard comes from the I–D threshold path (FR-4.2), not from SAR |
+| **SAR false positives in the pilot terrain** — radar shadow on steep slopes is spectrally indistinguishable from open water, and flooded paddy in the Kabini and Brahmaputra valleys reads as water while JRC permanent water does not remove it | Exclude slopes > 15° from water detection (FR-3.17), mask or flag ESA WorldCover cropland — already in the Tier A stack — and score the detection rule against Sen1Floods11 chips (ML-6) rather than by eye |
+| **Open river gauges stop at the Vindhyas** — every INDOFLOODS gauge in Uttar Pradesh (22), Bihar (12), Uttarakhand (6), Himachal (1) and Delhi (1) is Restricted, and there are **no Assam gauges at all**. The Himalayan label gap is therefore a flood gap as well as a landslide one | Barpeta's flood history comes from India Flood Inventory v3 district records, not from gauges. Rudraprayag has no open gauge within 611 km and stays held-out inference, which was already the design |
 | **Census 2011 village PCA** — exists as hundreds of per-district NADA entries, not one file | **Resolved — see FR-5.5.** Do not scrape and do not fall back to flat district values. Downscale district PCA ratios dasymetrically using building, access and nightlight covariates already in the stack, constrained to reproduce the district mean. Costs roughly one raster plus a calibration step and yields within-district variation from 2023 observations rather than 2011 enumeration |
 
 ### 8.7 Access traps
@@ -565,7 +648,7 @@ to re-add anything merely *reachable* — these are still poison for the same re
 | Wayanad, Kerala | Landslide + flash flood | Kerala 2018 inventory (4,728 pts) | **Train** |
 | Kodagu, Karnataka | Landslide | HR-GLDD masks | **Train** |
 | South Sikkim | Landslide (Himalayan) | 440 polygons + points | **Train** — only open Himalayan set |
-| Barpeta, Assam | Riverine flood | Sen1Floods11 + IFI v3 | **Train** |
+| Barpeta, Assam | Riverine flood | Sen1Floods11 + IFI v3 | **Train — flood pipeline is built here first** |
 | Rudraprayag, Uttarakhand | Landslide | COOLR points only | **Held-out inference** |
 | Puri, Odisha | Cyclone, coastal erosion | Derived shoreline change | **Held-out inference** |
 
@@ -573,6 +656,18 @@ to re-add anything merely *reachable* — these are still poison for the same re
 > Western Ghats and Sikkim and running inference on Uttarakhand — where the model has never
 > seen a label — is what a national screening tool must do, since most Indian districts have
 > no inventory.
+
+> **Build order for the flood pipeline: Barpeta first, Wayanad second.** The two are not
+> interchangeable starting points. Barpeta sits in the Brahmaputra floodplain — flat,
+> riverine, inundation persisting for weeks — which is the regime inundation frequency was
+> designed to measure, and it carries 1,697 RTC scenes against Wayanad's 632. Wayanad is a
+> plateau whose floods last a median 1.5 days, so a pipeline built there would be tuned
+> against a near-null surface with no way to tell a working threshold from a broken one.
+> Build where the signal is legible, then run the finished pipeline over Wayanad. The code
+> is AOI-parameterised under FR-2.3, so this costs nothing but the order of two runs.
+>
+> The landslide track is unaffected: Wayanad's headline hazard is landslide, and its 4,728
+> Kerala-2018 points still make it the primary landslide training district.
 
 ### 9.5 Data model
 
@@ -634,29 +729,42 @@ via `h3_cell_to_parent()`.
 
 | Tier | Choice | Rationale |
 |---|---|---|
-| Frontend | Next.js 15 App Router, TypeScript strict | Team strength |
+| Frontend | Next.js 16 App Router, TypeScript strict | Team strength |
 | Map | MapLibre GL JS + deck.gl `MapboxOverlay` | GPU rendering of 1M+ hexes; Leaflet cannot |
 | Basemap | Self-hosted Protomaps PMTiles / OSM style | No third-party billing at demo time |
 | Tables & state | TanStack Table + TanStack Query + Zustand | — |
 | API | FastAPI, Pydantic v2, SQLAlchemy + GeoAlchemy2 | Team strength |
-| Database | PostgreSQL 16 + PostGIS 3.4 + `h3` / `h3_postgis` | One store; Martin serves tiles from the same tables |
+| Database | **Neon** — PostgreSQL 16 + PostGIS 3.4 + `h3` 4.2 / `h3_postgis` | One store; Martin serves tiles from the same tables. Neon carries `h3`; Supabase does not (ADR 0001). Direct, non-pooled connection string — Martin and SQLAlchemy need prepared statements |
+| Migrations | Numbered SQL in `infra/migrations/`, applied by `infra/migrate.sh` | The schema is defined once in §9.5, not evolved for years. Alembic is more machinery than that earns |
 | Tiles | Martin or `pg_tileserv` | MVT straight from PostGIS |
 | Pipeline | h3-py, geopandas, rasterio, pysheds, XGBoost, SHAP | — |
 | Satellite access | `pystac-client` + `stackstac` / `odc-stac`, `planetary-computer` | Query STAC, pull COGs, process locally. Catalogue only — computation stays on our machines and outputs land in Postgres |
 | Secrets | `python-dotenv`, env vars only | Keys never in source, manifest or snapshot |
-| Scheduling | APScheduler | Celery is over-engineered for 8 days |
+| Scheduling | APScheduler | Celery is over-engineered for 8 days. `pg_cron` exists on Neon but fires only while compute is active, so it cannot carry FR-4.4 |
 | Types | TypeScript client generated from FastAPI OpenAPI | Prevents contract drift between tracks |
 
 ### 9.8 Repository layout
 
 ```
-/apps/web            Next.js 15, TypeScript, MapLibre + deck.gl
-/apps/api            FastAPI, Pydantic v2, SQLAlchemy + GeoAlchemy2
-/packages/pipeline   Python ETL & ML — h3, geopandas, rasterio, xgboost, shap
-/packages/schemas    Pydantic models → generated TypeScript types
-/infra               docker-compose, Dockerfiles, Alembic migrations, Martin config
-/data                raw / interim / processed  (gitignored)
+/web          Next.js 16 App Router, TypeScript, MapLibre + deck.gl
+/api          FastAPI, Pydantic v2, SQLAlchemy + GeoAlchemy2
+/pipeline     Python ETL & ML, layers L0–L4 — h3, geopandas, rasterio, xgboost, shap
+/core         Shared Pydantic models, hazard weights, capacity norms — imported by both
+/infra        docker-compose, Dockerfile.postgres, migrations/, migrate.sh, martin.yaml
+/data         raw / interim / processed     (gitignored)
+/models       trained model artifacts       (gitignored)
+/docs         PRD, ADRs, TEAM-GUIDE.md
 ```
+
+`apps/` and `packages/` are collapsed: they cost two directory levels to hold one JS app.
+`core/` replaces `packages/schemas` — the TypeScript client is generated by a script
+(`pnpm generate:types`), not by a package, so what actually needs a shared home is the
+constants both halves compute against (FR-3.5 weights, §6.8 norms, zone thresholds).
+
+Two workspaces, one command each: `pnpm install` (root `pnpm-workspace.yaml` → `web`) and
+`uv sync` (root `pyproject.toml` → `core`, `api`, `pipeline`). `api` and `pipeline` stay
+separate packages because their dependency sets diverge sharply — the API must stay light,
+the pipeline drags in GDAL, rasterio and XGBoost.
 
 ---
 
@@ -680,10 +788,10 @@ via `h3_cell_to_parent()`.
 
 | Day | Python / data track | Next.js / frontend track |
 |---|---|---|
-| **0** | **Registrations, ordered by latency risk.** MOSDAC first (slow approval), then IMD (unknown turnaround), then the instant ones: NASA Earthdata — authorising the GESDISC application separately — plus CDSE, CWC/India-WRIS and data.gov.in. Verify the MSPC S1 RTC collection is live and its terms unchanged. Populate `.env` | — |
-| **1** | Verify every data source responds, including auth probes and quota-headroom checks. docker-compose + PostGIS + h3. Load admin boundaries with LGD codes. Generate H3 grids for pilot districts | Next.js scaffold, MapLibre basemap with self-hosted PMTiles, three-panel shell, shared types wired to OpenAPI |
+| **0** | **Registrations, ordered by latency risk.** MOSDAC first (slow approval), then IMD (unknown turnaround), then the instant ones: NASA Earthdata — authorising the GESDISC application separately — plus CDSE, CWC/India-WRIS and data.gov.in. Verify the MSPC S1 RTC collection is live and its terms unchanged. **Provision the Neon project on the Launch plan with scale-to-zero disabled** and record the direct, non-pooled connection string. Populate `.env` | — |
+| **1** | Verify every data source responds, including auth probes and quota-headroom checks. `docker compose up` (Postgres 16 + PostGIS 3.4 + h3 4.2) and `infra/migrate.sh` against both local and Neon. Load admin boundaries with LGD codes. Generate H3 grids for pilot districts | Next.js scaffold, MapLibre basemap with self-hosted PMTiles, three-panel shell, shared types wired to OpenAPI |
 | **2** | DEM derivatives (slope, curvature, TWI, HAND), land cover, rainfall climatology → zonal stats. Dasymetric population | **One real hexagon rendering end-to-end from Postgres.** This is the milestone that de-risks the week |
-| **3** | Train landslide XGBoost with spatial block CV. SAR flood-frequency from S1 RTC via STAC + HAND surface. Write `hazard_static` and first `MHI_static` | Real choropleth, dominant-hazard symbology, legend, zone filter, cell click → dossier |
+| **3** | Train landslide XGBoost with spatial block CV. SAR flood-frequency from S1 RTC via STAC **over Barpeta** + HAND surface; score the water-detection rule on Sen1Floods11 chips (M-7); rerun the finished pipeline over Wayanad. Write `hazard_static` and first `MHI_static`. **Timebox the flood layer:** one orbit track, VV only, monsoon months, 20 m overview — the full-fidelity version does not fit beside the landslide model | Real choropleth, dominant-hazard symbology, legend, zone filter, cell click → dossier |
 | **4** | Census district PCA, VIIRS + building + access covariates, dasymetric downscaling with district-mean constraint, SoVI weights, vulnerability index. Ingest disaster events. Aggregate cells → habitations. Priority scores and triage tiers | Prioritised habitation table, tier chips, urgency/caseload toggle, map ↔ table selection sync |
 | **5** | Candidate site generation with eligibility mask. Land/water/school/health capacities, binding constraint, augmented capacity, suitability | Ranked site cards, capacity bar showing the binding constraint, site polygons on map |
 | **6** | IMERG / IMD / CWC / ECMWF adapters on a schedule, ARI and I–D thresholds, `MHI_live`, Active Alert Zones and 72 h Forecast Alert Zones. OR-Tools allocation. Precompute SHAP | Alert overlay with distinct observed/forecast states, −7 d to +3 d time slider, allocation arcs, SHAP bar chart in dossier |
@@ -703,7 +811,10 @@ via `h3_cell_to_parent()`.
 | Census 2011 fifteen years stale | Certain | Ratios only; population counts from WorldPop; within-district variation from 2023 covariates via FR-5.5; state in UI |
 | **Registration approval latency** — MOSDAC days, IMD unknown | High | Day 0 task, ordered by latency. MOSDAC feeds only the storm-surge layer and is optional; IMD has a recorded-snapshot fallback |
 | **Quota exhaustion mid-build** | Medium | Headroom computed before Day 1 (FR-1.8), target 5–10×. Adapters fall back and log rather than nulling (FR-1.9). Raw responses cached, so a rerun costs no quota |
-| **MSPC RTC collection moved or terms changed** | Medium | Verified Day 0. Fallback CDSE costs ~1 day of pyroSAR terrain correction; second fallback AWS Open Data is Tier A |
+| ~~MSPC RTC collection moved or terms changed~~ | **Closed** | Verified 2026-08-31 (§8.2a): collection live, CC BY 4.0, anonymous SAS, 1,697 scenes over Barpeta and 632 over Wayanad. CDSE fallback is off the critical path |
+| **Empirical flood layer measures nothing in a flash-flood district** | Certain in Wayanad | Build on Barpeta (§9.4). In Wayanad, HAND-primary weighting, confidence from observation count, sparsity hatched per NFR-9. Flash flood is carried by FR-4.2 thresholds, not SAR |
+| **Radar shadow or flooded paddy read as inundation** | High | FR-3.17 slope exclusion, WorldCover cropland flagging, and ML-6 quantitative scoring against Sen1Floods11 rather than visual validation |
+| **INDOFLOODS licence turns out to be non-permissive** | Medium | §8.1 Rule 1 is absolute. Q-7 resolves before it enters `sources.yaml`. If it fails, I–D thresholds fall back to India Flood Inventory v3 event dates against CHIRPS v3 — fewer events, same method |
 | **Keyed source becomes a hidden runtime dependency** | Medium | FR-1.3 and NFR-4 unchanged. Snapshot verified credential-free at freeze; rehearsal runs with network disabled |
 | **Forecast AAZ read as disaster prediction** | Medium | FR-3.15 — forecast attributed to the met agency, our claim is only the threshold crossing. Interface strings reviewed against this before demo |
 | Monsoon cloud blocks optical imagery | High | Sentinel-1 SAR for all water and flood work |
@@ -711,6 +822,9 @@ via `h3_cell_to_parent()`.
 | Land tenure unavailable for candidate sites | High | Ship an explicit "tenure unverified" state. An honest gap is a feature request; a wrong ownership claim is a liability |
 | Data source URL rot between now and Day 1 | Medium | `verify_sources.py` smoke test; exits non-zero on any core failure |
 | Frontend and backend contracts drift | Medium | Generate the TypeScript client from FastAPI's OpenAPI schema |
+| **Neon storage exceeded mid-build** | Medium | `hazard_dynamic` is the table that grows — pilot-only hourly recompute lands near 2 GB, national hourly would not. National cadence stays daily (FR-4.4 applies hourly in pilots); monthly partitions are dropped, not `DELETE`d |
+| **Demo depends on a reachable Neon** | High | NFR-4 already forbids live external calls, and a hosted database is one. The Day-8 rehearsal runs against the local `infra/docker-compose.yml` stack loaded from the snapshot, with the network disabled |
+| **Pooled connection breaks Martin or SQLAlchemy** | Low | Both need prepared statements, which Neon's pooler drops. Use the direct connection string; `.env.example` says so |
 
 ---
 
@@ -719,6 +833,7 @@ via `h3_cell_to_parent()`.
 | # | Question | Owner | Needed by |
 |---|---|---|---|
 | ~~Q-1~~ | ~~Scrape village-level Census PCA, or fall back to district-level?~~ **Closed.** Neither — downscale district PCA dasymetrically (FR-5.5). A village PCA via data.gov.in, if reachable in a 90-minute timebox, refines the anchor but is not a dependency | Data track | Resolved |
+| **Q-7** | **What licence does INDOFLOODS (Zenodo 14584655) carry?** Nothing in the download states one. §8.1 Rule 1 is absolute, so this gates FR-4.2 threshold fitting and the `disaster_event` load. Check the Zenodo record page; the derived EM-Earth precipitation columns need a separate check | Data track | **Day 1** |
 | Q-5 | Does the demo lead with the observed alert overlay or the forecast one? The forecast is the stronger story and the weaker claim | Team lead | Day 7 |
 | Q-6 | If IMD registration has not cleared by Day 3, do we ship IMD-shaped adapters against the recorded snapshot only, or drop the IMD branding from the demo narrative? | Team lead | Day 3 |
 | Q-2 | File a formal GSI data request for the Bhukosh landslide inventory? Would not arrive in time for the build but strengthens the roadmap narrative | Team lead | Day 2 |
