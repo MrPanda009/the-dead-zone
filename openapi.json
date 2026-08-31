@@ -1,0 +1,1276 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "SETU-DRR API",
+    "description": "Hazard Red Zone Identification, Carrying Capacity Assessment & Relocation Decision Support Platform.",
+    "version": "v1.0.0"
+  },
+  "paths": {
+    "/health/live": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Process liveness check",
+        "description": "Returns 200 OK if the FastAPI process is responsive.",
+        "operationId": "check_liveness_health_live_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Check Liveness Health Live Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Application readiness check",
+        "description": "Checks database connectivity, PostGIS & H3 extensions, and serving version.",
+        "operationId": "check_readiness_health_ready_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/zones": {
+      "get": {
+        "tags": [
+          "Hazard Zones"
+        ],
+        "summary": "Query H3 hazard zones within spatial viewport",
+        "description": "Retrieves active Multi-Hazard Index and dominant hazard classifications for H3 hexagonal grid cells within the specified bounding box.",
+        "operationId": "get_zones_zones_get",
+        "parameters": [
+          {
+            "name": "bbox",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Bounding box as 'min_lon,min_lat,max_lon,max_lat' (e.g. '75.8,11.5,76.3,11.9')",
+              "examples": [
+                "75.8,11.5,76.3,11.9"
+              ],
+              "title": "Bbox"
+            },
+            "description": "Bounding box as 'min_lon,min_lat,max_lon,max_lat' (e.g. '75.8,11.5,76.3,11.9')"
+          },
+          {
+            "name": "res",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 9,
+              "minimum": 6,
+              "description": "H3 grid resolution (6=Overview, 7=National, 8=Pilot, 9=Site)",
+              "default": 8,
+              "title": "Res"
+            },
+            "description": "H3 grid resolution (6=Overview, 7=National, 8=Pilot, 9=Site)"
+          },
+          {
+            "name": "valid_at",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Historical timestamp to evaluate (ISO 8601). Defaults to latest.",
+              "title": "Valid At"
+            },
+            "description": "Historical timestamp to evaluate (ISO 8601). Defaults to latest."
+          },
+          {
+            "name": "admin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by Administrative Unit ID or LGD Code (e.g. 555 for Wayanad)",
+              "title": "Admin"
+            },
+            "description": "Filter by Administrative Unit ID or LGD Code (e.g. 555 for Wayanad)"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 5000,
+              "minimum": 1,
+              "description": "Maximum number of cells to return (max 5000).",
+              "default": 1000,
+              "title": "Limit"
+            },
+            "description": "Maximum number of cells to return (max 5000)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ZoneCellSummary"
+                  },
+                  "title": "Response Get Zones Zones Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/zones/{h3}": {
+      "get": {
+        "tags": [
+          "Hazard Zones"
+        ],
+        "summary": "Get full cell detail and SHAP/heuristic explanation",
+        "description": "Retrieves multi-hazard breakdown, static/live MHI, and feature attributions for a single H3 cell.",
+        "operationId": "get_zone_detail_zones__h3__get",
+        "parameters": [
+          {
+            "name": "h3",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "H3 index as hexadecimal string (e.g. '8860064989fffff')",
+              "examples": [
+                "8860064989fffff"
+              ],
+              "title": "H3"
+            },
+            "description": "H3 index as hexadecimal string (e.g. '8860064989fffff')"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZoneCellDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/habitations": {
+      "get": {
+        "tags": [
+          "Habitations & Triage"
+        ],
+        "summary": "Get prioritized habitation triage queue",
+        "description": "Returns a paginated list of habitations ranked by Per-Capita Urgency or Caseload. Supports filtering by Administrative Boundary (LGD Code) and 4-tier Triage Category.",
+        "operationId": "get_habitations_habitations_get",
+        "parameters": [
+          {
+            "name": "admin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by Administrative Unit ID or LGD Code (e.g. 555 for Wayanad)",
+              "title": "Admin"
+            },
+            "description": "Filter by Administrative Unit ID or LGD Code (e.g. 555 for Wayanad)"
+          },
+          {
+            "name": "tier",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Tier"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by Triage Tier (Immediate, Short-term, Medium-term, Mitigate in situ)",
+              "title": "Tier"
+            },
+            "description": "Filter by Triage Tier (Immediate, Short-term, Medium-term, Mitigate in situ)"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/SortMode",
+              "description": "Ranking mode: 'urgency' (PS_j) or 'caseload' (PS_j * population)",
+              "default": "urgency"
+            },
+            "description": "Ranking mode: 'urgency' (PS_j) or 'caseload' (PS_j * population)"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "description": "Number of records per page (max 200).",
+              "default": 50,
+              "title": "Limit"
+            },
+            "description": "Number of records per page (max 200)."
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Pagination offset.",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "Pagination offset."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse_HabitationListItem_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/habitations/{id}/risk": {
+      "get": {
+        "tags": [
+          "Habitations & Triage"
+        ],
+        "summary": "Get complete risk dossier for a habitation",
+        "description": "Retrieves vulnerability breakdown (SoVI), time-decayed loss history, and priority score explanation.",
+        "operationId": "get_habitation_risk_dossier_habitations__id__risk_get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Habitation ID (integer primary key).",
+              "examples": [
+                1
+              ],
+              "title": "Id"
+            },
+            "description": "Habitation ID (integer primary key)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HabitationRiskDossier"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/": {
+      "get": {
+        "tags": [
+          "General"
+        ],
+        "summary": "Root Info",
+        "description": "Root metadata endpoint.",
+        "operationId": "root_info__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Root Info  Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "FeatureContributionDTO": {
+        "properties": {
+          "feature": {
+            "type": "string",
+            "title": "Feature",
+            "description": "Feature name, e.g. slope_deg, hand_m, dist_to_road_m."
+          },
+          "value": {
+            "type": "number",
+            "title": "Value",
+            "description": "Observed feature value."
+          },
+          "contribution": {
+            "type": "number",
+            "title": "Contribution",
+            "description": "SHAP attribution or heuristic weight."
+          },
+          "method": {
+            "type": "string",
+            "title": "Method",
+            "description": "Explanation calculation method (e.g. 'heuristic', 'treeshap').",
+            "default": "heuristic"
+          }
+        },
+        "type": "object",
+        "required": [
+          "feature",
+          "value",
+          "contribution"
+        ],
+        "title": "FeatureContributionDTO"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HabitationListItem": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "lgd_code": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lgd Code"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "default": "village"
+          },
+          "admin_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admin Id"
+          },
+          "admin_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admin Name"
+          },
+          "population": {
+            "type": "integer",
+            "title": "Population",
+            "default": 0
+          },
+          "households": {
+            "type": "integer",
+            "title": "Households",
+            "default": 0
+          },
+          "priority_score": {
+            "type": "number",
+            "title": "Priority Score",
+            "description": "Per-capita urgency score PS_j."
+          },
+          "caseload_score": {
+            "type": "number",
+            "title": "Caseload Score",
+            "description": "Caseload urgency score PS_j * population."
+          },
+          "tier": {
+            "$ref": "#/components/schemas/Tier",
+            "description": "Four-tier triage category."
+          },
+          "prz_overlap_pct": {
+            "type": "number",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Prz Overlap Pct",
+            "description": "Percentage of built area inside PRZ."
+          },
+          "dominant_hazard": {
+            "type": "string",
+            "title": "Dominant Hazard",
+            "default": "landslide"
+          },
+          "centroid": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Centroid",
+            "description": "[longitude, latitude]"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "priority_score",
+          "caseload_score",
+          "tier",
+          "prz_overlap_pct",
+          "centroid"
+        ],
+        "title": "HabitationListItem",
+        "description": "Item in prioritized habitation triage queue (GET /habitations)."
+      },
+      "HabitationRiskDossier": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "lgd_code": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lgd Code"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "default": "village"
+          },
+          "admin_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admin Id"
+          },
+          "admin_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admin Name"
+          },
+          "population": {
+            "type": "integer",
+            "title": "Population"
+          },
+          "households": {
+            "type": "integer",
+            "title": "Households"
+          },
+          "centroid": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Centroid"
+          },
+          "priority_score": {
+            "type": "number",
+            "title": "Priority Score"
+          },
+          "caseload_score": {
+            "type": "number",
+            "title": "Caseload Score"
+          },
+          "tier": {
+            "$ref": "#/components/schemas/Tier"
+          },
+          "triage_rationale": {
+            "type": "string",
+            "title": "Triage Rationale"
+          },
+          "prz_overlap_pct": {
+            "type": "number",
+            "title": "Prz Overlap Pct"
+          },
+          "hazard_intensity": {
+            "type": "number",
+            "title": "Hazard Intensity"
+          },
+          "decayed_loss_score": {
+            "type": "number",
+            "title": "Decayed Loss Score"
+          },
+          "vulnerability": {
+            "$ref": "#/components/schemas/VulnerabilityBreakdownDTO"
+          },
+          "past_disasters": {
+            "items": {
+              "$ref": "#/components/schemas/LossEventDTO"
+            },
+            "type": "array",
+            "title": "Past Disasters"
+          },
+          "top_contributing_factors": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Top Contributing Factors"
+          },
+          "screening_grade": {
+            "type": "string",
+            "title": "Screening Grade",
+            "default": "Screening Grade: Cell-level screening and prioritisation tool. Geotechnical investigation, hydraulic study, and community consultation required before executing relocation orders."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "population",
+          "households",
+          "centroid",
+          "priority_score",
+          "caseload_score",
+          "tier",
+          "triage_rationale",
+          "prz_overlap_pct",
+          "hazard_intensity",
+          "decayed_loss_score",
+          "vulnerability"
+        ],
+        "title": "HabitationRiskDossier",
+        "description": "Full risk dossier for a single habitation (GET /habitations/{id}/risk)."
+      },
+      "HazardDetailDTO": {
+        "properties": {
+          "hazard_type": {
+            "type": "string",
+            "title": "Hazard Type",
+            "description": "Hazard type (landslide, flash_flood, etc.)."
+          },
+          "susceptibility": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Susceptibility",
+            "description": "Static terrain susceptibility S_h."
+          },
+          "confidence": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence",
+            "description": "Model confidence in [0, 1]."
+          },
+          "trigger_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trigger Value",
+            "description": "Dynamic observed trigger T_h (null if unavailable)."
+          },
+          "forecast_trigger": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Forecast Trigger",
+            "description": "Forecast trigger T_fcst (null if unavailable)."
+          },
+          "score": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Score",
+            "description": "Composed hazard score H_h."
+          }
+        },
+        "type": "object",
+        "required": [
+          "hazard_type",
+          "susceptibility",
+          "confidence",
+          "score"
+        ],
+        "title": "HazardDetailDTO"
+      },
+      "LossEventDTO": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "ts": {
+            "type": "string",
+            "format": "date",
+            "title": "Ts"
+          },
+          "hazard_type": {
+            "type": "string",
+            "title": "Hazard Type"
+          },
+          "fatalities": {
+            "type": "integer",
+            "title": "Fatalities",
+            "default": 0
+          },
+          "injured": {
+            "type": "integer",
+            "title": "Injured",
+            "default": 0
+          },
+          "houses_damaged": {
+            "type": "integer",
+            "title": "Houses Damaged",
+            "default": 0
+          },
+          "severity": {
+            "type": "number",
+            "title": "Severity",
+            "default": 1.0
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "source_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Ref"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "ts",
+          "hazard_type",
+          "source"
+        ],
+        "title": "LossEventDTO"
+      },
+      "PaginatedResponse_HabitationListItem_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/HabitationListItem"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "Page of records."
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Total",
+            "description": "Total matching records count."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Limit",
+            "description": "Page limit."
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Offset",
+            "description": "Page offset."
+          },
+          "has_more": {
+            "type": "boolean",
+            "title": "Has More",
+            "description": "Whether subsequent records exist."
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset",
+          "has_more"
+        ],
+        "title": "PaginatedResponse[HabitationListItem]"
+      },
+      "SortMode": {
+        "type": "string",
+        "enum": [
+          "urgency",
+          "caseload"
+        ],
+        "title": "SortMode",
+        "description": "Sort modes for prioritized habitation queues (PRD \u00a76.6, FR-6.3)."
+      },
+      "Tier": {
+        "type": "string",
+        "enum": [
+          "immediate",
+          "short_term",
+          "medium_term",
+          "mitigate_in_situ"
+        ],
+        "title": "Tier",
+        "description": "Four-tier triage categorization for relocation planning (PRD \u00a76.7)."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "VulnerabilityBreakdownDTO": {
+        "properties": {
+          "v_demographic": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "V Demographic"
+          },
+          "v_structural": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "V Structural"
+          },
+          "v_access": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "V Access"
+          },
+          "v_economic": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "V Economic"
+          },
+          "v_index": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "V Index"
+          },
+          "is_district_flat": {
+            "type": "boolean",
+            "title": "Is District Flat",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "v_demographic",
+          "v_structural",
+          "v_access",
+          "v_economic",
+          "v_index"
+        ],
+        "title": "VulnerabilityBreakdownDTO"
+      },
+      "ZoneCellDetail": {
+        "properties": {
+          "h3": {
+            "type": "string",
+            "title": "H3"
+          },
+          "h3_int": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "H3 Int"
+          },
+          "res": {
+            "type": "integer",
+            "title": "Res"
+          },
+          "dataset_version": {
+            "type": "string",
+            "title": "Dataset Version",
+            "default": "demo-day2-v1"
+          },
+          "model_version": {
+            "type": "string",
+            "title": "Model Version",
+            "default": "baseline-v1"
+          },
+          "data_quality": {
+            "type": "string",
+            "title": "Data Quality",
+            "default": "synthetic"
+          },
+          "valid_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Valid At"
+          },
+          "admin_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admin Id"
+          },
+          "admin_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admin Name"
+          },
+          "habitation_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Habitation Id"
+          },
+          "habitation_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Habitation Name"
+          },
+          "population": {
+            "type": "number",
+            "title": "Population",
+            "default": 0.0
+          },
+          "built_area_m2": {
+            "type": "number",
+            "title": "Built Area M2",
+            "default": 0.0
+          },
+          "centroid": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Centroid"
+          },
+          "mhi_static": {
+            "type": "number",
+            "title": "Mhi Static"
+          },
+          "mhi_live": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mhi Live"
+          },
+          "mhi_fcst": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mhi Fcst"
+          },
+          "dominant_hazard": {
+            "type": "string",
+            "title": "Dominant Hazard"
+          },
+          "zone_class": {
+            "$ref": "#/components/schemas/ZoneClass"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence",
+            "default": 1.0
+          },
+          "hazards": {
+            "items": {
+              "$ref": "#/components/schemas/HazardDetailDTO"
+            },
+            "type": "array",
+            "title": "Hazards"
+          },
+          "explanation": {
+            "items": {
+              "$ref": "#/components/schemas/FeatureContributionDTO"
+            },
+            "type": "array",
+            "title": "Explanation"
+          },
+          "screening_grade": {
+            "type": "string",
+            "title": "Screening Grade",
+            "default": "Screening Grade: Cell-level screening and prioritisation tool. Geotechnical investigation, hydraulic study, and community consultation required before executing relocation orders."
+          }
+        },
+        "type": "object",
+        "required": [
+          "h3",
+          "res",
+          "valid_at",
+          "centroid",
+          "mhi_static",
+          "dominant_hazard",
+          "zone_class"
+        ],
+        "title": "ZoneCellDetail",
+        "description": "Full cell detail with SHAP/heuristic explanation (GET /zones/{h3})."
+      },
+      "ZoneCellSummary": {
+        "properties": {
+          "h3": {
+            "type": "string",
+            "title": "H3",
+            "description": "H3 index as hexadecimal string."
+          },
+          "h3_int": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "H3 Int",
+            "description": "H3 index as 64-bit integer."
+          },
+          "res": {
+            "type": "integer",
+            "title": "Res",
+            "description": "H3 resolution (6, 7, 8, 9)."
+          },
+          "mhi": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Mhi",
+            "description": "Active Multi-Hazard Index in [0, 1]."
+          },
+          "mhi_static": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Mhi Static",
+            "description": "Static Multi-Hazard Index in [0, 1]."
+          },
+          "mhi_live": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mhi Live"
+          },
+          "mhi_fcst": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mhi Fcst"
+          },
+          "dominant_hazard": {
+            "type": "string",
+            "title": "Dominant Hazard"
+          },
+          "zone_class": {
+            "$ref": "#/components/schemas/ZoneClass"
+          },
+          "dataset_version": {
+            "type": "string",
+            "title": "Dataset Version",
+            "description": "Published dataset version.",
+            "default": "demo-day2-v1"
+          },
+          "model_version": {
+            "type": "string",
+            "title": "Model Version",
+            "description": "ML model version.",
+            "default": "baseline-v1"
+          },
+          "data_quality": {
+            "type": "string",
+            "title": "Data Quality",
+            "description": "Provenance / screening grade quality.",
+            "default": "synthetic"
+          },
+          "population": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Population",
+            "default": 0.0
+          },
+          "built_area_m2": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Built Area M2",
+            "default": 0.0
+          },
+          "centroid": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Centroid",
+            "description": "[longitude, latitude]"
+          }
+        },
+        "type": "object",
+        "required": [
+          "h3",
+          "res",
+          "mhi",
+          "mhi_static",
+          "dominant_hazard",
+          "zone_class",
+          "centroid"
+        ],
+        "title": "ZoneCellSummary",
+        "description": "Summary record returned in spatial query list (GET /zones)."
+      },
+      "ZoneClass": {
+        "type": "string",
+        "enum": [
+          "permanent_red",
+          "caution",
+          "active_alert",
+          "forecast_alert",
+          "none"
+        ],
+        "title": "ZoneClass",
+        "description": "Hazard zone classifications (PRD \u00a76.3)."
+      }
+    }
+  }
+}

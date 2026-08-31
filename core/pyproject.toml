@@ -3,7 +3,11 @@ name = "core"
 version = "0.1.0"
 description = "Shared domain models, hazard weights and capacity norms. Pure Python — no geo/ML deps."
 requires-python = ">=3.11"
-dependencies = ["pydantic>=2.7"]
+dependencies = [
+  "pydantic>=2.7",
+  "pydantic-settings>=2.2",
+  "python-dotenv>=1.0",
+]
 
 [build-system]
 requires = ["hatchling"]

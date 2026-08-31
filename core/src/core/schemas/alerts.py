@@ -1,0 +1,63 @@
+"""Pydantic v2 schemas for Active and Forecast Alert Zones.
+
+Endpoints: GET /alerts/active, GET /alerts/forecast
+"""
+
+from typing import Optional, List, Dict, Any
+from datetime import datetime
+from pydantic import Field
+from core.enums import ZoneClass
+from core.schemas.common import BaseSchema, SCREENING_GRADE_NOTICE
+
+
+class ActiveAlertItem(BaseSchema):
+    """Dynamic alert zone item currently exceeding threshold (GET /alerts/active)."""
+    h3: str
+    h3_int: int
+    res: int
+    admin_id: Optional[int] = None
+    admin_name: Optional[str] = None
+    mhi_live: float = Field(ge=0.75, le=1.0)
+    mhi_static: float = Field(lt=0.75)
+    dominant_hazard: str
+    trigger_source: str
+    valid_at: datetime
+    exposed_population: float = 0.0
+    exposed_built_area_m2: float = 0.0
+    centroid: list[float] = Field(description="[longitude, latitude]")
+    screening_grade: str = SCREENING_GRADE_NOTICE
+
+
+class ForecastAlertItem(BaseSchema):
+    """Forecast alert zone item predicted to cross threshold within 72 hours (GET /alerts/forecast)."""
+    h3: str
+    h3_int: int
+    res: int
+    admin_id: Optional[int] = None
+    admin_name: Optional[str] = None
+    mhi_fcst: float = Field(ge=0.75, le=1.0)
+    mhi_static: float = Field(lt=0.75)
+    dominant_hazard: str
+    issuing_model: str = "ECMWF Open Data"
+    forecast_cycle_at: datetime
+    valid_at: datetime
+    horizon_hours: int = Field(ge=1, le=72)
+    exposed_population: float = 0.0
+    centroid: list[float]
+    screening_grade: str = SCREENING_GRADE_NOTICE
+
+
+class ActiveAlertsResponse(BaseSchema):
+    total_active_cells: int
+    total_exposed_population: int
+    issued_at: datetime
+    items: List[ActiveAlertItem] = Field(default_factory=list)
+
+
+class ForecastAlertsResponse(BaseSchema):
+    total_forecast_cells: int
+    total_exposed_population: int
+    issuing_model: str = "ECMWF Open Data"
+    forecast_cycle_at: datetime
+    horizon_hours: int
+    items: List[ForecastAlertItem] = Field(default_factory=list)

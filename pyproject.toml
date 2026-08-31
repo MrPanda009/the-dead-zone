@@ -16,3 +16,13 @@ pipeline = { workspace = true }
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["core/src", "api/src", "pipeline/src"]
+
