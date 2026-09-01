@@ -10,10 +10,11 @@ import numpy as np
 import rasterio
 from rasterio.windows import from_bounds, transform as window_transform
 from rasterio.enums import Resampling
+from pyproj import Transformer
 try:
-    from .aoi import get_barpeta_bounds_projected, BARPETA_CRS_PROJECTED
+    from .aoi import get_barpeta_bbox_wgs84, get_barpeta_bounds_projected, BARPETA_CRS_PROJECTED
 except (ImportError, ValueError):
-    from aoi import get_barpeta_bounds_projected, BARPETA_CRS_PROJECTED
+    from aoi import get_barpeta_bbox_wgs84, get_barpeta_bounds_projected, BARPETA_CRS_PROJECTED
 
 # Default threshold in decibels (dB) for VV polarization open water detection
 DEFAULT_VV_WATER_THRESHOLD_DB = -16.0
@@ -44,24 +45,32 @@ def linear_to_db(array: np.ndarray, nodata_val: float | None = 0.0) -> Tuple[np.
 
 def stream_and_clip_raster(
     asset_url: str,
+    bbox_wgs84: list[float] | None = None,
     projected_bounds: tuple[float, float, float, float] | None = None,
 ) -> Tuple[np.ndarray, rasterio.Affine, rasterio.crs.CRS, float]:
     """Stream a sub-window of a Cloud-Optimized GeoTIFF without downloading the full image.
 
     Args:
         asset_url: SAS-signed Azure Blob Storage URL for GeoTIFF.
-        projected_bounds: (minx, miny, maxx, maxy) in the raster's native CRS.
-                          Defaults to Barpeta projected bounds in EPSG:32646.
+        bbox_wgs84: Bounding box [min_lon, min_lat, max_lon, max_lat] in EPSG:4326.
+                    Dynamically projected to the raster's native CRS.
+        projected_bounds: Optional explicit (minx, miny, maxx, maxy) in the raster's native CRS.
 
     Returns:
         Tuple of (data_2d, transform, crs, nodata).
     """
-    if projected_bounds is None:
-        projected_bounds = get_barpeta_bounds_projected()
-
-    minx, miny, maxx, maxy = projected_bounds
+    if bbox_wgs84 is None and projected_bounds is None:
+        bbox_wgs84 = get_barpeta_bbox_wgs84()
 
     with rasterio.open(asset_url) as src:
+        if projected_bounds is None and bbox_wgs84 is not None:
+            min_lon, min_lat, max_lon, max_lat = bbox_wgs84
+            transformer = Transformer.from_crs("EPSG:4326", src.crs, always_xy=True)
+            minx, miny = transformer.transform(min_lon, min_lat)
+            maxx, maxy = transformer.transform(max_lon, max_lat)
+        else:
+            minx, miny, maxx, maxy = projected_bounds  # type: ignore
+
         # Determine the window intersecting the requested bounds
         window = from_bounds(minx, miny, maxx, maxy, transform=src.transform)
         # Read the 1st band clipped to this window
