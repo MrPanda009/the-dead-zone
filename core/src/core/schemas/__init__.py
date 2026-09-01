@@ -45,6 +45,12 @@ from core.schemas.scenario import (
     ScenarioHabitationItem,
     ScenarioResponse,
 )
+from core.schemas.flood import (
+    FloodSemanticType,
+    CanonicalFloodRecord,
+    ValidationReport,
+    RowValidationError,
+)
 
 __all__ = [
     "BaseSchema",
@@ -78,4 +84,9 @@ __all__ = [
     "ScenarioWeightOverrideRequest",
     "ScenarioHabitationItem",
     "ScenarioResponse",
+    "FloodSemanticType",
+    "CanonicalFloodRecord",
+    "ValidationReport",
+    "RowValidationError",
 ]
+
