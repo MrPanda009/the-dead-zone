@@ -10,7 +10,10 @@ import numpy as np
 import rasterio
 from rasterio.windows import from_bounds, transform as window_transform
 from rasterio.enums import Resampling
-from .aoi import get_barpeta_bounds_projected, BARPETA_CRS_PROJECTED
+try:
+    from .aoi import get_barpeta_bounds_projected, BARPETA_CRS_PROJECTED
+except (ImportError, ValueError):
+    from aoi import get_barpeta_bounds_projected, BARPETA_CRS_PROJECTED
 
 # Default threshold in decibels (dB) for VV polarization open water detection
 DEFAULT_VV_WATER_THRESHOLD_DB = -16.0

@@ -9,7 +9,10 @@ import os
 from dotenv import load_dotenv
 from pystac_client import Client
 import planetary_computer
-from .aoi import get_barpeta_bbox_wgs84
+try:
+    from .aoi import get_barpeta_bbox_wgs84
+except (ImportError, ValueError):
+    from aoi import get_barpeta_bbox_wgs84
 
 load_dotenv()
 

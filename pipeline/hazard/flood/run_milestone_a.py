@@ -7,20 +7,40 @@ Executes:
   - Step 4: Convert to dB, threshold, and export binary water mask GeoTIFF & preview PNG.
 """
 
+import sys
 from pathlib import Path
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import numpy as np
 
-from .aoi import save_barpeta_boundary, get_barpeta_bounds_projected
-from .stac import query_sentinel1_rtc, extract_scene_metadata
-from .water_mask import (
-    stream_and_clip_raster,
-    linear_to_db,
-    detect_water,
-    save_raster_geotiff,
-    DEFAULT_VV_WATER_THRESHOLD_DB,
-)
+# Ensure workspace root and package folder are in sys.path for direct execution
+WORKSPACE_ROOT = Path(__file__).resolve().parents[3]
+PACKAGE_DIR = Path(__file__).resolve().parent
+if str(WORKSPACE_ROOT) not in sys.path:
+    sys.path.insert(0, str(WORKSPACE_ROOT))
+if str(PACKAGE_DIR) not in sys.path:
+    sys.path.insert(0, str(PACKAGE_DIR))
+
+try:
+    from .aoi import save_barpeta_boundary, get_barpeta_bounds_projected
+    from .stac import query_sentinel1_rtc, extract_scene_metadata
+    from .water_mask import (
+        stream_and_clip_raster,
+        linear_to_db,
+        detect_water,
+        save_raster_geotiff,
+        DEFAULT_VV_WATER_THRESHOLD_DB,
+    )
+except (ImportError, ValueError):
+    from aoi import save_barpeta_boundary, get_barpeta_bounds_projected
+    from stac import query_sentinel1_rtc, extract_scene_metadata
+    from water_mask import (
+        stream_and_clip_raster,
+        linear_to_db,
+        detect_water,
+        save_raster_geotiff,
+        DEFAULT_VV_WATER_THRESHOLD_DB,
+    )
 
 
 def main():
@@ -33,7 +53,7 @@ def main():
     # Step 1: Define and save AOI boundary
     # -------------------------------------------------------------
     print("\n[Step 1] Initializing Barpeta AOI boundary...")
-    boundary_path = Path("data/raw/boundaries/barpeta.geojson")
+    boundary_path = WORKSPACE_ROOT / "data" / "raw" / "boundaries" / "barpeta.geojson"
     save_barpeta_boundary(boundary_path)
     print(f"  [+] Saved AOI boundary to: {boundary_path}")
 
@@ -41,8 +61,8 @@ def main():
     # Step 2: Query Sentinel-1 RTC scenes
     # -------------------------------------------------------------
     print("\n[Step 2] Querying Sentinel-1 RTC STAC catalog (Planetary Computer)...")
-    scenes = query_sentinel1_rtc(datetime_range="2023-09-01/2023-09-30")
-    print(f"  [+] Found {len(scenes)} scenes in September 2023 monsoon window.")
+    scenes = query_sentinel1_rtc(datetime_range="2020-12-01/2020-12-31")
+    print(f"  [+] Found {len(scenes)} scenes in December 2020 window.")
 
     if not scenes:
         raise RuntimeError("No Sentinel-1 RTC scenes found for the specified query.")
@@ -93,7 +113,7 @@ def main():
     print(f"  [+] Invalid / Out-of-swath:    {invalid_pixels:,}")
 
     # Save output GeoTIFF
-    out_dir = Path("data/interim/water_masks")
+    out_dir = WORKSPACE_ROOT / "data" / "interim" / "water_masks"
     geotiff_path = out_dir / f"{meta['id']}_water_mask.tif"
     save_raster_geotiff(geotiff_path, water_mask, transform, crs)
     print(f"  [+] Exported Water Mask GeoTIFF to: {geotiff_path}")
