@@ -247,6 +247,7 @@ def seed_database(db_url: Optional[str] = None) -> None:
         conn.execute(text("DELETE FROM mhi_snapshot;"))
         conn.execute(text("DELETE FROM hazard_static;"))
         conn.execute(text("DELETE FROM grid_cell;"))
+        conn.execute(text("DELETE FROM habitation_risk;"))
         conn.execute(text("DELETE FROM vulnerability;"))
         conn.execute(text("DELETE FROM disaster_event;"))
         conn.execute(text("DELETE FROM habitation;"))
@@ -358,12 +359,17 @@ def seed_database(db_url: Optional[str] = None) -> None:
                 v_econ = h["v_econ"]
                 v_index = round(0.25 * (v_demo + v_struct + v_access + v_econ), 4)
 
+                v_meta = {
+                    "source_dataset": "Census 2011 + High-Res Buildings",
+                    "validation_status": "VALID",
+                    "calculation_version": "sovi-v1.0",
+                }
                 conn.execute(
                     text("""
                         INSERT INTO vulnerability (
-                            habitation_id, v_demographic, v_structural, v_access, v_economic, v_index, is_district_flat, pipeline_run_id
+                            habitation_id, v_demographic, v_structural, v_access, v_economic, v_index, is_district_flat, metadata, pipeline_run_id
                         ) VALUES (
-                            :hab_id, :v_demo, :v_struct, :v_access, :v_econ, :v_index, false, :pipeline_run_id
+                            :hab_id, :v_demo, :v_struct, :v_access, :v_econ, :v_index, false, :meta, :pipeline_run_id
                         );
                     """),
                     {
@@ -373,6 +379,74 @@ def seed_database(db_url: Optional[str] = None) -> None:
                         "v_access": v_access,
                         "v_econ": v_econ,
                         "v_index": v_index,
+                        "meta": json.dumps(v_meta),
+                        "pipeline_run_id": pipeline_run_id,
+                    },
+                )
+
+                # Seed Habitation Risk
+                is_high_risk = h["name"] in ("Chooralmala", "Mundakkai", "Bhagamandala")
+                hazard_intensity = 0.85 if is_high_risk else 0.45
+                prz_overlap = float(h.get("prz_overlap_pct", 25.0))
+                active_deform = bool(h.get("active_deformation", False))
+                fatal_3 = bool(h.get("fatal_3_monsoons", False))
+                decayed_loss = 1.0 if is_high_risk else 0.0
+
+                ps = compute_priority_score(
+                    hazard_intensity=hazard_intensity,
+                    pop_fraction_in_prz=prz_overlap / 100.0,
+                    vulnerability_index=v_index,
+                    decayed_loss=decayed_loss,
+                )
+                caseload = round(ps * h["population"], 2)
+                tier_val = classify_triage_tier(
+                    has_prz_overlap=prz_overlap > 30.0,
+                    active_deformation=active_deform,
+                    fatal_event_last_3_monsoons=fatal_3,
+                    pop_fraction_in_prz=prz_overlap / 100.0,
+                    hazard_intensity=hazard_intensity,
+                    priority_score=ps,
+                )
+
+                factors = [
+                    {"factor": "PRZ Built-up Exposure", "weight": round(prz_overlap / 100.0, 2), "method": "heuristic"},
+                    {"factor": "Structural Vulnerability", "weight": round(v_struct, 2), "method": "heuristic"},
+                    {"factor": "Historical Loss Decay", "weight": round(decayed_loss, 2), "method": "heuristic"},
+                ]
+
+                conn.execute(
+                    text("""
+                        INSERT INTO habitation_risk (
+                            habitation_id, admin_id, population, households, hazard_intensity,
+                            prz_overlap_pct, decayed_loss, v_index, priority_score, caseload_score,
+                            tier, triage_rationale, contributing_factors, dominant_hazard,
+                            model_version, scoring_version, dataset_version, data_quality,
+                            confidence, calculated_at, pipeline_run_id
+                        ) VALUES (
+                            :hab_id, :admin_id, :pop, :hh, :hazard_intensity,
+                            :prz_overlap, :decayed_loss, :v_index, :ps, :caseload,
+                            :tier, :rationale, :factors, 'landslide',
+                            :model_version, 'priority-v1.0', :dataset_version, 'synthetic',
+                            1.0, :now, :pipeline_run_id
+                        );
+                    """),
+                    {
+                        "hab_id": hab_id,
+                        "admin_id": admin_id,
+                        "pop": h["population"],
+                        "hh": h["households"],
+                        "hazard_intensity": hazard_intensity,
+                        "prz_overlap": prz_overlap,
+                        "decayed_loss": decayed_loss,
+                        "v_index": v_index,
+                        "ps": ps,
+                        "caseload": caseload,
+                        "tier": tier_val.value,
+                        "rationale": f"Tier {tier_val.value} classified during pilot seed",
+                        "factors": json.dumps(factors),
+                        "model_version": MODEL_VERSION,
+                        "dataset_version": DATASET_VERSION,
+                        "now": now,
                         "pipeline_run_id": pipeline_run_id,
                     },
                 )

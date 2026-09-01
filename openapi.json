@@ -541,6 +541,21 @@
             "type": "array",
             "title": "Centroid",
             "description": "[longitude, latitude]"
+          },
+          "model_version": {
+            "type": "string",
+            "title": "Model Version",
+            "default": "baseline-v1"
+          },
+          "scoring_version": {
+            "type": "string",
+            "title": "Scoring Version",
+            "default": "priority-v1.0"
+          },
+          "dataset_version": {
+            "type": "string",
+            "title": "Dataset Version",
+            "default": "v1.0"
           }
         },
         "type": "object",
@@ -645,6 +660,43 @@
           "decayed_loss_score": {
             "type": "number",
             "title": "Decayed Loss Score"
+          },
+          "model_version": {
+            "type": "string",
+            "title": "Model Version",
+            "default": "baseline-v1"
+          },
+          "scoring_version": {
+            "type": "string",
+            "title": "Scoring Version",
+            "default": "priority-v1.0"
+          },
+          "dataset_version": {
+            "type": "string",
+            "title": "Dataset Version",
+            "default": "v1.0"
+          },
+          "data_quality": {
+            "type": "string",
+            "title": "Data Quality",
+            "default": "observed"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence",
+            "default": 1.0
+          },
+          "calculated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Calculated At"
           },
           "vulnerability": {
             "$ref": "#/components/schemas/VulnerabilityBreakdownDTO"
@@ -951,6 +1003,19 @@
             "type": "boolean",
             "title": "Is District Flat",
             "default": false
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata",
+            "description": "Downscaling validation & PCA weights metadata"
           }
         },
         "type": "object",

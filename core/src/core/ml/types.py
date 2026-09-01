@@ -22,7 +22,7 @@ class FeatureContribution:
     feature: str
     value: float
     contribution: float  # SHAP value or heuristic weight
-    method: str = "TreeSHAP"  # TreeSHAP, Heuristic, PCA_Loading
+    method: str = "heuristic"  # TreeSHAP, heuristic, PCA_Loading, policy_factor
 
 
 @dataclass

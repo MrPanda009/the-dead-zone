@@ -1,10 +1,11 @@
 """Pydantic v2 schemas for Habitations, Prioritized Queues, and Risk Dossiers.
 
 Endpoints: GET /habitations, GET /habitations/{id}/risk, GET /habitations/{id}/sites
+Section refs: docs/PRD1.md §6.6, §6.7, §14.1
 """
 
 from typing import Optional, List, Dict, Any
-from datetime import date
+from datetime import date, datetime
 from pydantic import Field
 from core.enums import Tier
 from core.schemas.common import BaseSchema, SCREENING_GRADE_NOTICE
@@ -29,6 +30,7 @@ class VulnerabilityBreakdownDTO(BaseSchema):
     v_economic: float = Field(ge=0.0, le=1.0)
     v_index: float = Field(ge=0.0, le=1.0)
     is_district_flat: bool = False
+    metadata: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Downscaling validation & PCA weights metadata")
 
 
 class HabitationListItem(BaseSchema):
@@ -47,6 +49,9 @@ class HabitationListItem(BaseSchema):
     prz_overlap_pct: float = Field(ge=0.0, le=100.0, description="Percentage of built area inside PRZ.")
     dominant_hazard: str = "landslide"
     centroid: list[float] = Field(description="[longitude, latitude]")
+    model_version: str = "baseline-v1"
+    scoring_version: str = "priority-v1.0"
+    dataset_version: str = "v1.0"
 
 
 class HabitationRiskDossier(BaseSchema):
@@ -69,6 +74,14 @@ class HabitationRiskDossier(BaseSchema):
     prz_overlap_pct: float
     hazard_intensity: float
     decayed_loss_score: float
+
+    # Provenance & Quality
+    model_version: str = "baseline-v1"
+    scoring_version: str = "priority-v1.0"
+    dataset_version: str = "v1.0"
+    data_quality: str = "observed"
+    confidence: float = 1.0
+    calculated_at: Optional[datetime] = None
 
     # Risk Components
     vulnerability: VulnerabilityBreakdownDTO

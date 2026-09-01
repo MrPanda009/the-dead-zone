@@ -142,6 +142,9 @@ class Habitation(Base):
     vulnerability: Mapped[Optional[Vulnerability]] = relationship(
         "Vulnerability", back_populates="habitation", uselist=False
     )
+    risk_profile: Mapped[Optional[HabitationRisk]] = relationship(
+        "HabitationRisk", back_populates="habitation", uselist=False, cascade="all, delete-orphan"
+    )
     relocation_plans: Mapped[List[RelocationPlan]] = relationship(
         "RelocationPlan", back_populates="habitation"
     )
@@ -245,11 +248,51 @@ class Vulnerability(Base):
     v_economic: Mapped[float] = mapped_column(Float, nullable=False)
     v_index: Mapped[float] = mapped_column(Float, nullable=False)
     is_district_flat: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    metadata_: Mapped[dict[str, Any]] = mapped_column(
+        "metadata", JSONB, default=dict, nullable=False
+    )
     pipeline_run_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         PG_UUID(as_uuid=True), ForeignKey("pipeline_run.id", ondelete="SET NULL"), nullable=True
     )
 
     habitation: Mapped[Habitation] = relationship("Habitation", back_populates="vulnerability")
+
+
+class HabitationRisk(Base):
+    __tablename__ = "habitation_risk"
+
+    habitation_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("habitation.id", ondelete="CASCADE"), primary_key=True
+    )
+    admin_id: Mapped[Optional[int]] = mapped_column(
+        BigInteger, ForeignKey("admin_boundary.id", ondelete="SET NULL"), nullable=True
+    )
+    population: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    households: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    hazard_intensity: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    prz_overlap_pct: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    decayed_loss: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    v_index: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    priority_score: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    caseload_score: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    tier: Mapped[str] = mapped_column(String, default="medium_term", nullable=False)
+    triage_rationale: Mapped[str] = mapped_column(String, default="", nullable=False)
+    contributing_factors: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, default=list, nullable=False)
+    dominant_hazard: Mapped[str] = mapped_column(String, default="landslide", nullable=False)
+    model_version: Mapped[str] = mapped_column(String, default="baseline-v1", nullable=False)
+    scoring_version: Mapped[str] = mapped_column(String, default="priority-v1.0", nullable=False)
+    dataset_version: Mapped[str] = mapped_column(String, default="v1.0", nullable=False)
+    data_quality: Mapped[str] = mapped_column(String, default="observed", nullable=False)
+    confidence: Mapped[float] = mapped_column(Float, default=1.0, nullable=False)
+    calculated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+    pipeline_run_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        PG_UUID(as_uuid=True), ForeignKey("pipeline_run.id", ondelete="SET NULL"), nullable=True
+    )
+
+    habitation: Mapped[Habitation] = relationship("Habitation", back_populates="risk_profile")
+    admin_boundary: Mapped[Optional[AdminBoundary]] = relationship("AdminBoundary")
 
 
 class DisasterEvent(Base):

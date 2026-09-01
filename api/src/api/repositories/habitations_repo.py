@@ -1,21 +1,29 @@
 """Database repository for Habitations, Prioritized Queues, and Risk Dossiers."""
 
+from __future__ import annotations
+
+import json
 from typing import Optional, Any
 from sqlalchemy import text
 from sqlalchemy.orm import Session
+from core.enums import SortMode
 
 
 class HabitationsRepository:
+    """Repository handling database access for Habitations, Vulnerability, and Risk Profiles."""
+
     def __init__(self, db: Session) -> None:
         self.db = db
 
     def query_habitations(
         self,
         admin_id: Optional[int] = None,
+        tier: Optional[str] = None,
+        sort: SortMode = SortMode.URGENCY,
         limit: int = 50,
         offset: int = 0,
     ) -> tuple[list[dict[str, Any]], int]:
-        """Queries habitations with demographics, admin details, and vulnerability."""
+        """Queries habitations in a single query using window count and indexed ordering."""
         conditions = ["1=1"]
         params: dict[str, Any] = {"limit": limit, "offset": offset}
 
@@ -23,16 +31,19 @@ class HabitationsRepository:
             conditions.append("(h.admin_id = :admin_id OR a.lgd_code = :admin_id)")
             params["admin_id"] = admin_id
 
+        if tier is not None:
+            conditions.append("(hr.tier IS NULL OR hr.tier = :tier)")
+            params["tier"] = tier
+
         where_clause = " AND ".join(conditions)
 
-        count_query = text(f"""
-            SELECT count(*) 
-            FROM habitation h
-            LEFT JOIN admin_boundary a ON h.admin_id = a.id
-            WHERE {where_clause};
-        """)
-        total = self.db.execute(count_query, params).scalar() or 0
+        # Allowlist-safe sort ordering
+        if sort == SortMode.CASELOAD:
+            order_clause = "COALESCE(hr.caseload_score, 0.0) DESC, h.id ASC"
+        else:
+            order_clause = "COALESCE(hr.priority_score, 0.0) DESC, h.id ASC"
 
+        # Single round-trip query with count(*) OVER()
         query = text(f"""
             SELECT 
                 h.id,
@@ -50,19 +61,50 @@ class HabitationsRepository:
                 v.v_access,
                 v.v_economic,
                 v.v_index,
-                v.is_district_flat
+                v.is_district_flat,
+                v.metadata as vulnerability_metadata,
+                hr.priority_score,
+                hr.caseload_score,
+                hr.tier,
+                hr.triage_rationale,
+                hr.contributing_factors,
+                hr.hazard_intensity,
+                hr.prz_overlap_pct,
+                hr.decayed_loss,
+                hr.model_version,
+                hr.scoring_version,
+                hr.dataset_version,
+                hr.data_quality,
+                hr.confidence,
+                hr.calculated_at,
+                count(*) OVER() as full_count
             FROM habitation h
             LEFT JOIN admin_boundary a ON h.admin_id = a.id
             LEFT JOIN vulnerability v ON h.id = v.habitation_id
+            LEFT JOIN habitation_risk hr ON h.id = hr.habitation_id
             WHERE {where_clause}
-            ORDER BY h.id ASC;
+            ORDER BY {order_clause}
+            LIMIT :limit OFFSET :offset;
         """)
 
         results = self.db.execute(query, params).mappings().all()
+        if not results:
+            # Check if total is 0 or offset out of range
+            count_query = text(f"""
+                SELECT count(*) 
+                FROM habitation h
+                LEFT JOIN admin_boundary a ON h.admin_id = a.id
+                LEFT JOIN habitation_risk hr ON h.id = hr.habitation_id
+                WHERE {where_clause};
+            """)
+            total = self.db.execute(count_query, params).scalar() or 0
+            return [], total
+
+        total = int(results[0]["full_count"])
         return [dict(r) for r in results], total
 
     def get_habitation_by_id(self, habitation_id: int) -> Optional[dict[str, Any]]:
-        """Queries single habitation with vulnerability details."""
+        """Queries a single habitation with its complete vulnerability and risk dossier."""
         query = text("""
             SELECT 
                 h.id,
@@ -80,10 +122,26 @@ class HabitationsRepository:
                 v.v_access,
                 v.v_economic,
                 v.v_index,
-                v.is_district_flat
+                v.is_district_flat,
+                v.metadata as vulnerability_metadata,
+                hr.priority_score,
+                hr.caseload_score,
+                hr.tier,
+                hr.triage_rationale,
+                hr.contributing_factors,
+                hr.hazard_intensity,
+                hr.prz_overlap_pct,
+                hr.decayed_loss,
+                hr.model_version,
+                hr.scoring_version,
+                hr.dataset_version,
+                hr.data_quality,
+                hr.confidence,
+                hr.calculated_at
             FROM habitation h
             LEFT JOIN admin_boundary a ON h.admin_id = a.id
             LEFT JOIN vulnerability v ON h.id = v.habitation_id
+            LEFT JOIN habitation_risk hr ON h.id = hr.habitation_id
             WHERE h.id = :id;
         """)
 
@@ -92,8 +150,85 @@ class HabitationsRepository:
             return None
         return dict(result)
 
+    def upsert_habitation_risk(self, risk_record: dict[str, Any]) -> None:
+        """Upserts a computed HabitationRisk record atomically."""
+        query = text("""
+            INSERT INTO habitation_risk (
+                habitation_id,
+                admin_id,
+                population,
+                households,
+                hazard_intensity,
+                prz_overlap_pct,
+                decayed_loss,
+                v_index,
+                priority_score,
+                caseload_score,
+                tier,
+                triage_rationale,
+                contributing_factors,
+                dominant_hazard,
+                model_version,
+                scoring_version,
+                dataset_version,
+                data_quality,
+                confidence,
+                calculated_at,
+                pipeline_run_id
+            ) VALUES (
+                :habitation_id,
+                :admin_id,
+                :population,
+                :households,
+                :hazard_intensity,
+                :prz_overlap_pct,
+                :decayed_loss,
+                :v_index,
+                :priority_score,
+                :caseload_score,
+                :tier,
+                :triage_rationale,
+                :contributing_factors,
+                :dominant_hazard,
+                :model_version,
+                :scoring_version,
+                :dataset_version,
+                :data_quality,
+                :confidence,
+                :calculated_at,
+                :pipeline_run_id
+            )
+            ON CONFLICT (habitation_id) DO UPDATE SET
+                admin_id = EXCLUDED.admin_id,
+                population = EXCLUDED.population,
+                households = EXCLUDED.households,
+                hazard_intensity = EXCLUDED.hazard_intensity,
+                prz_overlap_pct = EXCLUDED.prz_overlap_pct,
+                decayed_loss = EXCLUDED.decayed_loss,
+                v_index = EXCLUDED.v_index,
+                priority_score = EXCLUDED.priority_score,
+                caseload_score = EXCLUDED.caseload_score,
+                tier = EXCLUDED.tier,
+                triage_rationale = EXCLUDED.triage_rationale,
+                contributing_factors = EXCLUDED.contributing_factors,
+                dominant_hazard = EXCLUDED.dominant_hazard,
+                model_version = EXCLUDED.model_version,
+                scoring_version = EXCLUDED.scoring_version,
+                dataset_version = EXCLUDED.dataset_version,
+                data_quality = EXCLUDED.data_quality,
+                confidence = EXCLUDED.confidence,
+                calculated_at = EXCLUDED.calculated_at,
+                pipeline_run_id = EXCLUDED.pipeline_run_id;
+        """)
+        factors = risk_record.get("contributing_factors", [])
+        params = {
+            **risk_record,
+            "contributing_factors": json.dumps(factors) if isinstance(factors, list) else factors,
+        }
+        self.db.execute(query, params)
+
     def get_all_disaster_events(self) -> list[dict[str, Any]]:
-        """Retrieves all disaster events with coordinates for efficient in-memory spatial matching."""
+        """Retrieves all disaster events with coordinates for fast in-memory spatial correlation."""
         query = text("""
             SELECT 
                 id,
@@ -114,7 +249,7 @@ class HabitationsRepository:
         return [dict(r) for r in results]
 
     def get_nearby_disaster_events(self, lon: float, lat: float, radius_km: float = 15.0) -> list[dict[str, Any]]:
-        """Queries historical disaster events within radius of habitation."""
+        """Queries historical disaster events within radius of a geographic coordinate."""
         query = text("""
             SELECT 
                 id,
