@@ -7,20 +7,40 @@ Executes:
   - Step 4: Convert to dB, threshold, and export binary water mask GeoTIFF & preview PNG.
 """
 
+import sys
 from pathlib import Path
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import numpy as np
 
-from .aoi import save_barpeta_boundary, get_barpeta_bounds_projected
-from .stac import query_sentinel1_rtc, extract_scene_metadata
-from .water_mask import (
-    stream_and_clip_raster,
-    linear_to_db,
-    detect_water,
-    save_raster_geotiff,
-    DEFAULT_VV_WATER_THRESHOLD_DB,
-)
+# Ensure workspace root and package folder are in sys.path for direct execution
+WORKSPACE_ROOT = Path(__file__).resolve().parents[3]
+PACKAGE_DIR = Path(__file__).resolve().parent
+if str(WORKSPACE_ROOT) not in sys.path:
+    sys.path.insert(0, str(WORKSPACE_ROOT))
+if str(PACKAGE_DIR) not in sys.path:
+    sys.path.insert(0, str(PACKAGE_DIR))
+
+try:
+    from .aoi import save_barpeta_boundary, get_barpeta_bounds_projected
+    from .stac import query_sentinel1_rtc, extract_scene_metadata
+    from .water_mask import (
+        stream_and_clip_raster,
+        linear_to_db,
+        detect_water,
+        save_raster_geotiff,
+        DEFAULT_VV_WATER_THRESHOLD_DB,
+    )
+except (ImportError, ValueError):
+    from aoi import save_barpeta_boundary, get_barpeta_bounds_projected
+    from stac import query_sentinel1_rtc, extract_scene_metadata
+    from water_mask import (
+        stream_and_clip_raster,
+        linear_to_db,
+        detect_water,
+        save_raster_geotiff,
+        DEFAULT_VV_WATER_THRESHOLD_DB,
+    )
 
 
 def main():
@@ -33,7 +53,7 @@ def main():
     # Step 1: Define and save AOI boundary
     # -------------------------------------------------------------
     print("\n[Step 1] Initializing Barpeta AOI boundary...")
-    boundary_path = Path("data/raw/boundaries/barpeta.geojson")
+    boundary_path = WORKSPACE_ROOT / "data" / "raw" / "boundaries" / "barpeta.geojson"
     save_barpeta_boundary(boundary_path)
     print(f"  [+] Saved AOI boundary to: {boundary_path}")
 
@@ -41,8 +61,8 @@ def main():
     # Step 2: Query Sentinel-1 RTC scenes
     # -------------------------------------------------------------
     print("\n[Step 2] Querying Sentinel-1 RTC STAC catalog (Planetary Computer)...")
-    scenes = query_sentinel1_rtc(datetime_range="2023-09-01/2023-09-30")
-    print(f"  [+] Found {len(scenes)} scenes in September 2023 monsoon window.")
+    scenes = query_sentinel1_rtc(datetime_range="2020-12-01/2020-12-31")
+    print(f"  [+] Found {len(scenes)} scenes in December 2020 window.")
 
     if not scenes:
         raise RuntimeError("No Sentinel-1 RTC scenes found for the specified query.")
@@ -57,11 +77,7 @@ def main():
     # Step 3: Stream and Clip VV Backscatter Raster
     # -------------------------------------------------------------
     print("\n[Step 3] Streaming & window-clipping VV raster directly from cloud...")
-    proj_bounds = get_barpeta_bounds_projected()
-    raw_vv, transform, crs, nodata_val = stream_and_clip_raster(
-        meta["vv_href"],
-        projected_bounds=proj_bounds,
-    )
+    raw_vv, transform, crs, nodata_val = stream_and_clip_raster(meta["vv_href"])
     print(f"  [+] Clipped Shape: {raw_vv.shape[0]} rows x {raw_vv.shape[1]} cols")
     print(f"  [+] Coordinate Reference System: {crs}")
     print(f"  [+] Pixel Resolution: {abs(transform.a):.1f}m x {abs(transform.e):.1f}m")
@@ -93,7 +109,7 @@ def main():
     print(f"  [+] Invalid / Out-of-swath:    {invalid_pixels:,}")
 
     # Save output GeoTIFF
-    out_dir = Path("data/interim/water_masks")
+    out_dir = WORKSPACE_ROOT / "data" / "interim" / "water_masks"
     geotiff_path = out_dir / f"{meta['id']}_water_mask.tif"
     save_raster_geotiff(geotiff_path, water_mask, transform, crs)
     print(f"  [+] Exported Water Mask GeoTIFF to: {geotiff_path}")
@@ -113,23 +129,26 @@ def generate_preview(vv_db: np.ndarray, water_mask: np.ndarray, scene_id: str, s
     fig, axes = plt.subplots(1, 2, figsize=(16, 8), dpi=150)
 
     # Panel 1: SAR VV Backscatter (dB)
-    im1 = axes[0].imshow(vv_db, cmap="gray", vmin=-25, vmax=-5)
+    vv_display = np.ma.masked_invalid(vv_db)
+    im1 = axes[0].imshow(vv_display, cmap="gray", vmin=-25, vmax=-5)
     axes[0].set_title(f"Sentinel-1 RTC VV Backscatter (dB)\n{scene_date[:10]}", fontsize=12, fontweight="bold")
     axes[0].axis("off")
     cbar1 = plt.colorbar(im1, ax=axes[0], fraction=0.046, pad=0.04)
     cbar1.set_label("Backscatter (dB)", fontsize=10)
 
     # Panel 2: Water Mask
-    # Colormap: 0=lightgreen/gray (land), 1=deep skyblue (water), 255=black (nodata)
+    # Colormap: 0=lightgreen (land), 1=deep skyblue (water), 2=dark slate (nodata)
     cmap_mask = mcolors.ListedColormap(["#d1e7dd", "#0d6efd", "#212529"])
-    norm = mcolors.BoundaryNorm([-0.5, 0.5, 1.5, 255.5], cmap_mask.N)
+    norm = mcolors.BoundaryNorm([-0.5, 0.5, 1.5, 2.5], cmap_mask.N)
 
     # Remap 255 to 2 for discrete indexing in colormap
-    disp_mask = water_mask.copy()
-    disp_mask[disp_mask == 255] = 2
+    disp_mask = np.zeros_like(water_mask, dtype=np.uint8)
+    disp_mask[water_mask == 0] = 0
+    disp_mask[water_mask == 1] = 1
+    disp_mask[water_mask == 255] = 2
 
     im2 = axes[1].imshow(disp_mask, cmap=cmap_mask, norm=norm)
-    axes[1].set_title("Detected Surface Water Mask\n(Blue: Water, Green: Land)", fontsize=12, fontweight="bold")
+    axes[1].set_title("Detected Surface Water Mask\n(Blue: Water, Green: Land, Dark: Nodata)", fontsize=12, fontweight="bold")
     axes[1].axis("off")
 
     cbar2 = plt.colorbar(im2, ax=axes[1], ticks=[0, 1, 2], fraction=0.046, pad=0.04)
