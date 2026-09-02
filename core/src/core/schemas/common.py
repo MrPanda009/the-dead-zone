@@ -3,6 +3,8 @@
 from typing import Generic, TypeVar, Optional, List, Any
 from pydantic import BaseModel, Field, ConfigDict
 
+from core.enums import DataQuality
+
 T = TypeVar("T")
 
 SCREENING_GRADE_NOTICE: str = "Screening Grade: Cell-level screening and prioritisation tool. Geotechnical investigation, hydraulic study, and community consultation required before executing relocation orders."
@@ -15,6 +17,20 @@ class BaseSchema(BaseModel):
         populate_by_name=True,
         arbitrary_types_allowed=True,
     )
+
+
+class ProvenanceMetadataDTO(BaseSchema):
+    """Extensible provenance and data quality metadata (PRD FR-1.5, Day 7)."""
+    source_provider: Optional[str] = Field(default=None, description="Primary data source or sensor feed.")
+    dataset_version: str = Field(default="v1.0", description="Dataset or snapshot version.")
+    model_version: Optional[str] = Field(default=None, description="ML model or heuristic engine version.")
+    policy_version: Optional[str] = Field(default=None, description="Applied normative policy version.")
+    calculated_at: Optional[str] = Field(default=None, description="Timestamp when calculation was executed.")
+    observed_at: Optional[str] = Field(default=None, description="Original observation/forecast timestamp.")
+    data_quality: DataQuality = Field(default=DataQuality.VALID, description="Data quality classification.")
+    is_fallback: bool = Field(default=False, description="Whether fallback source was substituted.")
+    is_synthetic: bool = Field(default=False, description="Whether record is synthetic demo fixture.")
+
 
 
 class PaginationParams(BaseSchema):

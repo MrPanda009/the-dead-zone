@@ -81,3 +81,25 @@ class AdminLevel(StrEnum):
     DISTRICT = "district"
     SUBDISTRICT = "subdistrict"
     VILLAGE = "village"
+
+
+class DataQuality(StrEnum):
+    """Data quality and provenance classification across pipeline and API data (Day 6-7).
+    
+    Preserves all 7 distinct states:
+    - VALID: Real-world observation meeting all quality controls
+    - PARTIAL: Degraded spatial/temporal coverage or incomplete observation
+    - STALE: Retained past expiry due to upstream feed latency or outage
+    - FALLBACK: Secondary provider invoked due to primary feed exhaustion or failure
+    - MISSING: Sensor/pipeline coverage absent; never silently cast to safe/zero
+    - INVALID: Failed schema/range check; never treated as safe/no-risk
+    - SYNTHETIC: Deterministic demo fixture or synthetic simulation
+    """
+    VALID = "valid"
+    PARTIAL = "partial"
+    STALE = "stale"
+    FALLBACK = "fallback"
+    MISSING = "missing"
+    INVALID = "invalid"
+    SYNTHETIC = "synthetic"
+

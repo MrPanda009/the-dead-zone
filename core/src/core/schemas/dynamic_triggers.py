@@ -20,15 +20,8 @@ class TriggerType(StrEnum):
     FORECAST = "forecast"
 
 
-class DataQuality(StrEnum):
-    """Data quality and provenance classification for dynamic feeds."""
-    VALID = "valid"
-    PARTIAL = "partial"
-    STALE = "stale"
-    FALLBACK = "fallback"
-    MISSING = "missing"
-    INVALID = "invalid"
-    SYNTHETIC = "synthetic"
+from core.enums import DataQuality
+
 
 
 class TriggerSource(StrEnum):

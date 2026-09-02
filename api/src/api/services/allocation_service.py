@@ -168,3 +168,63 @@ class AllocationService:
             group_split_warnings=result.group_split_warnings,
             screening_grade=SCREENING_GRADE_NOTICE,
         )
+
+    def simulate_allocation(
+        self,
+        simulated_demands: list[HabitationDemand],
+        max_search_radius_km: float = 15.0,
+        distance_penalty_weight: float = 1.0,
+        allow_group_splits: bool = True,
+    ) -> AllocationResult:
+        """Executes pure in-memory OR-Tools min-cost flow allocation simulation.
+        
+        Guarantees ZERO database mutation or persistence (Day 7 instruction #4).
+        Reuses existing candidate-site capacities, eligibility, distances, and solver logic.
+        """
+        if not simulated_demands:
+            return AllocationResult(
+                status="COMPLETED",
+                solver_status="OPTIMAL",
+                total_demand_households=0,
+                total_relocated_households=0,
+                unmet_demand_households=0,
+                solver_latency_ms=0.0,
+                assignments=[],
+                group_split_warnings=[],
+            )
+
+        hab_ids = [h.id for h in simulated_demands]
+        site_rows, distance_rows = self.repo.get_candidate_sites_and_distances(
+            habitation_ids=hab_ids,
+            max_radius_m=max_search_radius_km * 1000.0,
+        )
+
+        site_capacities: list[CandidateSiteCapacity] = [
+            CandidateSiteCapacity(
+                id=s["id"],
+                name=s["name"],
+                capacity_households=int(s["capacity"]),
+                suitability=int(s.get("suitability") or 50),
+                lat=s.get("lat"),
+                lon=s.get("lon"),
+            )
+            for s in site_rows
+        ]
+
+        distances: list[HabitationSiteDistance] = [
+            HabitationSiteDistance(
+                habitation_id=d["habitation_id"],
+                site_id=d["site_id"],
+                distance_km=float(d["distance_km"]),
+            )
+            for d in distance_rows
+        ]
+
+        solver_config = AllocationConfig(
+            max_search_radius_km=max_search_radius_km,
+            distance_penalty_weight=distance_penalty_weight,
+            allow_group_splits=allow_group_splits,
+        )
+        solver = MinCostFlowAllocationSolver(solver_config)
+        return solver.solve(simulated_demands, site_capacities, distances)
+

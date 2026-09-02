@@ -24,7 +24,9 @@ class TestOpenAPIContract:
         assert "/alerts/active" in paths
         assert "/alerts/forecast" in paths
         assert "/plan/allocate" in paths
+        assert "/scenario" in paths
         assert "/health/live" in paths
+
 
         # Save openapi.json to workspace root for frontend type generation
         root_path = Path(__file__).resolve().parents[2]

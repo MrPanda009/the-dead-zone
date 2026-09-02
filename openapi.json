@@ -860,6 +860,49 @@
         }
       }
     },
+    "/scenario": {
+      "post": {
+        "tags": [
+          "Scenario & Decision Analysis"
+        ],
+        "summary": "Evaluate hypothetical policy and hazard weight scenarios without mutating baseline data",
+        "description": "Executes a pure, stateless scenario evaluation over habitation baselines. Allows decision-makers to adjust hazard weights w_h and loss history amplifier gamma, recomputing priority scores, rank deltas, and triage tier shifts. Optionally simulates min-cost flow relocation allocation without modifying database records.",
+        "operationId": "evaluate_scenario_scenario_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScenarioWeightOverrideRequest",
+                "description": "Scenario assumptions and parameters (hazard weights, priority gamma, sort mode)."
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/": {
       "get": {
         "tags": [
@@ -1558,6 +1601,20 @@
         "title": "CapacityBreakdownDTO",
         "description": "Structured breakdown of independent resource capacity dimensions."
       },
+      "DataQuality": {
+        "type": "string",
+        "enum": [
+          "valid",
+          "partial",
+          "stale",
+          "fallback",
+          "missing",
+          "invalid",
+          "synthetic"
+        ],
+        "title": "DataQuality",
+        "description": "Data quality and provenance classification across pipeline and API data (Day 6-7).\n\nPreserves all 7 distinct states:\n- VALID: Real-world observation meeting all quality controls\n- PARTIAL: Degraded spatial/temporal coverage or incomplete observation\n- STALE: Retained past expiry due to upstream feed latency or outage\n- FALLBACK: Secondary provider invoked due to primary feed exhaustion or failure\n- MISSING: Sensor/pipeline coverage absent; never silently cast to safe/zero\n- INVALID: Failed schema/range check; never treated as safe/no-risk\n- SYNTHETIC: Deterministic demo fixture or synthetic simulation"
+      },
       "FeatureContributionDTO": {
         "properties": {
           "feature": {
@@ -2043,6 +2100,19 @@
         "title": "HabitationRiskDossier",
         "description": "Full risk dossier for a single habitation (GET /habitations/{id}/risk)."
       },
+      "Hazard": {
+        "type": "string",
+        "enum": [
+          "landslide",
+          "flash_flood",
+          "storm_surge",
+          "riverine_flood",
+          "coastal_erosion",
+          "cloudburst"
+        ],
+        "title": "Hazard",
+        "description": "Supported hazard types (PRD \u00a75.1, \u00a76.3)."
+      },
       "HazardDetailDTO": {
         "properties": {
           "hazard_type": {
@@ -2252,6 +2322,392 @@
           "has_more"
         ],
         "title": "PaginatedResponse[HabitationListItem]"
+      },
+      "ScenarioAllocationParams": {
+        "properties": {
+          "max_search_radius_km": {
+            "type": "number",
+            "maximum": 100.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Max Search Radius Km",
+            "default": 15.0
+          },
+          "distance_penalty_weight": {
+            "type": "number",
+            "maximum": 10.0,
+            "minimum": 0.0,
+            "title": "Distance Penalty Weight",
+            "default": 1.0
+          },
+          "allow_group_splits": {
+            "type": "boolean",
+            "title": "Allow Group Splits",
+            "default": true
+          },
+          "target_tiers": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/Tier"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Tiers",
+            "description": "Filter simulated allocation to specific tiers (defaults to immediate + short_term)."
+          }
+        },
+        "type": "object",
+        "title": "ScenarioAllocationParams",
+        "description": "Optional configuration for simulated allocation execution."
+      },
+      "ScenarioAllocationSummaryDTO": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "total_demand_households": {
+            "type": "integer",
+            "title": "Total Demand Households"
+          },
+          "total_relocated_households": {
+            "type": "integer",
+            "title": "Total Relocated Households"
+          },
+          "unmet_demand_households": {
+            "type": "integer",
+            "title": "Unmet Demand Households"
+          },
+          "assignments_count": {
+            "type": "integer",
+            "title": "Assignments Count"
+          },
+          "solver_latency_ms": {
+            "type": "number",
+            "title": "Solver Latency Ms"
+          },
+          "group_split_warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Group Split Warnings"
+          },
+          "policy_version": {
+            "type": "string",
+            "title": "Policy Version",
+            "default": "allocation-v1.0"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "total_demand_households",
+          "total_relocated_households",
+          "unmet_demand_households",
+          "assignments_count",
+          "solver_latency_ms"
+        ],
+        "title": "ScenarioAllocationSummaryDTO",
+        "description": "Outcome summary of non-persisting OR-Tools allocation simulation."
+      },
+      "ScenarioHabitationItem": {
+        "properties": {
+          "habitation_id": {
+            "type": "integer",
+            "title": "Habitation Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "original_rank": {
+            "type": "integer",
+            "title": "Original Rank"
+          },
+          "scenario_rank": {
+            "type": "integer",
+            "title": "Scenario Rank"
+          },
+          "rank_delta": {
+            "type": "integer",
+            "title": "Rank Delta",
+            "description": "Positive means rose in urgency, negative dropped."
+          },
+          "original_priority_score": {
+            "type": "number",
+            "title": "Original Priority Score"
+          },
+          "scenario_priority_score": {
+            "type": "number",
+            "title": "Scenario Priority Score"
+          },
+          "original_tier": {
+            "$ref": "#/components/schemas/Tier"
+          },
+          "scenario_tier": {
+            "$ref": "#/components/schemas/Tier"
+          },
+          "tier_changed": {
+            "type": "boolean",
+            "title": "Tier Changed"
+          },
+          "population": {
+            "type": "integer",
+            "title": "Population"
+          },
+          "households": {
+            "type": "integer",
+            "title": "Households",
+            "default": 0
+          },
+          "scenario_hazard_intensity": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scenario Hazard Intensity"
+          },
+          "scenario_prz_overlap_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scenario Prz Overlap Pct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "habitation_id",
+          "name",
+          "original_rank",
+          "scenario_rank",
+          "rank_delta",
+          "original_priority_score",
+          "scenario_priority_score",
+          "original_tier",
+          "scenario_tier",
+          "tier_changed",
+          "population"
+        ],
+        "title": "ScenarioHabitationItem"
+      },
+      "ScenarioResponse": {
+        "properties": {
+          "admin_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admin Id"
+          },
+          "total_habitations_evaluated": {
+            "type": "integer",
+            "title": "Total Habitations Evaluated"
+          },
+          "total_tier_shifts": {
+            "type": "integer",
+            "title": "Total Tier Shifts"
+          },
+          "applied_weights": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Applied Weights",
+            "description": "Active weights applied in the scenario (alias for applied_scenario_weights)."
+          },
+          "applied_scenario_weights": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Applied Scenario Weights",
+            "description": "Hypothetical scenario weights applied."
+          },
+          "baseline_hazard_weights": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Baseline Hazard Weights",
+            "description": "Authoritative scientific baseline weights."
+          },
+          "applied_gamma": {
+            "type": "number",
+            "title": "Applied Gamma"
+          },
+          "sort_mode": {
+            "$ref": "#/components/schemas/SortMode"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioHabitationItem"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "allocation_simulation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioAllocationSummaryDTO"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "scoring_version": {
+            "type": "string",
+            "title": "Scoring Version",
+            "default": "priority-v1.0"
+          },
+          "policy_version": {
+            "type": "string",
+            "title": "Policy Version",
+            "default": "scenario-v1.0"
+          },
+          "dataset_version": {
+            "type": "string",
+            "title": "Dataset Version",
+            "default": "demo-day2-v1"
+          },
+          "model_version": {
+            "type": "string",
+            "title": "Model Version",
+            "default": "baseline-v1"
+          },
+          "data_quality": {
+            "$ref": "#/components/schemas/DataQuality",
+            "default": "valid"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "screening_grade": {
+            "type": "string",
+            "title": "Screening Grade",
+            "default": "Screening Grade: Cell-level screening and prioritisation tool. Geotechnical investigation, hydraulic study, and community consultation required before executing relocation orders."
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_habitations_evaluated",
+          "total_tier_shifts",
+          "applied_weights",
+          "applied_gamma",
+          "sort_mode"
+        ],
+        "title": "ScenarioResponse",
+        "description": "Response payload for scenario simulation (POST /scenario)."
+      },
+      "ScenarioWeightOverrideRequest": {
+        "properties": {
+          "admin_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admin Id",
+            "description": "Scope simulation to specific administrative boundary."
+          },
+          "hazard_weights": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "number"
+                },
+                "propertyNames": {
+                  "$ref": "#/components/schemas/Hazard"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hazard Weights",
+            "description": "Scenario hazard weight overrides w_h (treated as hypothetical assumptions, not calibration)."
+          },
+          "priority_gamma": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 10.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Priority Gamma",
+            "description": "Scenario loss history amplifier gamma (default 0.5)."
+          },
+          "sort_mode": {
+            "$ref": "#/components/schemas/SortMode",
+            "description": "Sort by urgency (PS_j) or caseload (PS_j * pop).",
+            "default": "urgency"
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 200.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "description": "Max habitations to return in paginated response.",
+            "default": 50
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Offset",
+            "description": "Offset for pagination.",
+            "default": 0
+          },
+          "include_allocation": {
+            "type": "boolean",
+            "title": "Include Allocation",
+            "description": "If True, executes pure in-memory OR-Tools allocation simulation without database mutation.",
+            "default": false
+          },
+          "allocation_params": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioAllocationParams"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Custom parameters for the simulated allocation solver."
+          }
+        },
+        "type": "object",
+        "title": "ScenarioWeightOverrideRequest",
+        "description": "Request payload for scenario simulation with custom weights and parameters (POST /scenario)."
       },
       "SiteCapacityOverrideRequest": {
         "properties": {

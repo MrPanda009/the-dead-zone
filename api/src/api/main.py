@@ -16,6 +16,7 @@ from api.routes.habitations import router as habitations_router
 from api.routes.sites import router as sites_router
 from api.routes.alerts import router as alerts_router
 from api.routes.plan import router as plan_router
+from api.routes.scenario import router as scenario_router
 from core.errors import ErrorCode
 
 logging.basicConfig(
@@ -60,6 +61,18 @@ app.add_middleware(
 app.add_middleware(RequestIdAndLoggingMiddleware)
 
 
+def _sanitize_validation_errors(obj: Any) -> Any:
+    """Recursively converts non-finite floats (NaN, Inf) into strings so Starlette JSONResponse doesn't crash."""
+    import math
+    if isinstance(obj, float) and not math.isfinite(obj):
+        return str(obj)
+    if isinstance(obj, dict):
+        return {k: _sanitize_validation_errors(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_sanitize_validation_errors(x) for x in obj]
+    return obj
+
+
 # 3. Custom Validation Error Handler (conforms to standard error envelope)
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
@@ -69,10 +82,11 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
             "code": ErrorCode.VALIDATION_ERROR.value,
             "message": "Request parameter validation failed.",
             "request_id": request_id,
-            "details": {"errors": exc.errors()},
+            "details": {"errors": _sanitize_validation_errors(exc.errors())},
         }
     }
     return JSONResponse(status_code=422, content=error_dict)
+
 
 
 # 4. Include Routers
@@ -82,6 +96,7 @@ app.include_router(habitations_router)
 app.include_router(sites_router)
 app.include_router(alerts_router)
 app.include_router(plan_router)
+app.include_router(scenario_router)
 
 
 @app.get("/", tags=["General"])
