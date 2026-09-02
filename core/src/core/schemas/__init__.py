@@ -52,6 +52,18 @@ from core.schemas.flood import (
     RowValidationError,
 )
 
+from core.schemas.dynamic_triggers import (
+    TriggerType,
+    DataQuality,
+    TriggerSource,
+    CanonicalTriggerRecord,
+    TriggerValidationReport,
+)
+from core.schemas.explanation import (
+    CanonicalExplanationRecord,
+    ExplanationBatchDTO,
+)
+
 __all__ = [
     "BaseSchema",
     "PaginationParams",
@@ -88,5 +100,13 @@ __all__ = [
     "CanonicalFloodRecord",
     "ValidationReport",
     "RowValidationError",
+    "TriggerType",
+    "DataQuality",
+    "TriggerSource",
+    "CanonicalTriggerRecord",
+    "TriggerValidationReport",
+    "CanonicalExplanationRecord",
+    "ExplanationBatchDTO",
 ]
+
 

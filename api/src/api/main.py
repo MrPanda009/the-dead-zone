@@ -13,6 +13,9 @@ from api.middleware import RequestIdAndLoggingMiddleware
 from api.routes.health import router as health_router
 from api.routes.zones import router as zones_router
 from api.routes.habitations import router as habitations_router
+from api.routes.sites import router as sites_router
+from api.routes.alerts import router as alerts_router
+from api.routes.plan import router as plan_router
 from core.errors import ErrorCode
 
 logging.basicConfig(
@@ -76,6 +79,9 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 app.include_router(health_router)
 app.include_router(zones_router)
 app.include_router(habitations_router)
+app.include_router(sites_router)
+app.include_router(alerts_router)
+app.include_router(plan_router)
 
 
 @app.get("/", tags=["General"])

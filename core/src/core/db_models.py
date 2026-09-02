@@ -1,6 +1,6 @@
 """SQLAlchemy 2.0 ORM Declarative Models for SETU-DRR.
 
-Matches database schema defined in infra/migrations/002_core_schema.sql.
+Matches database schema defined in infra/migrations/002_core_schema.sql and 005_candidate_site_metadata.sql.
 """
 
 from __future__ import annotations
@@ -197,6 +197,27 @@ class HazardStatic(Base):
 
     grid_cell: Mapped[GridCell] = relationship("GridCell", back_populates="hazard_statics")
 
+class HazardDynamic(Base):
+    __tablename__ = "hazard_dynamic"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    h3: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    hazard_type: Mapped[str] = mapped_column(String, nullable=False)
+    valid_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), primary_key=True
+    )
+    ingested_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+    forecast_cycle_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    trigger_value: Mapped[float] = mapped_column(Float, nullable=False)
+    source: Mapped[str] = mapped_column(String, nullable=False)
+    pipeline_run_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        PG_UUID(as_uuid=True), ForeignKey("pipeline_run.id", ondelete="SET NULL"), nullable=True
+    )
+
 
 class MHISnapshot(Base):
     __tablename__ = "mhi_snapshot"
@@ -328,6 +349,9 @@ class CandidateSite(Base):
     binding_constraint: Mapped[str] = mapped_column(String, nullable=False)
     augmented: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
     suitability: Mapped[int] = mapped_column(SmallInteger, default=50, nullable=False)
+    metadata_: Mapped[dict[str, Any]] = mapped_column(
+        "metadata", JSONB, default=dict, nullable=False
+    )
     pipeline_run_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         PG_UUID(as_uuid=True), ForeignKey("pipeline_run.id", ondelete="SET NULL"), nullable=True
     )

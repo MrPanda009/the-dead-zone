@@ -18,6 +18,12 @@ class TestOpenAPIContract:
         assert "/zones/{h3}" in paths
         assert "/habitations" in paths
         assert "/habitations/{id}/risk" in paths
+        assert "/habitations/{id}/sites" in paths
+        assert "/sites/{id}" in paths
+        assert "/sites/{id}/capacity" in paths
+        assert "/alerts/active" in paths
+        assert "/alerts/forecast" in paths
+        assert "/plan/allocate" in paths
         assert "/health/live" in paths
 
         # Save openapi.json to workspace root for frontend type generation

@@ -18,7 +18,7 @@ class ActiveAlertItem(BaseSchema):
     admin_id: Optional[int] = None
     admin_name: Optional[str] = None
     mhi_live: float = Field(ge=0.75, le=1.0)
-    mhi_static: float = Field(lt=0.75)
+    mhi_static: float = Field(ge=0.0, le=1.0, description="Static baseline MHI.")
     dominant_hazard: str
     trigger_source: str
     valid_at: datetime
@@ -36,7 +36,7 @@ class ForecastAlertItem(BaseSchema):
     admin_id: Optional[int] = None
     admin_name: Optional[str] = None
     mhi_fcst: float = Field(ge=0.75, le=1.0)
-    mhi_static: float = Field(lt=0.75)
+    mhi_static: float = Field(ge=0.0, le=1.0, description="Static baseline MHI.")
     dominant_hazard: str
     issuing_model: str = "ECMWF Open Data"
     forecast_cycle_at: datetime
