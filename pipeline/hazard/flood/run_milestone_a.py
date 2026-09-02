@@ -61,8 +61,8 @@ def main():
     # Step 2: Query Sentinel-1 RTC scenes
     # -------------------------------------------------------------
     print("\n[Step 2] Querying Sentinel-1 RTC STAC catalog (Planetary Computer)...")
-    scenes = query_sentinel1_rtc(datetime_range="2020-12-01/2020-12-31")
-    print(f"  [+] Found {len(scenes)} scenes in December 2020 window.")
+    scenes = query_sentinel1_rtc(datetime_range="2022-11-01/2022-11-30")
+    print(f"  [+] Found {len(scenes)} scenes in November 2022 window.")
 
     if not scenes:
         raise RuntimeError("No Sentinel-1 RTC scenes found for the specified query.")
