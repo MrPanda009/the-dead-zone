@@ -378,6 +378,531 @@
         }
       }
     },
+    "/habitations/{id}/sites": {
+      "get": {
+        "tags": [
+          "Habitations & Triage"
+        ],
+        "summary": "Get ranked candidate relocation sites for a habitation",
+        "description": "Retrieves candidate relocation sites within search radius (default 15 km) ranked by suitability, carrying capacity, and distance. Includes full resource capacity breakdowns and binding constraints.",
+        "operationId": "get_habitation_candidate_sites_habitations__id__sites_get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Habitation ID (integer primary key).",
+              "examples": [
+                1
+              ],
+              "title": "Id"
+            },
+            "description": "Habitation ID (integer primary key)."
+          },
+          {
+            "name": "radius_km",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 100.0,
+                  "exclusiveMinimum": 0.0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configurable search radius around habitation in kilometers (default 15 km).",
+              "title": "Radius Km"
+            },
+            "description": "Configurable search radius around habitation in kilometers (default 15 km)."
+          },
+          {
+            "name": "min_suitability",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 100,
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by minimum composite suitability score (0-100).",
+              "title": "Min Suitability"
+            },
+            "description": "Filter by minimum composite suitability score (0-100)."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "description": "Number of records per page (max 200).",
+              "default": 50,
+              "title": "Limit"
+            },
+            "description": "Number of records per page (max 200)."
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Pagination offset.",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "Pagination offset."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse_CandidateSiteItem_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sites/{id}/capacity": {
+      "post": {
+        "tags": [
+          "Candidate Sites & Capacity"
+        ],
+        "summary": "Recompute candidate site carrying capacity with overridden policy norms",
+        "description": "Simulates carrying capacity under modified policy parameters (e.g. plot area, LPCD, spare school/health capacity). Returns the baseline capacity, scenario capacity, net delta in supportable households, and augmented relief options.",
+        "operationId": "recompute_site_capacity_sites__id__capacity_post",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Candidate Site ID (integer primary key).",
+              "examples": [
+                1
+              ],
+              "title": "Id"
+            },
+            "description": "Candidate Site ID (integer primary key)."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SiteCapacityOverrideRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteCapacityOverrideResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sites/{id}": {
+      "get": {
+        "tags": [
+          "Candidate Sites & Capacity"
+        ],
+        "summary": "Get candidate site detail by ID",
+        "description": "Retrieves full candidate relocation site profile including GeoJSON polygon geometry and resource capacity breakdown.",
+        "operationId": "get_site_detail_sites__id__get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Candidate Site ID (integer primary key).",
+              "examples": [
+                1
+              ],
+              "title": "Id"
+            },
+            "description": "Candidate Site ID (integer primary key)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CandidateSiteDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/alerts/active": {
+      "get": {
+        "tags": [
+          "Dynamic Alerts & Forecasts"
+        ],
+        "summary": "Get active hazard alert zones exceeding emergency threshold",
+        "description": "Retrieves H3 grid cells currently in Active Alert Zone state (MHI_live >= 0.75 and MHI_static < 0.75). Alerts are transient, driven by observed meteorological/hydrological triggers, and do not mutate permanent PRZ classifications.",
+        "operationId": "get_active_alerts_alerts_active_get",
+        "parameters": [
+          {
+            "name": "admin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by Administrative Unit ID or LGD Code (e.g. 555 for Wayanad)",
+              "title": "Admin"
+            },
+            "description": "Filter by Administrative Unit ID or LGD Code (e.g. 555 for Wayanad)"
+          },
+          {
+            "name": "min_mhi",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "description": "Minimum active MHI threshold (default 0.75).",
+              "default": 0.75,
+              "title": "Min Mhi"
+            },
+            "description": "Minimum active MHI threshold (default 0.75)."
+          },
+          {
+            "name": "hazard",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by dominant hazard type (landslide, flash_flood, riverine_flood).",
+              "title": "Hazard"
+            },
+            "description": "Filter by dominant hazard type (landslide, flash_flood, riverine_flood)."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "description": "Maximum records to return.",
+              "default": 100,
+              "title": "Limit"
+            },
+            "description": "Maximum records to return."
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Pagination offset.",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "Pagination offset."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActiveAlertsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/alerts/forecast": {
+      "get": {
+        "tags": [
+          "Dynamic Alerts & Forecasts"
+        ],
+        "summary": "Get forecast alert zones predicted to cross threshold within 72 hours",
+        "description": "Retrieves H3 grid cells predicted to cross the hazard threshold (MHI_fcst >= 0.75) within a configurable horizon (1-72h). Represents meteorological forecast threshold crossing (ECMWF Open Data) and does not predict disasters or alter permanent relocation triage.",
+        "operationId": "get_forecast_alerts_alerts_forecast_get",
+        "parameters": [
+          {
+            "name": "horizon",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 72,
+              "minimum": 1,
+              "description": "Forecast horizon in hours (maximum 72 hours).",
+              "default": 72,
+              "title": "Horizon"
+            },
+            "description": "Forecast horizon in hours (maximum 72 hours)."
+          },
+          {
+            "name": "admin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by Administrative Unit ID or LGD Code (e.g. 555 for Wayanad)",
+              "title": "Admin"
+            },
+            "description": "Filter by Administrative Unit ID or LGD Code (e.g. 555 for Wayanad)"
+          },
+          {
+            "name": "min_mhi",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "description": "Minimum forecast MHI threshold (default 0.75).",
+              "default": 0.75,
+              "title": "Min Mhi"
+            },
+            "description": "Minimum forecast MHI threshold (default 0.75)."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "description": "Maximum records to return.",
+              "default": 100,
+              "title": "Limit"
+            },
+            "description": "Maximum records to return."
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Pagination offset.",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "Pagination offset."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForecastAlertsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/plan/allocate": {
+      "post": {
+        "tags": [
+          "Relocation Planning & Allocation"
+        ],
+        "summary": "Solve optimal habitation-to-site relocation allocation via min-cost flow",
+        "description": "Executes exact min-cost flow optimization (Google OR-Tools) to assign vulnerable habitations to candidate relocation sites. Respects carrying capacity constraints (Day 5), maximizes composite suitability/priority benefit, minimizes distance penalty, and explicitly reports any village household group splits requiring social sign-off.",
+        "operationId": "generate_allocation_plan_plan_allocate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AllocationPlanRequest",
+                "description": "Configuration and constraints for the min-cost-flow allocation solver."
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AllocationPlanResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scenario": {
+      "post": {
+        "tags": [
+          "Scenario & Decision Analysis"
+        ],
+        "summary": "Evaluate hypothetical policy and hazard weight scenarios without mutating baseline data",
+        "description": "Executes a pure, stateless scenario evaluation over habitation baselines. Allows decision-makers to adjust hazard weights w_h and loss history amplifier gamma, recomputing priority scores, rank deltas, and triage tier shifts. Optionally simulates min-cost flow relocation allocation without modifying database records.",
+        "operationId": "evaluate_scenario_scenario_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScenarioWeightOverrideRequest",
+                "description": "Scenario assumptions and parameters (hazard weights, priority gamma, sort mode)."
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/": {
       "get": {
         "tags": [
@@ -405,6 +930,691 @@
   },
   "components": {
     "schemas": {
+      "ActiveAlertItem": {
+        "properties": {
+          "h3": {
+            "type": "string",
+            "title": "H3"
+          },
+          "h3_int": {
+            "type": "integer",
+            "title": "H3 Int"
+          },
+          "res": {
+            "type": "integer",
+            "title": "Res"
+          },
+          "admin_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admin Id"
+          },
+          "admin_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admin Name"
+          },
+          "mhi_live": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.75,
+            "title": "Mhi Live"
+          },
+          "mhi_static": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Mhi Static",
+            "description": "Static baseline MHI."
+          },
+          "dominant_hazard": {
+            "type": "string",
+            "title": "Dominant Hazard"
+          },
+          "trigger_source": {
+            "type": "string",
+            "title": "Trigger Source"
+          },
+          "valid_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Valid At"
+          },
+          "exposed_population": {
+            "type": "number",
+            "title": "Exposed Population",
+            "default": 0.0
+          },
+          "exposed_built_area_m2": {
+            "type": "number",
+            "title": "Exposed Built Area M2",
+            "default": 0.0
+          },
+          "centroid": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Centroid",
+            "description": "[longitude, latitude]"
+          },
+          "screening_grade": {
+            "type": "string",
+            "title": "Screening Grade",
+            "default": "Screening Grade: Cell-level screening and prioritisation tool. Geotechnical investigation, hydraulic study, and community consultation required before executing relocation orders."
+          }
+        },
+        "type": "object",
+        "required": [
+          "h3",
+          "h3_int",
+          "res",
+          "mhi_live",
+          "mhi_static",
+          "dominant_hazard",
+          "trigger_source",
+          "valid_at",
+          "centroid"
+        ],
+        "title": "ActiveAlertItem",
+        "description": "Dynamic alert zone item currently exceeding threshold (GET /alerts/active)."
+      },
+      "ActiveAlertsResponse": {
+        "properties": {
+          "total_active_cells": {
+            "type": "integer",
+            "title": "Total Active Cells"
+          },
+          "total_exposed_population": {
+            "type": "integer",
+            "title": "Total Exposed Population"
+          },
+          "issued_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Issued At"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ActiveAlertItem"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_active_cells",
+          "total_exposed_population",
+          "issued_at"
+        ],
+        "title": "ActiveAlertsResponse"
+      },
+      "AllocationAssignmentDTO": {
+        "properties": {
+          "habitation_id": {
+            "type": "integer",
+            "title": "Habitation Id"
+          },
+          "habitation_name": {
+            "type": "string",
+            "title": "Habitation Name"
+          },
+          "site_id": {
+            "type": "integer",
+            "title": "Site Id"
+          },
+          "site_distance_km": {
+            "type": "number",
+            "title": "Site Distance Km"
+          },
+          "households": {
+            "type": "integer",
+            "title": "Households"
+          },
+          "tier": {
+            "$ref": "#/components/schemas/Tier"
+          },
+          "priority_score": {
+            "type": "number",
+            "title": "Priority Score"
+          },
+          "site_suitability": {
+            "type": "integer",
+            "title": "Site Suitability"
+          },
+          "has_group_split": {
+            "type": "boolean",
+            "title": "Has Group Split",
+            "default": false
+          },
+          "split_details": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Split Details"
+          }
+        },
+        "type": "object",
+        "required": [
+          "habitation_id",
+          "habitation_name",
+          "site_id",
+          "site_distance_km",
+          "households",
+          "tier",
+          "priority_score",
+          "site_suitability"
+        ],
+        "title": "AllocationAssignmentDTO"
+      },
+      "AllocationPlanRequest": {
+        "properties": {
+          "admin_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admin Id",
+            "description": "Scope solver to specific administrative boundary (LGD/ID)."
+          },
+          "max_search_radius_km": {
+            "type": "number",
+            "maximum": 100.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Max Search Radius Km",
+            "description": "Max allowed relocation distance.",
+            "default": 15.0
+          },
+          "target_tiers": {
+            "items": {
+              "$ref": "#/components/schemas/Tier"
+            },
+            "type": "array",
+            "title": "Target Tiers",
+            "description": "Tiers included in this relocation budget allocation."
+          },
+          "allow_group_splits": {
+            "type": "boolean",
+            "title": "Allow Group Splits",
+            "description": "Whether a village household group may split across multiple candidate sites.",
+            "default": true
+          },
+          "distance_penalty_weight": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Distance Penalty Weight",
+            "description": "Cost penalty weight per kilometer of distance from source habitation.",
+            "default": 1.0
+          }
+        },
+        "type": "object",
+        "title": "AllocationPlanRequest",
+        "description": "Request payload for min-cost flow allocation solver (POST /plan/allocate)."
+      },
+      "AllocationPlanResponse": {
+        "properties": {
+          "allocation_run_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Allocation Run Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "default": "COMPLETED"
+          },
+          "admin_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admin Id"
+          },
+          "total_demand_households": {
+            "type": "integer",
+            "title": "Total Demand Households"
+          },
+          "total_relocated_households": {
+            "type": "integer",
+            "title": "Total Relocated Households"
+          },
+          "unmet_demand_households": {
+            "type": "integer",
+            "title": "Unmet Demand Households"
+          },
+          "solver_latency_ms": {
+            "type": "number",
+            "title": "Solver Latency Ms"
+          },
+          "assignments": {
+            "items": {
+              "$ref": "#/components/schemas/AllocationAssignmentDTO"
+            },
+            "type": "array",
+            "title": "Assignments"
+          },
+          "group_split_warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Group Split Warnings"
+          },
+          "screening_grade": {
+            "type": "string",
+            "title": "Screening Grade",
+            "default": "Screening Grade: Cell-level screening and prioritisation tool. Geotechnical investigation, hydraulic study, and community consultation required before executing relocation orders."
+          }
+        },
+        "type": "object",
+        "required": [
+          "allocation_run_id",
+          "total_demand_households",
+          "total_relocated_households",
+          "unmet_demand_households",
+          "solver_latency_ms"
+        ],
+        "title": "AllocationPlanResponse",
+        "description": "Response payload for min-cost flow allocation solver (POST /plan/allocate)."
+      },
+      "AugmentedCapacityDTO": {
+        "properties": {
+          "relieved_constraint": {
+            "$ref": "#/components/schemas/BindingConstraint"
+          },
+          "augmented_capacity": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Augmented Capacity",
+            "description": "Augmented carrying capacity in households."
+          },
+          "next_binding_constraint": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BindingConstraint"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The secondary resource constraint that limits the site after relief."
+          },
+          "indicative_intervention": {
+            "type": "string",
+            "title": "Indicative Intervention",
+            "description": "Recommended engineering or policy intervention."
+          },
+          "indicative_cost_inr_lakhs": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Indicative Cost Inr Lakhs",
+            "description": "Estimated intervention cost in Lakhs INR (None if unverified)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "relieved_constraint",
+          "augmented_capacity",
+          "indicative_intervention"
+        ],
+        "title": "AugmentedCapacityDTO",
+        "description": "Augmentation relief assessment for relieving the primary binding constraint."
+      },
+      "BindingConstraint": {
+        "type": "string",
+        "enum": [
+          "land",
+          "water",
+          "school",
+          "health"
+        ],
+        "title": "BindingConstraint",
+        "description": "Binding capacity constraints for destination sites (PRD \u00a76.8)."
+      },
+      "CandidateSiteDetail": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "distance_km": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Distance Km",
+            "description": "Geodesic distance from source habitation in km."
+          },
+          "area_ha": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Area Ha",
+            "description": "Total contiguous developable area in hectares."
+          },
+          "tenure": {
+            "$ref": "#/components/schemas/TenureType",
+            "description": "Tenure status (government_revenue, private, tenure_unverified)."
+          },
+          "slope_mean": {
+            "type": "number",
+            "title": "Slope Mean",
+            "description": "Mean terrain slope in degrees.",
+            "default": 0.0
+          },
+          "mhi_max": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Mhi Max",
+            "description": "Maximum static multi-hazard index inside site."
+          },
+          "suitability": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suitability",
+            "description": "Composite suitability score (0-100, None if unassigned/provisional), separate from capacity."
+          },
+          "capacity": {
+            "$ref": "#/components/schemas/CapacityBreakdownDTO",
+            "description": "Full resource capacity breakdown."
+          },
+          "augmented": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AugmentedCapacityDTO"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Capacity outcome if binding bottleneck is relieved."
+          },
+          "centroid": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Centroid",
+            "description": "[longitude, latitude] coordinates."
+          },
+          "screening_grade": {
+            "type": "string",
+            "title": "Screening Grade",
+            "description": "Persistent decision-support disclaimer notice.",
+            "default": "Screening Grade: Cell-level screening and prioritisation tool. Geotechnical investigation, hydraulic study, and community consultation required before executing relocation orders."
+          },
+          "geometry": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Geometry",
+            "description": "GeoJSON MultiPolygon boundary of the candidate relocation site."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "distance_km",
+          "area_ha",
+          "tenure",
+          "mhi_max",
+          "capacity",
+          "centroid"
+        ],
+        "title": "CandidateSiteDetail",
+        "description": "Complete candidate site detail including GeoJSON geometry."
+      },
+      "CandidateSiteItem": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "distance_km": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Distance Km",
+            "description": "Geodesic distance from source habitation in km."
+          },
+          "area_ha": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Area Ha",
+            "description": "Total contiguous developable area in hectares."
+          },
+          "tenure": {
+            "$ref": "#/components/schemas/TenureType",
+            "description": "Tenure status (government_revenue, private, tenure_unverified)."
+          },
+          "slope_mean": {
+            "type": "number",
+            "title": "Slope Mean",
+            "description": "Mean terrain slope in degrees.",
+            "default": 0.0
+          },
+          "mhi_max": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Mhi Max",
+            "description": "Maximum static multi-hazard index inside site."
+          },
+          "suitability": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suitability",
+            "description": "Composite suitability score (0-100, None if unassigned/provisional), separate from capacity."
+          },
+          "capacity": {
+            "$ref": "#/components/schemas/CapacityBreakdownDTO",
+            "description": "Full resource capacity breakdown."
+          },
+          "augmented": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AugmentedCapacityDTO"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Capacity outcome if binding bottleneck is relieved."
+          },
+          "centroid": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Centroid",
+            "description": "[longitude, latitude] coordinates."
+          },
+          "screening_grade": {
+            "type": "string",
+            "title": "Screening Grade",
+            "description": "Persistent decision-support disclaimer notice.",
+            "default": "Screening Grade: Cell-level screening and prioritisation tool. Geotechnical investigation, hydraulic study, and community consultation required before executing relocation orders."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "distance_km",
+          "area_ha",
+          "tenure",
+          "mhi_max",
+          "capacity",
+          "centroid"
+        ],
+        "title": "CandidateSiteItem",
+        "description": "Candidate site card in ranked destination list (GET /habitations/{id}/sites)."
+      },
+      "CapacityBreakdownDTO": {
+        "properties": {
+          "cc_land": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Cc Land",
+            "description": "Households supportable by developable land area."
+          },
+          "cc_water": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cc Water",
+            "description": "Households supportable by sustainable potable water yield (None if unmeasured)."
+          },
+          "cc_school": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cc School",
+            "description": "Households supportable by spare school capacity (None if unmeasured)."
+          },
+          "cc_health": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cc Health",
+            "description": "Households supportable by spare primary health capacity (None if unmeasured)."
+          },
+          "livelihood_multiplier": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Livelihood Multiplier",
+            "description": "Multiplier for economic connectivity."
+          },
+          "cc_final": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Cc Final",
+            "description": "Binding minimum carrying capacity in households."
+          },
+          "binding_constraint": {
+            "$ref": "#/components/schemas/BindingConstraint",
+            "description": "The primary limiting capacity bottleneck."
+          },
+          "tied_constraints": {
+            "items": {
+              "$ref": "#/components/schemas/BindingConstraint"
+            },
+            "type": "array",
+            "title": "Tied Constraints",
+            "description": "All resource constraints matching the minimum bottleneck value."
+          },
+          "data_quality": {
+            "type": "string",
+            "title": "Data Quality",
+            "description": "Data quality state: 'complete', 'partial', or 'unavailable'.",
+            "default": "complete"
+          },
+          "policy_version": {
+            "type": "string",
+            "title": "Policy Version",
+            "description": "Audit version of the capacity policy norms applied.",
+            "default": "capacity-norms-v1.0"
+          },
+          "calculation_version": {
+            "type": "string",
+            "title": "Calculation Version",
+            "description": "Audit version of the mathematical calculation implementation.",
+            "default": "calc-v1.0"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cc_land",
+          "livelihood_multiplier",
+          "cc_final",
+          "binding_constraint"
+        ],
+        "title": "CapacityBreakdownDTO",
+        "description": "Structured breakdown of independent resource capacity dimensions."
+      },
+      "DataQuality": {
+        "type": "string",
+        "enum": [
+          "valid",
+          "partial",
+          "stale",
+          "fallback",
+          "missing",
+          "invalid",
+          "synthetic"
+        ],
+        "title": "DataQuality",
+        "description": "Data quality and provenance classification across pipeline and API data (Day 6-7).\n\nPreserves all 7 distinct states:\n- VALID: Real-world observation meeting all quality controls\n- PARTIAL: Degraded spatial/temporal coverage or incomplete observation\n- STALE: Retained past expiry due to upstream feed latency or outage\n- FALLBACK: Secondary provider invoked due to primary feed exhaustion or failure\n- MISSING: Sensor/pipeline coverage absent; never silently cast to safe/zero\n- INVALID: Failed schema/range check; never treated as safe/no-risk\n- SYNTHETIC: Deterministic demo fixture or synthetic simulation"
+      },
       "FeatureContributionDTO": {
         "properties": {
           "feature": {
@@ -436,6 +1646,155 @@
           "contribution"
         ],
         "title": "FeatureContributionDTO"
+      },
+      "ForecastAlertItem": {
+        "properties": {
+          "h3": {
+            "type": "string",
+            "title": "H3"
+          },
+          "h3_int": {
+            "type": "integer",
+            "title": "H3 Int"
+          },
+          "res": {
+            "type": "integer",
+            "title": "Res"
+          },
+          "admin_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admin Id"
+          },
+          "admin_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admin Name"
+          },
+          "mhi_fcst": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.75,
+            "title": "Mhi Fcst"
+          },
+          "mhi_static": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Mhi Static",
+            "description": "Static baseline MHI."
+          },
+          "dominant_hazard": {
+            "type": "string",
+            "title": "Dominant Hazard"
+          },
+          "issuing_model": {
+            "type": "string",
+            "title": "Issuing Model",
+            "default": "ECMWF Open Data"
+          },
+          "forecast_cycle_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Forecast Cycle At"
+          },
+          "valid_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Valid At"
+          },
+          "horizon_hours": {
+            "type": "integer",
+            "maximum": 72.0,
+            "minimum": 1.0,
+            "title": "Horizon Hours"
+          },
+          "exposed_population": {
+            "type": "number",
+            "title": "Exposed Population",
+            "default": 0.0
+          },
+          "centroid": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Centroid"
+          },
+          "screening_grade": {
+            "type": "string",
+            "title": "Screening Grade",
+            "default": "Screening Grade: Cell-level screening and prioritisation tool. Geotechnical investigation, hydraulic study, and community consultation required before executing relocation orders."
+          }
+        },
+        "type": "object",
+        "required": [
+          "h3",
+          "h3_int",
+          "res",
+          "mhi_fcst",
+          "mhi_static",
+          "dominant_hazard",
+          "forecast_cycle_at",
+          "valid_at",
+          "horizon_hours",
+          "centroid"
+        ],
+        "title": "ForecastAlertItem",
+        "description": "Forecast alert zone item predicted to cross threshold within 72 hours (GET /alerts/forecast)."
+      },
+      "ForecastAlertsResponse": {
+        "properties": {
+          "total_forecast_cells": {
+            "type": "integer",
+            "title": "Total Forecast Cells"
+          },
+          "total_exposed_population": {
+            "type": "integer",
+            "title": "Total Exposed Population"
+          },
+          "issuing_model": {
+            "type": "string",
+            "title": "Issuing Model",
+            "default": "ECMWF Open Data"
+          },
+          "forecast_cycle_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Forecast Cycle At"
+          },
+          "horizon_hours": {
+            "type": "integer",
+            "title": "Horizon Hours"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastAlertItem"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_forecast_cells",
+          "total_exposed_population",
+          "forecast_cycle_at",
+          "horizon_hours"
+        ],
+        "title": "ForecastAlertsResponse"
       },
       "HTTPValidationError": {
         "properties": {
@@ -741,6 +2100,19 @@
         "title": "HabitationRiskDossier",
         "description": "Full risk dossier for a single habitation (GET /habitations/{id}/risk)."
       },
+      "Hazard": {
+        "type": "string",
+        "enum": [
+          "landslide",
+          "flash_flood",
+          "storm_surge",
+          "riverine_flood",
+          "coastal_erosion",
+          "cloudburst"
+        ],
+        "title": "Hazard",
+        "description": "Supported hazard types (PRD \u00a75.1, \u00a76.3)."
+      },
       "HazardDetailDTO": {
         "properties": {
           "hazard_type": {
@@ -863,6 +2235,50 @@
         ],
         "title": "LossEventDTO"
       },
+      "PaginatedResponse_CandidateSiteItem_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CandidateSiteItem"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "Page of records."
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Total",
+            "description": "Total matching records count."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Limit",
+            "description": "Page limit."
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Offset",
+            "description": "Page offset."
+          },
+          "has_more": {
+            "type": "boolean",
+            "title": "Has More",
+            "description": "Whether subsequent records exist."
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset",
+          "has_more"
+        ],
+        "title": "PaginatedResponse[CandidateSiteItem]"
+      },
       "PaginatedResponse_HabitationListItem_": {
         "properties": {
           "items": {
@@ -907,6 +2323,521 @@
         ],
         "title": "PaginatedResponse[HabitationListItem]"
       },
+      "ScenarioAllocationParams": {
+        "properties": {
+          "max_search_radius_km": {
+            "type": "number",
+            "maximum": 100.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Max Search Radius Km",
+            "default": 15.0
+          },
+          "distance_penalty_weight": {
+            "type": "number",
+            "maximum": 10.0,
+            "minimum": 0.0,
+            "title": "Distance Penalty Weight",
+            "default": 1.0
+          },
+          "allow_group_splits": {
+            "type": "boolean",
+            "title": "Allow Group Splits",
+            "default": true
+          },
+          "target_tiers": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/Tier"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Tiers",
+            "description": "Filter simulated allocation to specific tiers (defaults to immediate + short_term)."
+          }
+        },
+        "type": "object",
+        "title": "ScenarioAllocationParams",
+        "description": "Optional configuration for simulated allocation execution."
+      },
+      "ScenarioAllocationSummaryDTO": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "total_demand_households": {
+            "type": "integer",
+            "title": "Total Demand Households"
+          },
+          "total_relocated_households": {
+            "type": "integer",
+            "title": "Total Relocated Households"
+          },
+          "unmet_demand_households": {
+            "type": "integer",
+            "title": "Unmet Demand Households"
+          },
+          "assignments_count": {
+            "type": "integer",
+            "title": "Assignments Count"
+          },
+          "solver_latency_ms": {
+            "type": "number",
+            "title": "Solver Latency Ms"
+          },
+          "group_split_warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Group Split Warnings"
+          },
+          "policy_version": {
+            "type": "string",
+            "title": "Policy Version",
+            "default": "allocation-v1.0"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "total_demand_households",
+          "total_relocated_households",
+          "unmet_demand_households",
+          "assignments_count",
+          "solver_latency_ms"
+        ],
+        "title": "ScenarioAllocationSummaryDTO",
+        "description": "Outcome summary of non-persisting OR-Tools allocation simulation."
+      },
+      "ScenarioHabitationItem": {
+        "properties": {
+          "habitation_id": {
+            "type": "integer",
+            "title": "Habitation Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "original_rank": {
+            "type": "integer",
+            "title": "Original Rank"
+          },
+          "scenario_rank": {
+            "type": "integer",
+            "title": "Scenario Rank"
+          },
+          "rank_delta": {
+            "type": "integer",
+            "title": "Rank Delta",
+            "description": "Positive means rose in urgency, negative dropped."
+          },
+          "original_priority_score": {
+            "type": "number",
+            "title": "Original Priority Score"
+          },
+          "scenario_priority_score": {
+            "type": "number",
+            "title": "Scenario Priority Score"
+          },
+          "original_tier": {
+            "$ref": "#/components/schemas/Tier"
+          },
+          "scenario_tier": {
+            "$ref": "#/components/schemas/Tier"
+          },
+          "tier_changed": {
+            "type": "boolean",
+            "title": "Tier Changed"
+          },
+          "population": {
+            "type": "integer",
+            "title": "Population"
+          },
+          "households": {
+            "type": "integer",
+            "title": "Households",
+            "default": 0
+          },
+          "scenario_hazard_intensity": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scenario Hazard Intensity"
+          },
+          "scenario_prz_overlap_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scenario Prz Overlap Pct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "habitation_id",
+          "name",
+          "original_rank",
+          "scenario_rank",
+          "rank_delta",
+          "original_priority_score",
+          "scenario_priority_score",
+          "original_tier",
+          "scenario_tier",
+          "tier_changed",
+          "population"
+        ],
+        "title": "ScenarioHabitationItem"
+      },
+      "ScenarioResponse": {
+        "properties": {
+          "admin_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admin Id"
+          },
+          "total_habitations_evaluated": {
+            "type": "integer",
+            "title": "Total Habitations Evaluated"
+          },
+          "total_tier_shifts": {
+            "type": "integer",
+            "title": "Total Tier Shifts"
+          },
+          "applied_weights": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Applied Weights",
+            "description": "Active weights applied in the scenario (alias for applied_scenario_weights)."
+          },
+          "applied_scenario_weights": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Applied Scenario Weights",
+            "description": "Hypothetical scenario weights applied."
+          },
+          "baseline_hazard_weights": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Baseline Hazard Weights",
+            "description": "Authoritative scientific baseline weights."
+          },
+          "applied_gamma": {
+            "type": "number",
+            "title": "Applied Gamma"
+          },
+          "sort_mode": {
+            "$ref": "#/components/schemas/SortMode"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioHabitationItem"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "allocation_simulation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioAllocationSummaryDTO"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "scoring_version": {
+            "type": "string",
+            "title": "Scoring Version",
+            "default": "priority-v1.0"
+          },
+          "policy_version": {
+            "type": "string",
+            "title": "Policy Version",
+            "default": "scenario-v1.0"
+          },
+          "dataset_version": {
+            "type": "string",
+            "title": "Dataset Version",
+            "default": "demo-day2-v1"
+          },
+          "model_version": {
+            "type": "string",
+            "title": "Model Version",
+            "default": "baseline-v1"
+          },
+          "data_quality": {
+            "$ref": "#/components/schemas/DataQuality",
+            "default": "valid"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "screening_grade": {
+            "type": "string",
+            "title": "Screening Grade",
+            "default": "Screening Grade: Cell-level screening and prioritisation tool. Geotechnical investigation, hydraulic study, and community consultation required before executing relocation orders."
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_habitations_evaluated",
+          "total_tier_shifts",
+          "applied_weights",
+          "applied_gamma",
+          "sort_mode"
+        ],
+        "title": "ScenarioResponse",
+        "description": "Response payload for scenario simulation (POST /scenario)."
+      },
+      "ScenarioWeightOverrideRequest": {
+        "properties": {
+          "admin_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admin Id",
+            "description": "Scope simulation to specific administrative boundary."
+          },
+          "hazard_weights": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "number"
+                },
+                "propertyNames": {
+                  "$ref": "#/components/schemas/Hazard"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hazard Weights",
+            "description": "Scenario hazard weight overrides w_h (treated as hypothetical assumptions, not calibration)."
+          },
+          "priority_gamma": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 10.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Priority Gamma",
+            "description": "Scenario loss history amplifier gamma (default 0.5)."
+          },
+          "sort_mode": {
+            "$ref": "#/components/schemas/SortMode",
+            "description": "Sort by urgency (PS_j) or caseload (PS_j * pop).",
+            "default": "urgency"
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 200.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "description": "Max habitations to return in paginated response.",
+            "default": 50
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Offset",
+            "description": "Offset for pagination.",
+            "default": 0
+          },
+          "include_allocation": {
+            "type": "boolean",
+            "title": "Include Allocation",
+            "description": "If True, executes pure in-memory OR-Tools allocation simulation without database mutation.",
+            "default": false
+          },
+          "allocation_params": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioAllocationParams"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Custom parameters for the simulated allocation solver."
+          }
+        },
+        "type": "object",
+        "title": "ScenarioWeightOverrideRequest",
+        "description": "Request payload for scenario simulation with custom weights and parameters (POST /scenario)."
+      },
+      "SiteCapacityOverrideRequest": {
+        "properties": {
+          "plot_area_m2": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1000.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plot Area M2",
+            "description": "Override plot area per HH."
+          },
+          "water_lpcd": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 500.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Water Lpcd",
+            "description": "Override LPCD norm (55 rural, 135 urban)."
+          },
+          "daily_water_yield_liters": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Daily Water Yield Liters",
+            "description": "Override sustainable water yield."
+          },
+          "spare_school_seats": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spare School Seats",
+            "description": "Override spare school seats."
+          },
+          "spare_health_capacity_pop": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spare Health Capacity Pop",
+            "description": "Override spare PHC population."
+          },
+          "livelihood_multiplier": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Livelihood Multiplier",
+            "description": "Override livelihood multiplier."
+          }
+        },
+        "type": "object",
+        "title": "SiteCapacityOverrideRequest",
+        "description": "Request payload for capacity scenario simulation (POST /sites/{id}/capacity)."
+      },
+      "SiteCapacityOverrideResponse": {
+        "properties": {
+          "site_id": {
+            "type": "integer",
+            "title": "Site Id"
+          },
+          "base_capacity": {
+            "$ref": "#/components/schemas/CapacityBreakdownDTO"
+          },
+          "scenario_capacity": {
+            "$ref": "#/components/schemas/CapacityBreakdownDTO"
+          },
+          "delta_households": {
+            "type": "integer",
+            "title": "Delta Households",
+            "description": "Change in final household capacity under override scenario."
+          },
+          "augmented_options": {
+            "items": {
+              "$ref": "#/components/schemas/AugmentedCapacityDTO"
+            },
+            "type": "array",
+            "title": "Augmented Options"
+          },
+          "screening_grade": {
+            "type": "string",
+            "title": "Screening Grade",
+            "description": "Persistent decision-support disclaimer notice.",
+            "default": "Screening Grade: Cell-level screening and prioritisation tool. Geotechnical investigation, hydraulic study, and community consultation required before executing relocation orders."
+          }
+        },
+        "type": "object",
+        "required": [
+          "site_id",
+          "base_capacity",
+          "scenario_capacity",
+          "delta_households"
+        ],
+        "title": "SiteCapacityOverrideResponse",
+        "description": "Response payload for capacity scenario simulation (POST /sites/{id}/capacity)."
+      },
       "SortMode": {
         "type": "string",
         "enum": [
@@ -915,6 +2846,16 @@
         ],
         "title": "SortMode",
         "description": "Sort modes for prioritized habitation queues (PRD \u00a76.6, FR-6.3)."
+      },
+      "TenureType": {
+        "type": "string",
+        "enum": [
+          "government_revenue",
+          "private",
+          "tenure_unverified"
+        ],
+        "title": "TenureType",
+        "description": "Land tenure status for candidate relocation sites (PRD \u00a76.8, FR-7.3)."
       },
       "Tier": {
         "type": "string",

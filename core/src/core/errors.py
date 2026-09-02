@@ -151,6 +151,17 @@ class DataUnavailableError(AppError):
         )
 
 
+class InvalidParametersError(AppError):
+    def __init__(self, message: str = "Invalid request parameters.", details: dict[str, Any] | None = None) -> None:
+        super().__init__(
+            code=ErrorCode.VALIDATION_ERROR,
+            message=message,
+            status_code=422,
+            details=details or {},
+        )
+
+
+
 class AllocationFailedError(AppError):
     def __init__(self, reason: str, details: dict[str, Any] | None = None) -> None:
         super().__init__(

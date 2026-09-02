@@ -50,6 +50,7 @@ class ZonesRepository:
             conditions.append("(g.admin_id = :admin_id OR a.lgd_code = :admin_id)")
             params["admin_id"] = admin_id
 
+        admin_join = "LEFT JOIN admin_boundary a ON g.admin_id = a.id" if admin_id is not None else ""
         where_clause = " AND ".join(conditions)
 
         query = text(f"""
@@ -67,7 +68,7 @@ class ZonesRepository:
                 m.dominant_hazard,
                 m.zone_class
             FROM grid_cell g
-            LEFT JOIN admin_boundary a ON g.admin_id = a.id
+            {admin_join}
             LEFT JOIN LATERAL (
                 SELECT mhi_static, mhi_live, mhi_fcst, dominant_hazard, zone_class
                 FROM mhi_snapshot
@@ -78,6 +79,7 @@ class ZonesRepository:
             WHERE {where_clause}
             LIMIT :limit;
         """)
+
 
         results = self.db.execute(query, params).mappings().all()
         return [dict(r) for r in results]

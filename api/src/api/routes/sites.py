@@ -1,0 +1,59 @@
+"""FastAPI Route Handlers for Candidate Relocation Sites & Capacity Simulations (L5).
+
+Endpoints:
+- POST /sites/{id}/capacity
+- GET /sites/{id}
+"""
+
+from fastapi import APIRouter, Depends, Path
+from sqlalchemy.orm import Session
+
+from api.dependencies import get_db
+from api.services.sites_service import SitesService
+from core.schemas.sites import (
+    CandidateSiteDetail,
+    SiteCapacityOverrideRequest,
+    SiteCapacityOverrideResponse,
+)
+
+router = APIRouter(prefix="/sites", tags=["Candidate Sites & Capacity"])
+
+
+@router.post(
+    "/{id}/capacity",
+    response_model=SiteCapacityOverrideResponse,
+    summary="Recompute candidate site carrying capacity with overridden policy norms",
+    description=(
+        "Simulates carrying capacity under modified policy parameters (e.g. plot area, LPCD, spare school/health capacity). "
+        "Returns the baseline capacity, scenario capacity, net delta in supportable households, and augmented relief options."
+    ),
+)
+def recompute_site_capacity(
+    id: int = Path(
+        ...,
+        description="Candidate Site ID (integer primary key).",
+        examples=[1],
+    ),
+    payload: SiteCapacityOverrideRequest = ...,
+    db: Session = Depends(get_db),
+) -> SiteCapacityOverrideResponse:
+    service = SitesService(db)
+    return service.recompute_site_capacity(id, payload)
+
+
+@router.get(
+    "/{id}",
+    response_model=CandidateSiteDetail,
+    summary="Get candidate site detail by ID",
+    description="Retrieves full candidate relocation site profile including GeoJSON polygon geometry and resource capacity breakdown.",
+)
+def get_site_detail(
+    id: int = Path(
+        ...,
+        description="Candidate Site ID (integer primary key).",
+        examples=[1],
+    ),
+    db: Session = Depends(get_db),
+) -> CandidateSiteDetail:
+    service = SitesService(db)
+    return service.get_candidate_site_detail(id)

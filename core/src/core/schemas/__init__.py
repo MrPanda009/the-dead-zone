@@ -9,6 +9,7 @@ from core.schemas.common import (
     PolygonGeometryDTO,
     MultiPolygonGeometryDTO,
     SCREENING_GRADE_NOTICE,
+    ProvenanceMetadataDTO,
 )
 from core.schemas.zones import (
     FeatureContributionDTO,
@@ -42,14 +43,29 @@ from core.schemas.alerts import (
 )
 from core.schemas.scenario import (
     ScenarioWeightOverrideRequest,
+    ScenarioAllocationParams,
     ScenarioHabitationItem,
+    ScenarioAllocationSummaryDTO,
     ScenarioResponse,
 )
+
 from core.schemas.flood import (
     FloodSemanticType,
     CanonicalFloodRecord,
     ValidationReport,
     RowValidationError,
+)
+
+from core.schemas.dynamic_triggers import (
+    TriggerType,
+    DataQuality,
+    TriggerSource,
+    CanonicalTriggerRecord,
+    TriggerValidationReport,
+)
+from core.schemas.explanation import (
+    CanonicalExplanationRecord,
+    ExplanationBatchDTO,
 )
 
 __all__ = [
@@ -88,5 +104,13 @@ __all__ = [
     "CanonicalFloodRecord",
     "ValidationReport",
     "RowValidationError",
+    "TriggerType",
+    "DataQuality",
+    "TriggerSource",
+    "CanonicalTriggerRecord",
+    "TriggerValidationReport",
+    "CanonicalExplanationRecord",
+    "ExplanationBatchDTO",
 ]
+
 

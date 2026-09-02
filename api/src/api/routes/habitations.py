@@ -1,8 +1,9 @@
-"""FastAPI Route Handlers for Habitations Triage Queue and Risk Dossiers (L5).
+"""FastAPI Route Handlers for Habitations Triage Queue, Risk Dossiers & Candidate Sites (L5).
 
 Endpoints:
 - GET /habitations?admin=&tier=&sort=&limit=&offset=
 - GET /habitations/{id}/risk
+- GET /habitations/{id}/sites
 """
 
 from typing import Optional
@@ -11,9 +12,11 @@ from sqlalchemy.orm import Session
 
 from api.dependencies import get_db
 from api.services.habitations_service import HabitationsService
+from api.services.sites_service import SitesService
 from core.enums import Tier, SortMode
 from core.schemas.common import PaginatedResponse
 from core.schemas.habitations import HabitationListItem, HabitationRiskDossier
+from core.schemas.sites import CandidateSiteItem
 
 router = APIRouter(prefix="/habitations", tags=["Habitations & Triage"])
 
@@ -79,3 +82,53 @@ def get_habitation_risk_dossier(
 ) -> HabitationRiskDossier:
     service = HabitationsService(db)
     return service.get_habitation_risk_dossier(id)
+
+
+@router.get(
+    "/{id}/sites",
+    response_model=PaginatedResponse[CandidateSiteItem],
+    summary="Get ranked candidate relocation sites for a habitation",
+    description=(
+        "Retrieves candidate relocation sites within search radius (default 15 km) "
+        "ranked by suitability, carrying capacity, and distance. Includes full resource capacity breakdowns and binding constraints."
+    ),
+)
+def get_habitation_candidate_sites(
+    id: int = Path(
+        ...,
+        description="Habitation ID (integer primary key).",
+        examples=[1],
+    ),
+    radius_km: Optional[float] = Query(
+        None,
+        gt=0.0,
+        le=100.0,
+        description="Configurable search radius around habitation in kilometers (default 15 km).",
+    ),
+    min_suitability: Optional[int] = Query(
+        None,
+        ge=0,
+        le=100,
+        description="Filter by minimum composite suitability score (0-100).",
+    ),
+    limit: int = Query(
+        50,
+        description="Number of records per page (max 200).",
+        ge=1,
+        le=200,
+    ),
+    offset: int = Query(
+        0,
+        description="Pagination offset.",
+        ge=0,
+    ),
+    db: Session = Depends(get_db),
+) -> PaginatedResponse[CandidateSiteItem]:
+    service = SitesService(db)
+    return service.get_candidate_sites_for_habitation(
+        habitation_id=id,
+        radius_km=radius_km,
+        min_suitability=min_suitability,
+        limit=limit,
+        offset=offset,
+    )
