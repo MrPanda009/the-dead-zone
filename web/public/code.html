@@ -1,0 +1,1396 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>SETU-DRR: Resilience Through Data | Global Vulnerability Command Center</title>
+    <!-- Tailwind CSS with Typography & Forms -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <!-- Three.js + OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        void: "#030712",
+                        cosmos: "#060d1a",
+                        panel: "rgba(10, 17, 30, 0.75)",
+                        "panel-border": "rgba(255, 255, 255, 0.08)",
+                        emerald: {
+                            400: "#34d399",
+                            500: "#10b981",
+                            600: "#059669",
+                            glow: "rgba(16, 185, 129, 0.35)"
+                        },
+                        cyan: {
+                            400: "#38bdf8",
+                            500: "#06b6d4",
+                            glow: "rgba(6, 182, 212, 0.35)"
+                        },
+                        amber: {
+                            400: "#fbbf24",
+                            500: "#f59e0b"
+                        },
+                        rose: {
+                            500: "#f43f5e"
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        display: ['"Space Grotesk"', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace']
+                    }
+                }
+            }
+        };
+    </script>
+
+    <style>
+        :root {
+            color-scheme: dark;
+        }
+
+        body {
+            background-color: #030712;
+            color: #f8fafc;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+
+        .filled-icon {
+            font-variation-settings: 'FILL' 1;
+        }
+
+        /* Frosted Dark Glass Panels */
+        .glass-card {
+            background: rgba(10, 17, 30, 0.72);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .glass-card-hover {
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .glass-card-hover:hover {
+            background: rgba(15, 25, 45, 0.85);
+            border-color: rgba(16, 185, 129, 0.35);
+            transform: translateY(-2px);
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 25px rgba(16, 185, 129, 0.15);
+        }
+
+        /* Pill styling inspired by Image 1 */
+        .pill-badge {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px);
+            transition: all 0.2s ease;
+        }
+        .pill-badge:hover {
+            border-color: rgba(52, 211, 153, 0.4);
+            background: rgba(20, 30, 55, 0.9);
+        }
+
+        /* Atmospheric Glows */
+        .glow-emerald {
+            box-shadow: 0 0 25px rgba(16, 185, 129, 0.45);
+        }
+        .glow-cyan {
+            box-shadow: 0 0 25px rgba(6, 182, 212, 0.4);
+        }
+        .glow-text-emerald {
+            text-shadow: 0 0 15px rgba(52, 211, 153, 0.6);
+        }
+
+        /* Subtle radial background atmosphere */
+        .cosmic-vignette {
+            background: radial-gradient(circle at 50% 50%, rgba(6, 25, 45, 0.35) 0%, rgba(3, 7, 18, 0.85) 75%, #030712 100%);
+            pointer-events: none;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(5, 10, 20, 0.5);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(16, 185, 129, 0.5);
+        }
+
+        /* Animations */
+        @keyframes pulseSlow {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.05); }
+        }
+        .animate-pulse-slow {
+            animation: pulseSlow 3s infinite ease-in-out;
+        }
+
+        @keyframes scanBeam {
+            0% { transform: translateY(-100%); opacity: 0; }
+            50% { opacity: 0.8; }
+            100% { transform: translateY(100%); opacity: 0; }
+        }
+        .scan-line {
+            animation: scanBeam 4s infinite linear;
+        }
+
+        /* Smooth slide panels */
+        .drawer-transition {
+            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s ease;
+        }
+    </style>
+</head>
+<body class="bg-void text-slate-100 min-h-screen relative overflow-hidden">
+
+    <!-- Ambient Cosmic Vignette -->
+    <div class="fixed inset-0 cosmic-vignette z-0"></div>
+
+    <!-- 3D Globe WebGL Container -->
+    <div id="globe-container" class="fixed inset-0 z-0 cursor-grab active:cursor-grabbing"></div>
+
+    <!-- Top Navigation Bar (Header from Picture 2) -->
+    <header class="fixed top-0 left-0 right-0 z-40 h-16 border-b border-white/[0.08] bg-[#030712]/70 backdrop-blur-xl flex items-center justify-between px-6 lg:px-10">
+        <!-- Brand & Tagline -->
+        <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-2.5 cursor-pointer" onclick="returnToGlobalView()">
+                <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center glow-emerald">
+                    <span class="material-symbols-outlined text-emerald-400 text-xl font-bold">public</span>
+                </div>
+                <div class="flex flex-col">
+                    <span class="font-display text-lg font-bold tracking-tight text-white flex items-center gap-1.5">
+                        SETU-DRR
+                        <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                    </span>
+                </div>
+            </div>
+            <div class="hidden sm:block h-4 w-px bg-white/10"></div>
+            <p class="hidden sm:block text-xs font-medium text-emerald-400/90 tracking-wide font-sans">
+                Building safer futures, <span class="text-white/60">before disaster strikes.</span>
+            </p>
+        </div>
+
+        <!-- Center Mission Steps Indicator (from Picture 2) -->
+        <nav class="hidden md:flex items-center space-x-1.5 bg-black/40 p-1 rounded-full border border-white/10">
+            <button id="step-1-btn" onclick="setMissionStep(1)" class="flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.2)] transition-all">
+                <span class="w-4 h-4 rounded-full bg-emerald-500 text-black text-[10px] font-bold flex items-center justify-center">1</span>
+                <span>Global Scan</span>
+            </button>
+            <button id="step-2-btn" onclick="setMissionStep(2)" class="flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all">
+                <span class="w-4 h-4 rounded-full bg-slate-800 text-slate-300 text-[10px] flex items-center justify-center">2</span>
+                <span>Zooming to Region</span>
+            </button>
+            <button id="step-3-btn" onclick="setMissionStep(3)" class="flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all">
+                <span class="w-4 h-4 rounded-full bg-slate-800 text-slate-300 text-[10px] flex items-center justify-center">3</span>
+                <span>Loading India</span>
+            </button>
+            <button id="step-4-btn" onclick="setMissionStep(4)" class="flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all">
+                <span class="w-4 h-4 rounded-full bg-slate-800 text-slate-300 text-[10px] flex items-center justify-center">4</span>
+                <span>Preparing Data</span>
+            </button>
+        </nav>
+
+        <!-- Right System Controls -->
+        <div class="flex items-center space-x-3">
+            <button id="radar-toggle-btn" onclick="toggleRadarSweep()" title="Toggle Atmospheric Radar Sweep" class="pill-badge p-2 rounded-lg text-slate-300 hover:text-emerald-400 transition-colors flex items-center gap-1 text-xs font-mono">
+                <span class="material-symbols-outlined text-lg">radar</span>
+                <span class="hidden xl:inline text-[11px]">RADAR ON</span>
+            </button>
+            <button id="rotation-toggle-btn" onclick="toggleGlobeRotation()" title="Toggle Earth Auto-Rotation" class="pill-badge p-2 rounded-lg text-slate-300 hover:text-emerald-400 transition-colors flex items-center gap-1 text-xs font-mono">
+                <span class="material-symbols-outlined text-lg">sync</span>
+            </button>
+            <button onclick="toggleHazardDrawer()" class="pill-badge px-3 py-1.5 rounded-lg text-xs font-semibold text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/10 flex items-center space-x-1.5 transition-all">
+                <span class="material-symbols-outlined text-base">dashboard</span>
+                <span>Command Center</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Left Vertical Rail Navigation -->
+    <aside class="fixed left-0 top-16 bottom-0 w-16 border-r border-white/[0.08] bg-[#030712]/60 backdrop-blur-xl z-30 hidden sm:flex flex-col items-center py-5 space-y-4">
+        <button onclick="returnToGlobalView()" title="Global Overview" class="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center justify-center glow-emerald transition-all">
+            <span class="material-symbols-outlined text-xl">travel_explore</span>
+        </button>
+        <button onclick="toggleHazardDrawer()" title="Hazard Map" class="w-10 h-10 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 flex items-center justify-center transition-all">
+            <span class="material-symbols-outlined text-xl">map</span>
+        </button>
+        <button onclick="focusIndiaMap()" title="Habitations & Risk" class="w-10 h-10 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 flex items-center justify-center transition-all">
+            <span class="material-symbols-outlined text-xl">home_pin</span>
+        </button>
+        <button onclick="openLandslideModal()" title="Relocation Sites" class="w-10 h-10 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 flex items-center justify-center transition-all">
+            <span class="material-symbols-outlined text-xl">moving</span>
+        </button>
+        <button onclick="toggleTelemetryPanel()" title="Sensor Alerts" class="w-10 h-10 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 flex items-center justify-center transition-all relative">
+            <span class="material-symbols-outlined text-xl">notifications_active</span>
+            <span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+        </button>
+        <div class="flex-grow"></div>
+        <div class="w-8 h-8 rounded-full bg-emerald-950 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center justify-center">
+            DO
+        </div>
+    </aside>
+
+    <!-- Top Left Floating Pill (Inspired by Picture 1: Elsa Nills card) -->
+    <div class="fixed top-20 left-4 sm:left-20 z-20 pointer-events-auto">
+        <div class="pill-badge px-3.5 py-1.5 rounded-full flex items-center space-x-2.5 shadow-lg border border-white/10">
+            <span class="text-xs text-emerald-400 font-bold tracking-widest font-mono">✦ ::</span>
+            <span class="text-xs font-medium text-slate-200">Sentinel-1 Telemetry Stream</span>
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+        </div>
+    </div>
+
+    <!-- Top Right Floating Anomaly Card (Inspired by Picture 1 & Picture 2) -->
+    <div id="telemetry-anomaly-card" class="fixed top-20 right-6 z-20 max-w-xs w-full pointer-events-auto transition-all duration-300">
+        <div class="glass-card glass-card-hover p-4 rounded-2xl border border-rose-500/20">
+            <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center space-x-2">
+                    <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+                    <span class="text-[11px] font-mono uppercase tracking-wider text-rose-400 font-semibold flex items-center gap-1">
+                        <span class="material-symbols-outlined text-sm">warning</span> Seismic Shift Alert
+                    </span>
+                </div>
+                <span class="text-[10px] font-mono text-slate-400">Live</span>
+            </div>
+            <div class="text-sm font-semibold text-white tracking-tight">Sector 7G — Himalayan Arc</div>
+            <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+                Slip rate anomaly: <span class="text-amber-300 font-mono">4.2mm/yr</span>. Soil saturation index critical in Uttarakhand foothills.
+            </p>
+            <div class="mt-3 flex items-center justify-between pt-2 border-t border-white/[0.06]">
+                <button onclick="focusHotspot('himalayas')" class="text-[11px] text-emerald-400 hover:text-emerald-300 font-mono flex items-center gap-1 transition-colors">
+                    Locate Target <span class="material-symbols-outlined text-xs">arrow_forward</span>
+                </button>
+                <span class="text-[10px] font-mono text-slate-500">Sensor INSAT-3DR</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Left Floating Telemetry Card (Integrity & Points of Interest - Picture 1 style) -->
+    <div class="fixed bottom-24 left-4 sm:left-20 z-20 pointer-events-auto hidden md:block max-w-xs w-full">
+        <div class="glass-card p-4 rounded-2xl">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-[11px] font-mono uppercase tracking-wider text-emerald-400/90 font-medium">:: ACTIVE HAZARDS</span>
+                <span class="text-[10px] font-mono text-slate-400">5 Monitored</span>
+            </div>
+            
+            <!-- Category Pills (From Picture 1 Points of Interest) -->
+            <div class="flex flex-wrap gap-1.5 mt-2">
+                <button onclick="selectHazardFilter('landslide')" class="pill-badge px-2.5 py-1 rounded-lg text-[11px] font-medium text-emerald-300 border-emerald-500/30 flex items-center gap-1 hover:bg-emerald-500/20 transition-all">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                    Landslide
+                </button>
+                <button onclick="selectHazardFilter('flood')" class="pill-badge px-2.5 py-1 rounded-lg text-[11px] font-medium text-cyan-300 border-cyan-500/30 flex items-center gap-1 hover:bg-cyan-500/20 transition-all">
+                    <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+                    Flood
+                </button>
+                <button onclick="selectHazardFilter('cloudburst')" class="pill-badge px-2.5 py-1 rounded-lg text-[11px] font-medium text-amber-300 border-amber-500/30 flex items-center gap-1 hover:bg-amber-500/20 transition-all">
+                    <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                    Cloudburst
+                </button>
+                <button onclick="selectHazardFilter('earthquake')" class="pill-badge px-2.5 py-1 rounded-lg text-[11px] font-medium text-rose-300 border-rose-500/30 flex items-center gap-1 hover:bg-rose-500/20 transition-all">
+                    <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+                    Seismic
+                </button>
+            </div>
+
+            <div class="mt-3 pt-2.5 border-t border-white/[0.06] flex items-center justify-between text-[11px]">
+                <span class="text-slate-400 font-mono">Data Integrity</span>
+                <span class="text-emerald-400 font-mono font-semibold">99.8% Nominal</span>
+            </div>
+            <div class="w-full bg-slate-800/80 h-1.5 mt-1.5 rounded-full overflow-hidden">
+                <div class="bg-gradient-to-r from-emerald-500 to-cyan-400 w-[99.8%] h-full rounded-full"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Right Priority Region Card (Inspired by Picture 1: Japan Trip Card) -->
+    <div class="fixed bottom-24 right-6 z-20 pointer-events-auto hidden lg:block max-w-sm w-full">
+        <div class="glass-card glass-card-hover p-4 rounded-2xl border border-white/10 flex items-center space-x-3.5">
+            <div class="flex-1">
+                <div class="flex items-center space-x-1.5 text-[10px] font-mono text-emerald-400 font-medium tracking-wider uppercase mb-1">
+                    <span>:: REGION FOCUS</span>
+                    <span class="text-slate-500">•</span>
+                    <span>HIGH PRIORITY</span>
+                </div>
+                <h4 class="font-display font-bold text-white text-base leading-snug">
+                    Himalayan Resilience Corridor
+                </h4>
+                <p class="text-[11px] text-slate-400 mt-0.5 line-clamp-2 leading-relaxed">
+                    2,847 historical landslide events indexed. Predictive radar active.
+                </p>
+                <div class="mt-2.5 flex items-center gap-2">
+                    <button onclick="openLandslideModal()" class="text-xs font-semibold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors">
+                        Inspect Guidance <span class="material-symbols-outlined text-sm">chevron_right</span>
+                    </button>
+                </div>
+            </div>
+            <div class="w-24 h-20 rounded-xl overflow-hidden relative border border-white/15 shrink-0 bg-slate-900">
+                <img src="https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=300&q=80" alt="Mountain terrain" class="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                <div class="absolute bottom-1 right-1.5 text-[9px] font-mono text-emerald-400 font-bold">2.8k EV</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CENTER HERO CONTENT (Clean, high-contrast, NO bulky white background rectangles!) -->
+    <main id="hero-main" class="relative z-10 w-full h-screen flex flex-col items-center justify-end pb-8 sm:pb-12 pointer-events-none transition-opacity duration-500">
+        
+        <div class="max-w-3xl w-full px-6 flex flex-col items-center text-center pointer-events-auto">
+            
+            <!-- System Status Chip (Pill badge without white box) -->
+            <div class="inline-flex items-center space-x-2.5 mb-4 pill-badge px-4 py-1.5 rounded-full shadow-lg border border-white/10">
+                <span class="relative flex h-2 w-2">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span class="font-mono text-xs font-semibold tracking-wider text-emerald-300 uppercase">
+                    System Online — Global Satellite Tracking Active
+                </span>
+            </div>
+
+            <!-- Main Headline: Crisp, modern, cinematic typography with subtle drop-shadow (NO WHITE BOX!) -->
+            <h1 class="font-display text-3xl sm:text-5xl lg:text-6xl font-extrabold text-white tracking-tight mb-3 drop-shadow-[0_4px_24px_rgba(0,0,0,0.9)]">
+                SETU-DRR: Resilience Through Data
+            </h1>
+
+            <!-- Subtitle: Elegant steel slate text with high legibility (NO WHITE BOX!) -->
+            <p class="font-sans text-sm sm:text-base lg:text-lg text-slate-300/90 max-w-xl leading-relaxed mb-6 drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)]">
+                Mapping global vulnerability to build a safer future. Advanced predictive models integrating real-time climate, topographical, and socio-economic data to preempt disaster impacts.
+            </p>
+
+            <!-- Action Buttons Row (Inspired by Picture 1 & Picture 2) -->
+            <div class="flex flex-wrap items-center justify-center gap-3.5 mb-6">
+                <button id="initiateScanBtn" onclick="triggerGlobalScanSequence()" class="group relative px-7 py-3.5 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-slate-950 font-display font-bold text-sm tracking-wide shadow-[0_0_30px_rgba(16,185,129,0.4)] hover:shadow-[0_0_40px_rgba(16,185,129,0.6)] hover:scale-[1.03] active:scale-[0.98] transition-all duration-300 flex items-center space-x-2">
+                    <span class="material-symbols-outlined text-xl">satellite_alt</span>
+                    <span id="scan-btn-text">Initiate Global Scan</span>
+                    <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform duration-300 text-lg font-bold">arrow_forward</span>
+                </button>
+
+                <!-- Secondary pill button (like Preview Trip in Picture 1) -->
+                <button onclick="toggleHazardDrawer()" class="pill-badge px-6 py-3.5 rounded-full text-slate-200 hover:text-white font-display font-semibold text-sm tracking-wide hover:border-emerald-400/40 flex items-center space-x-2 hover:bg-slate-800/80 transition-all">
+                    <span class="material-symbols-outlined text-lg text-emerald-400">preview</span>
+                    <span>Explore India Hazards</span>
+                </button>
+            </div>
+
+            <!-- Scanning Progress Bar (from Picture 2 top scan view) -->
+            <div id="scanning-progress-container" class="w-full max-w-md glass-card p-3 rounded-xl border border-white/10 mb-4 transition-all">
+                <div class="flex items-center justify-between text-xs mb-1.5 font-mono">
+                    <span class="text-slate-400 flex items-center gap-1.5">
+                        <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                        Scanning the planet for vulnerabilities...
+                    </span>
+                    <span id="scan-percentage-text" class="text-emerald-400 font-bold">62%</span>
+                </div>
+                <div class="w-full bg-black/60 h-2 rounded-full overflow-hidden p-0.5 border border-white/5">
+                    <div id="scan-progress-bar" class="bg-gradient-to-r from-emerald-500 via-cyan-400 to-emerald-400 h-full rounded-full transition-all duration-300 shadow-[0_0_12px_rgba(16,185,129,0.7)]" style="width: 62%;"></div>
+                </div>
+            </div>
+
+            <!-- Contextual Data Chips (High contrast dark pill chips, NO white boxes) -->
+            <div class="flex flex-wrap items-center justify-center gap-2 text-xs font-mono text-slate-400">
+                <div class="pill-badge px-3 py-1 rounded-full border border-white/10 flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                    <span>Active Sensors: <strong class="text-slate-200">14,029</strong></span>
+                </div>
+                <div class="pill-badge px-3 py-1 rounded-full border border-white/10 flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+                    <span>Update Freq: <strong class="text-slate-200">Real-time</strong></span>
+                </div>
+                <div class="pill-badge px-3 py-1 rounded-full border border-white/10 flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+                    <span>Risk Threshold: <strong class="text-rose-300 font-semibold">High</strong></span>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Hotspot Tooltip Popup (Dynamic Three.js Hotspot Anchor) -->
+    <div id="hotspot-tooltip" class="fixed z-30 pointer-events-auto opacity-0 scale-95 transition-all duration-200 hidden">
+        <div class="glass-card p-3 rounded-xl border border-emerald-500/40 shadow-2xl min-w-[200px]">
+            <div class="flex items-center justify-between text-[11px] font-mono text-emerald-400 mb-1">
+                <span id="tooltip-type">HIGH HAZARD</span>
+                <span id="tooltip-coords" class="text-slate-400 font-mono">30.3°N, 78.0°E</span>
+            </div>
+            <div id="tooltip-title" class="font-display font-bold text-white text-sm">Uttarakhand Landslide Belt</div>
+            <div id="tooltip-desc" class="text-xs text-slate-300 mt-1">High slope failure susceptibility triggered by monsoon rains.</div>
+            <button onclick="openLandslideModal()" class="mt-2.5 w-full py-1 text-[11px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-lg hover:bg-emerald-500/30 transition-all flex items-center justify-center gap-1">
+                <span>View Action Plan</span>
+                <span class="material-symbols-outlined text-xs">arrow_forward</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- COMMAND CENTER & HAZARDS SLIDE-OVER DRAWER (Panels 2, 3, 4 from Picture 2) -->
+    <div id="hazard-drawer" class="fixed inset-y-0 right-0 max-w-2xl w-full z-50 bg-[#060b13]/95 backdrop-blur-2xl border-l border-white/10 shadow-[0_0_80px_rgba(0,0,0,0.9)] transform translate-x-full drawer-transition flex flex-col">
+        
+        <!-- Drawer Header -->
+        <div class="p-6 border-b border-white/10 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                    <span class="material-symbols-outlined text-xl">shield</span>
+                </div>
+                <div>
+                    <h3 class="font-display text-lg font-bold text-white tracking-tight">Regional Hazard Intelligence</h3>
+                    <p class="text-xs text-slate-400">Select a location or disaster type to assess risk profiles.</p>
+                </div>
+            </div>
+            <button onclick="toggleHazardDrawer()" class="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-colors">
+                <span class="material-symbols-outlined text-2xl">close</span>
+            </button>
+        </div>
+
+        <!-- Drawer Body -->
+        <div class="flex-1 overflow-y-auto p-6 space-y-6">
+
+            <!-- Search Bar (Panel 2 in Picture 2) -->
+            <div class="relative">
+                <span class="material-symbols-outlined absolute left-3.5 top-3 text-slate-400 text-lg">search</span>
+                <input type="text" placeholder="Search state, district or village in India..." class="w-full bg-slate-900/90 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 transition-colors">
+            </div>
+
+            <!-- Welcome Greeting Card -->
+            <div class="glass-card p-4 rounded-2xl border border-white/10 bg-gradient-to-r from-emerald-950/30 to-slate-900/50">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <div class="text-sm font-display font-bold text-white flex items-center gap-1.5">
+                            Welcome, Officer <span class="text-base">👋</span>
+                        </div>
+                        <p class="text-xs text-slate-300 mt-1 leading-relaxed">
+                            Select a location in India to assess multi-hazard susceptibility and relocation insights.
+                        </p>
+                    </div>
+                    <span class="pill-badge px-2.5 py-1 rounded-lg text-[10px] font-mono text-emerald-300">HQ Online</span>
+                </div>
+            </div>
+
+            <!-- Explore Hazards Grid (Panel 2 from Picture 2) -->
+            <div>
+                <div class="flex items-center justify-between mb-3">
+                    <h4 class="font-display font-bold text-white text-sm tracking-tight">Explore Prominent Hazards</h4>
+                    <span class="text-[11px] font-mono text-slate-400">India Vulnerability Map</span>
+                </div>
+
+                <div class="space-y-2.5">
+                    <!-- Landslide -->
+                    <div onclick="openLandslideModal()" class="glass-card glass-card-hover p-3.5 rounded-xl border border-emerald-500/30 cursor-pointer flex items-center justify-between group">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center font-bold">
+                                <span class="material-symbols-outlined">landslide</span>
+                            </div>
+                            <div>
+                                <div class="text-sm font-semibold text-white group-hover:text-emerald-300 transition-colors">Landslide</div>
+                                <div class="text-xs text-slate-400">Mountainous & hilly regions (Himalayas, Western Ghats)</div>
+                            </div>
+                        </div>
+                        <span class="material-symbols-outlined text-slate-400 group-hover:text-emerald-400 group-hover:translate-x-1 transition-all">chevron_right</span>
+                    </div>
+
+                    <!-- Flood -->
+                    <div onclick="showHazardToast('Flood risk analysis loaded for Gangetic plain & Brahmaputra valley.')" class="glass-card glass-card-hover p-3.5 rounded-xl border border-white/5 cursor-pointer flex items-center justify-between group">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-lg bg-cyan-500/15 text-cyan-400 flex items-center justify-center font-bold">
+                                <span class="material-symbols-outlined">flood</span>
+                            </div>
+                            <div>
+                                <div class="text-sm font-semibold text-white group-hover:text-cyan-300 transition-colors">Flood</div>
+                                <div class="text-xs text-slate-400">River basins & lowlands (Assam, Bihar, Kerala)</div>
+                            </div>
+                        </div>
+                        <span class="material-symbols-outlined text-slate-400 group-hover:text-cyan-400 group-hover:translate-x-1 transition-all">chevron_right</span>
+                    </div>
+
+                    <!-- Cloudburst -->
+                    <div onclick="showHazardToast('Cloudburst Doppler radar stream active.')" class="glass-card glass-card-hover p-3.5 rounded-xl border border-white/5 cursor-pointer flex items-center justify-between group">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-lg bg-amber-500/15 text-amber-400 flex items-center justify-center font-bold">
+                                <span class="material-symbols-outlined">thunderstorm</span>
+                            </div>
+                            <div>
+                                <div class="text-sm font-semibold text-white group-hover:text-amber-300 transition-colors">Cloudburst</div>
+                                <div class="text-xs text-slate-400">High rainfall intensity areas & sudden flash floods</div>
+                            </div>
+                        </div>
+                        <span class="material-symbols-outlined text-slate-400 group-hover:text-amber-400 group-hover:translate-x-1 transition-all">chevron_right</span>
+                    </div>
+
+                    <!-- Coastal Erosion -->
+                    <div onclick="showHazardToast('Coastal tide gauge network synchronized.')" class="glass-card glass-card-hover p-3.5 rounded-xl border border-white/5 cursor-pointer flex items-center justify-between group">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-lg bg-teal-500/15 text-teal-400 flex items-center justify-center font-bold">
+                                <span class="material-symbols-outlined">tsunami</span>
+                            </div>
+                            <div>
+                                <div class="text-sm font-semibold text-white group-hover:text-teal-300 transition-colors">Coastal Erosion</div>
+                                <div class="text-xs text-slate-400">Coastal & island regions (Odisha, Sundarbans)</div>
+                            </div>
+                        </div>
+                        <span class="material-symbols-outlined text-slate-400 group-hover:text-teal-400 group-hover:translate-x-1 transition-all">chevron_right</span>
+                    </div>
+
+                    <!-- Earthquake -->
+                    <div onclick="showHazardToast('Seismic Zone IV & V accelerometers online.')" class="glass-card glass-card-hover p-3.5 rounded-xl border border-white/5 cursor-pointer flex items-center justify-between group">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-lg bg-rose-500/15 text-rose-400 flex items-center justify-center font-bold">
+                                <span class="material-symbols-outlined">earthquake</span>
+                            </div>
+                            <div>
+                                <div class="text-sm font-semibold text-white group-hover:text-rose-300 transition-colors">Earthquake</div>
+                                <div class="text-xs text-slate-400">Seismic Zones IV & V (Northeast, Kutch, Himalayas)</div>
+                            </div>
+                        </div>
+                        <span class="material-symbols-outlined text-slate-400 group-hover:text-rose-400 group-hover:translate-x-1 transition-all">chevron_right</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- "Did you know?" Banner (Panel 2 from Picture 2) -->
+            <div class="glass-card p-4 rounded-xl border border-white/10 bg-slate-900/40">
+                <div class="flex items-start space-x-3">
+                    <span class="material-symbols-outlined text-amber-400 text-lg">lightbulb</span>
+                    <div>
+                        <div class="text-xs font-semibold text-white">Did you know?</div>
+                        <p class="text-xs text-slate-300 mt-0.5 leading-relaxed">
+                            Over 65% of India's land area is prone to multiple hazards. Early topographical hazard maps reduce evacuation casualties by up to 78%.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Drawer Footer -->
+        <div class="p-4 border-t border-white/10 bg-slate-950/60 flex items-center justify-between">
+            <button onclick="focusIndiaMap()" class="px-4 py-2 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-semibold hover:bg-emerald-500/30 transition-all flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-sm">my_location</span>
+                <span>Zoom to India Subcontinent</span>
+            </button>
+            <button onclick="toggleHazardDrawer()" class="text-xs text-slate-400 hover:text-slate-200">
+                Close
+            </button>
+        </div>
+    </div>
+
+    <!-- LANDSLIDE DEEP DIVE MODAL (Panels 3 & 4 from Picture 2) -->
+    <div id="landslide-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-xl flex items-center justify-center p-4 sm:p-6 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="max-w-4xl w-full max-h-[90vh] glass-card rounded-3xl border border-white/15 overflow-hidden flex flex-col shadow-2xl scale-95 transition-transform duration-300" id="modal-container">
+            
+            <!-- Modal Header -->
+            <div class="p-6 border-b border-white/10 flex items-center justify-between bg-slate-950/50">
+                <div class="flex items-center space-x-3">
+                    <button onclick="closeLandslideModal()" class="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-1 text-xs font-mono">
+                        <span class="material-symbols-outlined text-base">arrow_back</span>
+                        <span>Back to Map</span>
+                    </button>
+                    <span class="text-white/20">•</span>
+                    <span class="text-xs font-mono uppercase tracking-wider text-emerald-400 font-semibold">
+                        Disaster Profile #01
+                    </span>
+                </div>
+                <button onclick="closeLandslideModal()" class="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-colors">
+                    <span class="material-symbols-outlined text-xl">close</span>
+                </button>
+            </div>
+
+            <!-- Modal Content (Scrollable) -->
+            <div class="flex-1 overflow-y-auto p-6 sm:p-8 space-y-8">
+                
+                <!-- Hero Section (Panel 3 from Picture 2) -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                    <div class="lg:col-span-7 space-y-4">
+                        <div class="text-xs font-mono uppercase tracking-widest text-emerald-400 font-semibold">You Selected</div>
+                        <h2 class="font-display text-3xl sm:text-4xl font-extrabold text-white flex items-center gap-2 tracking-tight">
+                            Landslide 🏔️
+                        </h2>
+                        <p class="text-sm text-slate-300 leading-relaxed">
+                            Landslides are sudden movements of rock, soil or debris down a slope, often triggered by heavy rainfall, earthquakes or rapid human infrastructure development.
+                        </p>
+                        
+                        <div class="space-y-1.5 pt-1">
+                            <div class="text-xs font-semibold text-slate-400">Common in:</div>
+                            <div class="flex flex-wrap gap-2 text-xs">
+                                <span class="pill-badge px-2.5 py-1 rounded-md text-slate-300">• Hilly & mountainous regions</span>
+                                <span class="pill-badge px-2.5 py-1 rounded-md text-slate-300">• Steep deforested slopes</span>
+                                <span class="pill-badge px-2.5 py-1 rounded-md text-slate-300">• Areas with loose saturated soil</span>
+                            </div>
+                        </div>
+
+                        <!-- Statistics Row (from Picture 2) -->
+                        <div class="grid grid-cols-3 gap-3 pt-3">
+                            <div class="glass-card p-3 rounded-xl border border-rose-500/20">
+                                <div class="text-rose-400 font-display font-extrabold text-lg sm:text-xl">2,847</div>
+                                <div class="text-[10px] sm:text-xs text-slate-400 mt-0.5">Landslide Events (2010–2024)</div>
+                            </div>
+                            <div class="glass-card p-3 rounded-xl border border-amber-500/20">
+                                <div class="text-amber-400 font-display font-extrabold text-lg sm:text-xl">1.2M+</div>
+                                <div class="text-[10px] sm:text-xs text-slate-400 mt-0.5">People Affected</div>
+                            </div>
+                            <div class="glass-card p-3 rounded-xl border border-emerald-500/20">
+                                <div class="text-emerald-400 font-display font-extrabold text-lg sm:text-xl">₹8,450 Cr</div>
+                                <div class="text-[10px] sm:text-xs text-slate-400 mt-0.5">Estimated Losses</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dramatic Rescue Image (Panel 3 visual) -->
+                    <div class="lg:col-span-5 rounded-2xl overflow-hidden border border-white/15 relative h-64 lg:h-72 bg-slate-900 shadow-2xl">
+                        <img src="https://images.unsplash.com/photo-1541888946425-d0fbb186f5f7?auto=format&fit=crop&w=800&q=80" alt="Rescue Operations" class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"></div>
+                        <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between text-xs">
+                            <span class="pill-badge px-2.5 py-1 rounded-md text-[10px] text-emerald-300 font-mono">NDRF Rapid Deployment</span>
+                            <span class="text-[10px] text-slate-300 font-mono">Status: Alert Level 3</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Guidance & Preparedness Section (Panel 4 from Picture 2) -->
+                <div class="pt-6 border-t border-white/10">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-2">
+                        <div>
+                            <div class="text-xs font-mono uppercase tracking-wider text-emerald-400 font-semibold">From Risk to Readiness</div>
+                            <h3 class="font-display text-xl sm:text-2xl font-bold text-white tracking-tight">
+                                Safety Measures & Readiness Guidance
+                            </h3>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="pill-badge px-3 py-1 rounded-full text-xs text-emerald-300 font-semibold border-emerald-500/30">
+                                01 Before a Landslide: Prevention is Key
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- 6 Preparedness Action Cards Grid (Panel 4 cards) -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        
+                        <div class="glass-card glass-card-hover p-4 rounded-xl border border-white/10">
+                            <div class="w-8 h-8 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center mb-2.5">
+                                <span class="material-symbols-outlined text-lg">nature_people</span>
+                            </div>
+                            <div class="font-semibold text-white text-sm">Know the Risk</div>
+                            <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+                                Identify landslide-prone areas and historical slip paths in your district.
+                            </p>
+                        </div>
+
+                        <div class="glass-card glass-card-hover p-4 rounded-xl border border-white/10">
+                            <div class="w-8 h-8 rounded-lg bg-cyan-500/15 text-cyan-400 flex items-center justify-center mb-2.5">
+                                <span class="material-symbols-outlined text-lg">rainy</span>
+                            </div>
+                            <div class="font-semibold text-white text-sm">Monitor Weather</div>
+                            <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+                                Stay updated with heavy rainfall alerts from IMD and district disaster telemetry.
+                            </p>
+                        </div>
+
+                        <div class="glass-card glass-card-hover p-4 rounded-xl border border-white/10">
+                            <div class="w-8 h-8 rounded-lg bg-amber-500/15 text-amber-400 flex items-center justify-center mb-2.5">
+                                <span class="material-symbols-outlined text-lg">foundation</span>
+                            </div>
+                            <div class="font-semibold text-white text-sm">Secure Surroundings</div>
+                            <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+                                Avoid construction on steep slopes. Maintain storm drainage channels free of debris.
+                            </p>
+                        </div>
+
+                        <div class="glass-card glass-card-hover p-4 rounded-xl border border-white/10">
+                            <div class="w-8 h-8 rounded-lg bg-rose-500/15 text-rose-400 flex items-center justify-center mb-2.5">
+                                <span class="material-symbols-outlined text-lg">warning</span>
+                            </div>
+                            <div class="font-semibold text-white text-sm">Check Warning Signs</div>
+                            <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+                                Watch for cracks in ground or retaining walls, tilted trees, or unusual rumblings.
+                            </p>
+                        </div>
+
+                        <div class="glass-card glass-card-hover p-4 rounded-xl border border-white/10">
+                            <div class="w-8 h-8 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center mb-2.5">
+                                <span class="material-symbols-outlined text-lg">medical_services</span>
+                            </div>
+                            <div class="font-semibold text-white text-sm">Prepare Emergency Kit</div>
+                            <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+                                Keep essentials, legal documents, dry rations, torch, and first-aid kits ready to go.
+                            </p>
+                        </div>
+
+                        <div class="glass-card glass-card-hover p-4 rounded-xl border border-white/10">
+                            <div class="w-8 h-8 rounded-lg bg-purple-500/15 text-purple-400 flex items-center justify-center mb-2.5">
+                                <span class="material-symbols-outlined text-lg">route</span>
+                            </div>
+                            <div class="font-semibold text-white text-sm">Plan Evacuation Routes</div>
+                            <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+                                Memorize designated safe assembly zones and multiple evacuation pathways.
+                            </p>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-5 border-t border-white/10 bg-slate-950/80 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div class="text-xs text-slate-400 flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-emerald-400 text-sm">verified_user</span>
+                    <span>Remember: Early awareness and preparedness can <strong class="text-emerald-300">save lives</strong>.</span>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button onclick="closeLandslideModal()" class="px-4 py-2 rounded-xl text-xs text-slate-300 hover:text-white transition-colors">
+                        Dismiss
+                    </button>
+                    <button onclick="showHazardToast('Guidance protocol PDF dispatched to DM Office.')" class="px-5 py-2.5 rounded-xl bg-emerald-500 text-slate-950 font-semibold text-xs hover:bg-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all flex items-center gap-1.5">
+                        <span>Learn More Guidelines</span>
+                        <span class="material-symbols-outlined text-sm font-bold">arrow_forward</span>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Toast Notification Banner -->
+    <div id="toast-banner" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 glass-card px-5 py-2.5 rounded-full border border-emerald-500/40 text-xs font-medium text-emerald-300 shadow-2xl flex items-center space-x-2.5 opacity-0 pointer-events-none transition-all duration-300">
+        <span class="material-symbols-outlined text-emerald-400 text-sm">info</span>
+        <span id="toast-message">Telemetry Stream Active</span>
+    </div>
+
+    <!-- THREE.JS GLOBE & SCENE ENGINE SCRIPT -->
+    <script>
+        let scene, camera, renderer, earthGroup, earthMesh, cloudMesh, atmosphereMesh, starField;
+        let radarMesh, hotspotGroup;
+        let controls;
+        let isAutoRotating = true;
+        let isRadarActive = true;
+        let currentStep = 1;
+        let scanProgress = 62;
+        let scanInterval = null;
+
+        // Hotspot coordinates definition
+        const hotspotsData = [
+            { name: "Uttarakhand Landslide Belt", lat: 30.3, lon: 78.0, type: "LANDSLIDE CRITICAL", color: 0x10b981, desc: "High slope failure risk in Himalayan arc. 2,847 indexed slip zones.", targetStep: 3 },
+            { name: "Gangetic Flood Plain", lat: 25.6, lon: 85.1, type: "RIVERINE FLOOD", color: 0x06b6d4, desc: "Monsoon river overflow and sediment inundation zone.", targetStep: 3 },
+            { name: "Gujarat Kutch Fault", lat: 23.4, lon: 70.2, type: "SEISMIC ZONE V", color: 0xf59e0b, desc: "Intraplate tectonic fault with high liquefaction hazard.", targetStep: 3 },
+            { name: "Japan Subduction Trench", lat: 35.6, lon: 139.7, type: "SEISMIC & TSUNAMI", color: 0xf43f5e, desc: "Triple tectonic junction with high earthquake recurrence.", targetStep: 1 },
+            { name: "San Andreas Fault", lat: 37.7, lon: -122.4, type: "TRANSFORM FAULT", color: 0xf59e0b, desc: "Major strike-slip zone under real-time strain monitoring.", targetStep: 1 },
+            { name: "Chile Trench", lat: -33.4, lon: -70.6, type: "SUBDUCTION ZONE", color: 0xf43f5e, desc: "Nazca-South American plate convergence margin.", targetStep: 1 }
+        ];
+
+        // Procedural Earth Map Generator (Guarantees Earth is never blank/black even if CDN fails!)
+        function generateProceduralEarthCanvas() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 2048;
+            canvas.height = 1024;
+            const ctx = canvas.getContext('2d');
+
+            // Deep ocean base
+            const oceanGrad = ctx.createLinearGradient(0, 0, 0, 1024);
+            oceanGrad.addColorStop(0, '#071526');
+            oceanGrad.addColorStop(0.5, '#0b2038');
+            oceanGrad.addColorStop(1, '#05101d');
+            ctx.fillStyle = oceanGrad;
+            ctx.fillRect(0, 0, 2048, 1024);
+
+            // Latitude / Longitude Cyber Cartography Grid
+            ctx.strokeStyle = 'rgba(16, 185, 129, 0.08)';
+            ctx.lineWidth = 1;
+            for (let lat = 0; lat < 1024; lat += 64) {
+                ctx.beginPath();
+                ctx.moveTo(0, lat);
+                ctx.lineTo(2048, lat);
+                ctx.stroke();
+            }
+            for (let lon = 0; lon < 2048; lon += 64) {
+                ctx.beginPath();
+                ctx.moveTo(lon, 0);
+                ctx.lineTo(lon, 1024);
+                ctx.stroke();
+            }
+
+            // Stylized landmass blobs
+            ctx.fillStyle = '#162e24'; // dark terrain
+            ctx.strokeStyle = '#235e46'; // glowing shoreline
+            ctx.lineWidth = 2;
+
+            function drawLand(x, y, rx, ry, angle = 0) {
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(angle);
+                ctx.beginPath();
+                ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // Eurasia & India
+            drawLand(1450, 360, 280, 140, -0.1);
+            drawLand(1380, 480, 80, 90, 0.3); // India peninsula
+            drawLand(1700, 380, 70, 120, 0.4); // East Asia
+            // Africa
+            drawLand(1080, 520, 130, 210, 0.1);
+            // Americas
+            drawLand(450, 340, 180, 150, -0.2); // North America
+            drawLand(600, 680, 120, 190, 0.2); // South America
+            // Australia
+            drawLand(1750, 720, 110, 80, 0);
+
+            // Golden Night City Lights (Warm glowing clusters)
+            ctx.fillStyle = 'rgba(255, 215, 120, 0.85)';
+            for (let i = 0; i < 400; i++) {
+                const px = 1200 + (Math.random() * 400);
+                const py = 350 + (Math.random() * 220);
+                const r = Math.random() * 1.5 + 0.5;
+                ctx.beginPath();
+                ctx.arc(px, py, r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            return canvas;
+        }
+
+        // Procedural Clouds Generator
+        function generateProceduralCloudCanvas() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024;
+            canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, 1024, 512);
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+            for (let i = 0; i < 120; i++) {
+                const cx = Math.random() * 1024;
+                const cy = Math.random() * 512;
+                const r = Math.random() * 50 + 20;
+                ctx.beginPath();
+                ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            return canvas;
+        }
+
+        function initThreeJS() {
+            const container = document.getElementById('globe-container');
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+
+            // Scene & Camera
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 2000);
+            camera.position.set(0, 0, 5.2);
+
+            // WebGL Renderer
+            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.setSize(width, height);
+            if (renderer.toneMapping !== undefined) {
+                renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                renderer.toneMappingExposure = 1.25;
+            }
+            container.appendChild(renderer.domElement);
+
+            // OrbitControls for smooth interactive dragging/spinning
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.rotateSpeed = 0.6;
+            controls.minDistance = 3.0;
+            controls.maxDistance = 8.5;
+            controls.enablePan = false;
+
+            // Lights: Sun directional + subtle electric atmospheric scatter
+            const sunLight = new THREE.DirectionalLight(0xffffff, 1.6);
+            sunLight.position.set(5, 3.5, 4);
+            scene.add(sunLight);
+
+            const rimScatterLight = new THREE.DirectionalLight(0x00f0ff, 0.8);
+            rimScatterLight.position.set(-6, -2, -5);
+            scene.add(rimScatterLight);
+
+            const ambientLight = new THREE.AmbientLight(0x0a1626, 0.9);
+            scene.add(ambientLight);
+
+            // Deep Space Starfield (Thousands of shimmering particle stars)
+            const starGeo = new THREE.BufferGeometry();
+            const starCount = 2800;
+            const starPositions = new Float32Array(starCount * 3);
+            const starColors = new Float32Array(starCount * 3);
+
+            for (let i = 0; i < starCount * 3; i += 3) {
+                const r = 250 + Math.random() * 500;
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos(2 * Math.random() - 1);
+
+                starPositions[i] = r * Math.sin(phi) * Math.cos(theta);
+                starPositions[i + 1] = r * Math.sin(phi) * Math.sin(theta);
+                starPositions[i + 2] = r * Math.cos(phi);
+
+                // Subtle blue/white star tints
+                const tint = Math.random();
+                starColors[i] = tint > 0.8 ? 0.7 : 0.95;
+                starColors[i + 1] = tint > 0.8 ? 0.9 : 0.95;
+                starColors[i + 2] = 1.0;
+            }
+
+            starGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+            starGeo.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
+
+            const starMat = new THREE.PointsMaterial({
+                size: 1.6,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.85
+            });
+            starField = new THREE.Points(starGeo, starMat);
+            scene.add(starField);
+
+            // Earth Group with Real Axial Tilt (23.4 degrees)
+            earthGroup = new THREE.Group();
+            earthGroup.rotation.z = 23.4 * (Math.PI / 180);
+            earthGroup.rotation.y = -1.2; // Angle towards India / Asia
+            scene.add(earthGroup);
+
+            // Textures: High-res NASA / Three.js CDN with instant procedural canvas fallback
+            const textureLoader = new THREE.TextureLoader();
+            const fallbackCanvas = generateProceduralEarthCanvas();
+            const proceduralTexture = new THREE.CanvasTexture(fallbackCanvas);
+
+            const cdnBase = 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@master/examples/textures/planets/';
+            const earthTexture = textureLoader.load(
+                cdnBase + 'earth_atmos_2048.jpg',
+                () => { earthMat.map = earthTexture; earthMat.needsUpdate = true; },
+                undefined,
+                () => { console.log('Using procedural fallback Earth map'); }
+            );
+            const normalMap = textureLoader.load(cdnBase + 'earth_normal_2048.jpg');
+            const specMap = textureLoader.load(cdnBase + 'earth_specular_2048.jpg');
+
+            // Earth Sphere Mesh
+            const earthGeo = new THREE.SphereGeometry(2.0, 128, 128);
+            const earthMat = new THREE.MeshPhongMaterial({
+                map: proceduralTexture,
+                normalMap: normalMap,
+                normalScale: new THREE.Vector2(0.85, 0.85),
+                specularMap: specMap,
+                specular: new THREE.Color(0x1a4060),
+                shininess: 30
+            });
+            earthMesh = new THREE.Mesh(earthGeo, earthMat);
+            earthGroup.add(earthMesh);
+
+            // Cloud Layer
+            const cloudCanvas = generateProceduralCloudCanvas();
+            const cloudTexture = textureLoader.load(
+                cdnBase + 'earth_clouds_1024.png',
+                () => { cloudMat.map = cloudTexture; cloudMat.needsUpdate = true; }
+            );
+            const cloudGeo = new THREE.SphereGeometry(2.025, 64, 64);
+            const cloudMat = new THREE.MeshPhongMaterial({
+                map: new THREE.CanvasTexture(cloudCanvas),
+                transparent: true,
+                opacity: 0.4,
+                blending: THREE.NormalBlending,
+                depthWrite: false
+            });
+            cloudMesh = new THREE.Mesh(cloudGeo, cloudMat);
+            earthGroup.add(cloudMesh);
+
+            // Atmospheric Rayleigh Halo Glow (Custom Shader)
+            const glowGeo = new THREE.SphereGeometry(2.14, 64, 64);
+            const glowMat = new THREE.ShaderMaterial({
+                uniforms: {
+                    c: { type: "f", value: 0.35 },
+                    p: { type: "f", value: 4.2 },
+                    glowColor: { type: "c", value: new THREE.Color(0x00d2ff) },
+                    viewVector: { type: "v3", value: camera.position }
+                },
+                vertexShader: `
+                    uniform vec3 viewVector;
+                    uniform float c;
+                    uniform float p;
+                    varying float intensity;
+                    void main() {
+                        vec3 vNormal = normalize(normalMatrix * normal);
+                        vec3 vNormel = normalize(normalMatrix * viewVector);
+                        intensity = pow(c - dot(vNormal, vNormel), p);
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                    }
+                `,
+                fragmentShader: `
+                    uniform vec3 glowColor;
+                    varying float intensity;
+                    void main() {
+                        vec3 glow = glowColor * intensity;
+                        gl_FragColor = vec4(glow, intensity * 0.9);
+                    }
+                `,
+                side: THREE.BackSide,
+                blending: THREE.AdditiveBlending,
+                transparent: true
+            });
+            atmosphereMesh = new THREE.Mesh(glowGeo, glowMat);
+            earthGroup.add(atmosphereMesh);
+
+            // Atmospheric Radar Ring (Cyber Cartography Sweep)
+            const radarGeo = new THREE.RingGeometry(2.28, 2.32, 64);
+            const radarMat = new THREE.MeshBasicMaterial({
+                color: 0x10b981,
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.35
+            });
+            radarMesh = new THREE.Mesh(radarGeo, radarMat);
+            radarMesh.rotation.x = Math.PI / 2.3;
+            earthGroup.add(radarMesh);
+
+            // Hotspot Pins & Sonar Radar Rings
+            hotspotGroup = new THREE.Group();
+            earthGroup.add(hotspotGroup);
+
+            hotspotsData.forEach(spot => {
+                createHotspotPin(spot);
+            });
+
+            // Window Resize Handler
+            window.addEventListener('resize', () => {
+                const w = window.innerWidth;
+                const h = window.innerHeight;
+                camera.aspect = w / h;
+                camera.updateProjectionMatrix();
+                renderer.setSize(w, h);
+            });
+
+            // Interactive Raycaster for Tooltips
+            setupHotspotInteraction();
+
+            // Start Main Render Loop
+            animate();
+        }
+
+        // Convert Latitude & Longitude to 3D Sphere Coordinates
+        function latLonToVector3(lat, lon, radius = 2.03) {
+            const phi = (90 - lat) * (Math.PI / 180);
+            const theta = (lon + 180) * (Math.PI / 180);
+            return new THREE.Vector3(
+                -(radius * Math.sin(phi) * Math.cos(theta)),
+                (radius * Math.cos(phi)),
+                (radius * Math.sin(phi) * Math.sin(theta))
+            );
+        }
+
+        // Create Glowing Hotspot Pin
+        function createHotspotPin(spot) {
+            const pos = latLonToVector3(spot.lat, spot.lon);
+
+            // Core sphere
+            const pinGeo = new THREE.SphereGeometry(0.035, 16, 16);
+            const pinMat = new THREE.MeshBasicMaterial({ color: spot.color });
+            const pinMesh = new THREE.Mesh(pinGeo, pinMat);
+            pinMesh.position.copy(pos);
+            pinMesh.userData = spot;
+
+            // Sonar pulse ring
+            const ringGeo = new THREE.RingGeometry(0.04, 0.08, 32);
+            const ringMat = new THREE.MeshBasicMaterial({
+                color: spot.color,
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.75
+            });
+            const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+            ringMesh.position.copy(pos);
+            ringMesh.lookAt(new THREE.Vector3(0, 0, 0));
+            ringMesh.userData = { isRing: true, baseScale: 1 };
+
+            hotspotGroup.add(pinMesh);
+            hotspotGroup.add(ringMesh);
+        }
+
+        // Main Animation Loop
+        let clock = new THREE.Clock();
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const delta = clock.getDelta();
+            const elapsed = clock.getElapsedTime();
+
+            // Auto-rotate globe slowly unless user interacts
+            if (isAutoRotating) {
+                earthMesh.rotation.y += 0.001;
+                cloudMesh.rotation.y += 0.0015;
+                hotspotGroup.rotation.y += 0.001;
+                starField.rotation.y -= 0.0002;
+            }
+
+            // Animate Radar Ring
+            if (radarMesh && isRadarActive) {
+                radarMesh.rotation.z += 0.008;
+                radarMesh.material.opacity = 0.25 + Math.sin(elapsed * 2) * 0.15;
+            }
+
+            // Pulsate Hotspot Rings
+            hotspotGroup.children.forEach(child => {
+                if (child.userData && child.userData.isRing) {
+                    const scale = 1 + (Math.sin(elapsed * 4) + 1) * 0.45;
+                    child.scale.set(scale, scale, 1);
+                    child.material.opacity = 0.8 - (scale - 1) * 0.7;
+                }
+            });
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // Raycasting for Hotspots Hover & Click
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        const tooltip = document.getElementById('hotspot-tooltip');
+
+        function setupHotspotInteraction() {
+            window.addEventListener('mousemove', (e) => {
+                mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(hotspotGroup.children);
+
+                if (intersects.length > 0 && intersects[0].object.userData.name) {
+                    const spot = intersects[0].object.userData;
+                    document.getElementById('tooltip-title').innerText = spot.name;
+                    document.getElementById('tooltip-type').innerText = spot.type;
+                    document.getElementById('tooltip-coords').innerText = `${spot.lat.toFixed(1)}°N, ${spot.lon.toFixed(1)}°E`;
+                    document.getElementById('tooltip-desc').innerText = spot.desc;
+
+                    tooltip.style.left = `${Math.min(e.clientX + 15, window.innerWidth - 240)}px`;
+                    tooltip.style.top = `${Math.min(e.clientY + 15, window.innerHeight - 150)}px`;
+                    tooltip.classList.remove('hidden', 'opacity-0', 'scale-95');
+                    tooltip.classList.add('opacity-100', 'scale-100');
+                    document.body.style.cursor = 'pointer';
+                } else {
+                    tooltip.classList.add('opacity-0', 'scale-95');
+                    tooltip.classList.remove('opacity-100', 'scale-100');
+                    setTimeout(() => { if (tooltip.classList.contains('opacity-0')) tooltip.classList.add('hidden'); }, 200);
+                    document.body.style.cursor = 'default';
+                }
+            });
+        }
+
+        // Focus Hotspot Smoothly
+        function focusHotspot(type) {
+            isAutoRotating = false;
+            if (type === 'himalayas') {
+                smoothRotateEarth(-0.8, 4.2);
+                showToast("Targeting Himalayan Disaster Belt (Uttarakhand Sector)");
+            }
+        }
+
+        // Smooth Camera Transition helper
+        function smoothRotateEarth(targetY, targetDist) {
+            let curY = earthGroup.rotation.y;
+            let startDist = camera.position.z;
+            let startTime = performance.now();
+
+            function stepTransition(time) {
+                let p = Math.min((time - startTime) / 1000, 1);
+                let ease = 0.5 - Math.cos(p * Math.PI) / 2;
+                earthGroup.rotation.y = curY + (targetY - curY) * ease;
+                camera.position.z = startDist + (targetDist - startDist) * ease;
+                if (p < 1) requestAnimationFrame(stepTransition);
+            }
+            requestAnimationFrame(stepTransition);
+        }
+
+        // Mission Step Controller (from Picture 2)
+        function setMissionStep(step) {
+            currentStep = step;
+            for (let i = 1; i <= 4; i++) {
+                const btn = document.getElementById(`step-${i}-btn`);
+                if (!btn) continue;
+                if (i === step) {
+                    btn.className = "flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.2)] transition-all";
+                    btn.querySelector('span:first-child').className = "w-4 h-4 rounded-full bg-emerald-500 text-black text-[10px] font-bold flex items-center justify-center";
+                } else {
+                    btn.className = "flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all";
+                    btn.querySelector('span:first-child').className = "w-4 h-4 rounded-full bg-slate-800 text-slate-300 text-[10px] flex items-center justify-center";
+                }
+            }
+
+            if (step === 1) {
+                returnToGlobalView();
+            } else if (step === 2 || step === 3) {
+                focusIndiaMap();
+            } else if (step === 4) {
+                openLandslideModal();
+            }
+        }
+
+        // Initiate Global Scan Button Sequence
+        function triggerGlobalScanSequence() {
+            const btn = document.getElementById('initiateScanBtn');
+            const btnText = document.getElementById('scan-btn-text');
+            const progressBar = document.getElementById('scan-progress-bar');
+            const percentageText = document.getElementById('scan-percentage-text');
+
+            btn.disabled = true;
+            btnText.innerHTML = "Scanning Satellites...";
+            showToast("Satellite Telemetry Initiated. Synchronizing Sentinel-1...");
+
+            let currentVal = 62;
+            clearInterval(scanInterval);
+            scanInterval = setInterval(() => {
+                currentVal += 2;
+                if (currentVal >= 100) {
+                    currentVal = 100;
+                    clearInterval(scanInterval);
+                    progressBar.style.width = '100%';
+                    percentageText.innerText = '100%';
+                    btnText.innerText = "Scan Complete";
+                    showToast("Global Scan Complete. 14,029 sensor nodes nominal.");
+
+                    setTimeout(() => {
+                        setMissionStep(2);
+                        toggleHazardDrawer();
+                        btn.disabled = false;
+                        btnText.innerText = "Initiate Global Scan";
+                    }, 800);
+                } else {
+                    progressBar.style.width = `${currentVal}%`;
+                    percentageText.innerText = `${currentVal}%`;
+                }
+            }, 50);
+        }
+
+        // Return to high orbit view
+        function returnToGlobalView() {
+            smoothRotateEarth(-1.2, 5.2);
+            isAutoRotating = true;
+            closeHazardDrawer();
+            closeLandslideModal();
+            showToast("Returning to High Orbit Global Scan");
+        }
+
+        // Focus India Map
+        function focusIndiaMap() {
+            isAutoRotating = false;
+            smoothRotateEarth(-0.85, 3.8);
+            setMissionStep(3);
+            openHazardDrawer();
+            showToast("Centered on India Regional Resilience Corridor");
+        }
+
+        // UI Drawer & Modal Handlers
+        function toggleHazardDrawer() {
+            const drawer = document.getElementById('hazard-drawer');
+            if (drawer.classList.contains('translate-x-full')) {
+                openHazardDrawer();
+            } else {
+                closeHazardDrawer();
+            }
+        }
+
+        function openHazardDrawer() {
+            document.getElementById('hazard-drawer').classList.remove('translate-x-full');
+        }
+
+        function closeHazardDrawer() {
+            document.getElementById('hazard-drawer').classList.add('translate-x-full');
+        }
+
+        function openLandslideModal() {
+            const modal = document.getElementById('landslide-modal');
+            const container = document.getElementById('modal-container');
+            modal.classList.remove('pointer-events-none', 'opacity-0');
+            modal.classList.add('opacity-100');
+            container.classList.remove('scale-95');
+            container.classList.add('scale-100');
+            setMissionStep(4);
+        }
+
+        function closeLandslideModal() {
+            const modal = document.getElementById('landslide-modal');
+            const container = document.getElementById('modal-container');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            modal.classList.remove('opacity-100');
+            container.classList.add('scale-95');
+            container.classList.remove('scale-100');
+        }
+
+        function selectHazardFilter(type) {
+            if (type === 'landslide') {
+                openLandslideModal();
+            } else {
+                showToast(`Loaded ${type.toUpperCase()} telemetry layer.`);
+                openHazardDrawer();
+            }
+        }
+
+        function toggleGlobeRotation() {
+            isAutoRotating = !isAutoRotating;
+            const btn = document.getElementById('rotation-toggle-btn');
+            if (isAutoRotating) {
+                btn.classList.add('text-emerald-400');
+                showToast("Globe Auto-Rotation: ON");
+            } else {
+                btn.classList.remove('text-emerald-400');
+                showToast("Globe Auto-Rotation: PAUSED (Drag freely)");
+            }
+        }
+
+        function toggleRadarSweep() {
+            isRadarActive = !isRadarActive;
+            if (radarMesh) radarMesh.visible = isRadarActive;
+            showToast(isRadarActive ? "Radar Sweep: ACTIVE" : "Radar Sweep: STANDBY");
+        }
+
+        function toggleTelemetryPanel() {
+            const card = document.getElementById('telemetry-anomaly-card');
+            card.classList.toggle('opacity-30');
+        }
+
+        // Toast Feedback Notification
+        let toastTimeout = null;
+        function showToast(message) {
+            const toast = document.getElementById('toast-banner');
+            const msgSpan = document.getElementById('toast-message');
+            msgSpan.innerText = message;
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            toast.classList.add('opacity-100');
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 2600);
+        }
+
+        function showHazardToast(msg) {
+            showToast(msg);
+        }
+
+        // Initialize on DOM Ready
+        window.addEventListener('DOMContentLoaded', () => {
+            initThreeJS();
+        });
+    </script>
+</body>
+</html>
