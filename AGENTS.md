@@ -1,30 +1,24 @@
-<!-- BEGIN:nextjs-agent-rules -->
+# Agent Instructions & Guidelines — SETU-DRR
 
-# This is NOT the Next.js you know
-
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
-
-This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
-
-<!-- END:nextjs-agent-rules -->
-
-# Frontend Architecture & Engineering Guidelines (`web/`)
-
-These guidelines are mandatory for all frontend development in `web/` (Next.js 16 + React 19 + TypeScript + Tailwind CSS v4).
+Welcome to **SETU-DRR** (Hazard Red Zone & Relocation Decision Support Platform). All AI agents, assistants, and developers contributing to this codebase must adhere strictly to the engineering rules and frontend architecture guidelines outlined below.
 
 ---
 
-## 1. Granular Component Decomposition (Separate Everything)
+## 🎨 Frontend Architecture & Component Guidelines (`web/`)
+
+These guidelines are mandatory for all work inside `web/` (Next.js 16 + React 19 + TypeScript + Tailwind CSS v4).
+
+### 1. Extreme Component Granularity (Decompose Everything)
 - **Principle of Maximum Separation**: If a UI section, sub-element, or widget can exist as a standalone component, it **MUST** be extracted into its own file. Never write monolithic page files or multi-hundred-line JSX trees.
 - **Single Responsibility Principle (SRP)**: Each component should do one thing exceptionally well. A component file should ideally stay under 100–150 lines of code.
-- **Mandatory Extractions**:
-  - List items, table rows, and repeated cards must never be inlined in `.map()` loops. Extract them into dedicated component files (e.g., `TriageTableRow.tsx`, `RelocationSiteCard.tsx`, `FilterChip.tsx`).
-  - Headers, footers, control bars, action menus, metric widgets, empty states, error states, and tooltip triggers must each be distinct components.
-  - Skeletons and loading indicators must have matching dedicated component files (e.g., `MetricCardSkeleton.tsx`) matching the shape of the component they placeholder.
-  - Keep presentation components strictly decoupled from data fetching and orchestration containers.
-- **Directory Layout Convention**:
+- **Mandatory Decompositions**:
+  - List items, table rows, and cards must never be inlined within parent loops — extract them (e.g., `HabitationRow.tsx`, `SiteCard.tsx`, `FilterChip.tsx`).
+  - Headers, footers, control bars, action menus, metric counters, badges, and empty/error states must be distinct components.
+  - Skeletons and loading indicators must have their own dedicated component files matching the shape of the component they placeholder.
+  - Separate stateful/container components (data fetching, business logic) from pure presentational/view components.
+- **Directory Structure Convention**:
   ```text
-  components/
+  web/components/
   ├── ui/               # Foundational atomic primitives (Button, Input, Slider, Badge, Switch, Tooltip, Modal, Drawer, etc.)
   ├── common/           # Shared composite widgets (MetricCard, StatusPill, EmptyState, SectionHeader, etc.)
   ├── layout/           # App layout components (ThreePanelLayout, LeftPanel, CenterPanel, RightPanel, Header, etc.)
@@ -34,14 +28,14 @@ These guidelines are mandatory for all frontend development in `web/` (Next.js 1
       ├── dossier/      # Risk dossier, SoVI breakdown, loss timeline, SHAP charts
       └── scenario/     # Scenario simulation drawer, parameter sliders, rank delta cards
   ```
-- **Barrel Exports**: Every component folder must feature an `index.ts` exporting the component, its prop interface, and auxiliary types.
+- **Barrel Exports**: Every component folder must feature an `index.ts` exporting the component, its prop interface, and any related types.
 
 ---
 
-## 2. Complete Modularity & Exported TypeScript Interfaces
-- **100% Configurable via Typed Interfaces**: Every component **MUST** export a dedicated TypeScript `interface` detailing all props. Nothing that a developer or consumer might want to customize should be hardcoded.
+### 2. Complete Modularity & Exported TypeScript Interfaces
+- **100% Configurable via Typed Interfaces**: Every component **MUST** export a comprehensive TypeScript `interface` detailing all props. Nothing that a developer or consumer might want to customize should be hardcoded.
   ```tsx
-  // Example pattern for all components
+  // Example pattern for every component
   export interface MetricCardProps {
     /** Main numeric or string metric value */
     value: React.ReactNode;
@@ -85,7 +79,7 @@ These guidelines are mandatory for all frontend development in `web/` (Next.js 1
 
 ---
 
-## 3. GSAP for All Animations & Rich Microinteractions
+### 3. GSAP for All Animations & Rich Microinteractions
 - **Animation Standard**: Use **GreenSock (GSAP)** along with `@gsap/react` for **all animations, transitions, and microinteractions**. Do not rely on ad-hoc CSS keyframes or external animation libraries when GSAP can provide unified, high-performance orchestration.
   - Dependencies: `gsap` and `@gsap/react` (`pnpm --filter web add gsap @gsap/react`).
 - **Next.js & React 19 GSAP Rules**:
@@ -103,6 +97,7 @@ These guidelines are mandatory for all frontend development in `web/` (Next.js 1
       const containerRef = useRef<HTMLDivElement>(null);
 
       useGSAP(() => {
+        // Safe, scoped animations with automatic cleanup
         gsap.from('.animate-target', {
           y: 16,
           opacity: 0,
@@ -123,3 +118,15 @@ These guidelines are mandatory for all frontend development in `web/` (Next.js 1
   - **Alerts & Badges**: Subtle pulse / breathing effect for critical red-zone hazards; smooth status color transitions.
   - **Drawers & Modals**: Smooth slide-and-fade entrance timelines with cubic easing (`power3.out`, `back.out(1.2)`), paired with backdrop blur fade-in.
   - **Respect User Accessibility**: Use `window.matchMedia('(prefers-reduced-motion: reduce)')` or GSAP's `matchMedia()` to disable or soften animations when the user requests reduced motion.
+
+---
+
+## 🏛️ Project Architecture Context
+
+- **SETU-DRR Platform**: Relocation & Hazard Decision Support for NDRF / Disaster Management Division.
+- **Three-Panel UI (`web/`)**:
+  - **Left Panel**: Habitations triage table (Urgency vs Caseload toggle, tier filter chips).
+  - **Center Panel**: MapLibre GL hexagonal map (H3 res-8, PRZ, Caution, Active/Forecast alerts, time slider).
+  - **Right Panel**: Habitation Risk Dossier (SoVI breakdown, loss timeline, SHAP bar chart), Candidate Relocation Site cards, Scenario Simulation drawer.
+- **Type Generation**: Run `pnpm generate:types` in `web/` to synchronize TypeScript interfaces from `openapi.json`.
+- **Backend & Python**: Run backend tests with `uv run pytest -v` and FastAPI with `uv run uvicorn api.main:app --reload --port 8000`.
