@@ -1312,8 +1312,18 @@
             "title": "Priority Score"
           },
           "site_suitability": {
-            "type": "integer",
-            "title": "Site Suitability"
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Suitability",
+            "description": "Composite suitability score (0-100, None if unassigned/provisional)."
           },
           "has_group_split": {
             "type": "boolean",
@@ -1340,8 +1350,7 @@
           "site_distance_km",
           "households",
           "tier",
-          "priority_score",
-          "site_suitability"
+          "priority_score"
         ],
         "title": "AllocationAssignmentDTO"
       },

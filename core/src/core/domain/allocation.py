@@ -33,7 +33,7 @@ class CandidateSiteCapacity:
     id: int
     name: str
     capacity_households: int
-    suitability: int  # 0 to 100
+    suitability: Optional[int] = None  # 0 to 100, None if unverified/unknown
     lat: Optional[float] = None
     lon: Optional[float] = None
 
@@ -70,7 +70,7 @@ class AssignmentOutcome:
     households: int
     tier: Tier
     priority_score: float
-    site_suitability: int
+    site_suitability: Optional[int] = None
     has_group_split: bool = False
     split_details: Optional[str] = None
 
@@ -105,10 +105,16 @@ def compute_relocation_cost(
 
 def compute_assignment_benefit(
     priority_score: float,
-    suitability: int,
+    suitability: Optional[int],
     benefit_scale_factor: float = 100.0,
 ) -> float:
-    """Computes the objective benefit term b_js = (PS_j * suit_s) * scale (PRD FR-8.1)."""
+    """Computes the objective benefit term b_js = (PS_j * suit_s) * scale (PRD FR-8.1).
+    
+    When suitability evidence is unverified / unknown (None), no positive suitability bonus
+    is claimed (suit_norm = 0.0). Hard eligibility and capacity remain fully respected.
+    """
+    if suitability is None:
+        return 0.0
     suit_norm = min(max(suitability, 0), 100) / 100.0
     ps_norm = min(max(priority_score, 0.0), 1.0)
     return ps_norm * suit_norm * benefit_scale_factor
@@ -117,7 +123,7 @@ def compute_assignment_benefit(
 def compute_assignment_cost(
     distance_km: float,
     priority_score: float,
-    suitability: int,
+    suitability: Optional[int] = None,
     distance_penalty_weight: float = 1.0,
     benefit_scale_factor: float = 100.0,
 ) -> float:
@@ -134,8 +140,8 @@ def compute_assignment_cost(
 def compute_integer_edge_cost(
     distance_km: float,
     priority_score: float,
-    suitability: int,
-    config: AllocationConfig,
+    suitability: Optional[int] = None,
+    config: AllocationConfig = AllocationConfig(),
     base_offset: int = 10_000,
 ) -> int:
     """Converts continuous assignment cost into a scaled integer for OR-Tools SimpleMinCostFlow.

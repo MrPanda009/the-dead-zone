@@ -353,7 +353,7 @@ class CandidateSite(Base):
     cc_final: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     binding_constraint: Mapped[str] = mapped_column(String, nullable=False)
     augmented: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
-    suitability: Mapped[int] = mapped_column(SmallInteger, default=50, nullable=False)
+    suitability: Mapped[Optional[int]] = mapped_column(SmallInteger, default=None, nullable=True)
     metadata_: Mapped[dict[str, Any]] = mapped_column(
         "metadata", JSONB, default=dict, nullable=False
     )

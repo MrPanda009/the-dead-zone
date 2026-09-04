@@ -363,8 +363,11 @@ export interface components {
             tier: components["schemas"]["Tier"];
             /** Priority Score */
             priority_score: number;
-            /** Site Suitability */
-            site_suitability: number;
+            /**
+             * Site Suitability
+             * @description Composite suitability score (0-100, None if unassigned/provisional).
+             */
+            site_suitability?: number | null;
             /**
              * Has Group Split
              * @default false

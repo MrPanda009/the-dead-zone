@@ -73,10 +73,10 @@ class ScenarioService:
         clamped_offset = max(0, request.offset)
 
         # 2. Query baseline habitations
-        # Fetch up to 500 habitations within the boundary to establish comprehensive ranking
+        # Fetch all habitations within the boundary to establish comprehensive ranking without truncation (M10)
         raw_habs, total_count = self.hab_repo.query_habitations(
             admin_id=request.admin_id,
-            limit=500,
+            limit=None,
             offset=0,
             sort=request.sort_mode,
         )
