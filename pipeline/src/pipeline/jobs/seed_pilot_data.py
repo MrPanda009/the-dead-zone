@@ -15,6 +15,7 @@ import sys
 import uuid
 import random
 import json
+import math
 import logging
 from datetime import datetime, date, timezone
 from typing import Optional
@@ -513,12 +514,17 @@ def seed_database(db_url: Optional[str] = None) -> None:
                 # Habitation Priority Scoring & Triage
                 prz_overlap = h["prz_overlap_pct"]
                 pop_frac_in_prz = prz_overlap / 100.0
-                is_high_risk = h["name"] in ("Chooralmala", "Mundakkai", "Bhagamandala")
+                is_high_risk = bool(h["active_deformation"] or prz_overlap >= 70.0)
                 hazard_intensity = 0.88 if is_high_risk else 0.42
 
                 # Loss history
-                hab_events = [d for d in dist["disasters"]]
-                decayed_loss = compute_time_decayed_loss(hab_events, reference_date=date(2026, 8, 31)) if is_high_risk else 0.0
+                nearby_disasters = []
+                for d in dist["disasters"]:
+                    d_lat, d_lon = d["lat"], d["lon"]
+                    dist_km = math.sqrt(((d_lat - h["lat"]) * 111.0)**2 + ((d_lon - h["lon"]) * 111.0 * math.cos(math.radians(h["lat"])))**2)
+                    if dist_km <= 15.0:
+                        nearby_disasters.append(d)
+                decayed_loss = compute_time_decayed_loss(nearby_disasters, reference_date=date(2026, 8, 31)) if is_high_risk else 0.0
 
                 ps = compute_priority_score(
                     hazard_intensity=hazard_intensity,
@@ -551,13 +557,15 @@ def seed_database(db_url: Optional[str] = None) -> None:
                             hazard_intensity, prz_overlap_pct, decayed_loss, v_index,
                             priority_score, caseload_score, tier, triage_rationale,
                             contributing_factors, dominant_hazard, model_version, scoring_version,
-                            dataset_version, data_quality, confidence, calculated_at, pipeline_run_id
+                            dataset_version, data_quality, confidence, calculated_at, pipeline_run_id,
+                            active_deformation, fatal_event_last_3_monsoons
                         ) VALUES (
                             :hab_id, :admin_id, :pop, :hh,
                             :hazard_intensity, :prz_overlap_pct, :decayed_loss, :v_index,
                             :ps, :caseload, :tier, :rationale,
                             CAST(:contributing_factors AS jsonb), 'landslide', :model_ver, 'priority-v1.0',
-                            :dataset_ver, 'observed', 0.95, :now, :pipeline_run_id
+                            :dataset_ver, 'observed', 0.95, :now, :pipeline_run_id,
+                            :active_deformation, :fatal_event_last_3_monsoons
                         );
                     """),
                     {
@@ -578,6 +586,8 @@ def seed_database(db_url: Optional[str] = None) -> None:
                         "dataset_ver": DATASET_VERSION,
                         "now": now,
                         "pipeline_run_id": pipeline_run_id,
+                        "active_deformation": h["active_deformation"],
+                        "fatal_event_last_3_monsoons": h["fatal_3_monsoons"],
                     },
                 )
 

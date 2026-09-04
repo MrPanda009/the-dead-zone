@@ -17,6 +17,7 @@ from core.domain.priority import (
     PriorityScoringEngine,
     TriageRuleConfig,
     compute_time_decayed_loss,
+    check_fatal_event_last_3_monsoons,
 )
 from core.domain.vulnerability import compute_vulnerability_index, VulnerabilityConfig
 from core.schemas.common import PaginatedResponse
@@ -93,18 +94,22 @@ class HabitationsService:
                     if r.get("v_index") is not None
                     else compute_vulnerability_index(v_demo, v_struct, v_access, v_econ, self.vulnerability_config)
                 )
-                is_high_risk = r["name"] in ("Chooralmala", "Mundakkai", "Bhagamandala")
-                hazard_intensity = 0.85 if is_high_risk else 0.45
-                prz_overlap = 85.0 if r["name"] in ("Chooralmala", "Mundakkai") else (65.0 if r["name"] == "Bhagamandala" else 25.0)
+                active_def = bool(r.get("active_deformation", False))
+                fatal_3_monsoons = bool(r.get("fatal_event_last_3_monsoons", False))
+                raw_hi = r.get("hazard_intensity")
+                hazard_intensity = float(raw_hi if raw_hi is not None else 0.45)
+                raw_prz = r.get("prz_overlap_pct")
+                prz_overlap = float(raw_prz if raw_prz is not None else 25.0)
+                decayed_loss = float(r.get("decayed_loss") if r.get("decayed_loss") is not None else 0.0)
 
                 eval_result = self.engine.evaluate_habitation(
                     hazard_intensity=hazard_intensity,
                     pop_fraction_in_prz=prz_overlap / 100.0,
                     vulnerability_index=v_index,
-                    decayed_loss=1.0 if is_high_risk else 0.0,
+                    decayed_loss=decayed_loss,
                     population=pop,
-                    active_deformation=is_high_risk,
-                    fatal_event_last_3_monsoons=is_high_risk and r["name"] in ("Chooralmala", "Mundakkai"),
+                    active_deformation=active_def,
+                    fatal_event_last_3_monsoons=fatal_3_monsoons,
                 )
 
                 ps = eval_result["priority_score"]
@@ -170,21 +175,26 @@ class HabitationsService:
             half_life_years=self.scoring_config.loss_half_life_years,
         )
 
-        is_high_risk = r["name"] in ("Chooralmala", "Mundakkai", "Bhagamandala")
         raw_hi = r.get("hazard_intensity")
-        hazard_intensity = float(raw_hi if raw_hi is not None else (0.85 if is_high_risk else 0.45))
+        hazard_intensity = float(raw_hi if raw_hi is not None else 0.45)
         raw_prz = r.get("prz_overlap_pct")
-        prz_overlap = float(raw_prz if raw_prz is not None else (85.0 if r["name"] in ("Chooralmala", "Mundakkai") else (65.0 if r["name"] == "Bhagamandala" else 25.0)))
+        prz_overlap = float(raw_prz if raw_prz is not None else 25.0)
 
-        has_fatal = any((ev.get("fatalities") if ev.get("fatalities") is not None else 0) > 0 for ev in nearby_events)
+        active_def = bool(r.get("active_deformation", False))
+        if r.get("fatal_event_last_3_monsoons") is not None:
+            fatal_3_monsoons = bool(r["fatal_event_last_3_monsoons"])
+        else:
+            # Canonical derivation from nearby disaster events
+            fatal_3_monsoons = check_fatal_event_last_3_monsoons(nearby_events, reference_date=date.today())
+
         eval_result = self.engine.evaluate_habitation(
             hazard_intensity=hazard_intensity,
             pop_fraction_in_prz=prz_overlap / 100.0,
             vulnerability_index=v_index,
             decayed_loss=decayed_loss,
             population=pop,
-            active_deformation=is_high_risk,
-            fatal_event_last_3_monsoons=has_fatal and r["name"] in ("Chooralmala", "Mundakkai"),
+            active_deformation=active_def,
+            fatal_event_last_3_monsoons=fatal_3_monsoons,
         )
 
         raw_ps = r.get("priority_score")

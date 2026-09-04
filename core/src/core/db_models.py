@@ -296,6 +296,8 @@ class HabitationRisk(Base):
     v_index: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     priority_score: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     caseload_score: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    active_deformation: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    fatal_event_last_3_monsoons: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     tier: Mapped[str] = mapped_column(String, default="medium_term", nullable=False)
     triage_rationale: Mapped[str] = mapped_column(String, default="", nullable=False)
     contributing_factors: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, default=list, nullable=False)

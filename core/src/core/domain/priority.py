@@ -130,6 +130,59 @@ def compute_priority_score(
     )
 
 
+def is_within_last_three_monsoons(event_date: date, reference_date: Optional[date] = None) -> bool:
+    """Evaluates whether an event date occurred within the last three Indian monsoon seasons.
+    
+    The Indian South-West Monsoon runs annually from June 1 to September 30 (JJAS).
+    Relative to reference_date (year Y_ref):
+    - If reference_date is on or after June 1 of Y_ref, the three monsoon seasons are
+      Y_ref - 2, Y_ref - 1, and Y_ref (earliest season starts June 1 of Y_ref - 2).
+    - If reference_date is before June 1 of Y_ref, the three most recent completed monsoons
+      are Y_ref - 3, Y_ref - 2, and Y_ref - 1 (earliest season starts June 1 of Y_ref - 3).
+    """
+    ref = reference_date or date.today()
+    if event_date > ref:
+        return False
+    
+    current_monsoon_start = date(ref.year, 6, 1)
+    if ref >= current_monsoon_start:
+        earliest_monsoon_start = date(ref.year - 2, 6, 1)
+    else:
+        earliest_monsoon_start = date(ref.year - 3, 6, 1)
+        
+    return event_date >= earliest_monsoon_start
+
+
+def check_fatal_event_last_3_monsoons(
+    events: Sequence[Mapping[str, Any]],
+    reference_date: Optional[date] = None,
+    max_radius_km: float = 2.0,
+) -> bool:
+    """Canonical derivation of fatal_event_last_3_monsoons from disaster_event records.
+    
+    A settlement has a recent fatal event if any nearby event satisfies:
+    1. Fatalities > 0
+    2. Spatial distance from settlement centroid <= max_radius_km (default 2.0 km)
+    3. Event date falls within the last three monsoons relative to reference_date.
+    """
+    ref = reference_date or date.today()
+    for ev in events:
+        fatalities = ev.get("fatalities") or 0
+        if fatalities <= 0:
+            continue
+        dist = ev.get("distance_km")
+        if dist is not None and dist > max_radius_km:
+            continue
+        ev_date = ev.get("ts")
+        if isinstance(ev_date, str):
+            ev_date = date.fromisoformat(ev_date)
+        if ev_date is None:
+            continue
+        if is_within_last_three_monsoons(ev_date, ref):
+            return True
+    return False
+
+
 def classify_triage_tier(
     has_prz_overlap: bool,
     active_deformation: bool = False,
