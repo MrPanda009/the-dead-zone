@@ -9,6 +9,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Any, Mapping, Optional, Sequence
 from ortools.graph.python import min_cost_flow
+from ortools.sat.python import cp_model
 
 from core.enums import Tier
 from core.schemas.common import SCREENING_GRADE_NOTICE
@@ -255,6 +256,30 @@ class MinCostFlowAllocationSolver:
                 policy_version=self.config.policy_version,
             )
 
+        if self.config.allow_group_splits:
+            return self._solve_min_cost_flow(
+                valid_habs=valid_habs,
+                valid_sites=valid_sites,
+                distances=distances,
+                total_demand=total_demand,
+                start_time=start_time,
+            )
+        return self._solve_no_splits_cp_sat(
+            valid_habs=valid_habs,
+            valid_sites=valid_sites,
+            distances=distances,
+            total_demand=total_demand,
+            start_time=start_time,
+        )
+
+    def _solve_min_cost_flow(
+        self,
+        valid_habs: list[HabitationDemand],
+        valid_sites: list[CandidateSiteCapacity],
+        distances: Sequence[HabitationSiteDistance],
+        total_demand: int,
+        start_time: float,
+    ) -> AllocationResult:
         # Deterministic node indexing:
         # 0: Source node (S)
         # 1 .. N_h: Habitation nodes
@@ -407,6 +432,154 @@ class MinCostFlowAllocationSolver:
         unmet_demand = max(total_demand - total_relocated, 0)
 
         # 9. Verify mathematical invariants
+        demands_map = {h.id: h.demand_households for h in sorted_habs}
+        capacities_map = {s.id: s.capacity_households for s in sorted_sites}
+        violations = validate_allocation_invariants(demands_map, capacities_map, assignments)
+        if violations:
+            group_split_warnings.extend(violations)
+
+        return AllocationResult(
+            status="COMPLETED",
+            solver_status=solver_status,
+            total_demand_households=total_demand,
+            total_relocated_households=total_relocated,
+            unmet_demand_households=unmet_demand,
+            solver_latency_ms=round(latency_ms, 2),
+            assignments=assignments,
+            group_split_warnings=group_split_warnings,
+            policy_version=self.config.policy_version,
+        )
+
+    def _solve_no_splits_cp_sat(
+        self,
+        valid_habs: list[HabitationDemand],
+        valid_sites: list[CandidateSiteCapacity],
+        distances: Sequence[HabitationSiteDistance],
+        total_demand: int,
+        start_time: float,
+    ) -> AllocationResult:
+        """Solves allocation enforcing group integrity (at most one site per habitation) using OR-Tools CP-SAT."""
+        sorted_habs = sorted(valid_habs, key=lambda h: h.id)
+        sorted_sites = sorted(valid_sites, key=lambda s: s.id)
+
+        dist_map: dict[tuple[int, int], float] = {
+            (d.habitation_id, d.site_id): d.distance_km for d in distances
+        }
+
+        model = cp_model.CpModel()
+
+        # Decision variables: y[h.id, s.id] == 1 iff habitation h is fully allocated to site s
+        y_vars: dict[tuple[int, int], cp_model.IntVar] = {}
+        arc_meta: dict[tuple[int, int], tuple[HabitationDemand, CandidateSiteCapacity, float, int]] = {}
+
+        # 1. Create variables for eligible (habitation, site) pairs within search radius
+        for h in sorted_habs:
+            for s in sorted_sites:
+                dist_km = dist_map.get((h.id, s.id))
+                if dist_km is None or dist_km > self.config.max_search_radius_km:
+                    continue
+
+                unit_cost = compute_integer_edge_cost(
+                    distance_km=dist_km,
+                    priority_score=h.priority_score,
+                    suitability=s.suitability,
+                    config=self.config,
+                )
+
+                var = model.NewBoolVar(f"y_{h.id}_{s.id}")
+                y_vars[(h.id, s.id)] = var
+                arc_meta[(h.id, s.id)] = (h, s, dist_km, unit_cost)
+
+        # 2. Group integrity constraint: at most one site per habitation
+        for h in sorted_habs:
+            h_vars = [y_vars[(h.id, s.id)] for s in sorted_sites if (h.id, s.id) in y_vars]
+            if h_vars:
+                model.Add(sum(h_vars) <= 1)
+
+        # 3. Site capacity constraint: sum of allocated households cannot exceed site capacity
+        for s in sorted_sites:
+            s_vars = [
+                (h.demand_households, y_vars[(h.id, s.id)])
+                for h in sorted_habs
+                if (h.id, s.id) in y_vars
+            ]
+            if s_vars:
+                model.Add(sum(demand * var for demand, var in s_vars) <= s.capacity_households)
+
+        # 4. Objective: Minimize total allocation cost + unmet demand penalty
+        # Equivalent to: sum_{(h,s)} (unit_cost - unmet_demand_penalty) * demand_h * y_{hs} + constant
+        obj_terms = []
+        for (h_id, s_id), (h, s, dist_km, unit_cost) in arc_meta.items():
+            var = y_vars[(h_id, s_id)]
+            net_coeff = (unit_cost - self.config.unmet_demand_penalty) * h.demand_households
+            obj_terms.append(net_coeff * var)
+
+        if obj_terms:
+            model.Minimize(sum(obj_terms))
+
+        # 5. Solve CP-SAT model with deterministic parameters
+        solver = cp_model.CpSolver()
+        solver.parameters.num_search_workers = 1
+        solver.parameters.random_seed = 42
+        solver.parameters.max_time_in_seconds = 30.0
+
+        status_code = solver.Solve(model)
+        latency_ms = (time.perf_counter() - start_time) * 1000.0
+
+        status_map = {
+            cp_model.OPTIMAL: "OPTIMAL",
+            cp_model.FEASIBLE: "FEASIBLE",
+            cp_model.INFEASIBLE: "INFEASIBLE",
+            cp_model.MODEL_INVALID: "MODEL_INVALID",
+            cp_model.UNKNOWN: "UNKNOWN",
+        }
+        solver_status = status_map.get(status_code, f"UNKNOWN_{status_code}")
+
+        if status_code not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+            return AllocationResult(
+                status="FAILED",
+                solver_status=solver_status,
+                total_demand_households=total_demand,
+                total_relocated_households=0,
+                unmet_demand_households=total_demand,
+                solver_latency_ms=round(latency_ms, 2),
+                assignments=[],
+                group_split_warnings=[f"Solver failed with status {solver_status}"],
+                policy_version=self.config.policy_version,
+            )
+
+        # 6. Extract assignments
+        assignments: list[AssignmentOutcome] = []
+        total_relocated = 0
+
+        for h in sorted_habs:
+            for s in sorted_sites:
+                var = y_vars.get((h.id, s.id))
+                if var is not None and solver.Value(var) == 1:
+                    dist_km = dist_map[(h.id, s.id)]
+                    flow = h.demand_households
+                    total_relocated += flow
+                    assignments.append(
+                        AssignmentOutcome(
+                            habitation_id=h.id,
+                            habitation_name=h.name,
+                            site_id=s.id,
+                            site_name=s.name,
+                            site_distance_km=round(dist_km, 2),
+                            households=flow,
+                            tier=h.tier,
+                            priority_score=h.priority_score,
+                            site_suitability=s.suitability,
+                            has_group_split=False,
+                            split_details=None,
+                        )
+                    )
+                    break
+
+        unmet_demand = max(total_demand - total_relocated, 0)
+        group_split_warnings: list[str] = []
+
+        # 7. Verify mathematical invariants
         demands_map = {h.id: h.demand_households for h in sorted_habs}
         capacities_map = {s.id: s.capacity_households for s in sorted_sites}
         violations = validate_allocation_invariants(demands_map, capacities_map, assignments)
