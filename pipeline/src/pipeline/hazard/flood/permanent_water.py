@@ -14,10 +14,7 @@ from rasterio.windows import from_bounds, transform as window_transform
 from rasterio.warp import reproject, Resampling
 from pyproj import Transformer
 
-try:
-    from .aoi import get_barpeta_bbox_wgs84
-except (ImportError, ValueError):
-    from aoi import get_barpeta_bbox_wgs84
+from .aoi import get_barpeta_bbox_wgs84
 
 # Default Google Cloud Storage bucket URL for JRC GSW v1.5 (1984–2024)
 JRC_BASE_URL = "https://storage.googleapis.com/water-world/download2024/VER1-5"
