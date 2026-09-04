@@ -1186,12 +1186,26 @@
             "title": "Dominant Hazard"
           },
           "trigger_source": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Trigger Source"
           },
           "valid_at": {
-            "type": "string",
-            "format": "date-time",
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Valid At"
           },
           "exposed_population": {
@@ -1226,8 +1240,6 @@
           "mhi_live",
           "mhi_static",
           "dominant_hazard",
-          "trigger_source",
-          "valid_at",
           "centroid"
         ],
         "title": "ActiveAlertItem",
@@ -1244,8 +1256,15 @@
             "title": "Total Exposed Population"
           },
           "issued_at": {
-            "type": "string",
-            "format": "date-time",
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Issued At"
           },
           "items": {
@@ -1259,8 +1278,7 @@
         "type": "object",
         "required": [
           "total_active_cells",
-          "total_exposed_population",
-          "issued_at"
+          "total_exposed_population"
         ],
         "title": "ActiveAlertsResponse"
       },
@@ -1983,9 +2001,15 @@
             "title": "Dominant Hazard"
           },
           "issuing_model": {
-            "type": "string",
-            "title": "Issuing Model",
-            "default": "ECMWF Open Data"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Issuing Model"
           },
           "forecast_cycle_at": {
             "anyOf": [
@@ -2060,9 +2084,15 @@
             "title": "Total Exposed Population"
           },
           "issuing_model": {
-            "type": "string",
-            "title": "Issuing Model",
-            "default": "ECMWF Open Data"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Issuing Model"
           },
           "forecast_cycle_at": {
             "anyOf": [

@@ -53,7 +53,18 @@ class AlertsRepository:
         where_sql = " AND ".join(where_clauses)
 
         sql = f"""
-            WITH latest_snapshots AS (
+            WITH deduplicated_hazard_active AS (
+                SELECT DISTINCT ON (h3, valid_at)
+                    h3,
+                    valid_at,
+                    hazard_type,
+                    source,
+                    ingested_at
+                FROM hazard_dynamic
+                WHERE forecast_cycle_at IS NULL
+                ORDER BY h3, valid_at, ingested_at DESC, id DESC
+            ),
+            latest_snapshots AS (
                 SELECT DISTINCT ON (h3)
                     h3, valid_at, mhi_static, mhi_live, mhi_fcst, dominant_hazard, zone_class
                 FROM mhi_snapshot
@@ -74,11 +85,14 @@ class AlertsRepository:
                 m.mhi_fcst,
                 m.dominant_hazard,
                 m.zone_class,
+                hd.source as trigger_source,
+                hd.ingested_at,
                 count(*) OVER() as full_count,
                 sum(g.population) OVER() as full_exposed_pop
             FROM latest_snapshots m
             JOIN grid_cell g ON m.h3 = g.h3
             LEFT JOIN admin_boundary a ON g.admin_id = a.id
+            LEFT JOIN deduplicated_hazard_active hd ON m.h3 = hd.h3 AND m.valid_at = hd.valid_at
             WHERE {where_sql}
             ORDER BY m.mhi_live DESC, g.population DESC, g.h3 ASC
             LIMIT :limit OFFSET :offset;
@@ -138,6 +152,7 @@ class AlertsRepository:
                     h3,
                     valid_at,
                     forecast_cycle_at,
+                    source,
                     ROUND(EXTRACT(EPOCH FROM (valid_at - forecast_cycle_at)) / 3600.0)::int AS horizon_hours
                 FROM hazard_dynamic
                 WHERE forecast_cycle_at IS NOT NULL
@@ -154,7 +169,8 @@ class AlertsRepository:
                     m.dominant_hazard,
                     m.zone_class,
                     hd.forecast_cycle_at,
-                    hd.horizon_hours
+                    hd.horizon_hours,
+                    hd.source
                 FROM mhi_snapshot m
                 JOIN deduplicated_hazard_forecasts hd 
                   ON m.h3 = hd.h3 AND m.valid_at = hd.valid_at
