@@ -125,12 +125,12 @@ class SitesService:
             cc_health_raw = r.get("cc_health")
 
             capacity_dto = CapacityBreakdownDTO(
-                cc_land=int(r.get("cc_land") or 0),
+                cc_land=int(r.get("cc_land") if r.get("cc_land") is not None else 0),
                 cc_water=int(cc_water_raw) if cc_water_raw is not None else None,
                 cc_school=int(cc_school_raw) if cc_school_raw is not None else None,
                 cc_health=int(cc_health_raw) if cc_health_raw is not None else None,
-                livelihood_multiplier=float(meta.get("livelihood_multiplier") or 1.0),
-                cc_final=int(r.get("cc_final") or 0),
+                livelihood_multiplier=float(meta.get("livelihood_multiplier") if meta.get("livelihood_multiplier") is not None else 1.0),
+                cc_final=int(r.get("cc_final") if r.get("cc_final") is not None else 0),
                 binding_constraint=binding_enum,
                 tied_constraints=[binding_enum],
                 data_quality=str(meta.get("data_quality") or "complete"),
@@ -143,11 +143,11 @@ class SitesService:
 
             item = CandidateSiteItem(
                 id=int(r["id"]),
-                distance_km=round(float(r.get("distance_km") or 0.0), 2),
-                area_ha=round(float(r.get("area_ha") or 0.0), 2),
+                distance_km=round(float(r.get("distance_km") if r.get("distance_km") is not None else 0.0), 2),
+                area_ha=round(float(r.get("area_ha") if r.get("area_ha") is not None else 0.0), 2),
                 tenure=tenure_enum,
-                slope_mean=round(float(r.get("slope_mean") or 0.0), 1),
-                mhi_max=round(float(r.get("mhi_max") or 0.0), 3),
+                slope_mean=round(float(r.get("slope_mean") if r.get("slope_mean") is not None else 0.0), 1),
+                mhi_max=round(float(r.get("mhi_max") if r.get("mhi_max") is not None else 0.0), 3),
                 suitability=suitability_val,
                 capacity=capacity_dto,
                 augmented=augmented_dto,
@@ -189,7 +189,7 @@ class SitesService:
         if aug_data and "relieved_constraint" in aug_data:
             augmented_dto = AugmentedCapacityDTO(
                 relieved_constraint=BindingConstraint(aug_data["relieved_constraint"]),
-                augmented_capacity=int(aug_data.get("augmented_capacity") or 0),
+                augmented_capacity=int(aug_data.get("augmented_capacity") if aug_data.get("augmented_capacity") is not None else 0),
                 next_binding_constraint=BindingConstraint(aug_data["next_binding_constraint"])
                 if aug_data.get("next_binding_constraint")
                 else None,
@@ -211,12 +211,12 @@ class SitesService:
         cc_health_raw = r.get("cc_health")
 
         capacity_dto = CapacityBreakdownDTO(
-            cc_land=int(r.get("cc_land") or 0),
+            cc_land=int(r.get("cc_land") if r.get("cc_land") is not None else 0),
             cc_water=int(cc_water_raw) if cc_water_raw is not None else None,
             cc_school=int(cc_school_raw) if cc_school_raw is not None else None,
             cc_health=int(cc_health_raw) if cc_health_raw is not None else None,
-            livelihood_multiplier=float(meta.get("livelihood_multiplier") or 1.0),
-            cc_final=int(r.get("cc_final") or 0),
+            livelihood_multiplier=float(meta.get("livelihood_multiplier") if meta.get("livelihood_multiplier") is not None else 1.0),
+            cc_final=int(r.get("cc_final") if r.get("cc_final") is not None else 0),
             binding_constraint=BindingConstraint(r.get("binding_constraint") or "land"),
             data_quality=str(meta.get("data_quality") or "complete"),
             policy_version=str(meta.get("policy_version") or self.engine.norms.policy_version),
@@ -228,10 +228,10 @@ class SitesService:
         return CandidateSiteDetail(
             id=int(r["id"]),
             distance_km=0.0,
-            area_ha=round(float(r.get("area_ha") or 0.0), 2),
+            area_ha=round(float(r.get("area_ha") if r.get("area_ha") is not None else 0.0), 2),
             tenure=TenureType(r.get("tenure") or "tenure_unverified"),
-            slope_mean=round(float(r.get("slope_mean") or 0.0), 1),
-            mhi_max=round(float(r.get("mhi_max") or 0.0), 3),
+            slope_mean=round(float(r.get("slope_mean") if r.get("slope_mean") is not None else 0.0), 1),
+            mhi_max=round(float(r.get("mhi_max") if r.get("mhi_max") is not None else 0.0), 3),
             suitability=suitability_val,
             capacity=capacity_dto,
             augmented=augmented_dto,
@@ -250,11 +250,11 @@ class SitesService:
             raise SiteNotFoundError(site_id)
 
         # Baseline capacity
-        base_cc_land = int(r.get("cc_land") or 0)
+        base_cc_land = int(r.get("cc_land") if r.get("cc_land") is not None else 0)
         base_cc_water = int(r["cc_water"]) if r.get("cc_water") is not None else None
         base_cc_school = int(r["cc_school"]) if r.get("cc_school") is not None else None
         base_cc_health = int(r["cc_health"]) if r.get("cc_health") is not None else None
-        base_cc_final = int(r.get("cc_final") or 0)
+        base_cc_final = int(r.get("cc_final") if r.get("cc_final") is not None else 0)
         base_binding = BindingConstraint(r.get("binding_constraint") or "land")
 
         base_capacity = CapacityBreakdownDTO(
@@ -271,7 +271,7 @@ class SitesService:
         )
 
         # Build overridden norms
-        area_ha = float(r.get("area_ha") or 2.0)
+        area_ha = float(r.get("area_ha") if r.get("area_ha") is not None else 2.0)
         area_m2 = area_ha * 10000.0
 
         # Apply overrides

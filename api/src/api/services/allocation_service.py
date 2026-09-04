@@ -69,7 +69,7 @@ class AllocationService:
                     id=r["id"],
                     name=r["name"],
                     demand_households=int(r["households"]),
-                    priority_score=float(r.get("priority_score") or 0.5),
+                    priority_score=float(r.get("priority_score") if r.get("priority_score") is not None else 0.5),
                     tier=tier_enum,
                     lat=r.get("lat"),
                     lon=r.get("lon"),
@@ -88,7 +88,7 @@ class AllocationService:
                 id=s["id"],
                 name=s["name"],
                 capacity_households=int(s["capacity"]),
-                suitability=int(s.get("suitability") or 50),
+                suitability=int(s.get("suitability") if s.get("suitability") is not None else 50),
                 lat=s.get("lat"),
                 lon=s.get("lon"),
             )
@@ -204,7 +204,7 @@ class AllocationService:
                 id=s["id"],
                 name=s["name"],
                 capacity_households=int(s["capacity"]),
-                suitability=int(s.get("suitability") or 50),
+                suitability=int(s.get("suitability") if s.get("suitability") is not None else 50),
                 lat=s.get("lat"),
                 lon=s.get("lon"),
             )

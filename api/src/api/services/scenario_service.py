@@ -79,18 +79,21 @@ class ScenarioService:
             sort=request.sort_mode,
         )
 
+        hab_ids = [int(r["id"]) for r in raw_habs]
+        hab_hazard_scores = self.hab_repo.get_hazard_scores_for_habitations(hab_ids)
+
         baseline_states: list[HabitationBaselineState] = []
         for r in raw_habs:
-            pop = int(r.get("population") or 0)
-            hh = int(r.get("households") or max(1, pop // 4))
+            pop = int(r.get("population") if r.get("population") is not None else 0)
+            hh = int(r.get("households") if r.get("households") is not None else max(1, pop // 4))
             h_id = int(r["id"])
             name = str(r.get("name") or f"Habitation-{h_id}")
 
-            prz_overlap = float(r.get("prz_overlap_pct") or 0.0)
+            prz_overlap = float(r.get("prz_overlap_pct") if r.get("prz_overlap_pct") is not None else 0.0)
             pop_frac = prz_overlap / 100.0
-            hazard_intensity = float(r.get("hazard_intensity") or 0.5)
-            v_index = float(r.get("v_index") or 0.5)
-            decayed_loss = float(r.get("decayed_loss") or 0.0)
+            hazard_intensity = float(r.get("hazard_intensity") if r.get("hazard_intensity") is not None else 0.5)
+            v_index = float(r.get("v_index") if r.get("v_index") is not None else 0.5)
+            decayed_loss = float(r.get("decayed_loss") if r.get("decayed_loss") is not None else 0.0)
 
             # Resolve baseline tier
             raw_tier = r.get("tier")
@@ -99,19 +102,20 @@ class ScenarioService:
             except ValueError:
                 tier_enum = Tier.SHORT_TERM
 
-            base_ps = float(r.get("priority_score") or 0.5)
+            base_ps = float(r.get("priority_score") if r.get("priority_score") is not None else 0.5)
 
-            # High risk indicators (Chooralmala, Mundakkai, Bhagamandala)
-            is_high_risk = name in ("Chooralmala", "Mundakkai", "Bhagamandala")
-            active_deformation = is_high_risk and name in ("Chooralmala", "Mundakkai")
-            fatal_event = is_high_risk
+            active_deformation = bool(r.get("active_deformation", False))
+            fatal_event = bool(r.get("fatal_event_last_3_monsoons", False))
 
-            # Map static hazard scores
-            hazard_scores = {
-                Hazard.LANDSLIDE: hazard_intensity,
-                Hazard.FLASH_FLOOD: 0.85 if is_high_risk else 0.35,
-                Hazard.RIVERINE_FLOOD: 0.20,
-            }
+            # Map static hazard scores from persisted hazard_static data
+            hazard_scores = hab_hazard_scores.get(h_id)
+            if not hazard_scores:
+                dom_str = r.get("dominant_hazard") or "landslide"
+                try:
+                    dom_hazard = Hazard(dom_str)
+                except ValueError:
+                    dom_hazard = Hazard.LANDSLIDE
+                hazard_scores = {dom_hazard: hazard_intensity}
 
             baseline_states.append(
                 HabitationBaselineState(

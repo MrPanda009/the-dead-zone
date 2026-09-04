@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import json
-from typing import Optional, Any
+from typing import Optional, Any, Sequence
 from sqlalchemy import text
 from sqlalchemy.orm import Session
-from core.enums import SortMode
+from core.enums import Hazard, SortMode
 
 
 class HabitationsRepository:
@@ -76,6 +76,8 @@ class HabitationsRepository:
                 hr.dataset_version,
                 hr.data_quality,
                 hr.confidence,
+                hr.active_deformation,
+                hr.fatal_event_last_3_monsoons,
                 hr.calculated_at,
                 count(*) OVER() as full_count
             FROM habitation h
@@ -137,6 +139,8 @@ class HabitationsRepository:
                 hr.dataset_version,
                 hr.data_quality,
                 hr.confidence,
+                hr.active_deformation,
+                hr.fatal_event_last_3_monsoons,
                 hr.calculated_at
             FROM habitation h
             LEFT JOIN admin_boundary a ON h.admin_id = a.id
@@ -173,6 +177,8 @@ class HabitationsRepository:
                 dataset_version,
                 data_quality,
                 confidence,
+                active_deformation,
+                fatal_event_last_3_monsoons,
                 calculated_at,
                 pipeline_run_id
             ) VALUES (
@@ -195,6 +201,8 @@ class HabitationsRepository:
                 :dataset_version,
                 :data_quality,
                 :confidence,
+                :active_deformation,
+                :fatal_event_last_3_monsoons,
                 :calculated_at,
                 :pipeline_run_id
             )
@@ -217,12 +225,16 @@ class HabitationsRepository:
                 dataset_version = EXCLUDED.dataset_version,
                 data_quality = EXCLUDED.data_quality,
                 confidence = EXCLUDED.confidence,
+                active_deformation = EXCLUDED.active_deformation,
+                fatal_event_last_3_monsoons = EXCLUDED.fatal_event_last_3_monsoons,
                 calculated_at = EXCLUDED.calculated_at,
                 pipeline_run_id = EXCLUDED.pipeline_run_id;
         """)
         factors = risk_record.get("contributing_factors", [])
         params = {
             **risk_record,
+            "active_deformation": bool(risk_record.get("active_deformation", False)),
+            "fatal_event_last_3_monsoons": bool(risk_record.get("fatal_event_last_3_monsoons", False)),
             "contributing_factors": json.dumps(factors) if isinstance(factors, list) else factors,
         }
         self.db.execute(query, params)
@@ -279,3 +291,38 @@ class HabitationsRepository:
             {"lon": lon, "lat": lat, "radius_m": radius_km * 1000.0},
         ).mappings().all()
         return [dict(r) for r in results]
+
+    def get_hazard_scores_for_habitations(
+        self, habitation_ids: Sequence[int]
+    ) -> dict[int, dict[Hazard, float]]:
+        """Retrieves static hazard scores for habitations aggregated from underlying H3 grid cells.
+        
+        Follows PRD §10.4 aggregation semantics: mean susceptibility across intersecting cells.
+        Point habitations map to their containing H3 cell.
+        """
+        if not habitation_ids:
+            return {}
+        query = text("""
+            SELECT 
+                h.id AS habitation_id,
+                hs.hazard_type,
+                AVG(hs.susceptibility) AS susceptibility
+            FROM habitation h
+            JOIN grid_cell gc ON (gc.habitation_id = h.id OR ST_Contains(gc.geom, h.geom_point))
+            JOIN hazard_static hs ON gc.h3 = hs.h3
+            WHERE h.id = ANY(:hab_ids)
+            GROUP BY h.id, hs.hazard_type;
+        """)
+        rows = self.db.execute(query, {"hab_ids": list(habitation_ids)}).mappings().all()
+        result: dict[int, dict[Hazard, float]] = {}
+        for r in rows:
+            h_id = int(r["habitation_id"])
+            try:
+                h_enum = Hazard(r["hazard_type"])
+            except ValueError:
+                continue
+            if h_id not in result:
+                result[h_id] = {}
+            result[h_id][h_enum] = round(float(r["susceptibility"]), 4)
+        return result
+
