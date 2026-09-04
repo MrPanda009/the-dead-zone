@@ -537,6 +537,14 @@ class TestAllocationServiceZeroPreservation:
                     "suitability": 0,  # Zero suitability must be preserved, not default 50
                     "lat": 11.6,
                     "lon": 76.1,
+                    "area_ha": 5.0,
+                    "tenure": "government_revenue",
+                    "slope_mean": 0.0,
+                    "mhi_max": 0.0,
+                    "is_forest": False,
+                    "is_protected_area": False,
+                    "is_crz": False,
+                    "is_water_body": False,
                 }
             ],
             [

@@ -308,22 +308,26 @@ class CapacityEngine:
         mhi_static: Optional[float] = None,
         slope_mean: Optional[float] = None,
         area_ha: Optional[float] = None,
-        is_forest: bool = False,
-        is_protected_area: bool = False,
-        is_crz: bool = False,
-        is_water_body: bool = False,
-        tenure: Optional[TenureType] = None,
+        is_forest: Optional[bool] = False,
+        is_protected_area: Optional[bool] = False,
+        is_crz: Optional[bool] = False,
+        is_water_body: Optional[bool] = False,
+        tenure: Optional[TenureType | str] = None,
         slope_mean_deg: Optional[float] = None,
         mhi_max: Optional[float] = None,
+        distance_km: Optional[float] = None,
+        require_distance: bool = False,
         policy: Optional[CandidateSitePolicy] = None,
     ) -> EligibilityResult:
         """Evaluates candidate site against deterministic policy eligibility criteria.
         
-        Section refs: PRD §6.8, FR-7.2:
+        Section refs: PRD §6.8, FR-7.2, FR-7.3:
         - MHI_static < 0.25 (Missing MHI is not assumed safe)
         - slope < 15 degrees (Missing slope is not assumed flat)
         - contiguous area >= 2 ha (Missing area is rejected)
         - not forest / protected / CRZ / water body
+        - tenure is explicitly known and valid (government_revenue or private; unverified/unknown rejected)
+        - within search radius (when distance_km is specified or require_distance is True)
         """
         p = policy or self.policy
         rejection_reasons: list[str] = []
@@ -348,17 +352,53 @@ class CapacityEngine:
         elif active_area < p.min_contiguous_area_ha:
             rejection_reasons.append(f"Contiguous area {active_area:.2f} ha < minimum {p.min_contiguous_area_ha:.2f} ha")
 
-        if p.exclude_forest and is_forest:
+        # Tenure validation (FR-7.3, H7: must be explicitly valid government_revenue or private)
+        if tenure is None:
+            rejection_reasons.append("Land tenure data is missing or unknown")
+        else:
+            tenure_val: Optional[TenureType] = None
+            if isinstance(tenure, TenureType):
+                tenure_val = tenure
+            elif isinstance(tenure, str):
+                try:
+                    tenure_val = TenureType(tenure.lower().strip())
+                except ValueError:
+                    tenure_val = None
+
+            if tenure_val is None:
+                rejection_reasons.append("Land tenure is unknown or invalid")
+            elif tenure_val == TenureType.TENURE_UNVERIFIED:
+                rejection_reasons.append("Land tenure is unverified")
+            elif tenure_val not in (TenureType.GOVERNMENT_REVENUE, TenureType.PRIVATE):
+                rejection_reasons.append("Land tenure is unknown or invalid")
+
+        # Environmental & land-cover exclusions
+        if is_forest is None:
+            rejection_reasons.append("Forest exclusion status is missing or unverified")
+        elif p.exclude_forest and is_forest:
             rejection_reasons.append("Site overlaps designated forest land")
 
-        if p.exclude_protected_area and is_protected_area:
+        if is_protected_area is None:
+            rejection_reasons.append("Protected area status is missing or unverified")
+        elif p.exclude_protected_area and is_protected_area:
             rejection_reasons.append("Site overlaps protected ecological area / sanctuary")
 
-        if p.exclude_crz_i_ii and is_crz:
+        if is_crz is None:
+            rejection_reasons.append("Coastal Regulation Zone (CRZ) status is missing or unverified")
+        elif p.exclude_crz_i_ii and is_crz:
             rejection_reasons.append("Site overlaps Coastal Regulation Zone (CRZ-I/II)")
 
-        if p.exclude_water_body and is_water_body:
+        if is_water_body is None:
+            rejection_reasons.append("Surface water body status is missing or unverified")
+        elif p.exclude_water_body and is_water_body:
             rejection_reasons.append("Site overlaps surface water body")
+
+        # Spatial search radius check
+        if distance_km is None:
+            if require_distance:
+                rejection_reasons.append("Site distance to target habitations is missing or unverified")
+        elif distance_km > p.search_radius_km:
+            rejection_reasons.append(f"Site distance {distance_km:.2f} km > search radius {p.search_radius_km:.1f} km")
 
         return EligibilityResult(
             is_eligible=len(rejection_reasons) == 0,

@@ -23,6 +23,10 @@ class Settings(BaseSettings):
         default=None,
         description="Direct non-pooled connection string (required for migrations, Martin, and heavy ETL).",
     )
+    TEST_DATABASE_URL: str | None = Field(
+        default=None,
+        description="Dedicated isolated test database connection string.",
+    )
 
     # Runtime & Mode
     DEMO_MODE: bool = Field(
