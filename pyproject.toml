@@ -3,7 +3,12 @@ name = "the-dead-zone"
 version = "0.1.0"
 description = "SETU-DRR — hazard red zone & relocation decision support"
 requires-python = ">=3.11"
-dependencies = ["core", "api", "pipeline"]
+dependencies = [
+    "core",
+    "api",
+    "pipeline",
+    "pyarrow>=25.0.1",
+]
 
 [tool.uv.workspace]
 members = ["core", "api", "pipeline"]

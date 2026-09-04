@@ -26,6 +26,7 @@ try:
     from .stac import query_sentinel1_rtc
     from .water_mask import save_raster_geotiff
     from .permanent_water import generate_permanent_water_mask
+    from .cropland import generate_cropland_fraction
     from .frequency_stack import (
         create_master_grid,
         accumulate_inundation_stack,
@@ -36,6 +37,7 @@ except (ImportError, ValueError):
     from stac import query_sentinel1_rtc
     from water_mask import save_raster_geotiff
     from permanent_water import generate_permanent_water_mask
+    from cropland import generate_cropland_fraction
     from frequency_stack import (
         create_master_grid,
         accumulate_inundation_stack,
@@ -85,6 +87,45 @@ def main():
         master_crs,
         nodata=255,
         dtype="uint8",
+    )
+
+    # -------------------------------------------------------------
+    # Step 5.2: ESA WorldCover v200 Cropland Fraction Layer
+    # -------------------------------------------------------------
+    print("\n  [+] Ingesting ESA WorldCover v200 (10m) from Planetary Computer STAC...")
+    cropland_fraction = generate_cropland_fraction(
+        reference_shape=master_shape,
+        reference_transform=master_transform,
+        reference_crs=master_crs,
+        bbox_wgs84=bbox_wgs84,
+        year=2021,
+    )
+    mean_crop = float(np.nanmean(cropland_fraction))
+    heavy_crop_pixels = int(np.sum(cropland_fraction > 0.5))
+    heavy_crop_area_km2 = (heavy_crop_pixels * 100.0) / 1e6
+    print(f"  [+] Cropland Fraction: mean = {mean_crop:.3f}, >50% cropland area = {heavy_crop_area_km2:.2f} km2 ({heavy_crop_pixels:,} pixels)")
+
+    crop_tif_path = out_dir / "barpeta_cropland_fraction.tif"
+    save_raster_geotiff(
+        crop_tif_path,
+        cropland_fraction,
+        master_transform,
+        master_crs,
+        nodata=np.nan,
+        dtype="float32",
+    )
+    print(f"  [+] Exported Cropland Fraction GeoTIFF to: {crop_tif_path}")
+
+    # Also save to canonical interim path data/interim/flood/barpeta/cropland_fraction.tif
+    flood_dir = WORKSPACE_ROOT / "data" / "interim" / "flood" / "barpeta"
+    flood_dir.mkdir(parents=True, exist_ok=True)
+    save_raster_geotiff(
+        flood_dir / "cropland_fraction.tif",
+        cropland_fraction,
+        master_transform,
+        master_crs,
+        nodata=np.nan,
+        dtype="float32",
     )
 
     # -------------------------------------------------------------
@@ -144,11 +185,12 @@ def main():
     save_raster_geotiff(water_tif_path, water_counts, master_transform, master_crs, nodata=0, dtype="uint16")
     print(f"  [+] Exported Flood Detection Count GeoTIFF to: {water_tif_path}")
 
-    # Generate multi-panel preview visualization
+    # Generate multi-panel preview visualization (6 panels)
     preview_path = out_dir / "barpeta_milestone_b_preview.png"
     generate_milestone_b_preview(
         jrc_occurrence=jrc_occurrence,
         permanent_mask=permanent_water_mask,
+        cropland_fraction=cropland_fraction,
         valid_counts=valid_counts,
         water_counts=water_counts,
         frequency=frequency,
@@ -165,14 +207,15 @@ def main():
 def generate_milestone_b_preview(
     jrc_occurrence: np.ndarray,
     permanent_mask: np.ndarray,
+    cropland_fraction: np.ndarray,
     valid_counts: np.ndarray,
     water_counts: np.ndarray,
     frequency: np.ndarray,
     num_scenes: int,
     out_path: Path,
 ):
-    """Render a 4-panel visual summary of Milestone B results."""
-    fig, axes = plt.subplots(2, 2, figsize=(18, 16), dpi=150)
+    """Render a 6-panel visual summary of Milestone B results (including Step 5.2 cropland fraction)."""
+    fig, axes = plt.subplots(2, 3, figsize=(24, 16), dpi=150)
 
     # Panel 1: JRC Global Surface Water Occurrence & Permanent Water
     im1 = axes[0, 0].imshow(jrc_occurrence, cmap="Blues", vmin=0, vmax=100)
@@ -181,29 +224,46 @@ def generate_milestone_b_preview(
     cbar1 = plt.colorbar(im1, ax=axes[0, 0], fraction=0.046, pad=0.04)
     cbar1.set_label("Water Occurrence (%)", fontsize=10)
 
-    # Panel 2: Valid Observation Count
-    im2 = axes[0, 1].imshow(valid_counts, cmap="viridis", vmin=0, vmax=num_scenes)
-    axes[0, 1].set_title(f"2. Sentinel-1 Valid Observation Count\n(Total Scenes = {num_scenes})", fontsize=11, fontweight="bold")
+    # Panel 2: ESA WorldCover v200 Cropland Fraction (Step 5.2)
+    crop_display = np.ma.masked_invalid(cropland_fraction)
+    im2 = axes[0, 1].imshow(crop_display, cmap="YlGn", vmin=0.0, vmax=1.0)
+    axes[0, 1].set_title("2. ESA WorldCover v200 Cropland Fraction (Step 5.2)\n(Resampled onto 10m SAR Grid)", fontsize=11, fontweight="bold")
     axes[0, 1].axis("off")
     cbar2 = plt.colorbar(im2, ax=axes[0, 1], fraction=0.046, pad=0.04)
-    cbar2.set_label("Number of Valid Passes", fontsize=10)
+    cbar2.set_label("Cropland Fraction [0.0 - 1.0]", fontsize=10)
 
-    # Panel 3: Inundation / Flood Detection Count (Permanent Water Removed)
-    im3 = axes[1, 0].imshow(water_counts, cmap="YlOrRd", vmin=0, vmax=max(1, np.max(water_counts)))
-    axes[1, 0].set_title("3. Temporary Inundation Detection Count\n(Permanent Water Filtered Out)", fontsize=11, fontweight="bold")
+    # Panel 3: Sentinel-1 Valid Observation Count
+    im3 = axes[0, 2].imshow(valid_counts, cmap="viridis", vmin=0, vmax=num_scenes)
+    axes[0, 2].set_title(f"3. Sentinel-1 Valid Observation Count\n(Total Scenes = {num_scenes})", fontsize=11, fontweight="bold")
+    axes[0, 2].axis("off")
+    cbar3 = plt.colorbar(im3, ax=axes[0, 2], fraction=0.046, pad=0.04)
+    cbar3.set_label("Number of Valid Passes", fontsize=10)
+
+    # Panel 4: Inundation / Flood Detection Count (Permanent Water Removed)
+    im4 = axes[1, 0].imshow(water_counts, cmap="YlOrRd", vmin=0, vmax=max(1, np.max(water_counts)))
+    axes[1, 0].set_title("4. Temporary Inundation Detection Count\n(Permanent Water Filtered Out)", fontsize=11, fontweight="bold")
     axes[1, 0].axis("off")
-    cbar3 = plt.colorbar(im3, ax=axes[1, 0], fraction=0.046, pad=0.04)
-    cbar3.set_label("Flood Detections Count", fontsize=10)
+    cbar4 = plt.colorbar(im4, ax=axes[1, 0], fraction=0.046, pad=0.04)
+    cbar4.set_label("Flood Detections Count", fontsize=10)
 
-    # Panel 4: Inundation Frequency Surface F(x, y)
+    # Panel 5: Inundation Frequency Surface F(x, y)
     freq_display = np.ma.masked_invalid(frequency)
-    im4 = axes[1, 1].imshow(freq_display, cmap="magma", vmin=0.0, vmax=1.0)
-    axes[1, 1].set_title("4. Empirical Inundation Frequency F(x, y)\nF = (Flood Detections) / (Valid Observations)", fontsize=11, fontweight="bold")
+    im5 = axes[1, 1].imshow(freq_display, cmap="magma", vmin=0.0, vmax=1.0)
+    axes[1, 1].set_title("5. Empirical Inundation Frequency F(x, y)\nF = (Flood Detections) / (Valid Observations)", fontsize=11, fontweight="bold")
     axes[1, 1].axis("off")
-    cbar4 = plt.colorbar(im4, ax=axes[1, 1], fraction=0.046, pad=0.04)
-    cbar4.set_label("Inundation Frequency [0.0 - 1.0]", fontsize=10)
+    cbar5 = plt.colorbar(im5, ax=axes[1, 1], fraction=0.046, pad=0.04)
+    cbar5.set_label("Inundation Frequency [0.0 - 1.0]", fontsize=10)
 
-    plt.suptitle("SETU-DRR Flood Susceptibility Pipeline — Milestone B (Barpeta Pilot)", fontsize=15, fontweight="bold", y=0.99)
+    # Panel 6: Flooded Cropland Flagging Analysis (F > 0 & Cropland Fraction > 0.5)
+    flooded_cropland = np.zeros_like(cropland_fraction)
+    flooded_cropland[(frequency > 0) & (cropland_fraction > 0.5)] = 1.0
+    im6 = axes[1, 2].imshow(flooded_cropland, cmap="autumn", vmin=0, vmax=1)
+    axes[1, 2].set_title("6. Flagged Flooded Cropland (F > 0 & Crop > 50%)\n(Qualified in Dossier, not hard masked)", fontsize=11, fontweight="bold")
+    axes[1, 2].axis("off")
+    cbar6 = plt.colorbar(im6, ax=axes[1, 2], fraction=0.046, pad=0.04)
+    cbar6.set_label("Flagged Cropland (1 = Flagged)", fontsize=10)
+
+    plt.suptitle("SETU-DRR Flood Susceptibility Pipeline — Milestone B (Barpeta Pilot)", fontsize=16, fontweight="bold", y=0.99)
     plt.tight_layout()
     plt.savefig(out_path, bbox_inches="tight")
     plt.close()
