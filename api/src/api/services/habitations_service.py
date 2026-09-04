@@ -18,6 +18,7 @@ from core.domain.priority import (
     TriageRuleConfig,
     compute_time_decayed_loss,
     check_fatal_event_last_3_monsoons,
+    check_loss_frequency_rising,
 )
 from core.domain.vulnerability import compute_vulnerability_index, VulnerabilityConfig
 from core.schemas.common import PaginatedResponse
@@ -96,6 +97,9 @@ class HabitationsService:
                 )
                 active_def = bool(r.get("active_deformation", False))
                 fatal_3_monsoons = bool(r.get("fatal_event_last_3_monsoons", False))
+                m_cost = r.get("mitigation_cost")
+                r_cost = r.get("relocation_cost")
+                adv_trend = r.get("adverse_trend")
                 raw_hi = r.get("hazard_intensity")
                 hazard_intensity = float(raw_hi if raw_hi is not None else 0.45)
                 raw_prz = r.get("prz_overlap_pct")
@@ -110,6 +114,9 @@ class HabitationsService:
                     population=pop,
                     active_deformation=active_def,
                     fatal_event_last_3_monsoons=fatal_3_monsoons,
+                    mitigation_cost=float(m_cost) if m_cost is not None else None,
+                    relocation_cost=float(r_cost) if r_cost is not None else None,
+                    adverse_trend=bool(adv_trend) if adv_trend is not None else None,
                 )
 
                 ps = eval_result["priority_score"]
@@ -187,6 +194,13 @@ class HabitationsService:
             # Canonical derivation from nearby disaster events
             fatal_3_monsoons = check_fatal_event_last_3_monsoons(nearby_events, reference_date=date.today())
 
+        m_cost = r.get("mitigation_cost")
+        r_cost = r.get("relocation_cost")
+        if r.get("adverse_trend") is not None:
+            adv_trend = bool(r["adverse_trend"])
+        else:
+            adv_trend = check_loss_frequency_rising(nearby_events, reference_date=date.today())
+
         eval_result = self.engine.evaluate_habitation(
             hazard_intensity=hazard_intensity,
             pop_fraction_in_prz=prz_overlap / 100.0,
@@ -195,6 +209,9 @@ class HabitationsService:
             population=pop,
             active_deformation=active_def,
             fatal_event_last_3_monsoons=fatal_3_monsoons,
+            mitigation_cost=float(m_cost) if m_cost is not None else None,
+            relocation_cost=float(r_cost) if r_cost is not None else None,
+            adverse_trend=adv_trend,
         )
 
         raw_ps = r.get("priority_score")

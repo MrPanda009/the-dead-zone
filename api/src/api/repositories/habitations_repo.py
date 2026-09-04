@@ -78,6 +78,9 @@ class HabitationsRepository:
                 hr.confidence,
                 hr.active_deformation,
                 hr.fatal_event_last_3_monsoons,
+                hr.mitigation_cost,
+                hr.relocation_cost,
+                hr.adverse_trend,
                 hr.calculated_at,
                 count(*) OVER() as full_count
             FROM habitation h
@@ -141,6 +144,9 @@ class HabitationsRepository:
                 hr.confidence,
                 hr.active_deformation,
                 hr.fatal_event_last_3_monsoons,
+                hr.mitigation_cost,
+                hr.relocation_cost,
+                hr.adverse_trend,
                 hr.calculated_at
             FROM habitation h
             LEFT JOIN admin_boundary a ON h.admin_id = a.id
@@ -179,6 +185,9 @@ class HabitationsRepository:
                 confidence,
                 active_deformation,
                 fatal_event_last_3_monsoons,
+                mitigation_cost,
+                relocation_cost,
+                adverse_trend,
                 calculated_at,
                 pipeline_run_id
             ) VALUES (
@@ -203,6 +212,9 @@ class HabitationsRepository:
                 :confidence,
                 :active_deformation,
                 :fatal_event_last_3_monsoons,
+                :mitigation_cost,
+                :relocation_cost,
+                :adverse_trend,
                 :calculated_at,
                 :pipeline_run_id
             )
@@ -227,12 +239,20 @@ class HabitationsRepository:
                 confidence = EXCLUDED.confidence,
                 active_deformation = EXCLUDED.active_deformation,
                 fatal_event_last_3_monsoons = EXCLUDED.fatal_event_last_3_monsoons,
+                mitigation_cost = EXCLUDED.mitigation_cost,
+                relocation_cost = EXCLUDED.relocation_cost,
+                adverse_trend = EXCLUDED.adverse_trend,
                 calculated_at = EXCLUDED.calculated_at,
                 pipeline_run_id = EXCLUDED.pipeline_run_id;
         """)
         factors = risk_record.get("contributing_factors", [])
+        m_cost = risk_record.get("mitigation_cost")
+        r_cost = risk_record.get("relocation_cost")
         params = {
             **risk_record,
+            "mitigation_cost": float(m_cost) if m_cost is not None else None,
+            "relocation_cost": float(r_cost) if r_cost is not None else None,
+            "adverse_trend": bool(risk_record.get("adverse_trend", False)),
             "active_deformation": bool(risk_record.get("active_deformation", False)),
             "fatal_event_last_3_monsoons": bool(risk_record.get("fatal_event_last_3_monsoons", False)),
             "contributing_factors": json.dumps(factors) if isinstance(factors, list) else factors,

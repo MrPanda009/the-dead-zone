@@ -44,7 +44,7 @@ class HabitationBaselineState:
     is_caution_with_adverse_trend: bool = False
     hazard_scores: Mapping[Hazard, float] = field(default_factory=dict)
     baseline_priority_score: float = 0.0
-    baseline_tier: Tier = Tier.SHORT_TERM
+    baseline_tier: Optional[Tier] = None
     lat: Optional[float] = None
     lon: Optional[float] = None
 
@@ -61,8 +61,8 @@ class ScenarioHabitationResult:
     rank_delta: int  # original_rank - scenario_rank (positive = rose in urgency)
     original_priority_score: float
     scenario_priority_score: float
-    original_tier: Tier
-    scenario_tier: Tier
+    original_tier: Optional[Tier]
+    scenario_tier: Optional[Tier]
     tier_changed: bool
     scenario_hazard_intensity: float
     scenario_prz_overlap_pct: float

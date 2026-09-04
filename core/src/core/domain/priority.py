@@ -65,7 +65,7 @@ class TriageRuleConfig:
 @dataclass
 class TriageEvaluationResult:
     """Detailed result of triage classification with explanatory rationale."""
-    tier: Tier
+    tier: Optional[Tier]
     rationale: str
     trigger_factors: list[str] = field(default_factory=list)
 
@@ -183,18 +183,90 @@ def check_fatal_event_last_3_monsoons(
     return False
 
 
+def evaluate_in_situ_cost_cheaper(
+    mitigation_cost: Optional[float],
+    relocation_cost: Optional[float],
+) -> bool:
+    """Evaluates whether in-situ civil mitigation costs less than relocation (PRD §6.7, FR-6.5).
+    
+    Invariants (H9):
+    - Missing data (None or NaN for either cost) MUST NOT be treated as cheap mitigation
+      or expensive relocation; returns False.
+    - If mitigation_cost < relocation_cost (and both are non-negative, finite): returns True.
+    - If mitigation_cost >= relocation_cost: returns False.
+    """
+    if mitigation_cost is None or relocation_cost is None:
+        return False
+    try:
+        m_cost = float(mitigation_cost)
+        r_cost = float(relocation_cost)
+    except (ValueError, TypeError):
+        return False
+
+    if not (math.isfinite(m_cost) and math.isfinite(r_cost)):
+        return False
+    if m_cost < 0.0 or r_cost < 0.0:
+        return False
+
+    return m_cost < r_cost
+
+
+def check_loss_frequency_rising(
+    events: Sequence[Mapping[str, Any]],
+    reference_date: Optional[date] = None,
+    recent_window_years: float = 5.0,
+    earlier_window_years: float = 5.0,
+    max_radius_km: float = 15.0,
+) -> bool:
+    """Evaluates whether disaster event loss frequency is rising near a settlement (PRD §6.7).
+    
+    An adverse trend indicator defined in PRD §6.7:
+    Event count in recent window (e.g. last 5 years) > event count in previous window
+    of equal duration (e.g. 5-10 years ago), with at least one recent event recorded.
+    """
+    ref = reference_date or date.today()
+    recent_days = recent_window_years * 365.25
+    total_days = (recent_window_years + earlier_window_years) * 365.25
+
+    recent_count = 0
+    earlier_count = 0
+
+    for ev in events:
+        dist = ev.get("distance_km")
+        if dist is not None and dist > max_radius_km:
+            continue
+        ev_date = ev.get("ts")
+        if isinstance(ev_date, str):
+            ev_date = date.fromisoformat(ev_date)
+        if not isinstance(ev_date, date):
+            continue
+
+        delta_days = (ref - ev_date).days
+        if delta_days < 0:
+            continue
+        if delta_days <= recent_days:
+            recent_count += 1
+        elif delta_days <= total_days:
+            earlier_count += 1
+
+    return recent_count > earlier_count and recent_count > 0
+
+
 def classify_triage_tier(
-    has_prz_overlap: bool,
+    has_prz_overlap: bool = False,
     active_deformation: bool = False,
     fatal_event_last_3_monsoons: bool = False,
-    pop_fraction_in_prz: float = 0.0,
+    pop_fraction_in_prz: Optional[float] = None,
     hazard_intensity: float = 0.0,
     priority_score: float = 0.0,
     has_active_trigger: bool = False,
-    in_situ_cost_cheaper: bool = False,
-    is_caution_with_adverse_trend: bool = False,
+    in_situ_cost_cheaper: Optional[bool] = None,
+    is_caution_with_adverse_trend: Optional[bool] = None,
+    mitigation_cost: Optional[float] = None,
+    relocation_cost: Optional[float] = None,
+    adverse_trend: Optional[bool] = None,
     rules: Optional[TriageRuleConfig] = None,
-) -> Tier:
+) -> Optional[Tier]:
     """Classifies a habitation into one of 4 permanent triage tiers.
     
     IMPORTANT ARCHITECTURAL INVARIANT:
@@ -206,47 +278,99 @@ def classify_triage_tier(
     Rules (PRD §6.7):
     - Immediate (0-6 mo): PRZ overlap AND (active ground deformation OR fatal event in last 3 monsoons OR (f_j > 0.6 AND h_j > 0.85))
     - Mitigate in situ: Small PRZ fraction (< 0.30) where slope stabilisation / embankment / drainage costs less than relocation
-    - Short-term (6-24 mo): Significant PRZ overlap or high priority score (PS >= 0.3)
-    - Medium-term (2-5 yr): Caution Zone with adverse trend or moderate exposure
+    - Short-term (6-24 mo): Significant PRZ overlap (>= 0.30) AND high priority score (PS >= 0.30) AND no active trigger
+    - Medium-term (2-5 yr): Caution Zone with adverse trend (built-up area growing or loss frequency rising) or moderate exposure
     """
     cfg = rules or TriageRuleConfig()
 
-    # 1. Mitigate in situ check (PRD FR-6.5: mandatory tier to recommend against relocation when feasible)
-    if in_situ_cost_cheaper and pop_fraction_in_prz < cfg.mitigate_in_situ_prz_pop_max:
-        return Tier.MITIGATE_IN_SITU
+    # 1. Resolve in-situ cost comparison
+    if in_situ_cost_cheaper is not None:
+        cost_cheaper = bool(in_situ_cost_cheaper)
+    else:
+        cost_cheaper = evaluate_in_situ_cost_cheaper(mitigation_cost, relocation_cost)
 
-    # 2. Immediate Relocation (PRD FR-6.4)
-    # Permanent Red Zone overlap combined with severe chronic markers
-    if has_prz_overlap and (
+    # 2. Resolve PRZ overlap semantics (PRD §6.7, H9)
+    threshold_frac = (
+        cfg.short_term_prz_overlap_min / 100.0
+        if cfg.short_term_prz_overlap_min > 1.0
+        else cfg.short_term_prz_overlap_min
+    )
+    
+    if pop_fraction_in_prz is not None:
+        frac = max(0.0, float(pop_fraction_in_prz))
+        has_prz = frac > 0.0
+        is_small_prz = 0.0 < frac < cfg.mitigate_in_situ_prz_pop_max
+        is_significant_prz = frac >= threshold_frac
+    else:
+        has_prz = bool(has_prz_overlap)
+        frac = 0.0
+        is_small_prz = False
+        is_significant_prz = bool(has_prz_overlap)
+
+    # 3. Resolve adverse trend (PRD §6.7, H9 Review §2)
+    # Three-state semantics:
+    # - None: unknown / not evaluated
+    # - False: evaluated and confirmed no adverse trend
+    # - True: evaluated and confirmed positive adverse trend
+    # INVARIANT: Only a confirmed True can satisfy the Medium-term rule.
+    # Missing / None data must NEVER be treated as a positive adverse trend.
+    from core.constants import CAUTION_MHI_MIN, PRZ_MHI_STATIC
+    caution_adverse = False
+    if is_caution_with_adverse_trend is True:
+        caution_adverse = True
+    elif adverse_trend is True:
+        is_caution_hazard = (CAUTION_MHI_MIN <= hazard_intensity < PRZ_MHI_STATIC) or (0.45 <= hazard_intensity < 0.75)
+        caution_adverse = is_caution_hazard
+
+    # ====================================================================
+    # PRECEDENCE & DECISION ORDER (PRD §6.7)
+    # ====================================================================
+
+    # Tier 1: Immediate Relocation (0-6 months)
+    # PRZ overlap AND (active ground deformation OR fatal event in last 3 monsoons OR (f_j > 0.6 AND h_j > 0.85))
+    if has_prz and (
         active_deformation
         or fatal_event_last_3_monsoons
-        or (pop_fraction_in_prz > cfg.immediate_prz_pop_min and hazard_intensity > cfg.immediate_hazard_min)
+        or (frac > cfg.immediate_prz_pop_min and hazard_intensity > cfg.immediate_hazard_min)
     ):
         return Tier.IMMEDIATE
 
-    # 3. Short-term Relocation (6-24 months)
-    if has_prz_overlap or priority_score >= cfg.short_term_priority_min:
+    # Tier 4: Mitigate in situ
+    # Small PRZ fraction (< 0.30) AND mitigation cost < relocation cost
+    # Mandatory tier to avoid unnecessary permanent relocation when civil works are viable
+    if cost_cheaper and (is_small_prz or (pop_fraction_in_prz is None and has_prz)):
+        return Tier.MITIGATE_IN_SITU
+
+    # Tier 2: Short-term Relocation (6-24 months)
+    # Significant PRZ overlap (>= 30%) or high priority score (PS >= 0.30)
+    if is_significant_prz or priority_score >= cfg.short_term_priority_min:
         return Tier.SHORT_TERM
 
-    # 4. Medium-term Relocation (2-5 years)
-    if is_caution_with_adverse_trend:
+    # Tier 3: Medium-term Relocation (2-5 years)
+    # Caution Zone with adverse trend (built-up area growing or loss frequency rising)
+    if caution_adverse:
         return Tier.MEDIUM_TERM
 
-    return Tier.MEDIUM_TERM
+    # Safe return for habitations satisfying none of the four explicit PRD triage tiers
+    return None
 
 
 def evaluate_triage_with_rationale(
-    has_prz_overlap: bool,
+    has_prz_overlap: bool = False,
     active_deformation: bool = False,
     fatal_event_last_3_monsoons: bool = False,
-    pop_fraction_in_prz: float = 0.0,
+    pop_fraction_in_prz: Optional[float] = None,
     hazard_intensity: float = 0.0,
     priority_score: float = 0.0,
-    in_situ_cost_cheaper: bool = False,
+    in_situ_cost_cheaper: Optional[bool] = None,
     is_caution_with_adverse_trend: bool = False,
+    mitigation_cost: Optional[float] = None,
+    relocation_cost: Optional[float] = None,
+    adverse_trend: Optional[bool] = None,
     rules: Optional[TriageRuleConfig] = None,
 ) -> TriageEvaluationResult:
     """Evaluates triage tier and provides detailed audit rationale."""
+    cfg = rules or TriageRuleConfig()
     tier = classify_triage_tier(
         has_prz_overlap=has_prz_overlap,
         active_deformation=active_deformation,
@@ -256,7 +380,10 @@ def evaluate_triage_with_rationale(
         priority_score=priority_score,
         in_situ_cost_cheaper=in_situ_cost_cheaper,
         is_caution_with_adverse_trend=is_caution_with_adverse_trend,
-        rules=rules,
+        mitigation_cost=mitigation_cost,
+        relocation_cost=relocation_cost,
+        adverse_trend=adverse_trend,
+        rules=cfg,
     )
 
     factors = []
@@ -265,27 +392,34 @@ def evaluate_triage_with_rationale(
             factors.append("Active ground deformation detected in settlement footprint")
         if fatal_event_last_3_monsoons:
             factors.append("Fatal mass-wasting event recorded within the last 3 monsoons")
-        if pop_fraction_in_prz > 0.6 and hazard_intensity > 0.85:
+        if pop_fraction_in_prz is not None and pop_fraction_in_prz > cfg.immediate_prz_pop_min and hazard_intensity > cfg.immediate_hazard_min:
             factors.append("Critical exposure (>60% population in PRZ with severe hazard intensity >0.85)")
         rationale = (
             "Immediate permanent relocation required (0-6 months): "
             + "; ".join(factors)
         )
     elif tier == Tier.MITIGATE_IN_SITU:
-        factors.append("PRZ exposure under 30% and in-situ engineering stabilization costs less than relocation")
+        factors.append("Small PRZ exposure (<30%) and in-situ engineering stabilization costs less than relocation")
         rationale = "Mitigate in-situ: Civil mitigation (embankment/retaining wall) recommended over physical relocation."
     elif tier == Tier.SHORT_TERM:
-        if has_prz_overlap:
+        if pop_fraction_in_prz is not None and pop_fraction_in_prz >= (cfg.short_term_prz_overlap_min / 100.0 if cfg.short_term_prz_overlap_min > 1.0 else cfg.short_term_prz_overlap_min):
+            factors.append("Significant Permanent Red Zone (PRZ) boundary overlap (>=30%)")
+        else:
             factors.append("Permanent Red Zone (PRZ) boundary overlap")
-        if priority_score >= 0.3:
-            factors.append(f"High composite priority score ({priority_score:.2f} >= 0.30)")
+        if priority_score >= cfg.short_term_priority_min:
+            factors.append(f"High composite priority score ({priority_score:.2f} >= {cfg.short_term_priority_min:.2f})")
         rationale = (
             "Short-term planned relocation required (6-24 months): "
             + "; ".join(factors)
         )
+    elif tier == Tier.MEDIUM_TERM:
+        factors.append("Caution Zone with adverse trend (built-up growth or rising loss frequency)")
+        rationale = (
+            "Medium-term planned relocation required (2-5 years): "
+            + "; ".join(factors)
+        )
     else:
-        factors.append("Moderate multi-hazard exposure within Caution Zone")
-        rationale = "Medium-term monitoring and risk mitigation (2-5 years): Caution zone with moderate exposure."
+        rationale = "Unclassified / Monitoring: Settlement does not meet criteria for permanent relocation or civil in-situ mitigation."
 
     return TriageEvaluationResult(tier=tier, rationale=rationale, trigger_factors=factors)
 
@@ -334,9 +468,14 @@ class PriorityScoringEngine:
         fatal_event_last_3_monsoons: bool = False,
         in_situ_cost_cheaper: bool = False,
         is_caution_with_adverse_trend: bool = False,
+        mitigation_cost: Optional[float] = None,
+        relocation_cost: Optional[float] = None,
+        adverse_trend: Optional[bool] = None,
     ) -> dict[str, Any]:
         """Evaluates priority score, caseload, triage tier, and factors for a habitation."""
-        has_prz = pop_fraction_in_prz > 0.0 or (pop_fraction_in_prz * 100.0) >= self.triage_config.short_term_prz_overlap_min
+        from core.constants import CAUTION_MHI_MIN, PRZ_MHI_STATIC
+
+        has_prz = pop_fraction_in_prz > 0.0
 
         ps = self.scoring_config.calculate_score(
             hazard_intensity=hazard_intensity,
@@ -346,6 +485,12 @@ class PriorityScoringEngine:
         )
         caseload = round(ps * max(population, 0), 2)
 
+        cost_cheaper = in_situ_cost_cheaper or evaluate_in_situ_cost_cheaper(mitigation_cost, relocation_cost)
+        caution_adverse = False
+        if (is_caution_with_adverse_trend is True) or (adverse_trend is True):
+            is_caution = (CAUTION_MHI_MIN <= hazard_intensity < PRZ_MHI_STATIC) or (0.45 <= hazard_intensity < 0.75)
+            caution_adverse = is_caution
+
         triage_res = evaluate_triage_with_rationale(
             has_prz_overlap=has_prz,
             active_deformation=active_deformation,
@@ -353,8 +498,11 @@ class PriorityScoringEngine:
             pop_fraction_in_prz=pop_fraction_in_prz,
             hazard_intensity=hazard_intensity,
             priority_score=ps,
-            in_situ_cost_cheaper=in_situ_cost_cheaper,
-            is_caution_with_adverse_trend=is_caution_with_adverse_trend,
+            in_situ_cost_cheaper=cost_cheaper,
+            is_caution_with_adverse_trend=caution_adverse,
+            mitigation_cost=mitigation_cost,
+            relocation_cost=relocation_cost,
+            adverse_trend=adverse_trend,
             rules=self.triage_config,
         )
 
