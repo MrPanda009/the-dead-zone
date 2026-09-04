@@ -42,6 +42,20 @@ class Settings(BaseSettings):
         description="Default machine learning model version tag.",
     )
 
+    # ML Model Checkpoint Paths
+    MODEL_CHECKPOINT_PATH: str | None = Field(
+        default=None,
+        description="Generic path to model checkpoint file or directory containing checkpoints.",
+    )
+    LANDSLIDE_MODEL_PATH: str | None = Field(
+        default=None,
+        description="Path to serialized trained landslide model checkpoint.",
+    )
+    FLOOD_MODEL_PATH: str | None = Field(
+        default=None,
+        description="Path to serialized trained flood model checkpoint.",
+    )
+
     # File paths
     DATA_ROOT: Path = Field(
         default=DATA_DIR,

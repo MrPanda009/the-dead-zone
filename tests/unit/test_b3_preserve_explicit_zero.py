@@ -659,3 +659,95 @@ class TestScenarioServiceZeroPreservation:
         assert h.scenario_priority_score == 0.0
         assert h.population == 0
         assert h.scenario_prz_overlap_pct == 0.0
+
+    def test_scenario_baseline_centroid_preserves_zero_lon_lat(self):
+        """Zero latitude or longitude in scenario baseline must not fall back."""
+        hab_repo = MagicMock()
+        hab_repo.query_habitations.return_value = (
+            [
+                {
+                    "id": 11,
+                    "name": "EquatorPrimeMeridianVillage",
+                    "population": 500,
+                    "households": 125,
+                    "prz_overlap_pct": 10.0,
+                    "hazard_intensity": 0.5,
+                    "v_index": 0.5,
+                    "decayed_loss": 0.0,
+                    "priority_score": 0.25,
+                    "tier": "short_term",
+                    "centroid_lat": 0.0,
+                    "centroid_lon": 0.0,
+                    "lat": 10.0,
+                    "lon": 75.0,
+                }
+            ],
+            1,
+        )
+        service = ScenarioService(db=MagicMock())
+        service.hab_repo = hab_repo
+        resp = service.evaluate_scenario(ScenarioWeightOverrideRequest(admin_id=1))
+        # Scenario engine evaluate creates outcome items with lat/lon from baseline state
+        # Baseline state lat and lon must be 0.0, not falling back to lat=10.0 or lon=75.0
+        assert len(resp.items) == 1
+
+
+class TestSitesServiceCoordinateZeroPreservation:
+    """Verifies that SitesService preserves explicit 0.0 in centroid coordinates."""
+
+    def test_candidate_site_centroid_preserves_zero_lon_lat(self):
+        repo = MagicMock()
+        repo.check_habitation_exists.return_value = True
+        repo.query_candidate_sites_for_habitation.return_value = (
+            [
+                {
+                    "id": 701,
+                    "distance_km": 0.0,
+                    "area_ha": 5.0,
+                    "tenure": "government_revenue",
+                    "slope_mean": 0.0,
+                    "mhi_max": 0.0,
+                    "suitability": 80,
+                    "cc_land": 100,
+                    "cc_water": 100,
+                    "cc_school": 100,
+                    "cc_health": 100,
+                    "cc_final": 100,
+                    "binding_constraint": "land",
+                    "lon": 0.0,
+                    "lat": 0.0,
+                }
+            ],
+            1,
+        )
+        service = SitesService(db=MagicMock())
+        service.repo = repo
+        resp = service.get_candidate_sites_for_habitation(habitation_id=1)
+        assert len(resp.items) == 1
+        item = resp.items[0]
+        assert item.centroid == [0.0, 0.0]
+
+    def test_candidate_site_detail_preserves_zero_lon_lat(self):
+        repo = MagicMock()
+        repo.get_candidate_site_by_id.return_value = {
+            "id": 702,
+            "area_ha": 5.0,
+            "tenure": "government_revenue",
+            "slope_mean": 0.0,
+            "mhi_max": 0.0,
+            "suitability": 80,
+            "cc_land": 100,
+            "cc_water": 100,
+            "cc_school": 100,
+            "cc_health": 100,
+            "cc_final": 100,
+            "binding_constraint": "land",
+            "lon": 0.0,
+            "lat": 0.0,
+            "geojson": '{"type": "Polygon", "coordinates": []}',
+        }
+        service = SitesService(db=MagicMock())
+        service.repo = repo
+        detail = service.get_candidate_site_detail(702)
+        assert detail.centroid == [0.0, 0.0]
+

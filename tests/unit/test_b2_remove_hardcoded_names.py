@@ -501,3 +501,182 @@ class TestCanonicalConsistency:
         # Because PRZ overlap > 0 and fatal_event_last_3_monsoons is True, tier must be IMMEDIATE
         assert dossier.tier == Tier.IMMEDIATE
         assert "Fatal mass-wasting event" in dossier.triage_rationale
+
+
+# ====================================================================
+# Test F — Explicit Audit Requirements (Test A, Test B, Test C)
+# ====================================================================
+
+class TestB2AuditRequirements:
+    """Explicit tests matching Day-8 audit B2 requirements A, B, and C."""
+
+    def test_test_a_arbitrary_habitations_tier_follows_stored_fields(self):
+        """Test A — arbitrary habitation:
+        Create two otherwise equivalent habitations with different names.
+        Give them explicit risk inputs: active_deformation = True/False.
+        Assert tier/risk behavior follows the stored fields, not the name.
+        """
+        engine = PriorityScoringEngine()
+
+        # Habitation X with active_deformation=True -> IMMEDIATE
+        res_x_high = engine.evaluate_habitation(
+            hazard_intensity=0.70,
+            pop_fraction_in_prz=0.60,
+            vulnerability_index=0.50,
+            active_deformation=True,
+            fatal_event_last_3_monsoons=False,
+        )
+        # Habitation Y with active_deformation=False -> SHORT_TERM
+        res_y_low = engine.evaluate_habitation(
+            hazard_intensity=0.70,
+            pop_fraction_in_prz=0.60,
+            vulnerability_index=0.50,
+            active_deformation=False,
+            fatal_event_last_3_monsoons=False,
+        )
+        assert res_x_high["tier"] == Tier.IMMEDIATE
+        assert res_y_low["tier"] == Tier.SHORT_TERM
+
+    def test_test_b_named_village_chooralmala_no_magic_treatment(self):
+        """Test B — named village no longer gets magic treatment:
+        Use a village named Chooralmala but provide non-high-risk stored inputs.
+        Assert it does NOT receive the old hardcoded Tier-1 behavior merely because of its name.
+        Likewise, use a non-demo village with the same authoritative high-risk flags and assert it receives the corresponding behavior.
+        """
+        mock_db = MagicMock()
+        service = HabitationsService(mock_db)
+
+        # Chooralmala with non-high-risk inputs
+        chooralmala_low_risk = {
+            "id": 1,
+            "lgd_code": 1001,
+            "name": "Chooralmala",
+            "type": "village",
+            "admin_id": 1,
+            "admin_name": "Wayanad",
+            "population": 800,
+            "households": 200,
+            "lon": 76.15,
+            "lat": 11.54,
+            "v_demographic": 0.4,
+            "v_structural": 0.4,
+            "v_access": 0.4,
+            "v_economic": 0.4,
+            "v_index": 0.4,
+            "hazard_intensity": 0.40,
+            "prz_overlap_pct": 50.0,
+            "active_deformation": False,
+            "fatal_event_last_3_monsoons": False,
+            "priority_score": None,
+            "caseload_score": None,
+            "tier": None,
+            "triage_rationale": None,
+            "contributing_factors": [],
+        }
+
+        # Non-demo village with authoritative high-risk flags
+        unknown_village_high_risk = {
+            "id": 2,
+            "lgd_code": 9999,
+            "name": "CompletelyUnknownRemoteVillage",
+            "type": "village",
+            "admin_id": 1,
+            "admin_name": "Wayanad",
+            "population": 800,
+            "households": 200,
+            "lon": 76.20,
+            "lat": 11.60,
+            "v_demographic": 0.4,
+            "v_structural": 0.4,
+            "v_access": 0.4,
+            "v_economic": 0.4,
+            "v_index": 0.4,
+            "hazard_intensity": 0.40,
+            "prz_overlap_pct": 50.0,
+            "active_deformation": True,
+            "fatal_event_last_3_monsoons": False,
+            "priority_score": None,
+            "caseload_score": None,
+            "tier": None,
+            "triage_rationale": None,
+            "contributing_factors": [],
+        }
+
+        service.repo.get_habitation_by_id = MagicMock(
+            side_effect=lambda hid: chooralmala_low_risk if hid == 1 else unknown_village_high_risk
+        )
+        service.repo.get_nearby_disaster_events = MagicMock(return_value=[])
+
+        dossier_chooralmala = service.get_habitation_risk_dossier(1)
+        dossier_unknown = service.get_habitation_risk_dossier(2)
+
+        # Chooralmala does NOT receive Tier-1 (IMMEDIATE) merely because of its name
+        assert dossier_chooralmala.tier != Tier.IMMEDIATE
+        assert dossier_chooralmala.tier == Tier.SHORT_TERM
+
+        # The unknown village DOES receive Tier-1 (IMMEDIATE) because of active_deformation = True
+        assert dossier_unknown.tier == Tier.IMMEDIATE
+
+    def test_test_c_scenario_hazard_values_from_persisted_hazard_static(self):
+        """Test C — scenario hazard values:
+        Provide deterministic hazard_static values for multiple hazards.
+        Assert /scenario consumes those values rather than the old constants.
+        Make sure the test demonstrates that changing a persisted hazard value changes the scenario result.
+        """
+        mock_db = MagicMock()
+        service = ScenarioService(mock_db)
+
+        hab_row = {
+            "id": 101,
+            "name": "TestVillageScenario",
+            "population": 1000,
+            "households": 250,
+            "prz_overlap_pct": 50.0,
+            "hazard_intensity": 0.60,
+            "v_index": 0.50,
+            "decayed_loss": 0.5,
+            "active_deformation": False,
+            "fatal_event_last_3_monsoons": False,
+            "priority_score": 0.30,
+            "tier": "short_term",
+            "dominant_hazard": "landslide",
+            "lat": 11.5,
+            "lon": 76.1,
+        }
+        service.hab_repo.query_habitations = MagicMock(return_value=([hab_row], 1))
+
+        # 1. First scenario with landslide=0.8, flash_flood=0.2
+        service.hab_repo.get_hazard_scores_for_habitations = MagicMock(
+            return_value={
+                101: {
+                    Hazard.LANDSLIDE: 0.80,
+                    Hazard.FLASH_FLOOD: 0.20,
+                    Hazard.STORM_SURGE: 0.10,
+                }
+            }
+        )
+        req = ScenarioWeightOverrideRequest(
+            hazard_weights={"landslide": 1.0, "flash_flood": 1.0, "storm_surge": 1.0},
+            priority_gamma=0.5,
+        )
+        res1 = service.evaluate_scenario(req)
+        score1 = res1.items[0].scenario_priority_score
+        h_int1 = res1.items[0].scenario_hazard_intensity
+
+        # 2. Change persisted hazard_static score for landslide to 0.10
+        service.hab_repo.get_hazard_scores_for_habitations = MagicMock(
+            return_value={
+                101: {
+                    Hazard.LANDSLIDE: 0.10,
+                    Hazard.FLASH_FLOOD: 0.20,
+                    Hazard.STORM_SURGE: 0.10,
+                }
+            }
+        )
+        res2 = service.evaluate_scenario(req)
+        score2 = res2.items[0].scenario_priority_score
+        h_int2 = res2.items[0].scenario_hazard_intensity
+
+        # Assert that changing persisted hazard_static values changes the scenario score
+        assert h_int1 > h_int2
+        assert score1 > score2

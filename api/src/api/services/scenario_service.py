@@ -144,8 +144,8 @@ class ScenarioService:
                     hazard_scores=hazard_scores,
                     baseline_priority_score=base_ps,
                     baseline_tier=tier_enum,
-                    lat=r.get("centroid_lat") or r.get("lat"),
-                    lon=r.get("centroid_lon") or r.get("lon"),
+                    lat=r.get("centroid_lat") if r.get("centroid_lat") is not None else r.get("lat"),
+                    lon=r.get("centroid_lon") if r.get("centroid_lon") is not None else r.get("lon"),
                 )
             )
 
