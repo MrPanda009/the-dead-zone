@@ -52,7 +52,8 @@ def compute_mhi(
         w_val = active_weights.get(hazard_enum)
         w = float(w_val if w_val is not None else 1.0)
         clamped_score = min(max(score, 0.0), 1.0)
-        prob_complement_product *= (1.0 - w * clamped_score)
+        weighted_term = min(max(w * clamped_score, 0.0), 1.0)
+        prob_complement_product *= (1.0 - weighted_term)
 
     mhi = 1.0 - prob_complement_product
     return min(max(mhi, 0.0), 1.0)

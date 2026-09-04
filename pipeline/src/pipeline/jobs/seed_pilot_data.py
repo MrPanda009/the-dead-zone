@@ -58,6 +58,21 @@ SEED = 42
 DATASET_VERSION = "demo-day2-v1"
 MODEL_VERSION = "baseline-v1"
 
+# ============================================================================
+# PROVENANCE CLASSIFICATION FOR PILOT TRIAGE INPUTS (PRD §6.7, H9 Audit):
+#
+# The mitigation_cost and relocation_cost values seeded below are:
+#   Classification: EXPLICITLY SYNTHETIC DEMO FIXTURES (Category 2)
+#
+# Provenance Details:
+# - These monetary amounts (in INR) are deterministic test fixtures created solely
+#   to exercise the four-tier triage decision rules in Day 2 & Day 5 pilot environments.
+# - They are NOT field-surveyed civil engineering estimates, DPR quantities, or real
+#   resettlement DPR cost models (the authoritative field-engineering cost pipeline
+#   is scheduled for v2 as per PRD §14).
+# - They must be treated strictly as synthetic demo data for pipeline validation.
+# ============================================================================
+
 
 # Pilot District Configurations
 PILOT_DISTRICTS = [
@@ -81,6 +96,9 @@ PILOT_DISTRICTS = [
                 "prz_overlap_pct": 82.5,
                 "active_deformation": True,
                 "fatal_3_monsoons": True,
+                "mitigation_cost": 45000000.0,
+                "relocation_cost": 25000000.0,
+                "adverse_trend": True,
                 "v_demo": 0.58, "v_struct": 0.72, "v_access": 0.65, "v_econ": 0.60,
             },
             {
@@ -93,6 +111,9 @@ PILOT_DISTRICTS = [
                 "prz_overlap_pct": 91.0,
                 "active_deformation": True,
                 "fatal_3_monsoons": True,
+                "mitigation_cost": 50000000.0,
+                "relocation_cost": 20000000.0,
+                "adverse_trend": True,
                 "v_demo": 0.62, "v_struct": 0.81, "v_access": 0.74, "v_econ": 0.68,
             },
             {
@@ -105,6 +126,9 @@ PILOT_DISTRICTS = [
                 "prz_overlap_pct": 35.0,
                 "active_deformation": False,
                 "fatal_3_monsoons": False,
+                "mitigation_cost": 30000000.0,
+                "relocation_cost": 15000000.0,
+                "adverse_trend": False,
                 "v_demo": 0.44, "v_struct": 0.48, "v_access": 0.35, "v_econ": 0.42,
             },
             {
@@ -117,6 +141,9 @@ PILOT_DISTRICTS = [
                 "prz_overlap_pct": 48.0,
                 "active_deformation": False,
                 "fatal_3_monsoons": False,
+                "mitigation_cost": 25000000.0,
+                "relocation_cost": 12000000.0,
+                "adverse_trend": False,
                 "v_demo": 0.51, "v_struct": 0.55, "v_access": 0.42, "v_econ": 0.49,
             },
             {
@@ -129,6 +156,9 @@ PILOT_DISTRICTS = [
                 "prz_overlap_pct": 12.0,
                 "active_deformation": False,
                 "fatal_3_monsoons": False,
+                "mitigation_cost": 4500000.0,
+                "relocation_cost": 25000000.0,
+                "adverse_trend": False,
                 "v_demo": 0.32, "v_struct": 0.30, "v_access": 0.20, "v_econ": 0.28,
             },
             {
@@ -141,6 +171,9 @@ PILOT_DISTRICTS = [
                 "prz_overlap_pct": 18.5,
                 "active_deformation": False,
                 "fatal_3_monsoons": False,
+                "mitigation_cost": 22000000.0,
+                "relocation_cost": 15000000.0,
+                "adverse_trend": True,
                 "v_demo": 0.38, "v_struct": 0.36, "v_access": 0.25, "v_econ": 0.34,
             },
         ],
@@ -277,6 +310,9 @@ PILOT_DISTRICTS = [
                 "prz_overlap_pct": 28.0,
                 "active_deformation": False,
                 "fatal_3_monsoons": False,
+                "mitigation_cost": 35000000.0,
+                "relocation_cost": 20000000.0,
+                "adverse_trend": True,
                 "v_demo": 0.35, "v_struct": 0.40, "v_access": 0.22, "v_econ": 0.30,
             },
             {
@@ -289,6 +325,9 @@ PILOT_DISTRICTS = [
                 "prz_overlap_pct": 74.0,
                 "active_deformation": True,
                 "fatal_3_monsoons": False,
+                "mitigation_cost": 38000000.0,
+                "relocation_cost": 18000000.0,
+                "adverse_trend": True,
                 "v_demo": 0.54, "v_struct": 0.68, "v_access": 0.62, "v_econ": 0.56,
             },
             {
@@ -301,6 +340,9 @@ PILOT_DISTRICTS = [
                 "prz_overlap_pct": 22.0,
                 "active_deformation": False,
                 "fatal_3_monsoons": False,
+                "mitigation_cost": 3200000.0,
+                "relocation_cost": 18000000.0,
+                "adverse_trend": False,
                 "v_demo": 0.39, "v_struct": 0.42, "v_access": 0.30, "v_econ": 0.35,
             },
         ],
@@ -534,6 +576,10 @@ def seed_database(db_url: Optional[str] = None) -> None:
                 )
                 caseload = round(ps * h["population"], 2)
 
+                m_cost = h.get("mitigation_cost")
+                r_cost = h.get("relocation_cost")
+                adv_trend = h.get("adverse_trend")
+
                 tier = classify_triage_tier(
                     has_prz_overlap=(prz_overlap > 0.0),
                     active_deformation=h["active_deformation"],
@@ -541,9 +587,17 @@ def seed_database(db_url: Optional[str] = None) -> None:
                     pop_fraction_in_prz=pop_frac_in_prz,
                     hazard_intensity=hazard_intensity,
                     priority_score=ps,
+                    mitigation_cost=m_cost,
+                    relocation_cost=r_cost,
+                    adverse_trend=adv_trend,
                 )
 
-                rationale = f"Assigned to {tier.value.upper()} tier based on PRZ overlap ({prz_overlap:.1f}%), active deformation ({h['active_deformation']}), and SoVI vulnerability ({v_index:.2f})."
+                tier_val = tier.value if tier is not None else None
+                rationale = (
+                    f"Assigned to {tier.value.upper()} tier based on PRZ overlap ({prz_overlap:.1f}%), active deformation ({h['active_deformation']}), and SoVI vulnerability ({v_index:.2f})."
+                    if tier is not None
+                    else "Unclassified / Monitoring: Does not meet criteria for permanent relocation or civil in-situ mitigation."
+                )
                 contributing_factors = [
                     {"name": "Slope & Terrain Curvature", "contribution": 0.45, "type": "hazard"},
                     {"name": "Permanent Red Zone Overlap", "contribution": round(pop_frac_in_prz, 2), "type": "exposure"},
@@ -558,14 +612,16 @@ def seed_database(db_url: Optional[str] = None) -> None:
                             priority_score, caseload_score, tier, triage_rationale,
                             contributing_factors, dominant_hazard, model_version, scoring_version,
                             dataset_version, data_quality, confidence, calculated_at, pipeline_run_id,
-                            active_deformation, fatal_event_last_3_monsoons
+                            active_deformation, fatal_event_last_3_monsoons,
+                            mitigation_cost, relocation_cost, adverse_trend
                         ) VALUES (
                             :hab_id, :admin_id, :pop, :hh,
                             :hazard_intensity, :prz_overlap_pct, :decayed_loss, :v_index,
                             :ps, :caseload, :tier, :rationale,
                             CAST(:contributing_factors AS jsonb), 'landslide', :model_ver, 'priority-v1.0',
                             :dataset_ver, 'observed', 0.95, :now, :pipeline_run_id,
-                            :active_deformation, :fatal_event_last_3_monsoons
+                            :active_deformation, :fatal_event_last_3_monsoons,
+                            :mitigation_cost, :relocation_cost, :adverse_trend
                         );
                     """),
                     {
@@ -579,7 +635,7 @@ def seed_database(db_url: Optional[str] = None) -> None:
                         "v_index": v_index,
                         "ps": ps,
                         "caseload": caseload,
-                        "tier": tier.value,
+                        "tier": tier_val,
                         "rationale": rationale,
                         "contributing_factors": json.dumps(contributing_factors),
                         "model_ver": MODEL_VERSION,
@@ -588,6 +644,9 @@ def seed_database(db_url: Optional[str] = None) -> None:
                         "pipeline_run_id": pipeline_run_id,
                         "active_deformation": h["active_deformation"],
                         "fatal_event_last_3_monsoons": h["fatal_3_monsoons"],
+                        "mitigation_cost": m_cost,
+                        "relocation_cost": r_cost,
+                        "adverse_trend": bool(adv_trend) if adv_trend is not None else None,
                     },
                 )
 

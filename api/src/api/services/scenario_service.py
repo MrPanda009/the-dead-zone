@@ -19,12 +19,14 @@ from sqlalchemy.orm import Session
 from api.repositories.habitations_repo import HabitationsRepository
 from api.services.allocation_service import AllocationService
 from core.constants import (
+    CAUTION_MHI_MIN,
     HAZARD_WEIGHTS,
     PRIORITY_GAMMA,
     PRZ_MHI_STATIC,
     SCREENING_GRADE_NOTICE,
 )
 from core.domain.allocation import HabitationDemand
+from core.domain.priority import evaluate_in_situ_cost_cheaper
 from core.domain.scenario import (
     HabitationBaselineState,
     ScenarioEngine,
@@ -117,6 +119,13 @@ class ScenarioService:
                     dom_hazard = Hazard.LANDSLIDE
                 hazard_scores = {dom_hazard: hazard_intensity}
 
+            m_cost = r.get("mitigation_cost")
+            r_cost = r.get("relocation_cost")
+            in_situ_cheaper = evaluate_in_situ_cost_cheaper(m_cost, r_cost)
+            adv_trend = r.get("adverse_trend")
+            is_caution = (CAUTION_MHI_MIN <= hazard_intensity < PRZ_MHI_STATIC) or (0.45 <= hazard_intensity < 0.75)
+            caution_adverse = is_caution and (adv_trend is True)
+
             baseline_states.append(
                 HabitationBaselineState(
                     id=h_id,
@@ -130,6 +139,8 @@ class ScenarioService:
                     decayed_loss=decayed_loss,
                     active_deformation=active_deformation,
                     fatal_event_last_3_monsoons=fatal_event,
+                    in_situ_cost_cheaper=in_situ_cheaper,
+                    is_caution_with_adverse_trend=caution_adverse,
                     hazard_scores=hazard_scores,
                     baseline_priority_score=base_ps,
                     baseline_tier=tier_enum,

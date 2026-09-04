@@ -101,7 +101,7 @@ class TestNameInvariance:
             fatal_event_last_3_monsoons=False,
         )
         assert res_a_low["priority_score"] == res_b_low["priority_score"]
-        assert res_a_low["tier"] == res_b_low["tier"] == Tier.MEDIUM_TERM
+        assert res_a_low["tier"] == res_b_low["tier"] is None
 
     @pytest.mark.parametrize(
         "test_name",
@@ -267,7 +267,7 @@ class TestDataDrivesBehavior:
             fatal_event_last_3_monsoons=False,
         )
         assert res_zero["priority_score"] == 0.0
-        assert res_zero["tier"] == Tier.MEDIUM_TERM
+        assert res_zero["tier"] is None
 
         # 40% PRZ overlap
         res_mod = engine.evaluate_habitation(
