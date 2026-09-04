@@ -15,7 +15,6 @@ from core.schemas.common import (
     ErrorResponse,
 )
 from core.schemas.zones import (
-    FeatureContributionDTO,
     HazardDetailDTO,
     ZoneCellSummary,
     ZoneCellDetail,
@@ -67,6 +66,7 @@ from core.schemas.dynamic_triggers import (
     TriggerValidationReport,
 )
 from core.schemas.explanation import (
+    FeatureContributionDTO,
     CanonicalExplanationRecord,
     ExplanationBatchDTO,
 )

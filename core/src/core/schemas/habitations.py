@@ -9,6 +9,7 @@ from datetime import date, datetime
 from pydantic import Field
 from core.enums import Tier
 from core.schemas.common import BaseSchema, SCREENING_GRADE_NOTICE
+from core.schemas.explanation import FeatureContributionDTO
 
 
 class LossEventDTO(BaseSchema):
@@ -86,6 +87,6 @@ class HabitationRiskDossier(BaseSchema):
     # Risk Components
     vulnerability: VulnerabilityBreakdownDTO
     past_disasters: List[LossEventDTO] = Field(default_factory=list)
-    top_contributing_factors: List[dict[str, Any]] = Field(default_factory=list)
+    top_contributing_factors: List[FeatureContributionDTO] = Field(default_factory=list)
 
     screening_grade: str = SCREENING_GRADE_NOTICE

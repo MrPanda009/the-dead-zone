@@ -1920,23 +1920,36 @@
           "feature": {
             "type": "string",
             "title": "Feature",
-            "description": "Feature name, e.g. slope_deg, hand_m, dist_to_road_m."
+            "description": "Feature name, e.g. slope_deg, hand_m, dist_to_road_m, rainfall_72h."
           },
           "value": {
             "type": "number",
             "title": "Value",
-            "description": "Observed feature value."
+            "description": "Observed or calculated feature value."
           },
           "contribution": {
             "type": "number",
             "title": "Contribution",
-            "description": "SHAP attribution or heuristic weight."
+            "description": "Attribution weight or SHAP value contribution."
           },
           "method": {
             "type": "string",
             "title": "Method",
-            "description": "Explanation calculation method (e.g. 'heuristic', 'treeshap').",
+            "description": "Explanation method ('treeshap', 'kernelshap', 'heuristic', 'pca_loading').",
             "default": "heuristic"
+          },
+          "rank": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rank",
+            "description": "Rank of this feature in importance (1 = top contributing factor)."
           }
         },
         "type": "object",
@@ -1945,7 +1958,8 @@
           "value",
           "contribution"
         ],
-        "title": "FeatureContributionDTO"
+        "title": "FeatureContributionDTO",
+        "description": "Single feature attribution item for a cell or habitation."
       },
       "ForecastAlertItem": {
         "properties": {
@@ -2400,8 +2414,7 @@
           },
           "top_contributing_factors": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/FeatureContributionDTO"
             },
             "type": "array",
             "title": "Top Contributing Factors"
