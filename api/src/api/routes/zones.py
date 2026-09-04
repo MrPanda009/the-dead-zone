@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends, Query, Path
 from sqlalchemy.orm import Session
 
 from api.dependencies import get_db
+from api.routes.common import error_responses
 from api.services.zones_service import ZonesService
 from core.schemas.zones import ZoneCellSummary, ZoneCellDetail
 
@@ -20,6 +21,7 @@ router = APIRouter(prefix="/zones", tags=["Hazard Zones"])
 @router.get(
     "",
     response_model=List[ZoneCellSummary],
+    responses=error_responses(400, 404, 422, 500),
     summary="Query H3 hazard zones within spatial viewport",
     description=(
         "Retrieves active Multi-Hazard Index and dominant hazard classifications "
@@ -67,6 +69,7 @@ def get_zones(
 @router.get(
     "/{h3}",
     response_model=ZoneCellDetail,
+    responses=error_responses(400, 404, 422, 500),
     summary="Get full cell detail and SHAP/heuristic explanation",
     description="Retrieves multi-hazard breakdown, static/live MHI, and feature attributions for a single H3 cell.",
 )

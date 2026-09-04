@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, Body
 from sqlalchemy.orm import Session
 
 from api.dependencies import get_db
+from api.routes.common import error_responses
 from api.services.allocation_service import AllocationService
 from core.schemas.allocation import AllocationPlanRequest, AllocationPlanResponse
 
@@ -17,6 +18,7 @@ router = APIRouter(prefix="/plan", tags=["Relocation Planning & Allocation"])
 @router.post(
     "/allocate",
     response_model=AllocationPlanResponse,
+    responses=error_responses(422, 500),
     summary="Solve optimal habitation-to-site relocation allocation via min-cost flow",
     description=(
         "Executes exact min-cost flow optimization (Google OR-Tools) to assign vulnerable habitations to candidate relocation sites. "

@@ -43,7 +43,19 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable - Database connectivity or required extensions check failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessResponse"
+                }
               }
             }
           }
@@ -161,12 +173,42 @@
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "400": {
+            "description": "Bad Request - Invalid parameters or malformed input format.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found - Requested resource, cell, or entity does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error - Request parameter or payload validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error - An unexpected system or database error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
             }
@@ -209,12 +251,42 @@
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "400": {
+            "description": "Bad Request - Invalid parameters or malformed input format.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found - Requested resource, cell, or entity does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error - Request parameter or payload validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error - An unexpected system or database error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
             }
@@ -318,11 +390,21 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Validation Error - Request parameter or payload validation failed.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error - An unexpected system or database error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
             }
@@ -365,12 +447,32 @@
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "404": {
+            "description": "Not Found - Requested resource, cell, or entity does not exist.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error - Request parameter or payload validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error - An unexpected system or database error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
             }
@@ -480,12 +582,32 @@
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "404": {
+            "description": "Not Found - Requested resource, cell, or entity does not exist.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error - Request parameter or payload validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error - An unexpected system or database error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
             }
@@ -538,12 +660,32 @@
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "404": {
+            "description": "Not Found - Requested resource, cell, or entity does not exist.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error - Request parameter or payload validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error - An unexpected system or database error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
             }
@@ -586,12 +728,32 @@
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "404": {
+            "description": "Not Found - Requested resource, cell, or entity does not exist.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error - Request parameter or payload validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error - An unexpected system or database error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
             }
@@ -698,11 +860,21 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Validation Error - Request parameter or payload validation failed.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error - An unexpected system or database error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
             }
@@ -805,11 +977,21 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Validation Error - Request parameter or payload validation failed.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error - An unexpected system or database error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
             }
@@ -848,11 +1030,21 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Validation Error - Request parameter or payload validation failed.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error - An unexpected system or database error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
             }
@@ -891,11 +1083,21 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Validation Error - Request parameter or payload validation failed.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error - An unexpected system or database error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
             }
@@ -984,12 +1186,26 @@
             "title": "Dominant Hazard"
           },
           "trigger_source": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Trigger Source"
           },
           "valid_at": {
-            "type": "string",
-            "format": "date-time",
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Valid At"
           },
           "exposed_population": {
@@ -1024,8 +1240,6 @@
           "mhi_live",
           "mhi_static",
           "dominant_hazard",
-          "trigger_source",
-          "valid_at",
           "centroid"
         ],
         "title": "ActiveAlertItem",
@@ -1042,8 +1256,15 @@
             "title": "Total Exposed Population"
           },
           "issued_at": {
-            "type": "string",
-            "format": "date-time",
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Issued At"
           },
           "items": {
@@ -1057,8 +1278,7 @@
         "type": "object",
         "required": [
           "total_active_cells",
-          "total_exposed_population",
-          "issued_at"
+          "total_exposed_population"
         ],
         "title": "ActiveAlertsResponse"
       },
@@ -1615,6 +1835,86 @@
         "title": "DataQuality",
         "description": "Data quality and provenance classification across pipeline and API data (Day 6-7).\n\nPreserves all 7 distinct states:\n- VALID: Real-world observation meeting all quality controls\n- PARTIAL: Degraded spatial/temporal coverage or incomplete observation\n- STALE: Retained past expiry due to upstream feed latency or outage\n- FALLBACK: Secondary provider invoked due to primary feed exhaustion or failure\n- MISSING: Sensor/pipeline coverage absent; never silently cast to safe/zero\n- INVALID: Failed schema/range check; never treated as safe/no-risk\n- SYNTHETIC: Deterministic demo fixture or synthetic simulation"
       },
+      "ErrorDetail": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code",
+            "description": "Standardized machine-readable error code string."
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "Human-readable explanation of the error."
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id",
+            "description": "Unique request tracing identifier."
+          },
+          "details": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Details",
+            "description": "Contextual error details or validation breakdown."
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "ErrorDetail",
+        "description": "Standardized error details conforming to SETU-DRR API error envelope."
+      },
+      "ErrorEnvelope": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorDetail",
+            "description": "Error details payload."
+          }
+        },
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "title": "ErrorEnvelope",
+        "description": "Canonical API error response envelope."
+      },
+      "ExtensionChecksDTO": {
+        "properties": {
+          "postgis": {
+            "type": "boolean",
+            "title": "Postgis",
+            "description": "PostGIS extension status."
+          },
+          "h3": {
+            "type": "boolean",
+            "title": "H3",
+            "description": "H3 extension status."
+          },
+          "h3_postgis": {
+            "type": "boolean",
+            "title": "H3 Postgis",
+            "description": "H3 PostGIS extension status."
+          }
+        },
+        "type": "object",
+        "required": [
+          "postgis",
+          "h3",
+          "h3_postgis"
+        ],
+        "title": "ExtensionChecksDTO",
+        "description": "Geospatial database extension installation status."
+      },
       "FeatureContributionDTO": {
         "properties": {
           "feature": {
@@ -1701,18 +2001,38 @@
             "title": "Dominant Hazard"
           },
           "issuing_model": {
-            "type": "string",
-            "title": "Issuing Model",
-            "default": "ECMWF Open Data"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Issuing Model"
           },
           "forecast_cycle_at": {
-            "type": "string",
-            "format": "date-time",
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Forecast Cycle At"
           },
           "valid_at": {
-            "type": "string",
-            "format": "date-time",
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Valid At"
           },
           "horizon_hours": {
@@ -1747,8 +2067,6 @@
           "mhi_fcst",
           "mhi_static",
           "dominant_hazard",
-          "forecast_cycle_at",
-          "valid_at",
           "horizon_hours",
           "centroid"
         ],
@@ -1766,13 +2084,26 @@
             "title": "Total Exposed Population"
           },
           "issuing_model": {
-            "type": "string",
-            "title": "Issuing Model",
-            "default": "ECMWF Open Data"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Issuing Model"
           },
           "forecast_cycle_at": {
-            "type": "string",
-            "format": "date-time",
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Forecast Cycle At"
           },
           "horizon_hours": {
@@ -1791,23 +2122,9 @@
         "required": [
           "total_forecast_cells",
           "total_exposed_population",
-          "forecast_cycle_at",
           "horizon_hours"
         ],
         "title": "ForecastAlertsResponse"
-      },
-      "HTTPValidationError": {
-        "properties": {
-          "detail": {
-            "items": {
-              "$ref": "#/components/schemas/ValidationError"
-            },
-            "type": "array",
-            "title": "Detail"
-          }
-        },
-        "type": "object",
-        "title": "HTTPValidationError"
       },
       "HabitationListItem": {
         "properties": {
@@ -1878,8 +2195,15 @@
             "description": "Caseload urgency score PS_j * population."
           },
           "tier": {
-            "$ref": "#/components/schemas/Tier",
-            "description": "Four-tier triage category."
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Tier"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Four-tier triage category (None if unclassified/monitoring)."
           },
           "prz_overlap_pct": {
             "type": "number",
@@ -1923,7 +2247,6 @@
           "name",
           "priority_score",
           "caseload_score",
-          "tier",
           "prz_overlap_pct",
           "centroid"
         ],
@@ -2002,7 +2325,15 @@
             "title": "Caseload Score"
           },
           "tier": {
-            "$ref": "#/components/schemas/Tier"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Tier"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Four-tier triage category (None if unclassified/monitoring)."
           },
           "triage_rationale": {
             "type": "string",
@@ -2090,7 +2421,6 @@
           "centroid",
           "priority_score",
           "caseload_score",
-          "tier",
           "triage_rationale",
           "prz_overlap_pct",
           "hazard_intensity",
@@ -2323,6 +2653,54 @@
         ],
         "title": "PaginatedResponse[HabitationListItem]"
       },
+      "ReadinessChecksDTO": {
+        "properties": {
+          "database": {
+            "type": "boolean",
+            "title": "Database",
+            "description": "Database connectivity status."
+          },
+          "extensions": {
+            "$ref": "#/components/schemas/ExtensionChecksDTO",
+            "description": "Geospatial extension statuses."
+          },
+          "serving_version": {
+            "title": "Serving Version",
+            "description": "Active serving versions."
+          }
+        },
+        "type": "object",
+        "required": [
+          "database",
+          "extensions"
+        ],
+        "title": "ReadinessChecksDTO",
+        "description": "Detailed dependency health check results."
+      },
+      "ReadinessResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Readiness status ('ready', 'degraded', or 'not_ready')."
+          },
+          "checks": {
+            "$ref": "#/components/schemas/ReadinessChecksDTO",
+            "description": "Subsystem check results."
+          },
+          "error": {
+            "title": "Error",
+            "description": "Error message if check failed."
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "checks"
+        ],
+        "title": "ReadinessResponse",
+        "description": "Health check readiness response envelope."
+      },
       "ScenarioAllocationParams": {
         "properties": {
           "max_search_radius_km": {
@@ -2447,10 +2825,24 @@
             "title": "Scenario Priority Score"
           },
           "original_tier": {
-            "$ref": "#/components/schemas/Tier"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Tier"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "scenario_tier": {
-            "$ref": "#/components/schemas/Tier"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Tier"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "tier_changed": {
             "type": "boolean",
@@ -2497,8 +2889,6 @@
           "rank_delta",
           "original_priority_score",
           "scenario_priority_score",
-          "original_tier",
-          "scenario_tier",
           "tier_changed",
           "population"
         ],
@@ -2867,46 +3257,6 @@
         ],
         "title": "Tier",
         "description": "Four-tier triage categorization for relocation planning (PRD \u00a76.7)."
-      },
-      "ValidationError": {
-        "properties": {
-          "loc": {
-            "items": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                }
-              ]
-            },
-            "type": "array",
-            "title": "Location"
-          },
-          "msg": {
-            "type": "string",
-            "title": "Message"
-          },
-          "type": {
-            "type": "string",
-            "title": "Error Type"
-          },
-          "input": {
-            "title": "Input"
-          },
-          "ctx": {
-            "type": "object",
-            "title": "Context"
-          }
-        },
-        "type": "object",
-        "required": [
-          "loc",
-          "msg",
-          "type"
-        ],
-        "title": "ValidationError"
       },
       "VulnerabilityBreakdownDTO": {
         "properties": {

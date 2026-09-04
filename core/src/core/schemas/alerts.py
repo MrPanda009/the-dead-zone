@@ -20,8 +20,8 @@ class ActiveAlertItem(BaseSchema):
     mhi_live: float = Field(ge=0.75, le=1.0)
     mhi_static: float = Field(ge=0.0, le=1.0, description="Static baseline MHI.")
     dominant_hazard: str
-    trigger_source: str
-    valid_at: datetime
+    trigger_source: Optional[str] = None
+    valid_at: Optional[datetime] = None
     exposed_population: float = 0.0
     exposed_built_area_m2: float = 0.0
     centroid: list[float] = Field(description="[longitude, latitude]")
@@ -38,9 +38,9 @@ class ForecastAlertItem(BaseSchema):
     mhi_fcst: float = Field(ge=0.75, le=1.0)
     mhi_static: float = Field(ge=0.0, le=1.0, description="Static baseline MHI.")
     dominant_hazard: str
-    issuing_model: str = "ECMWF Open Data"
-    forecast_cycle_at: datetime
-    valid_at: datetime
+    issuing_model: Optional[str] = None
+    forecast_cycle_at: Optional[datetime] = None
+    valid_at: Optional[datetime] = None
     horizon_hours: int = Field(ge=1, le=72)
     exposed_population: float = 0.0
     centroid: list[float]
@@ -50,14 +50,14 @@ class ForecastAlertItem(BaseSchema):
 class ActiveAlertsResponse(BaseSchema):
     total_active_cells: int
     total_exposed_population: int
-    issued_at: datetime
+    issued_at: Optional[datetime] = None
     items: List[ActiveAlertItem] = Field(default_factory=list)
 
 
 class ForecastAlertsResponse(BaseSchema):
     total_forecast_cells: int
     total_exposed_population: int
-    issuing_model: str = "ECMWF Open Data"
-    forecast_cycle_at: datetime
+    issuing_model: Optional[str] = None
+    forecast_cycle_at: Optional[datetime] = None
     horizon_hours: int
     items: List[ForecastAlertItem] = Field(default_factory=list)

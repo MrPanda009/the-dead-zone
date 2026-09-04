@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends, Query, Path
 from sqlalchemy.orm import Session
 
 from api.dependencies import get_db
+from api.routes.common import error_responses
 from api.services.habitations_service import HabitationsService
 from api.services.sites_service import SitesService
 from core.enums import Tier, SortMode
@@ -24,6 +25,7 @@ router = APIRouter(prefix="/habitations", tags=["Habitations & Triage"])
 @router.get(
     "",
     response_model=PaginatedResponse[HabitationListItem],
+    responses=error_responses(422, 500),
     summary="Get prioritized habitation triage queue",
     description=(
         "Returns a paginated list of habitations ranked by Per-Capita Urgency or Caseload. "
@@ -69,6 +71,7 @@ def get_habitations(
 @router.get(
     "/{id}/risk",
     response_model=HabitationRiskDossier,
+    responses=error_responses(404, 422, 500),
     summary="Get complete risk dossier for a habitation",
     description="Retrieves vulnerability breakdown (SoVI), time-decayed loss history, and priority score explanation.",
 )
@@ -87,6 +90,7 @@ def get_habitation_risk_dossier(
 @router.get(
     "/{id}/sites",
     response_model=PaginatedResponse[CandidateSiteItem],
+    responses=error_responses(404, 422, 500),
     summary="Get ranked candidate relocation sites for a habitation",
     description=(
         "Retrieves candidate relocation sites within search radius (default 15 km) "

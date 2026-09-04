@@ -7,11 +7,33 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from pydantic import BaseModel, Field
 from api.dependencies import get_db
 from core.config import settings
 
 logger = logging.getLogger("setu_api.health")
 router = APIRouter(prefix="/health", tags=["Health"])
+
+
+class ExtensionChecksDTO(BaseModel):
+    """Geospatial database extension installation status."""
+    postgis: bool = Field(description="PostGIS extension status.")
+    h3: bool = Field(description="H3 extension status.")
+    h3_postgis: bool = Field(description="H3 PostGIS extension status.")
+
+
+class ReadinessChecksDTO(BaseModel):
+    """Detailed dependency health check results."""
+    database: bool = Field(description="Database connectivity status.")
+    extensions: ExtensionChecksDTO = Field(description="Geospatial extension statuses.")
+    serving_version: Any = Field(default=None, description="Active serving versions.")
+
+
+class ReadinessResponse(BaseModel):
+    """Health check readiness response envelope."""
+    status: str = Field(description="Readiness status ('ready', 'degraded', or 'not_ready').")
+    checks: ReadinessChecksDTO = Field(description="Subsystem check results.")
+    error: Any = Field(default=None, description="Error message if check failed.")
 
 
 @router.get(
@@ -31,8 +53,15 @@ def check_liveness() -> dict[str, Any]:
 
 @router.get(
     "/ready",
+    response_model=ReadinessResponse,
     summary="Application readiness check",
     status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_503_SERVICE_UNAVAILABLE: {
+            "model": ReadinessResponse,
+            "description": "Service Unavailable - Database connectivity or required extensions check failed.",
+        }
+    },
 )
 def check_readiness(db: Session = Depends(get_db)) -> JSONResponse:
     """Checks database connectivity, PostGIS & H3 extensions, and serving version."""
