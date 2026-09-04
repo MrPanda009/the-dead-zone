@@ -89,7 +89,8 @@ class AlertsRepository:
             return [], 0, 0
 
         total_cells = int(rows[0]["full_count"])
-        total_pop = int(round(float(rows[0]["full_exposed_pop"] or 0.0)))
+        pop_raw = rows[0]["full_exposed_pop"]
+        total_pop = int(round(float(pop_raw if pop_raw is not None else 0.0)))
         return [dict(r) for r in rows], total_cells, total_pop
 
     def query_forecast_alerts(
@@ -157,5 +158,6 @@ class AlertsRepository:
             return [], 0, 0
 
         total_cells = int(rows[0]["full_count"])
-        total_pop = int(round(float(rows[0]["full_exposed_pop"] or 0.0)))
+        pop_raw = rows[0]["full_exposed_pop"]
+        total_pop = int(round(float(pop_raw if pop_raw is not None else 0.0)))
         return [dict(r) for r in rows], total_cells, total_pop

@@ -81,16 +81,16 @@ class ScenarioService:
 
         baseline_states: list[HabitationBaselineState] = []
         for r in raw_habs:
-            pop = int(r.get("population") or 0)
-            hh = int(r.get("households") or max(1, pop // 4))
+            pop = int(r.get("population") if r.get("population") is not None else 0)
+            hh = int(r.get("households") if r.get("households") is not None else max(1, pop // 4))
             h_id = int(r["id"])
             name = str(r.get("name") or f"Habitation-{h_id}")
 
-            prz_overlap = float(r.get("prz_overlap_pct") or 0.0)
+            prz_overlap = float(r.get("prz_overlap_pct") if r.get("prz_overlap_pct") is not None else 0.0)
             pop_frac = prz_overlap / 100.0
-            hazard_intensity = float(r.get("hazard_intensity") or 0.5)
-            v_index = float(r.get("v_index") or 0.5)
-            decayed_loss = float(r.get("decayed_loss") or 0.0)
+            hazard_intensity = float(r.get("hazard_intensity") if r.get("hazard_intensity") is not None else 0.5)
+            v_index = float(r.get("v_index") if r.get("v_index") is not None else 0.5)
+            decayed_loss = float(r.get("decayed_loss") if r.get("decayed_loss") is not None else 0.0)
 
             # Resolve baseline tier
             raw_tier = r.get("tier")
@@ -99,7 +99,7 @@ class ScenarioService:
             except ValueError:
                 tier_enum = Tier.SHORT_TERM
 
-            base_ps = float(r.get("priority_score") or 0.5)
+            base_ps = float(r.get("priority_score") if r.get("priority_score") is not None else 0.5)
 
             # High risk indicators (Chooralmala, Mundakkai, Bhagamandala)
             is_high_risk = name in ("Chooralmala", "Mundakkai", "Bhagamandala")

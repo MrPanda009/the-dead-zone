@@ -100,7 +100,8 @@ def compute_time_decayed_loss(
             delta_days = 0  # clamp future dates
         delta_years = delta_days / 365.25
 
-        severity = float(ev.get("severity", 1.0))
+        sev_raw = ev.get("severity")
+        severity = float(sev_raw if sev_raw is not None else 1.0)
         weight = math.exp(-decay_constant * delta_years)
         total_decayed_loss += weight * severity
 
@@ -246,10 +247,13 @@ def sort_habitations(
     PRD §6.6, FR-6.3
     """
     def sort_key(h: dict[str, Any]) -> tuple[float, int]:
-        ps = float(h.get("priority_score", 0.0))
-        pop = int(h.get("population", 0))
+        ps_raw = h.get("priority_score")
+        ps = float(ps_raw if ps_raw is not None else 0.0)
+        pop_raw = h.get("population")
+        pop = int(pop_raw if pop_raw is not None else 0)
         score = ps if mode == SortMode.URGENCY else (ps * pop)
-        h_id = int(h.get("id", 0))
+        id_raw = h.get("id")
+        h_id = int(id_raw if id_raw is not None else 0)
         return (-score, h_id)
 
     return sorted(habitations, key=sort_key)

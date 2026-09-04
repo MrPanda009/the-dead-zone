@@ -42,8 +42,14 @@ def normalize_feature_contributions(
         elif isinstance(f, dict):
             feat_name = str(f.get("feature") or f.get("name") or f.get("factor") or "unknown_feature")
             try:
-                feat_val = float(f.get("value", 0.0))
-                feat_contrib = float(f.get("contribution", f.get("shap_value", f.get("weight", 0.0))))
+                raw_v = f.get("value")
+                feat_val = float(raw_v if raw_v is not None else 0.0)
+                raw_c = f.get("contribution")
+                if raw_c is None:
+                    raw_c = f.get("shap_value")
+                if raw_c is None:
+                    raw_c = f.get("weight")
+                feat_contrib = float(raw_c if raw_c is not None else 0.0)
             except (ValueError, TypeError):
                 continue
             method = str(f.get("method") or default_method)

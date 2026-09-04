@@ -70,24 +70,24 @@ class HabitationsService:
 
         items = []
         for r in raw_items:
-            pop = int(r.get("population") or 0)
+            pop = int(r.get("population") if r.get("population") is not None else 0)
             
             # If priority_score is persisted in habitation_risk
             if r.get("priority_score") is not None and r.get("tier") is not None:
                 ps = float(r["priority_score"])
-                caseload = float(r["caseload_score"])
+                caseload = float(r.get("caseload_score") if r.get("caseload_score") is not None else (ps * pop))
                 tier_class = Tier(r["tier"]) if isinstance(r["tier"], str) else r["tier"]
-                prz_overlap = float(r.get("prz_overlap_pct") or 0.0)
+                prz_overlap = float(r.get("prz_overlap_pct") if r.get("prz_overlap_pct") is not None else 0.0)
                 dominant_hazard = r.get("dominant_hazard") or "landslide"
                 model_ver = r.get("model_version") or "baseline-v1"
                 scoring_ver = r.get("scoring_version") or self.scoring_config.scoring_version
                 dataset_ver = r.get("dataset_version") or "v1.0"
             else:
                 # On-the-fly fallback evaluation
-                v_demo = float(r.get("v_demographic") or 0.5)
-                v_struct = float(r.get("v_structural") or 0.5)
-                v_access = float(r.get("v_access") or 0.5)
-                v_econ = float(r.get("v_economic") or 0.5)
+                v_demo = float(r.get("v_demographic") if r.get("v_demographic") is not None else 0.5)
+                v_struct = float(r.get("v_structural") if r.get("v_structural") is not None else 0.5)
+                v_access = float(r.get("v_access") if r.get("v_access") is not None else 0.5)
+                v_econ = float(r.get("v_economic") if r.get("v_economic") is not None else 0.5)
                 v_index = float(
                     r.get("v_index")
                     if r.get("v_index") is not None
@@ -124,7 +124,7 @@ class HabitationsService:
                     admin_id=r["admin_id"],
                     admin_name=r["admin_name"],
                     population=pop,
-                    households=int(r.get("households") or 0),
+                    households=int(r.get("households") if r.get("households") is not None else 0),
                     priority_score=ps,
                     caseload_score=caseload,
                     tier=tier_class,
@@ -151,11 +151,11 @@ class HabitationsService:
         if not r:
             raise HabitationNotFoundError(habitation_id)
 
-        pop = int(r.get("population") or 0)
-        v_demo = float(r.get("v_demographic") or 0.5)
-        v_struct = float(r.get("v_structural") or 0.5)
-        v_access = float(r.get("v_access") or 0.5)
-        v_econ = float(r.get("v_economic") or 0.5)
+        pop = int(r.get("population") if r.get("population") is not None else 0)
+        v_demo = float(r.get("v_demographic") if r.get("v_demographic") is not None else 0.5)
+        v_struct = float(r.get("v_structural") if r.get("v_structural") is not None else 0.5)
+        v_access = float(r.get("v_access") if r.get("v_access") is not None else 0.5)
+        v_econ = float(r.get("v_economic") if r.get("v_economic") is not None else 0.5)
         v_index = float(
             r.get("v_index")
             if r.get("v_index") is not None
@@ -171,10 +171,12 @@ class HabitationsService:
         )
 
         is_high_risk = r["name"] in ("Chooralmala", "Mundakkai", "Bhagamandala")
-        hazard_intensity = float(r.get("hazard_intensity") or (0.85 if is_high_risk else 0.45))
-        prz_overlap = float(r.get("prz_overlap_pct") or (85.0 if r["name"] in ("Chooralmala", "Mundakkai") else (65.0 if r["name"] == "Bhagamandala" else 25.0)))
+        raw_hi = r.get("hazard_intensity")
+        hazard_intensity = float(raw_hi if raw_hi is not None else (0.85 if is_high_risk else 0.45))
+        raw_prz = r.get("prz_overlap_pct")
+        prz_overlap = float(raw_prz if raw_prz is not None else (85.0 if r["name"] in ("Chooralmala", "Mundakkai") else (65.0 if r["name"] == "Bhagamandala" else 25.0)))
 
-        has_fatal = any((ev.get("fatalities") or 0) > 0 for ev in nearby_events)
+        has_fatal = any((ev.get("fatalities") if ev.get("fatalities") is not None else 0) > 0 for ev in nearby_events)
         eval_result = self.engine.evaluate_habitation(
             hazard_intensity=hazard_intensity,
             pop_fraction_in_prz=prz_overlap / 100.0,
@@ -185,8 +187,10 @@ class HabitationsService:
             fatal_event_last_3_monsoons=has_fatal and r["name"] in ("Chooralmala", "Mundakkai"),
         )
 
-        ps = float(r.get("priority_score") or eval_result["priority_score"])
-        caseload = float(r.get("caseload_score") or eval_result["caseload_score"])
+        raw_ps = r.get("priority_score")
+        ps = float(raw_ps if raw_ps is not None else eval_result["priority_score"])
+        raw_caseload = r.get("caseload_score")
+        caseload = float(raw_caseload if raw_caseload is not None else eval_result["caseload_score"])
         tier_class = Tier(r["tier"]) if r.get("tier") else eval_result["tier"]
         triage_rationale = r.get("triage_rationale") or eval_result["triage_rationale"]
         top_factors = r.get("contributing_factors") or eval_result["contributing_factors"]
@@ -199,10 +203,10 @@ class HabitationsService:
                 id=ev["id"],
                 ts=ev["ts"],
                 hazard_type=ev["hazard_type"],
-                fatalities=ev.get("fatalities") or 0,
-                injured=ev.get("injured") or 0,
-                houses_damaged=ev.get("houses_damaged") or 0,
-                severity=float(ev.get("severity") or 1.0),
+                fatalities=ev.get("fatalities") if ev.get("fatalities") is not None else 0,
+                injured=ev.get("injured") if ev.get("injured") is not None else 0,
+                houses_damaged=ev.get("houses_damaged") if ev.get("houses_damaged") is not None else 0,
+                severity=float(ev.get("severity") if ev.get("severity") is not None else 1.0),
                 source=ev["source"],
                 source_ref=ev.get("source_ref"),
             )
@@ -222,7 +226,7 @@ class HabitationsService:
             admin_id=r["admin_id"],
             admin_name=r["admin_name"],
             population=pop,
-            households=int(r.get("households") or 0),
+            households=int(r.get("households") if r.get("households") is not None else 0),
             centroid=[r["lon"], r["lat"]],
             priority_score=ps,
             caseload_score=caseload,
@@ -235,7 +239,7 @@ class HabitationsService:
             scoring_version=r.get("scoring_version") or self.scoring_config.scoring_version,
             dataset_version=r.get("dataset_version") or "v1.0",
             data_quality=r.get("data_quality") or "observed",
-            confidence=float(r.get("confidence") or 1.0),
+            confidence=float(r.get("confidence") if r.get("confidence") is not None else 1.0),
             calculated_at=r.get("calculated_at") or datetime.now(timezone.utc),
             vulnerability=VulnerabilityBreakdownDTO(
                 v_demographic=v_demo,

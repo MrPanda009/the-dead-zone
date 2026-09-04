@@ -59,8 +59,8 @@ class AlertsService:
         for r in records:
             h_int = r["h3"]
             h_str = h3_to_str(h_int)
-            mhi_live = float(r.get("mhi_live") or 0.0)
-            mhi_static = float(r.get("mhi_static") or 0.0)
+            mhi_live = float(r.get("mhi_live") if r.get("mhi_live") is not None else 0.0)
+            mhi_static = float(r.get("mhi_static") if r.get("mhi_static") is not None else 0.0)
 
             items.append(
                 ActiveAlertItem(
@@ -74,8 +74,8 @@ class AlertsService:
                     dominant_hazard=r.get("dominant_hazard") or "landslide",
                     trigger_source="IMERG Early / Live Ingestion",
                     valid_at=r.get("valid_at") or datetime.now(timezone.utc),
-                    exposed_population=round(float(r.get("population") or 0.0), 2),
-                    exposed_built_area_m2=round(float(r.get("built_area_m2") or 0.0), 2),
+                    exposed_population=round(float(r.get("population") if r.get("population") is not None else 0.0), 2),
+                    exposed_built_area_m2=round(float(r.get("built_area_m2") if r.get("built_area_m2") is not None else 0.0), 2),
                     centroid=[r["lon"], r["lat"]],
                     screening_grade=SCREENING_GRADE_NOTICE,
                 )
@@ -122,8 +122,8 @@ class AlertsService:
         for r in records:
             h_int = r["h3"]
             h_str = h3_to_str(h_int)
-            mhi_fcst = float(r.get("mhi_fcst") or 0.0)
-            mhi_static = float(r.get("mhi_static") or 0.0)
+            mhi_fcst = float(r.get("mhi_fcst") if r.get("mhi_fcst") is not None else 0.0)
+            mhi_static = float(r.get("mhi_static") if r.get("mhi_static") is not None else 0.0)
 
             items.append(
                 ForecastAlertItem(
@@ -139,7 +139,7 @@ class AlertsService:
                     forecast_cycle_at=now_utc,
                     valid_at=r.get("valid_at") or now_utc,
                     horizon_hours=horizon_hours,
-                    exposed_population=round(float(r.get("population") or 0.0), 2),
+                    exposed_population=round(float(r.get("population") if r.get("population") is not None else 0.0), 2),
                     centroid=[r["lon"], r["lat"]],
                     screening_grade=SCREENING_GRADE_NOTICE,
                 )

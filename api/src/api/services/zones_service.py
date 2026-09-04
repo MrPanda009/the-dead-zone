@@ -89,7 +89,7 @@ class ZonesService:
         for r in records:
             h_int = r["h3"]
             h_str = h3_to_str(h_int)
-            mhi_val = r.get("mhi_static") or 0.0
+            mhi_val = r.get("mhi_static") if r.get("mhi_static") is not None else 0.0
             zone_class_str = r.get("zone_class") or "none"
             try:
                 zone_class_enum = ZoneClass(zone_class_str)
@@ -110,8 +110,8 @@ class ZonesService:
                     dataset_version=r.get("dataset_version") or "demo-day2-v1",
                     model_version="baseline-v1",
                     data_quality="synthetic",
-                    population=round(float(r.get("population") or 0.0), 2),
-                    built_area_m2=round(float(r.get("built_area_m2") or 0.0), 2),
+                    population=round(float(r.get("population") if r.get("population") is not None else 0.0), 2),
+                    built_area_m2=round(float(r.get("built_area_m2") if r.get("built_area_m2") is not None else 0.0), 2),
                     centroid=[r["lon"], r["lat"]],
                 )
             )
@@ -141,12 +141,12 @@ class ZonesService:
         # Format hazard items
         hazard_dtos = []
         for hz in hazards:
-            sus = float(hz.get("susceptibility") or 0.0)
+            sus = float(hz.get("susceptibility") if hz.get("susceptibility") is not None else 0.0)
             hazard_dtos.append(
                 HazardDetailDTO(
                     hazard_type=hz["hazard_type"],
                     susceptibility=round(sus, 4),
-                    confidence=round(float(hz.get("confidence") or 1.0), 2),
+                    confidence=round(float(hz.get("confidence") if hz.get("confidence") is not None else 1.0), 2),
                     trigger_value=None,
                     forecast_trigger=None,
                     score=round(sus, 4),
@@ -157,11 +157,13 @@ class ZonesService:
         factors_raw = cell.get("factors") or []
         explanation_dtos = []
         for f in factors_raw:
+            feat_v = f.get("value")
+            feat_c = f.get("contribution")
             explanation_dtos.append(
                 FeatureContributionDTO(
                     feature=f.get("feature", "unknown"),
-                    value=round(float(f.get("value", 0.0)), 2),
-                    contribution=round(float(f.get("contribution", 0.0)), 4),
+                    value=round(float(feat_v if feat_v is not None else 0.0), 2),
+                    contribution=round(float(feat_c if feat_c is not None else 0.0), 4),
                     method=f.get("method", "heuristic"),
                 )
             )
@@ -178,10 +180,10 @@ class ZonesService:
             admin_name=cell.get("admin_name"),
             habitation_id=cell.get("habitation_id"),
             habitation_name=cell.get("habitation_name"),
-            population=round(float(cell.get("population") or 0.0), 2),
-            built_area_m2=round(float(cell.get("built_area_m2") or 0.0), 2),
+            population=round(float(cell.get("population") if cell.get("population") is not None else 0.0), 2),
+            built_area_m2=round(float(cell.get("built_area_m2") if cell.get("built_area_m2") is not None else 0.0), 2),
             centroid=[cell["lon"], cell["lat"]],
-            mhi_static=round(float(cell.get("mhi_static") or 0.0), 4),
+            mhi_static=round(float(cell.get("mhi_static") if cell.get("mhi_static") is not None else 0.0), 4),
             mhi_live=None,
             mhi_fcst=None,
             dominant_hazard=cell.get("dominant_hazard") or "landslide",
