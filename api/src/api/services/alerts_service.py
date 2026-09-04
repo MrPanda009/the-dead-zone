@@ -116,7 +116,13 @@ class AlertsService:
             offset=clamped_offset,
         )
 
-        now_utc = datetime.now(timezone.utc)
+        # Resolve forecast cycle from records or repository without fabricating now_utc
+        resolved_cycle: Optional[datetime] = None
+        if records and records[0].get("forecast_cycle_at"):
+            resolved_cycle = records[0]["forecast_cycle_at"]
+        else:
+            resolved_cycle = self.repo.get_latest_forecast_cycle()
+
         items: list[ForecastAlertItem] = []
 
         for r in records:
@@ -124,6 +130,8 @@ class AlertsService:
             h_str = h3_to_str(h_int)
             mhi_fcst = float(r.get("mhi_fcst") if r.get("mhi_fcst") is not None else 0.0)
             mhi_static = float(r.get("mhi_static") if r.get("mhi_static") is not None else 0.0)
+            item_cycle = r.get("forecast_cycle_at") or resolved_cycle
+            item_horizon = r.get("horizon_hours") if r.get("horizon_hours") is not None else horizon_hours
 
             items.append(
                 ForecastAlertItem(
@@ -136,9 +144,9 @@ class AlertsService:
                     mhi_static=round(mhi_static, 4),
                     dominant_hazard=r.get("dominant_hazard") or "landslide",
                     issuing_model="ECMWF Open Data",
-                    forecast_cycle_at=now_utc,
-                    valid_at=r.get("valid_at") or now_utc,
-                    horizon_hours=horizon_hours,
+                    forecast_cycle_at=item_cycle,
+                    valid_at=r.get("valid_at"),
+                    horizon_hours=item_horizon,
                     exposed_population=round(float(r.get("population") if r.get("population") is not None else 0.0), 2),
                     centroid=[r["lon"], r["lat"]],
                     screening_grade=SCREENING_GRADE_NOTICE,
@@ -149,7 +157,7 @@ class AlertsService:
             total_forecast_cells=total_cells,
             total_exposed_population=total_pop,
             issuing_model="ECMWF Open Data",
-            forecast_cycle_at=now_utc,
+            forecast_cycle_at=resolved_cycle,
             horizon_hours=horizon_hours,
             items=items,
         )

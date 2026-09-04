@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, Body
 from sqlalchemy.orm import Session
 
 from api.dependencies import get_db
+from api.routes.common import error_responses
 from api.services.scenario_service import ScenarioService
 from core.schemas.scenario import ScenarioWeightOverrideRequest, ScenarioResponse
 
@@ -18,6 +19,7 @@ router = APIRouter(prefix="/scenario", tags=["Scenario & Decision Analysis"])
 @router.post(
     "",
     response_model=ScenarioResponse,
+    responses=error_responses(422, 500),
     summary="Evaluate hypothetical policy and hazard weight scenarios without mutating baseline data",
     description=(
         "Executes a pure, stateless scenario evaluation over habitation baselines. "

@@ -32,7 +32,7 @@ class HabitationsRepository:
             params["admin_id"] = admin_id
 
         if tier is not None:
-            conditions.append("(hr.tier IS NULL OR hr.tier = :tier)")
+            conditions.append("hr.tier = :tier")
             params["tier"] = tier
 
         where_clause = " AND ".join(conditions)

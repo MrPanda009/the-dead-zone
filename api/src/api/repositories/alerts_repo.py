@@ -93,6 +93,16 @@ class AlertsRepository:
         total_pop = int(round(float(pop_raw if pop_raw is not None else 0.0)))
         return [dict(r) for r in rows], total_cells, total_pop
 
+    def get_latest_forecast_cycle(self) -> Optional[datetime]:
+        """Returns the latest forecast cycle timestamp persisted in hazard_dynamic, if any."""
+        query = text("""
+            SELECT MAX(forecast_cycle_at) as max_cycle
+            FROM hazard_dynamic
+            WHERE forecast_cycle_at IS NOT NULL;
+        """)
+        row = self.db.execute(query).mappings().first()
+        return row["max_cycle"] if row and row.get("max_cycle") else None
+
     def query_forecast_alerts(
         self,
         admin_id: Optional[int] = None,
@@ -111,6 +121,7 @@ class AlertsRepository:
         ]
         params: dict[str, Any] = {
             "min_mhi": float(min_mhi),
+            "horizon_hours": int(horizon_hours),
             "limit": limit,
             "offset": offset,
         }
@@ -122,11 +133,33 @@ class AlertsRepository:
         where_sql = " AND ".join(where_clauses)
 
         sql = f"""
-            WITH latest_snapshots AS (
-                SELECT DISTINCT ON (h3)
-                    h3, valid_at, mhi_static, mhi_live, mhi_fcst, dominant_hazard, zone_class
-                FROM mhi_snapshot
-                ORDER BY h3, valid_at DESC
+            WITH deduplicated_hazard_forecasts AS (
+                SELECT DISTINCT ON (h3, valid_at)
+                    h3,
+                    valid_at,
+                    forecast_cycle_at,
+                    ROUND(EXTRACT(EPOCH FROM (valid_at - forecast_cycle_at)) / 3600.0)::int AS horizon_hours
+                FROM hazard_dynamic
+                WHERE forecast_cycle_at IS NOT NULL
+                  AND ROUND(EXTRACT(EPOCH FROM (valid_at - forecast_cycle_at)) / 3600.0)::int = :horizon_hours
+                ORDER BY h3, valid_at, forecast_cycle_at DESC, ingested_at DESC, id DESC
+            ),
+            latest_snapshots AS (
+                SELECT DISTINCT ON (m.h3)
+                    m.h3,
+                    m.valid_at,
+                    m.mhi_static,
+                    m.mhi_live,
+                    m.mhi_fcst,
+                    m.dominant_hazard,
+                    m.zone_class,
+                    hd.forecast_cycle_at,
+                    hd.horizon_hours
+                FROM mhi_snapshot m
+                JOIN deduplicated_hazard_forecasts hd 
+                  ON m.h3 = hd.h3 AND m.valid_at = hd.valid_at
+                WHERE {where_sql}
+                ORDER BY m.h3, m.valid_at DESC, hd.forecast_cycle_at DESC
             )
             SELECT
                 g.h3,
@@ -143,12 +176,13 @@ class AlertsRepository:
                 m.mhi_fcst,
                 m.dominant_hazard,
                 m.zone_class,
+                m.forecast_cycle_at,
+                m.horizon_hours,
                 count(*) OVER() as full_count,
                 sum(g.population) OVER() as full_exposed_pop
             FROM latest_snapshots m
             JOIN grid_cell g ON m.h3 = g.h3
             LEFT JOIN admin_boundary a ON g.admin_id = a.id
-            WHERE {where_sql}
             ORDER BY m.mhi_fcst DESC, g.population DESC, g.h3 ASC
             LIMIT :limit OFFSET :offset;
         """

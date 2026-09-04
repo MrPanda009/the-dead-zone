@@ -10,6 +10,9 @@ from core.schemas.common import (
     MultiPolygonGeometryDTO,
     SCREENING_GRADE_NOTICE,
     ProvenanceMetadataDTO,
+    ErrorDetail,
+    ErrorEnvelope,
+    ErrorResponse,
 )
 from core.schemas.zones import (
     FeatureContributionDTO,
@@ -77,6 +80,10 @@ __all__ = [
     "PolygonGeometryDTO",
     "MultiPolygonGeometryDTO",
     "SCREENING_GRADE_NOTICE",
+    "ProvenanceMetadataDTO",
+    "ErrorDetail",
+    "ErrorEnvelope",
+    "ErrorResponse",
     "FeatureContributionDTO",
     "HazardDetailDTO",
     "ZoneCellSummary",

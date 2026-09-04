@@ -39,8 +39,8 @@ class ForecastAlertItem(BaseSchema):
     mhi_static: float = Field(ge=0.0, le=1.0, description="Static baseline MHI.")
     dominant_hazard: str
     issuing_model: str = "ECMWF Open Data"
-    forecast_cycle_at: datetime
-    valid_at: datetime
+    forecast_cycle_at: Optional[datetime] = None
+    valid_at: Optional[datetime] = None
     horizon_hours: int = Field(ge=1, le=72)
     exposed_population: float = 0.0
     centroid: list[float]
@@ -58,6 +58,6 @@ class ForecastAlertsResponse(BaseSchema):
     total_forecast_cells: int
     total_exposed_population: int
     issuing_model: str = "ECMWF Open Data"
-    forecast_cycle_at: datetime
+    forecast_cycle_at: Optional[datetime] = None
     horizon_hours: int
     items: List[ForecastAlertItem] = Field(default_factory=list)

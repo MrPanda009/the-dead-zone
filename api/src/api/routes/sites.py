@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, Path
 from sqlalchemy.orm import Session
 
 from api.dependencies import get_db
+from api.routes.common import error_responses
 from api.services.sites_service import SitesService
 from core.schemas.sites import (
     CandidateSiteDetail,
@@ -22,6 +23,7 @@ router = APIRouter(prefix="/sites", tags=["Candidate Sites & Capacity"])
 @router.post(
     "/{id}/capacity",
     response_model=SiteCapacityOverrideResponse,
+    responses=error_responses(404, 422, 500),
     summary="Recompute candidate site carrying capacity with overridden policy norms",
     description=(
         "Simulates carrying capacity under modified policy parameters (e.g. plot area, LPCD, spare school/health capacity). "
@@ -44,6 +46,7 @@ def recompute_site_capacity(
 @router.get(
     "/{id}",
     response_model=CandidateSiteDetail,
+    responses=error_responses(404, 422, 500),
     summary="Get candidate site detail by ID",
     description="Retrieves full candidate relocation site profile including GeoJSON polygon geometry and resource capacity breakdown.",
 )

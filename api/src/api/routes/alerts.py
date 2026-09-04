@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from api.dependencies import get_db
+from api.routes.common import error_responses
 from api.services.alerts_service import AlertsService
 from core.constants import FORECAST_HORIZON_HOURS
 from core.schemas.alerts import ActiveAlertsResponse, ForecastAlertsResponse
@@ -20,6 +21,7 @@ router = APIRouter(prefix="/alerts", tags=["Dynamic Alerts & Forecasts"])
 @router.get(
     "/active",
     response_model=ActiveAlertsResponse,
+    responses=error_responses(422, 500),
     summary="Get active hazard alert zones exceeding emergency threshold",
     description=(
         "Retrieves H3 grid cells currently in Active Alert Zone state (MHI_live >= 0.75 and MHI_static < 0.75). "
@@ -67,6 +69,7 @@ def get_active_alerts(
 @router.get(
     "/forecast",
     response_model=ForecastAlertsResponse,
+    responses=error_responses(422, 500),
     summary="Get forecast alert zones predicted to cross threshold within 72 hours",
     description=(
         "Retrieves H3 grid cells predicted to cross the hazard threshold (MHI_fcst >= 0.75) within a configurable horizon (1-72h). "

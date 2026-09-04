@@ -74,7 +74,17 @@ class ZonesService:
         # Cap limit
         clamped_limit = min(max(1, limit), 5000)
 
-        # 3. Query repository
+        # 3. Check snapshot availability if valid_at is supplied (H1)
+        target_valid_at = None
+        if valid_at is not None:
+            target_valid_at = self.repo.resolve_snapshot_valid_at(valid_at)
+            if target_valid_at is None:
+                raise DataUnavailableError(
+                    f"No hazard zone snapshot available at or before '{valid_at.isoformat()}'.",
+                    {"valid_at": valid_at.isoformat()},
+                )
+
+        # 4. Query repository
         records = self.repo.query_zones(
             res=res,
             min_lon=min_lon,
@@ -83,6 +93,7 @@ class ZonesService:
             max_lat=max_lat,
             admin_id=admin,
             limit=clamped_limit,
+            valid_at=target_valid_at,
         )
 
         summaries = []
@@ -96,6 +107,12 @@ class ZonesService:
             except ValueError:
                 zone_class_enum = ZoneClass.NONE
 
+            # Preserve dynamic MHI values without recomputation or falsy fallbacks (H2)
+            raw_live = r.get("mhi_live")
+            raw_fcst = r.get("mhi_fcst")
+            mhi_live_val = round(float(raw_live), 4) if raw_live is not None else None
+            mhi_fcst_val = round(float(raw_fcst), 4) if raw_fcst is not None else None
+
             summaries.append(
                 ZoneCellSummary(
                     h3=h_str,
@@ -103,8 +120,8 @@ class ZonesService:
                     res=r["res"],
                     mhi=round(float(mhi_val), 4),
                     mhi_static=round(float(mhi_val), 4),
-                    mhi_live=None,  # Null in Day 2 baseline
-                    mhi_fcst=None,  # Null in Day 2 baseline
+                    mhi_live=mhi_live_val,
+                    mhi_fcst=mhi_fcst_val,
                     dominant_hazard=r.get("dominant_hazard") or "landslide",
                     zone_class=zone_class_enum,
                     dataset_version=r.get("dataset_version") or "demo-day2-v1",
@@ -184,8 +201,8 @@ class ZonesService:
             built_area_m2=round(float(cell.get("built_area_m2") if cell.get("built_area_m2") is not None else 0.0), 2),
             centroid=[cell["lon"], cell["lat"]],
             mhi_static=round(float(cell.get("mhi_static") if cell.get("mhi_static") is not None else 0.0), 4),
-            mhi_live=None,
-            mhi_fcst=None,
+            mhi_live=round(float(cell["mhi_live"]), 4) if cell.get("mhi_live") is not None else None,
+            mhi_fcst=round(float(cell["mhi_fcst"]), 4) if cell.get("mhi_fcst") is not None else None,
             dominant_hazard=cell.get("dominant_hazard") or "landslide",
             zone_class=zone_class_enum,
             confidence=0.85,
