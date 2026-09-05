@@ -57,6 +57,12 @@ from core.schemas.flood import (
     ValidationReport,
     RowValidationError,
 )
+from core.schemas.auth import (
+    LoginRequest,
+    RegisterRequest,
+    UserResponse,
+    LogoutResponse,
+)
 
 from core.schemas.dynamic_triggers import (
     TriggerType,
@@ -118,6 +124,10 @@ __all__ = [
     "TriggerValidationReport",
     "CanonicalExplanationRecord",
     "ExplanationBatchDTO",
+    "LoginRequest",
+    "RegisterRequest",
+    "UserResponse",
+    "LogoutResponse",
 ]
 
 

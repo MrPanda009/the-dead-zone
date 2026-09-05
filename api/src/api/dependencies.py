@@ -69,3 +69,40 @@ def require_serving_version(db: Session = Depends(get_db)) -> uuid.UUID:
         raise PipelineNotReadyError("default")
 
     return row["pipeline_run_id"]
+
+
+# --------------------------------------------------------------------------- #
+# Authentication & Identity Dependencies (Part 1)
+# --------------------------------------------------------------------------- #
+
+def get_current_user_optional(request: Request, db: Session = Depends(get_db)):
+    """Resolves authenticated user from session cookie if present, returning None otherwise."""
+    from api.services.auth_service import AuthService
+    from core.errors import UnauthenticatedError
+
+    token = request.cookies.get(settings.SESSION_COOKIE_NAME)
+    if not token:
+        return None
+
+    try:
+        service = AuthService(db)
+        return service.resolve_session(token)
+    except UnauthenticatedError:
+        return None
+
+
+def require_authenticated(request: Request, db: Session = Depends(get_db)):
+    """Enforces that a valid authenticated user session exists.
+    
+    Raises:
+        UnauthenticatedError: HTTP 401 when session is missing, invalid, expired, revoked, or user inactive.
+    """
+    from api.services.auth_service import AuthService
+    from core.errors import UnauthenticatedError
+
+    token = request.cookies.get(settings.SESSION_COOKIE_NAME)
+    if not token:
+        raise UnauthenticatedError("Authentication required. Please log in.")
+
+    service = AuthService(db)
+    return service.resolve_session(token)

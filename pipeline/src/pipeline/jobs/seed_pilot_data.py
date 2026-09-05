@@ -439,7 +439,7 @@ def seed_database(db_url: Optional[str] = None) -> None:
                     id, run_type, status, started_at, completed_at,
                     code_version, config_version, model_version
                 ) VALUES (
-                    :id, 'pilot_seed', 'COMPLETED', :now, :now,
+                    :id, 'pilot_seed', 'READY', :now, :now,
                     'day5-seed', 'v1.0', :model_ver
                 );
             """),
@@ -843,6 +843,29 @@ def seed_database(db_url: Optional[str] = None) -> None:
             """),
             {"run_id": pipeline_run_id, "now": now},
         )
+
+        # 5. Deterministically seed demo users if app_user table exists
+        try:
+            from core.domain.auth import hash_password
+            from core.enums import Role
+
+            demo_accounts = [
+                ("civilian@setu.gov.in", settings.DEMO_CIVILIAN_PASSWORD, "Demo Citizen", Role.CIVILIAN.value),
+                ("officer@setu.gov.in", settings.DEMO_OFFICER_PASSWORD, "District Magistrate Wayanad", Role.GOVERNMENT_OFFICIAL.value),
+                ("rescue@setu.gov.in", settings.DEMO_RESCUE_PASSWORD, "NDRF Commander 4th BN", Role.RESCUE_OFFICER.value),
+            ]
+            for email, pw, name, role in demo_accounts:
+                conn.execute(
+                    text("""
+                        INSERT INTO app_user (id, email, password_hash, full_name, role, is_active, created_at, updated_at)
+                        VALUES (gen_random_uuid(), :email, :pw_hash, :name, :role, true, now(), now())
+                        ON CONFLICT (email) DO NOTHING;
+                    """),
+                    {"email": email, "pw_hash": hash_password(pw), "name": name, "role": role},
+                )
+            logger.info(f"Seeded {len(demo_accounts)} demo accounts (Civilian, Government Official, Rescue Officer).")
+        except Exception as auth_err:
+            logger.debug(f"Auth user seeding bypassed (table may not exist in earlier migrations): {auth_err}")
 
     logger.info("Pilot data seeding completed successfully!")
     logger.info(f"Seeded: {len(PILOT_DISTRICTS)} districts, {total_habitations_seeded} habitations, {total_sites_seeded} candidate sites, {total_cells_seeded} H3 cells.")

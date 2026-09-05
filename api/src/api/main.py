@@ -17,6 +17,7 @@ from api.routes.sites import router as sites_router
 from api.routes.alerts import router as alerts_router
 from api.routes.plan import router as plan_router
 from api.routes.scenario import router as scenario_router
+from api.routes.auth import router as auth_router
 from core.errors import ErrorCode
 
 logging.basicConfig(
@@ -97,6 +98,7 @@ app.include_router(sites_router)
 app.include_router(alerts_router)
 app.include_router(plan_router)
 app.include_router(scenario_router)
+app.include_router(auth_router)
 
 
 @app.get("/", tags=["General"])
