@@ -16,6 +16,19 @@ class Hazard(StrEnum):
     CLOUDBURST = "cloudburst"
 
 
+class CoverageFlag(StrEnum):
+    """Zonal coverage class for an aggregated H3 cell (Step 10 §10.3).
+
+    CRITICAL RENDERING RULE:
+    A NO_COVERAGE cell carries susceptibility 0.0 because `apply_quality_flags()` fills
+    NaN with zero — not because it was measured as safe. It must never be drawn with the
+    same treatment as a genuine FR-3.17 hard-zero cell.
+    """
+    FULL = "full"
+    LOW_COVERAGE = "low_coverage"
+    NO_COVERAGE = "no_coverage"
+
+
 class ZoneClass(StrEnum):
     """Hazard zone classifications (PRD §6.3)."""
     PERMANENT_RED = "permanent_red"

@@ -190,12 +190,39 @@ class HazardStatic(Base):
     hazard_type: Mapped[str] = mapped_column(String, primary_key=True)
     susceptibility: Mapped[float] = mapped_column(Float, nullable=False)
     confidence: Mapped[float] = mapped_column(Float, default=1.0, nullable=False)
+    quality_flag: Mapped[str] = mapped_column(String, default="full", nullable=False)
     model_version: Mapped[str] = mapped_column(String, default="v1.0.0", nullable=False)
     pipeline_run_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         PG_UUID(as_uuid=True), ForeignKey("pipeline_run.id", ondelete="SET NULL"), nullable=True
     )
 
     grid_cell: Mapped[GridCell] = relationship("GridCell", back_populates="hazard_statics")
+
+
+class HazardStaticFlood(Base):
+    """Per-cell riverine flood drivers from Step 10 zonal aggregation (migration 007)."""
+
+    __tablename__ = "hazard_static_flood"
+
+    h3: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("grid_cell.h3", ondelete="CASCADE"), primary_key=True
+    )
+    max_susceptibility: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    valid_pixel_fraction: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    hard_zero_fraction: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    mean_inundation_frequency: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    mean_hand_m: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    min_hand_m: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    mean_slope_deg: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    mean_cropland_fraction: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    observation_ceiling: Mapped[int] = mapped_column(SmallInteger, default=30, nullable=False)
+    model_version: Mapped[str] = mapped_column(
+        String, default="flood-susceptibility-v0.1", nullable=False
+    )
+    pipeline_run_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        PG_UUID(as_uuid=True), ForeignKey("pipeline_run.id", ondelete="SET NULL"), nullable=True
+    )
+
 
 class HazardDynamic(Base):
     __tablename__ = "hazard_dynamic"

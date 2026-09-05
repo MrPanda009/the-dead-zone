@@ -6,7 +6,8 @@ Moves flood susceptibility onto the platform's common H3 resolution 8 hexagonal 
   3. Applies §10.3 quality control flagging for edge/low-coverage cells.
   4. Exports canonical GeoParquet artifact to data/processed/flood/barpeta/.
   5. Copies final rasters and exports metadata.yaml and water_rule_scorecard.json.
-  6. Upserts grid_cell and hazard_static rows into PostgreSQL as 'riverine_flood'.
+  6. Upserts grid_cell, hazard_static (with quality_flag) and hazard_static_flood rows
+     into PostgreSQL as 'riverine_flood'.
   7. Validates round-trip query from PostgreSQL and renders 4-panel verification preview.
 """
 
@@ -38,6 +39,7 @@ for p in [WORKSPACE_ROOT, PACKAGE_DIR, WORKSPACE_ROOT / "core" / "src", WORKSPAC
 from core.config import settings
 try:
     from .aoi import BARPETA_BBOX_WGS84
+    from .susceptibility import DEFAULT_OBSERVATION_CEILING
     from .h3_zonal import (
         polyfill_reporting_aoi,
         h3_cells_to_geodataframe,
@@ -51,6 +53,7 @@ try:
     )
 except (ImportError, ValueError):
     from aoi import BARPETA_BBOX_WGS84
+    from susceptibility import DEFAULT_OBSERVATION_CEILING
     from h3_zonal import (
         polyfill_reporting_aoi,
         h3_cells_to_geodataframe,
@@ -83,6 +86,18 @@ PROCESSED_DIR = WORKSPACE_ROOT / "data" / "processed" / "flood" / "barpeta"
 ARTIFACT_DIR = Path("/Users/shrey/.gemini/antigravity-ide/brain/18661d46-e6c8-45a4-99fa-84a0d8119ab7")
 
 
+def _nullable_float(value) -> float | None:
+    """Converts a numpy scalar to a Python float, mapping NaN to SQL NULL.
+
+    NaN must not reach a REAL column: it would read back as a number and be indistinguishable
+    from a measured zero in the dossier.
+    """
+    if value is None:
+        return None
+    f = float(value)
+    return None if np.isnan(f) else f
+
+
 def copy_final_rasters(dest_dir: Path) -> dict[str, Path]:
     """Copies final interim rasters to processed destination."""
     dest_dir.mkdir(parents=True, exist_ok=True)
@@ -107,7 +122,7 @@ def copy_final_rasters(dest_dir: Path) -> dict[str, Path]:
 
 
 def load_database(stats_gdf: gpd.GeoDataFrame) -> dict:
-    """Upserts grid_cell and hazard_static records into PostgreSQL.
+    """Upserts grid_cell, hazard_static and hazard_static_flood records into PostgreSQL.
 
     Returns:
         Dictionary of database round-trip validation results.
@@ -173,6 +188,9 @@ def load_database(stats_gdf: gpd.GeoDataFrame) -> dict:
             """, grid_data)
 
             # 4. Upsert hazard_static records
+            # quality_flag travels with the score: a 'no_coverage' cell holds susceptibility
+            # 0.0 because apply_quality_flags() filled NaN, not because it was measured as
+            # safe. Dropping the flag here is what would let the map paint blind cells green.
             print(f"  [+] Upserting {len(stats_gdf)} rows into hazard_static (hazard_type='{DEFAULT_HAZARD_TYPE}')...")
             hazard_data = []
             for _, row in stats_gdf.iterrows():
@@ -181,22 +199,68 @@ def load_database(stats_gdf: gpd.GeoDataFrame) -> dict:
                     DEFAULT_HAZARD_TYPE,
                     float(row["susceptibility"]),
                     float(row["confidence"]),
+                    str(row["quality_flag"]),
                     DEFAULT_MODEL_VERSION,
                     pipeline_run_id,
                 ))
 
             cur.executemany("""
                 INSERT INTO hazard_static (
-                    h3, hazard_type, susceptibility, confidence, model_version, pipeline_run_id
+                    h3, hazard_type, susceptibility, confidence, quality_flag,
+                    model_version, pipeline_run_id
                 ) VALUES (
-                    %s, %s, %s, %s, %s, %s
+                    %s, %s, %s, %s, %s, %s, %s
                 )
                 ON CONFLICT (h3, hazard_type) DO UPDATE SET
                     susceptibility = EXCLUDED.susceptibility,
                     confidence = EXCLUDED.confidence,
+                    quality_flag = EXCLUDED.quality_flag,
                     model_version = EXCLUDED.model_version,
                     pipeline_run_id = EXCLUDED.pipeline_run_id;
             """, hazard_data)
+
+            # 5. Upsert hazard_static_flood driver metrics
+            # The GeoParquet carries 20 columns and hazard_static carries 5. These are the
+            # physical drivers GET /hazard/cells/{h3} needs to explain a score.
+            print(f"  [+] Upserting {len(stats_gdf)} rows into hazard_static_flood...")
+            driver_data = []
+            for _, row in stats_gdf.iterrows():
+                driver_data.append((
+                    int(row["h3_int"]),
+                    _nullable_float(row["max_flood_susceptibility"]),
+                    _nullable_float(row["valid_pixel_fraction"]),
+                    _nullable_float(row["hard_zero_fraction"]),
+                    _nullable_float(row["mean_inundation_frequency"]),
+                    _nullable_float(row["mean_hand"]),
+                    _nullable_float(row["min_hand"]),
+                    _nullable_float(row["mean_slope"]),
+                    _nullable_float(row["mean_cropland_fraction"]),
+                    DEFAULT_OBSERVATION_CEILING,
+                    DEFAULT_MODEL_VERSION,
+                    pipeline_run_id,
+                ))
+
+            cur.executemany("""
+                INSERT INTO hazard_static_flood (
+                    h3, max_susceptibility, valid_pixel_fraction, hard_zero_fraction,
+                    mean_inundation_frequency, mean_hand_m, min_hand_m, mean_slope_deg,
+                    mean_cropland_fraction, observation_ceiling, model_version, pipeline_run_id
+                ) VALUES (
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                )
+                ON CONFLICT (h3) DO UPDATE SET
+                    max_susceptibility = EXCLUDED.max_susceptibility,
+                    valid_pixel_fraction = EXCLUDED.valid_pixel_fraction,
+                    hard_zero_fraction = EXCLUDED.hard_zero_fraction,
+                    mean_inundation_frequency = EXCLUDED.mean_inundation_frequency,
+                    mean_hand_m = EXCLUDED.mean_hand_m,
+                    min_hand_m = EXCLUDED.min_hand_m,
+                    mean_slope_deg = EXCLUDED.mean_slope_deg,
+                    mean_cropland_fraction = EXCLUDED.mean_cropland_fraction,
+                    observation_ceiling = EXCLUDED.observation_ceiling,
+                    model_version = EXCLUDED.model_version,
+                    pipeline_run_id = EXCLUDED.pipeline_run_id;
+            """, driver_data)
 
             conn.commit()
 
