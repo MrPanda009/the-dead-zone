@@ -1,12 +1,78 @@
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
 @import "tailwindcss";
 
-/*
- * SETU-DRR operations console palette.
- *
- * Dark-first: the hazard ramp is calibrated against a dark ground, and a light surface
- * would wash out the low classes where most of the Barpeta distribution sits.
- */
+@theme {
+  /* Surface / Atmosphere tokens */
+  --color-bg-base: #101712;
+  --color-forest-deep: #141d17;
+  --color-forest-mid: #223227;
+  --color-forest-light: #34483a;
+  --color-forest-surface: #0b1612;
+  --color-forest-surface-hover: #10221c;
+  --color-forest-dark: #06100c;
+
+  /* Citron & Brand Accents */
+  --color-citron: #d4f15d;
+  --color-citron-hover: #c4e14d;
+  --color-accent-emerald: #10b981;
+  --color-accent-emerald-bright: #34d399;
+  --color-accent-emerald-light: #6ee7b7;
+
+  /* Editorial & Text */
+  --color-cream: #f6f5ef;
+  --color-text-primary: #f8fafc;
+  --color-text-secondary: #cbd5e1;
+  --color-text-muted: #94a3b8;
+  --color-text-dim: #64748b;
+
+  /* Hazard & Alert Severities */
+  --color-hazard-red: #ef4444;
+  --color-hazard-orange: #f97316;
+  --color-hazard-amber: #f59e0b;
+  --color-hazard-green: #10b981;
+
+  /* Gov Resilience Command Center Palette */
+  --color-gov-bg: #162522;
+  --color-gov-bg-light: #f7f5f0;
+  --color-gov-surface: #121e1c;
+  --color-gov-surface-hover: #1a2c29;
+  --color-gov-surface-light: #ffffff;
+  --color-gov-border: #6f8f72;
+  --color-gov-sage: #6f8f72;
+  --color-gov-sage-light: #a3c4a6;
+  --color-gov-red: #b9433f;
+  --color-gov-orange: #c96b3b;
+  --color-gov-amber: #d49a45;
+  --color-gov-green: #4d7050;
+
+  /* Operations console palette tokens */
+  --color-surface-0: var(--surface-0);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-panel: var(--panel);
+
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+
+  --color-critical: var(--critical);
+  --color-warning: var(--warning);
+  --color-safe: var(--safe);
+}
+
 :root {
+  color-scheme: dark;
+  --font-sans: 'Plus Jakarta Sans', sans-serif;
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* SETU-DRR operations console variables */
   --surface-0: #0b0f16;
   --surface-1: #111823;
   --surface-2: #18212e;
@@ -27,40 +93,95 @@
   --safe: #4ec98a;
 }
 
-@theme inline {
-  --color-surface-0: var(--surface-0);
-  --color-surface-1: var(--surface-1);
-  --color-surface-2: var(--surface-2);
-  --color-panel: var(--panel);
-
-  --color-line: var(--line);
-  --color-line-strong: var(--line-strong);
-
-  --color-ink: var(--ink);
-  --color-ink-muted: var(--ink-muted);
-  --color-ink-faint: var(--ink-faint);
-
-  --color-accent: var(--accent);
-  --color-accent-strong: var(--accent-strong);
-
-  --color-critical: var(--critical);
-  --color-warning: var(--warning);
-  --color-safe: var(--safe);
-
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+body {
+  background-color: var(--color-bg-base);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  overflow: hidden;
+  user-select: none;
 }
 
-html,
-body {
-  height: 100%;
+.font-display {
+  font-family: var(--font-display);
 }
 
-body {
-  background: var(--surface-0);
-  color: var(--ink);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
-  -webkit-font-smoothing: antialiased;
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  vertical-align: middle;
+}
+
+.filled-icon {
+  font-variation-settings: 'FILL' 1;
+}
+
+/* Atmospheric Misty Forest Background */
+.forest-atmosphere {
+  background: radial-gradient(ellipse at 65% 45%, rgba(48, 72, 57, 0.5) 0%, rgba(22, 34, 27, 0.88) 55%, #0e1611 100%);
+  pointer-events: none;
+}
+
+/* Frosted Dark Sage Glass Panels */
+.glass-card {
+  background: rgba(20, 31, 24, 0.78);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  will-change: transform, box-shadow, border-color;
+}
+
+/* Capsule Pill Header (Matching Reference Image 2) */
+.capsule-pill {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+/* Pill badge */
+.pill-badge {
+  background: rgba(22, 34, 27, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(12px);
+  will-change: transform, background-color, border-color;
+}
+
+/* Minimalist Citron Solid Button (Image 1 Style - Zero Gradients) */
+.btn-citron {
+  background-color: var(--color-citron);
+  color: var(--color-bg-base);
+  font-weight: 700;
+  transition: all 0.2s ease;
+}
+.btn-citron:hover {
+  background-color: var(--color-citron-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(212, 241, 93, 0.25);
+}
+.btn-citron:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Dead Zone Radiant Glows */
+.glow-dead-red {
+  box-shadow: 0 0 25px var(--color-hazard-red);
+}
+.glow-dead-orange {
+  box-shadow: 0 0 25px var(--color-hazard-orange);
+}
+
+/* Giant Watermark Display Typography */
+.watermark-text {
+  color: rgba(255, 255, 255, 0.12);
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+  pointer-events: none;
+  user-select: none;
 }
 
 /* MapLibre's default controls are light-themed; pull them onto the app palette. */
@@ -108,18 +229,20 @@ input[type='range']::-moz-range-thumb {
   cursor: pointer;
 }
 
+/* Custom Scrollbars */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
-
+::-webkit-scrollbar-track {
+  background: var(--color-forest-surface);
+}
 ::-webkit-scrollbar-thumb {
-  background: var(--line-strong);
+  background: rgba(255, 255, 255, 0.18);
   border-radius: 9999px;
 }
-
-::-webkit-scrollbar-track {
-  background: transparent;
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-citron);
 }
 
 @media (prefers-reduced-motion: reduce) {

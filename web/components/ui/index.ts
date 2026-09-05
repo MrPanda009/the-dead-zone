@@ -12,3 +12,8 @@ export type { SliderProps } from './Slider';
 
 export { Toggle } from './Toggle';
 export type { ToggleProps } from './Toggle';
+
+export * from './pill';
+export * from './progress';
+export * from './drawer';
+export * from './modal';
