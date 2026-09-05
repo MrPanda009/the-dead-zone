@@ -46,7 +46,7 @@ export interface HazardWorkspaceProps {
 }
 
 const DEFAULT_DISPLAY: FloodHazardMapDisplayState = {
-  opacity: 0.85,
+  opacity: 0.65,
   showConfidenceHatch: true,
   confidenceThreshold: DEFAULT_CONFIDENCE_HATCH_THRESHOLD,
   showHardZero: true,
