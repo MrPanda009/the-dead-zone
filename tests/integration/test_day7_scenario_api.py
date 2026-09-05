@@ -17,13 +17,20 @@ from sqlalchemy import create_engine, text
 from api.main import app
 from core.config import settings
 
-client = TestClient(app)
+@pytest.fixture
+def officer_client():
+    c = TestClient(app)
+    c.post("/auth/login", json={
+        "email": "officer@setu.gov.in",
+        "password": settings.DEMO_OFFICER_PASSWORD,
+    })
+    return c
 
 
 class TestDay7ScenarioAPI:
     """Integration test suite for POST /scenario endpoint."""
 
-    def test_scenario_basic_simulation(self):
+    def test_scenario_basic_simulation(self, officer_client):
         """Basic scenario simulation evaluates habitations and reports rank deltas."""
         payload = {
             "hazard_weights": {
@@ -34,7 +41,7 @@ class TestDay7ScenarioAPI:
             "sort_mode": "urgency",
             "limit": 20,
         }
-        res = client.post("/scenario", json=payload)
+        res = officer_client.post("/scenario", json=payload)
         assert res.status_code == 200
         data = res.json()
 
@@ -55,7 +62,7 @@ class TestDay7ScenarioAPI:
         assert "tier_changed" in first_item
         assert first_item["rank_delta"] == first_item["original_rank"] - first_item["scenario_rank"]
 
-    def test_scenario_does_not_mutate_baseline_database(self):
+    def test_scenario_does_not_mutate_baseline_database(self, officer_client):
         """Evaluating scenarios must leave database habitation_risk records completely untouched."""
         engine = create_engine(settings.get_sqlalchemy_url(direct=True))
 
@@ -71,7 +78,7 @@ class TestDay7ScenarioAPI:
             "priority_gamma": 3.0,
             "limit": 100,
         }
-        res = client.post("/scenario", json=payload)
+        res = officer_client.post("/scenario", json=payload)
         assert res.status_code == 200
 
         with engine.connect() as conn:
@@ -83,7 +90,7 @@ class TestDay7ScenarioAPI:
         # Verify exact bit-for-bit equality before and after scenario execution
         assert after_tuples == before_tuples
 
-    def test_scenario_with_allocation_simulation(self):
+    def test_scenario_with_allocation_simulation(self, officer_client):
         """include_allocation=True executes simulation boundary without creating allocation_run records."""
         engine = create_engine(settings.get_sqlalchemy_url(direct=True))
 
@@ -101,7 +108,7 @@ class TestDay7ScenarioAPI:
             },
             "limit": 50,
         }
-        res = client.post("/scenario", json=payload)
+        res = officer_client.post("/scenario", json=payload)
         assert res.status_code == 200
         data = res.json()
 
@@ -117,9 +124,9 @@ class TestDay7ScenarioAPI:
         # Database must NOT have new allocation_run records
         assert runs_count_after == runs_count_before
 
-    def test_scenario_caseload_sort_mode(self):
+    def test_scenario_caseload_sort_mode(self, officer_client):
         """Testing caseload sort mode via POST /scenario."""
-        res = client.post("/scenario", json={"sort_mode": "caseload", "limit": 10})
+        res = officer_client.post("/scenario", json={"sort_mode": "caseload", "limit": 10})
         assert res.status_code == 200
         items = res.json()["items"]
         assert len(items) > 0
@@ -127,7 +134,7 @@ class TestDay7ScenarioAPI:
         for i in range(len(caseloads) - 1):
             assert caseloads[i] >= caseloads[i + 1] - 0.01
 
-    def test_scenario_invalid_bounds(self):
+    def test_scenario_invalid_bounds(self, officer_client):
         """Invalid bounds like negative gamma or negative weights return error."""
-        res = client.post("/scenario", json={"priority_gamma": -1.0})
+        res = officer_client.post("/scenario", json={"priority_gamma": -1.0})
         assert res.status_code == 422

@@ -17,6 +17,17 @@ def client():
     return TestClient(app)
 
 
+@pytest.fixture
+def officer_client():
+    from core.config import settings
+    c = TestClient(app)
+    c.post("/auth/login", json={
+        "email": "officer@setu.gov.in",
+        "password": settings.DEMO_OFFICER_PASSWORD,
+    })
+    return c
+
+
 class TestDay6AlertsAndAllocationAPI:
     """Integration test suite for Day 6 dynamic serving and allocation endpoints."""
 
@@ -75,14 +86,14 @@ class TestDay6AlertsAndAllocationAPI:
         res_invalid_low = client.get("/alerts/forecast?horizon=0")
         assert res_invalid_low.status_code == 422
 
-    def test_post_plan_allocate_success(self, client):
+    def test_post_plan_allocate_success(self, officer_client):
         payload = {
             "max_search_radius_km": 25.0,
             "target_tiers": ["immediate", "short_term"],
             "allow_group_splits": True,
             "distance_penalty_weight": 1.0,
         }
-        res = client.post("/plan/allocate", json=payload)
+        res = officer_client.post("/plan/allocate", json=payload)
         assert res.status_code == 200
         data = res.json()
 
@@ -111,17 +122,17 @@ class TestDay6AlertsAndAllocationAPI:
             assert "site_suitability" in a
             assert "has_group_split" in a
 
-    def test_post_plan_allocate_invalid_radius_rejection(self, client):
+    def test_post_plan_allocate_invalid_radius_rejection(self, officer_client):
         # Negative search radius
-        res = client.post("/plan/allocate", json={"max_search_radius_km": -5.0})
+        res = officer_client.post("/plan/allocate", json={"max_search_radius_km": -5.0})
         assert res.status_code == 422
 
         # Excessively large search radius (> 100km)
-        res2 = client.post("/plan/allocate", json={"max_search_radius_km": 500.0})
+        res2 = officer_client.post("/plan/allocate", json={"max_search_radius_km": 500.0})
         assert res2.status_code == 422
 
-    def test_post_plan_allocate_empty_tiers_rejection(self, client):
-        res = client.post("/plan/allocate", json={"target_tiers": []})
+    def test_post_plan_allocate_empty_tiers_rejection(self, officer_client):
+        res = officer_client.post("/plan/allocate", json={"target_tiers": []})
         assert res.status_code in (400, 422)
 
     def test_security_sql_injection_defense(self, client):
