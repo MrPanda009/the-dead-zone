@@ -12,6 +12,7 @@ from api.config import api_settings
 from api.middleware import RequestIdAndLoggingMiddleware
 from api.routes.health import router as health_router
 from api.routes.zones import router as zones_router
+from api.routes.hazard import router as hazard_router
 from api.routes.habitations import router as habitations_router
 from api.routes.sites import router as sites_router
 from api.routes.alerts import router as alerts_router
@@ -93,6 +94,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 # 4. Include Routers
 app.include_router(health_router)
 app.include_router(zones_router)
+app.include_router(hazard_router)
 app.include_router(habitations_router)
 app.include_router(sites_router)
 app.include_router(alerts_router)

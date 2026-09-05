@@ -19,6 +19,15 @@ from core.schemas.zones import (
     ZoneCellSummary,
     ZoneCellDetail,
 )
+from core.schemas.hazard import (
+    HazardCellDTO,
+    HazardLayerLegendDTO,
+    HazardLayerCoverageDTO,
+    HazardLayerResponse,
+    HazardLayerSummaryDTO,
+    FloodDriverDTO,
+    HazardCellDetailDTO,
+)
 from core.schemas.habitations import (
     LossEventDTO,
     VulnerabilityBreakdownDTO,
@@ -95,6 +104,13 @@ __all__ = [
     "HazardDetailDTO",
     "ZoneCellSummary",
     "ZoneCellDetail",
+    "HazardCellDTO",
+    "HazardLayerLegendDTO",
+    "HazardLayerCoverageDTO",
+    "HazardLayerResponse",
+    "HazardLayerSummaryDTO",
+    "FloodDriverDTO",
+    "HazardCellDetailDTO",
     "LossEventDTO",
     "VulnerabilityBreakdownDTO",
     "HabitationListItem",

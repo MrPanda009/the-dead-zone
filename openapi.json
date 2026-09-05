@@ -314,6 +314,352 @@
         }
       }
     },
+    "/hazard/layers": {
+      "get": {
+        "tags": [
+          "Hazard Layers"
+        ],
+        "summary": "List published static hazard layers",
+        "description": "Enumerates every `hazard_static` layer with its cell count, susceptibility range and confidence ceiling, so the client can build a layer switcher without guessing.",
+        "operationId": "list_hazard_layers_hazard_layers_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/HazardLayerSummaryDTO"
+                  },
+                  "type": "array",
+                  "title": "Response List Hazard Layers Hazard Layers Get"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid parameters or malformed input format.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found - Requested resource, cell, or entity does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error - Request parameter or payload validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error - An unexpected system or database error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable - No valid serving version is active. Pipeline data is not ready.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hazard/cells": {
+      "get": {
+        "tags": [
+          "Hazard Layers"
+        ],
+        "summary": "Query a static hazard layer for the map viewport",
+        "description": "Returns H3 cells with susceptibility, confidence and coverage provenance, plus the quantile class breaks and confidence ceiling required to render them faithfully.\n\nGeometry is omitted by design \u2014 the client derives hexagon boundaries from the H3 index (deck.gl `H3HexagonLayer`), which is roughly 7x smaller on the wire.",
+        "operationId": "get_hazard_cells_hazard_cells_get",
+        "parameters": [
+          {
+            "name": "hazard_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Hazard layer to serve.",
+              "examples": [
+                "riverine_flood"
+              ],
+              "default": "riverine_flood",
+              "title": "Hazard Type"
+            },
+            "description": "Hazard layer to serve."
+          },
+          {
+            "name": "res",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 9,
+              "minimum": 6,
+              "description": "H3 grid resolution.",
+              "default": 8,
+              "title": "Res"
+            },
+            "description": "H3 grid resolution."
+          },
+          {
+            "name": "bbox",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Viewport as 'min_lon,min_lat,max_lon,max_lat'. Omit for the full layer.",
+              "examples": [
+                "90.70,26.05,91.45,26.75"
+              ],
+              "title": "Bbox"
+            },
+            "description": "Viewport as 'min_lon,min_lat,max_lon,max_lat'. Omit for the full layer."
+          },
+          {
+            "name": "admin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by admin_boundary id or LGD code (e.g. 277 for Barpeta).",
+              "title": "Admin"
+            },
+            "description": "Filter by admin_boundary id or LGD code (e.g. 277 for Barpeta)."
+          },
+          {
+            "name": "min_susceptibility",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "description": "Optional susceptibility floor. Left at 0.0 the response still includes hard-zero and no-coverage cells, which the map must distinguish.",
+              "default": 0.0,
+              "title": "Min Susceptibility"
+            },
+            "description": "Optional susceptibility floor. Left at 0.0 the response still includes hard-zero and no-coverage cells, which the map must distinguish."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 30000,
+              "minimum": 1,
+              "description": "Maximum cells to return.",
+              "default": 20000,
+              "title": "Limit"
+            },
+            "description": "Maximum cells to return."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HazardLayerResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid parameters or malformed input format.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found - Requested resource, cell, or entity does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error - Request parameter or payload validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error - An unexpected system or database error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable - No valid serving version is active. Pipeline data is not ready.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hazard/cells/{h3}": {
+      "get": {
+        "tags": [
+          "Hazard Layers"
+        ],
+        "summary": "Get one cell's hazard dossier and physical drivers",
+        "description": "Returns the cell's score with its inundation frequency, HAND, slope and cropland drivers from `hazard_static_flood`, plus confidence already normalised against the layer ceiling.",
+        "operationId": "get_hazard_cell_detail_hazard_cells__h3__get",
+        "parameters": [
+          {
+            "name": "h3",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "H3 index as hexadecimal string.",
+              "examples": [
+                "883ce00201fffff"
+              ],
+              "title": "H3"
+            },
+            "description": "H3 index as hexadecimal string."
+          },
+          {
+            "name": "hazard_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Hazard layer to read.",
+              "default": "riverine_flood",
+              "title": "Hazard Type"
+            },
+            "description": "Hazard layer to read."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HazardCellDetailDTO"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid parameters or malformed input format.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found - Requested resource, cell, or entity does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error - Request parameter or payload validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error - An unexpected system or database error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable - No valid serving version is active. Pipeline data is not ready.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/habitations": {
       "get": {
         "tags": [
@@ -2208,6 +2554,16 @@
         "title": "CapacityBreakdownDTO",
         "description": "Structured breakdown of independent resource capacity dimensions."
       },
+      "CoverageFlag": {
+        "type": "string",
+        "enum": [
+          "full",
+          "low_coverage",
+          "no_coverage"
+        ],
+        "title": "CoverageFlag",
+        "description": "Zonal coverage class for an aggregated H3 cell (Step 10 \u00a710.3).\n\nCRITICAL RENDERING RULE:\nA NO_COVERAGE cell carries susceptibility 0.0 because `apply_quality_flags()` fills\nNaN with zero \u2014 not because it was measured as safe. It must never be drawn with the\nsame treatment as a genuine FR-3.17 hard-zero cell."
+      },
       "DataQuality": {
         "type": "string",
         "enum": [
@@ -2347,6 +2703,115 @@
         ],
         "title": "FeatureContributionDTO",
         "description": "Single feature attribution item for a cell or habitation."
+      },
+      "FloodDriverDTO": {
+        "properties": {
+          "mean_inundation_frequency": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mean Inundation Frequency",
+            "description": "Empirical Sentinel-1 inundation frequency F in [0, 1]."
+          },
+          "mean_hand_m": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mean Hand M",
+            "description": "Mean Height Above Nearest Drainage (m)."
+          },
+          "min_hand_m": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Hand M",
+            "description": "Minimum HAND within the cell (m)."
+          },
+          "mean_slope_deg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mean Slope Deg",
+            "description": "Mean terrain slope (degrees)."
+          },
+          "mean_cropland_fraction": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mean Cropland Fraction",
+            "description": "ESA WorldCover class-40 cropland fraction in [0, 1]."
+          },
+          "max_susceptibility": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Susceptibility",
+            "description": "Peak pixel susceptibility inside the cell."
+          },
+          "valid_pixel_fraction": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid Pixel Fraction",
+            "description": "Fraction of the cell covered by valid raster pixels."
+          },
+          "hard_zero_fraction": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hard Zero Fraction",
+            "description": "Fraction excluded by FR-3.17 hard-zero screening."
+          },
+          "observation_ceiling": {
+            "type": "integer",
+            "title": "Observation Ceiling",
+            "description": "Denominator in confidence = min(1, n_valid / ceiling).",
+            "default": 30
+          }
+        },
+        "type": "object",
+        "title": "FloodDriverDTO",
+        "description": "Physical drivers behind a flood susceptibility score (hazard_static_flood)."
       },
       "ForecastAlertItem": {
         "properties": {
@@ -2843,6 +3308,162 @@
         "title": "Hazard",
         "description": "Supported hazard types (PRD \u00a75.1, \u00a76.3)."
       },
+      "HazardCellDTO": {
+        "properties": {
+          "h3": {
+            "type": "string",
+            "title": "H3",
+            "description": "H3 index as lowercase hexadecimal string."
+          },
+          "susceptibility": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Susceptibility",
+            "description": "Static susceptibility S_h in [0, 1]."
+          },
+          "confidence": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence",
+            "description": "Raw model confidence. Normalise against `HazardLayerLegendDTO.confidence_ceiling` before rendering \u2014 an absolute threshold will hide a whole layer."
+          },
+          "quality_flag": {
+            "$ref": "#/components/schemas/CoverageFlag",
+            "description": "Coverage class. `no_coverage` means susceptibility 0.0 is a fill, not a measurement.",
+            "default": "full"
+          },
+          "hard_zero_fraction": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hard Zero Fraction",
+            "description": "Fraction of cell excluded by FR-3.17 (HAND > 30m OR slope > 15deg)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "h3",
+          "susceptibility",
+          "confidence"
+        ],
+        "title": "HazardCellDTO",
+        "description": "One H3 cell of a static hazard layer, sized for bulk viewport transport.\n\nGeometry is deliberately omitted: the client reconstructs the hexagon from the H3\nindex (deck.gl `H3HexagonLayer` derives boundaries on the GPU). Shipping polygons\ninflates the Barpeta res-8 payload from ~0.47 MB to ~3.4 MB for identical pixels."
+      },
+      "HazardCellDetailDTO": {
+        "properties": {
+          "h3": {
+            "type": "string",
+            "title": "H3"
+          },
+          "h3_int": {
+            "type": "integer",
+            "title": "H3 Int"
+          },
+          "res": {
+            "type": "integer",
+            "title": "Res"
+          },
+          "hazard_type": {
+            "type": "string",
+            "title": "Hazard Type"
+          },
+          "susceptibility": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Susceptibility"
+          },
+          "confidence": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence"
+          },
+          "confidence_normalised": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence Normalised",
+            "description": "confidence / layer ceiling \u2014 the value safe to display."
+          },
+          "quality_flag": {
+            "$ref": "#/components/schemas/CoverageFlag"
+          },
+          "model_version": {
+            "type": "string",
+            "title": "Model Version"
+          },
+          "centroid": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Centroid",
+            "description": "[longitude, latitude]"
+          },
+          "admin_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admin Name"
+          },
+          "population": {
+            "type": "number",
+            "title": "Population",
+            "default": 0.0
+          },
+          "is_permanent_red_candidate": {
+            "type": "boolean",
+            "title": "Is Permanent Red Candidate",
+            "description": "susceptibility >= PRZ_ANY_SUSCEPTIBILITY (FR-3.9).",
+            "default": false
+          },
+          "drivers": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FloodDriverDTO"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "screening_grade": {
+            "type": "string",
+            "title": "Screening Grade",
+            "default": "Screening Grade: Cell-level screening and prioritisation tool. Geotechnical investigation, hydraulic study, and community consultation required before executing relocation orders."
+          }
+        },
+        "type": "object",
+        "required": [
+          "h3",
+          "h3_int",
+          "res",
+          "hazard_type",
+          "susceptibility",
+          "confidence",
+          "confidence_normalised",
+          "quality_flag",
+          "model_version",
+          "centroid"
+        ],
+        "title": "HazardCellDetailDTO",
+        "description": "Full per-cell dossier payload (GET /hazard/cells/{h3})."
+      },
       "HazardDetailDTO": {
         "properties": {
           "hazard_type": {
@@ -2904,6 +3525,197 @@
           "score"
         ],
         "title": "HazardDetailDTO"
+      },
+      "HazardLayerCoverageDTO": {
+        "properties": {
+          "full": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Full",
+            "default": 0
+          },
+          "low_coverage": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Low Coverage",
+            "default": 0
+          },
+          "no_coverage": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "No Coverage",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "HazardLayerCoverageDTO",
+        "description": "Population counts per coverage class, for the legend and the empty-state copy."
+      },
+      "HazardLayerLegendDTO": {
+        "properties": {
+          "method": {
+            "type": "string",
+            "title": "Method",
+            "description": "Classification method used to derive breaks.",
+            "default": "quantile"
+          },
+          "quantiles": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Quantiles",
+            "description": "Quantile positions the breaks were sampled at."
+          },
+          "breaks": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Breaks",
+            "description": "Ascending class break values in susceptibility units."
+          },
+          "domain": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Domain",
+            "description": "[min, max] observed susceptibility across the layer."
+          },
+          "confidence_ceiling": {
+            "type": "number",
+            "maximum": 1.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Confidence Ceiling",
+            "description": "Maximum confidence present in the layer. Divide each cell's confidence by this to obtain a displayable [0, 1] value."
+          },
+          "prz_susceptibility_threshold": {
+            "type": "number",
+            "title": "Prz Susceptibility Threshold",
+            "description": "FR-3.9 Permanent Red Zone susceptibility cut (core.constants.PRZ_ANY_SUSCEPTIBILITY)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "quantiles",
+          "breaks",
+          "domain",
+          "confidence_ceiling",
+          "prz_susceptibility_threshold"
+        ],
+        "title": "HazardLayerLegendDTO",
+        "description": "Quantile class breaks and normalisation ceilings for the active layer.\n\nComputed server-side over the queried population rather than assumed client-side.\nA linear 0->1 ramp renders the Barpeta flood layer almost uniformly: half its cells\nfall between 0.39 and 0.48 because mean HAND is 1.83 m across the floodplain, which\nsaturates the `1 - HAND/P99` term. The signal lives in the top decile."
+      },
+      "HazardLayerResponse": {
+        "properties": {
+          "hazard_type": {
+            "type": "string",
+            "title": "Hazard Type",
+            "description": "Hazard type served, e.g. 'riverine_flood'."
+          },
+          "res": {
+            "type": "integer",
+            "title": "Res",
+            "description": "H3 resolution of the returned cells."
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Count",
+            "description": "Number of cells in this response."
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated",
+            "description": "True when the limit clipped the result set.",
+            "default": false
+          },
+          "model_version": {
+            "type": "string",
+            "title": "Model Version",
+            "description": "Pipeline model version tag.",
+            "default": "v1.0.0"
+          },
+          "legend": {
+            "$ref": "#/components/schemas/HazardLayerLegendDTO"
+          },
+          "coverage": {
+            "$ref": "#/components/schemas/HazardLayerCoverageDTO"
+          },
+          "cells": {
+            "items": {
+              "$ref": "#/components/schemas/HazardCellDTO"
+            },
+            "type": "array",
+            "title": "Cells"
+          },
+          "screening_grade": {
+            "type": "string",
+            "title": "Screening Grade",
+            "default": "Screening Grade: Cell-level screening and prioritisation tool. Geotechnical investigation, hydraulic study, and community consultation required before executing relocation orders."
+          }
+        },
+        "type": "object",
+        "required": [
+          "hazard_type",
+          "res",
+          "count",
+          "legend",
+          "coverage"
+        ],
+        "title": "HazardLayerResponse",
+        "description": "Envelope for GET /hazard/cells \u2014 cells plus everything needed to colour them."
+      },
+      "HazardLayerSummaryDTO": {
+        "properties": {
+          "hazard_type": {
+            "type": "string",
+            "title": "Hazard Type"
+          },
+          "res": {
+            "type": "integer",
+            "title": "Res"
+          },
+          "cell_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Cell Count"
+          },
+          "model_version": {
+            "type": "string",
+            "title": "Model Version"
+          },
+          "min_susceptibility": {
+            "type": "number",
+            "title": "Min Susceptibility"
+          },
+          "max_susceptibility": {
+            "type": "number",
+            "title": "Max Susceptibility"
+          },
+          "mean_susceptibility": {
+            "type": "number",
+            "title": "Mean Susceptibility"
+          },
+          "confidence_ceiling": {
+            "type": "number",
+            "title": "Confidence Ceiling"
+          }
+        },
+        "type": "object",
+        "required": [
+          "hazard_type",
+          "res",
+          "cell_count",
+          "model_version",
+          "min_susceptibility",
+          "max_susceptibility",
+          "mean_susceptibility",
+          "confidence_ceiling"
+        ],
+        "title": "HazardLayerSummaryDTO",
+        "description": "One available static hazard layer (GET /hazard/layers)."
       },
       "JurisdictionDTO": {
         "properties": {

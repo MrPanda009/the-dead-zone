@@ -84,6 +84,68 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/hazard/layers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List published static hazard layers
+         * @description Enumerates every `hazard_static` layer with its cell count, susceptibility range and confidence ceiling, so the client can build a layer switcher without guessing.
+         */
+        get: operations["list_hazard_layers_hazard_layers_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hazard/cells": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Query a static hazard layer for the map viewport
+         * @description Returns H3 cells with susceptibility, confidence and coverage provenance, plus the quantile class breaks and confidence ceiling required to render them faithfully.
+         *
+         *     Geometry is omitted by design — the client derives hexagon boundaries from the H3 index (deck.gl `H3HexagonLayer`), which is roughly 7x smaller on the wire.
+         */
+        get: operations["get_hazard_cells_hazard_cells_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hazard/cells/{h3}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get one cell's hazard dossier and physical drivers
+         * @description Returns the cell's score with its inundation frequency, HAND, slope and cropland drivers from `hazard_static_flood`, plus confidence already normalised against the layer ceiling.
+         */
+        get: operations["get_hazard_cell_detail_hazard_cells__h3__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/habitations": {
         parameters: {
             query?: never;
@@ -155,7 +217,7 @@ export interface paths {
         put?: never;
         /**
          * Recompute candidate site carrying capacity with overridden policy norms
-         * @description Simulates carrying capacity under modified policy parameters (e.g. plot area, LPCD, spare school/health capacity). Returns the baseline capacity, scenario capacity, net delta in supportable households, and augmented relief options.
+         * @description Simulates carrying capacity under modified policy parameters (e.g. plot area, LPCD, spare school/health capacity). Returns the baseline capacity, scenario capacity, net delta in supportable households, and augmented relief options. Requires authenticated user with 'capacity.recompute' permission (Government Official) and authorized jurisdiction scope.
          */
         post: operations["recompute_site_capacity_sites__id__capacity_post"];
         delete?: never;
@@ -235,7 +297,7 @@ export interface paths {
         put?: never;
         /**
          * Solve optimal habitation-to-site relocation allocation via min-cost flow
-         * @description Executes exact min-cost flow optimization (Google OR-Tools) to assign vulnerable habitations to candidate relocation sites. Respects carrying capacity constraints (Day 5), maximizes composite suitability/priority benefit, minimizes distance penalty, and explicitly reports any village household group splits requiring social sign-off.
+         * @description Executes exact min-cost flow optimization (Google OR-Tools) to assign vulnerable habitations to candidate relocation sites. Respects carrying capacity constraints (Day 5), maximizes composite suitability/priority benefit, minimizes distance penalty, and explicitly reports any village household group splits requiring social sign-off. Requires authenticated user with 'allocation.run' permission (Government Official) and authorized jurisdiction scope.
          */
         post: operations["generate_allocation_plan_plan_allocate_post"];
         delete?: never;
@@ -255,9 +317,89 @@ export interface paths {
         put?: never;
         /**
          * Evaluate hypothetical policy and hazard weight scenarios without mutating baseline data
-         * @description Executes a pure, stateless scenario evaluation over habitation baselines. Allows decision-makers to adjust hazard weights w_h and loss history amplifier gamma, recomputing priority scores, rank deltas, and triage tier shifts. Optionally simulates min-cost flow relocation allocation without modifying database records.
+         * @description Executes a pure, stateless scenario evaluation over habitation baselines. Allows decision-makers to adjust hazard weights w_h and loss history amplifier gamma, recomputing priority scores, rank deltas, and triage tier shifts. Optionally simulates min-cost flow relocation allocation without modifying database records. Requires authenticated user with 'scenario.run' permission (Government Official) and authorized jurisdiction scope.
          */
         post: operations["evaluate_scenario_scenario_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Authenticate user with email and password
+         * @description Verifies credentials using Argon2id, creates a secure server-side session, and sets an HTTP-only session cookie. Returns the safe authenticated identity.
+         */
+        post: operations["login_auth_login_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get authenticated user identity
+         * @description Resolves the current authenticated user identity from the session cookie. Returns 401 if unauthenticated, expired, or revoked.
+         */
+        get: operations["get_me_auth_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revoke session and log out
+         * @description Revokes the active server-side session and clears the session cookie.
+         */
+        post: operations["logout_auth_logout_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Register a new civilian user
+         * @description Public self-registration for civilian users. Privileged roles (GOVERNMENT_OFFICIAL, RESCUE_OFFICER) cannot be selected and are strictly rejected.
+         */
+        post: operations["register_auth_register_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -646,6 +788,17 @@ export interface components {
             calculation_version: string;
         };
         /**
+         * CoverageFlag
+         * @description Zonal coverage class for an aggregated H3 cell (Step 10 §10.3).
+         *
+         *     CRITICAL RENDERING RULE:
+         *     A NO_COVERAGE cell carries susceptibility 0.0 because `apply_quality_flags()` fills
+         *     NaN with zero — not because it was measured as safe. It must never be drawn with the
+         *     same treatment as a genuine FR-3.17 hard-zero cell.
+         * @enum {string}
+         */
+        CoverageFlag: "full" | "low_coverage" | "no_coverage";
+        /**
          * DataQuality
          * @description Data quality and provenance classification across pipeline and API data (Day 6-7).
          *
@@ -748,6 +901,58 @@ export interface components {
              * @description Rank of this feature in importance (1 = top contributing factor).
              */
             rank?: number | null;
+        };
+        /**
+         * FloodDriverDTO
+         * @description Physical drivers behind a flood susceptibility score (hazard_static_flood).
+         */
+        FloodDriverDTO: {
+            /**
+             * Mean Inundation Frequency
+             * @description Empirical Sentinel-1 inundation frequency F in [0, 1].
+             */
+            mean_inundation_frequency?: number | null;
+            /**
+             * Mean Hand M
+             * @description Mean Height Above Nearest Drainage (m).
+             */
+            mean_hand_m?: number | null;
+            /**
+             * Min Hand M
+             * @description Minimum HAND within the cell (m).
+             */
+            min_hand_m?: number | null;
+            /**
+             * Mean Slope Deg
+             * @description Mean terrain slope (degrees).
+             */
+            mean_slope_deg?: number | null;
+            /**
+             * Mean Cropland Fraction
+             * @description ESA WorldCover class-40 cropland fraction in [0, 1].
+             */
+            mean_cropland_fraction?: number | null;
+            /**
+             * Max Susceptibility
+             * @description Peak pixel susceptibility inside the cell.
+             */
+            max_susceptibility?: number | null;
+            /**
+             * Valid Pixel Fraction
+             * @description Fraction of the cell covered by valid raster pixels.
+             */
+            valid_pixel_fraction?: number | null;
+            /**
+             * Hard Zero Fraction
+             * @description Fraction excluded by FR-3.17 hard-zero screening.
+             */
+            hard_zero_fraction?: number | null;
+            /**
+             * Observation Ceiling
+             * @description Denominator in confidence = min(1, n_valid / ceiling).
+             * @default 30
+             */
+            observation_ceiling: number;
         };
         /**
          * ForecastAlertItem
@@ -966,6 +1171,91 @@ export interface components {
          * @enum {string}
          */
         Hazard: "landslide" | "flash_flood" | "storm_surge" | "riverine_flood" | "coastal_erosion" | "cloudburst";
+        /**
+         * HazardCellDTO
+         * @description One H3 cell of a static hazard layer, sized for bulk viewport transport.
+         *
+         *     Geometry is deliberately omitted: the client reconstructs the hexagon from the H3
+         *     index (deck.gl `H3HexagonLayer` derives boundaries on the GPU). Shipping polygons
+         *     inflates the Barpeta res-8 payload from ~0.47 MB to ~3.4 MB for identical pixels.
+         */
+        HazardCellDTO: {
+            /**
+             * H3
+             * @description H3 index as lowercase hexadecimal string.
+             */
+            h3: string;
+            /**
+             * Susceptibility
+             * @description Static susceptibility S_h in [0, 1].
+             */
+            susceptibility: number;
+            /**
+             * Confidence
+             * @description Raw model confidence. Normalise against `HazardLayerLegendDTO.confidence_ceiling` before rendering — an absolute threshold will hide a whole layer.
+             */
+            confidence: number;
+            /**
+             * @description Coverage class. `no_coverage` means susceptibility 0.0 is a fill, not a measurement.
+             * @default full
+             */
+            quality_flag: components["schemas"]["CoverageFlag"];
+            /**
+             * Hard Zero Fraction
+             * @description Fraction of cell excluded by FR-3.17 (HAND > 30m OR slope > 15deg).
+             */
+            hard_zero_fraction?: number | null;
+        };
+        /**
+         * HazardCellDetailDTO
+         * @description Full per-cell dossier payload (GET /hazard/cells/{h3}).
+         */
+        HazardCellDetailDTO: {
+            /** H3 */
+            h3: string;
+            /** H3 Int */
+            h3_int: number;
+            /** Res */
+            res: number;
+            /** Hazard Type */
+            hazard_type: string;
+            /** Susceptibility */
+            susceptibility: number;
+            /** Confidence */
+            confidence: number;
+            /**
+             * Confidence Normalised
+             * @description confidence / layer ceiling — the value safe to display.
+             */
+            confidence_normalised: number;
+            quality_flag: components["schemas"]["CoverageFlag"];
+            /** Model Version */
+            model_version: string;
+            /**
+             * Centroid
+             * @description [longitude, latitude]
+             */
+            centroid: number[];
+            /** Admin Name */
+            admin_name?: string | null;
+            /**
+             * Population
+             * @default 0
+             */
+            population: number;
+            /**
+             * Is Permanent Red Candidate
+             * @description susceptibility >= PRZ_ANY_SUSCEPTIBILITY (FR-3.9).
+             * @default false
+             */
+            is_permanent_red_candidate: boolean;
+            drivers?: components["schemas"]["FloodDriverDTO"] | null;
+            /**
+             * Screening Grade
+             * @default Screening Grade: Cell-level screening and prioritisation tool. Geotechnical investigation, hydraulic study, and community consultation required before executing relocation orders.
+             */
+            screening_grade: string;
+        };
         /** HazardDetailDTO */
         HazardDetailDTO: {
             /**
@@ -998,6 +1288,189 @@ export interface components {
              * @description Composed hazard score H_h.
              */
             score: number;
+        };
+        /**
+         * HazardLayerCoverageDTO
+         * @description Population counts per coverage class, for the legend and the empty-state copy.
+         */
+        HazardLayerCoverageDTO: {
+            /**
+             * Full
+             * @default 0
+             */
+            full: number;
+            /**
+             * Low Coverage
+             * @default 0
+             */
+            low_coverage: number;
+            /**
+             * No Coverage
+             * @default 0
+             */
+            no_coverage: number;
+        };
+        /**
+         * HazardLayerLegendDTO
+         * @description Quantile class breaks and normalisation ceilings for the active layer.
+         *
+         *     Computed server-side over the queried population rather than assumed client-side.
+         *     A linear 0->1 ramp renders the Barpeta flood layer almost uniformly: half its cells
+         *     fall between 0.39 and 0.48 because mean HAND is 1.83 m across the floodplain, which
+         *     saturates the `1 - HAND/P99` term. The signal lives in the top decile.
+         */
+        HazardLayerLegendDTO: {
+            /**
+             * Method
+             * @description Classification method used to derive breaks.
+             * @default quantile
+             */
+            method: string;
+            /**
+             * Quantiles
+             * @description Quantile positions the breaks were sampled at.
+             */
+            quantiles: number[];
+            /**
+             * Breaks
+             * @description Ascending class break values in susceptibility units.
+             */
+            breaks: number[];
+            /**
+             * Domain
+             * @description [min, max] observed susceptibility across the layer.
+             */
+            domain: number[];
+            /**
+             * Confidence Ceiling
+             * @description Maximum confidence present in the layer. Divide each cell's confidence by this to obtain a displayable [0, 1] value.
+             */
+            confidence_ceiling: number;
+            /**
+             * Prz Susceptibility Threshold
+             * @description FR-3.9 Permanent Red Zone susceptibility cut (core.constants.PRZ_ANY_SUSCEPTIBILITY).
+             */
+            prz_susceptibility_threshold: number;
+        };
+        /**
+         * HazardLayerResponse
+         * @description Envelope for GET /hazard/cells — cells plus everything needed to colour them.
+         */
+        HazardLayerResponse: {
+            /**
+             * Hazard Type
+             * @description Hazard type served, e.g. 'riverine_flood'.
+             */
+            hazard_type: string;
+            /**
+             * Res
+             * @description H3 resolution of the returned cells.
+             */
+            res: number;
+            /**
+             * Count
+             * @description Number of cells in this response.
+             */
+            count: number;
+            /**
+             * Truncated
+             * @description True when the limit clipped the result set.
+             * @default false
+             */
+            truncated: boolean;
+            /**
+             * Model Version
+             * @description Pipeline model version tag.
+             * @default v1.0.0
+             */
+            model_version: string;
+            legend: components["schemas"]["HazardLayerLegendDTO"];
+            coverage: components["schemas"]["HazardLayerCoverageDTO"];
+            /** Cells */
+            cells?: components["schemas"]["HazardCellDTO"][];
+            /**
+             * Screening Grade
+             * @default Screening Grade: Cell-level screening and prioritisation tool. Geotechnical investigation, hydraulic study, and community consultation required before executing relocation orders.
+             */
+            screening_grade: string;
+        };
+        /**
+         * HazardLayerSummaryDTO
+         * @description One available static hazard layer (GET /hazard/layers).
+         */
+        HazardLayerSummaryDTO: {
+            /** Hazard Type */
+            hazard_type: string;
+            /** Res */
+            res: number;
+            /** Cell Count */
+            cell_count: number;
+            /** Model Version */
+            model_version: string;
+            /** Min Susceptibility */
+            min_susceptibility: number;
+            /** Max Susceptibility */
+            max_susceptibility: number;
+            /** Mean Susceptibility */
+            mean_susceptibility: number;
+            /** Confidence Ceiling */
+            confidence_ceiling: number;
+        };
+        /**
+         * JurisdictionDTO
+         * @description Authoritative administrative jurisdiction assignment.
+         */
+        JurisdictionDTO: {
+            /**
+             * Admin Id
+             * @description Canonical administrative boundary ID (admin_boundary.id).
+             */
+            admin_id: number;
+            /**
+             * Name
+             * @description Administrative boundary name (e.g. Wayanad, Kodagu).
+             */
+            name: string;
+            /**
+             * Level
+             * @description Administrative boundary level (e.g. district, state).
+             */
+            level: string;
+            /**
+             * Lgd Code
+             * @description Local Government Directory (LGD) code.
+             */
+            lgd_code?: number | null;
+        };
+        /**
+         * LoginRequest
+         * @description Request payload for user authentication.
+         */
+        LoginRequest: {
+            /**
+             * Email
+             * @description User account email address.
+             * @example officer@setu.gov.in
+             */
+            email: string;
+            /**
+             * Password
+             * @description Account password.
+             * @example ********
+             */
+            password: string;
+        };
+        /**
+         * LogoutResponse
+         * @description Response returned upon successful session revocation.
+         */
+        LogoutResponse: {
+            /**
+             * Message
+             * @description Status message.
+             * @default Logged out successfully.
+             */
+            message: string;
         };
         /** LossEventDTO */
         LossEventDTO: {
@@ -1127,6 +1600,37 @@ export interface components {
              */
             error?: unknown;
         };
+        /**
+         * RegisterRequest
+         * @description Request payload for public civilian registration.
+         *
+         *     Role is strictly not accepted from client and is automatically set to CIVILIAN.
+         */
+        RegisterRequest: {
+            /**
+             * Email
+             * @description Valid email address.
+             * @example citizen@example.org
+             */
+            email: string;
+            /**
+             * Password
+             * @description Secure password (minimum 8 characters).
+             */
+            password: string;
+            /**
+             * Full Name
+             * @description Full name of the user.
+             * @example Asha Nair
+             */
+            full_name: string;
+        };
+        /**
+         * Role
+         * @description User identity roles for SETU-DRR authentication.
+         * @enum {string}
+         */
+        Role: "CIVILIAN" | "GOVERNMENT_OFFICIAL" | "RESCUE_OFFICER";
         /**
          * ScenarioAllocationParams
          * @description Optional configuration for simulated allocation execution.
@@ -1406,6 +1910,50 @@ export interface components {
          * @enum {string}
          */
         Tier: "immediate" | "short_term" | "medium_term" | "mitigate_in_situ";
+        /**
+         * UserResponse
+         * @description Safe authenticated identity DTO.
+         *
+         *     Guaranteed never to expose password hashes, session tokens, or internal secrets.
+         */
+        UserResponse: {
+            /**
+             * Id
+             * Format: uuid
+             * @description Unique user identifier.
+             */
+            id: string;
+            /**
+             * Email
+             * @description User email address.
+             */
+            email: string;
+            /**
+             * Full Name
+             * @description Full name of user.
+             */
+            full_name: string;
+            /** @description User role (CIVILIAN, GOVERNMENT_OFFICIAL, RESCUE_OFFICER). */
+            role: components["schemas"]["Role"];
+            /**
+             * Is Active
+             * @description Whether user account is active.
+             */
+            is_active: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             * @description Account creation timestamp.
+             */
+            created_at: string;
+            /**
+             * Last Login At
+             * @description Timestamp of most recent successful login.
+             */
+            last_login_at?: string | null;
+            /** @description Administrative jurisdiction assigned to privileged user, or None for unconstrained/civilian users. */
+            jurisdiction?: components["schemas"]["JurisdictionDTO"] | null;
+        };
         /** VulnerabilityBreakdownDTO */
         VulnerabilityBreakdownDTO: {
             /** V Demographic */
@@ -1787,6 +2335,220 @@ export interface operations {
             };
         };
     };
+    list_hazard_layers_hazard_layers_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HazardLayerSummaryDTO"][];
+                };
+            };
+            /** @description Bad Request - Invalid parameters or malformed input format. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found - Requested resource, cell, or entity does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Validation Error - Request parameter or payload validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error - An unexpected system or database error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Service Unavailable - No valid serving version is active. Pipeline data is not ready. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    get_hazard_cells_hazard_cells_get: {
+        parameters: {
+            query?: {
+                /** @description Hazard layer to serve. */
+                hazard_type?: string;
+                /** @description H3 grid resolution. */
+                res?: number;
+                /** @description Viewport as 'min_lon,min_lat,max_lon,max_lat'. Omit for the full layer. */
+                bbox?: string | null;
+                /** @description Filter by admin_boundary id or LGD code (e.g. 277 for Barpeta). */
+                admin?: number | null;
+                /** @description Optional susceptibility floor. Left at 0.0 the response still includes hard-zero and no-coverage cells, which the map must distinguish. */
+                min_susceptibility?: number;
+                /** @description Maximum cells to return. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HazardLayerResponse"];
+                };
+            };
+            /** @description Bad Request - Invalid parameters or malformed input format. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found - Requested resource, cell, or entity does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Validation Error - Request parameter or payload validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error - An unexpected system or database error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Service Unavailable - No valid serving version is active. Pipeline data is not ready. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    get_hazard_cell_detail_hazard_cells__h3__get: {
+        parameters: {
+            query?: {
+                /** @description Hazard layer to read. */
+                hazard_type?: string;
+            };
+            header?: never;
+            path: {
+                /** @description H3 index as hexadecimal string. */
+                h3: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HazardCellDetailDTO"];
+                };
+            };
+            /** @description Bad Request - Invalid parameters or malformed input format. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found - Requested resource, cell, or entity does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Validation Error - Request parameter or payload validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error - An unexpected system or database error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Service Unavailable - No valid serving version is active. Pipeline data is not ready. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     get_habitations_habitations_get: {
         parameters: {
             query?: {
@@ -1995,6 +2757,24 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SiteCapacityOverrideResponse"];
+                };
+            };
+            /** @description Unauthenticated - Missing, invalid, expired, or revoked session cookie. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden - Insufficient permissions or role. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
             /** @description Not Found - Requested resource, cell, or entity does not exist. */
@@ -2232,6 +3012,24 @@ export interface operations {
                     "application/json": components["schemas"]["AllocationPlanResponse"];
                 };
             };
+            /** @description Unauthenticated - Missing, invalid, expired, or revoked session cookie. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden - Insufficient permissions or role. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description Validation Error - Request parameter or payload validation failed. */
             422: {
                 headers: {
@@ -2283,6 +3081,24 @@ export interface operations {
                     "application/json": components["schemas"]["ScenarioResponse"];
                 };
             };
+            /** @description Unauthenticated - Missing, invalid, expired, or revoked session cookie. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden - Insufficient permissions or role. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description Validation Error - Request parameter or payload validation failed. */
             422: {
                 headers: {
@@ -2303,6 +3119,184 @@ export interface operations {
             };
             /** @description Service Unavailable - No valid serving version is active. Pipeline data is not ready. */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    login_auth_login_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserResponse"];
+                };
+            };
+            /** @description Bad Request - Invalid parameters or malformed input format. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unauthenticated - Missing, invalid, expired, or revoked session cookie. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Validation Error - Request parameter or payload validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error - An unexpected system or database error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    get_me_auth_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserResponse"];
+                };
+            };
+            /** @description Unauthenticated - Missing, invalid, expired, or revoked session cookie. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error - An unexpected system or database error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    logout_auth_logout_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LogoutResponse"];
+                };
+            };
+            /** @description Internal Server Error - An unexpected system or database error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    register_auth_register_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserResponse"];
+                };
+            };
+            /** @description Bad Request - Invalid parameters or malformed input format. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Validation Error - Request parameter or payload validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error - An unexpected system or database error occurred. */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
