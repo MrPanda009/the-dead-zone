@@ -8,7 +8,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -30,6 +30,9 @@ def auth_db_session():
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
+    with engine.connect() as conn:
+        conn.execute(text("CREATE TABLE IF NOT EXISTS admin_boundary (id INTEGER PRIMARY KEY, name TEXT, level TEXT, lgd_code INTEGER, parent_id INTEGER);"))
+        conn.commit()
     AppUser.__table__.create(engine)
     UserSession.__table__.create(engine)
 

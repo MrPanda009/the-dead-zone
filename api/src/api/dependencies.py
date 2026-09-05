@@ -133,3 +133,55 @@ def require_permission(permission: str):
         return current_user
 
     return _permission_checker
+
+
+# --------------------------------------------------------------------------- #
+# Jurisdiction & Spatial Administrative Scoping Dependencies (Part 3)
+# --------------------------------------------------------------------------- #
+
+def resolve_effective_admin_id(user, requested_admin_id: Optional[int]) -> int:
+    """Resolves authorized canonical admin_boundary.id without mutating the request DTO.
+    
+    Rules:
+    1. Privileged user must possess an assigned jurisdiction (user.admin_id is not None).
+    2. If requested_admin_id is omitted (None), defaults authoritatively to user.admin_id.
+    3. If requested_admin_id is supplied, validates via has_jurisdiction(user.admin_id, requested_admin_id).
+       Note: Both must be canonical admin_boundary.id values. Mismatch or LGD confusion raises 403.
+    """
+    from core.domain.authorization import has_jurisdiction
+    from core.errors import ForbiddenError
+
+    if user.admin_id is None:
+        raise ForbiddenError("User has no administrative jurisdiction assigned.")
+
+    if requested_admin_id is None:
+        return user.admin_id
+
+    if not has_jurisdiction(user.admin_id, requested_admin_id):
+        raise ForbiddenError("Operation outside assigned administrative jurisdiction.")
+
+    return requested_admin_id
+
+
+def get_site_district_admin_id(db: Session, site_id: int) -> Optional[int]:
+    """Resolves the single authoritative district admin_boundary.id containing candidate site centroid.
+    
+    Enforces district boundary uniqueness:
+    - Exactly 1 district: returns canonical admin_boundary.id
+    - 0 districts: returns None (unmapped site)
+    - >1 districts: raises ForbiddenError (ambiguous spatial boundary)
+    """
+    from core.errors import ForbiddenError
+
+    stmt = text("""
+        SELECT ab.id
+        FROM candidate_site cs
+        JOIN admin_boundary ab ON ab.level = 'district' AND ST_Intersects(ab.geom, cs.centroid)
+        WHERE cs.id = :site_id;
+    """)
+    rows = db.execute(stmt, {"site_id": site_id}).scalars().all()
+    if len(rows) == 1:
+        return rows[0]
+    elif len(rows) > 1:
+        raise ForbiddenError(f"Candidate site {site_id} spans multiple conflicting district jurisdictions.")
+    return None

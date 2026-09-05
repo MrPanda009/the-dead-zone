@@ -9,9 +9,9 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional
 from sqlalchemy import select, update
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, defer
 
-from core.db_models import AppUser, UserSession
+from core.db_models import AppUser, UserSession, AdminBoundary
 
 
 class AuthRepository:
@@ -20,12 +20,28 @@ class AuthRepository:
 
     def get_user_by_email(self, email: str) -> Optional[AppUser]:
         """Retrieves user by normalized email (case-insensitive search)."""
-        stmt = select(AppUser).where(AppUser.email == email.strip().lower())
+        stmt = (
+            select(AppUser)
+            .options(
+                joinedload(AppUser.admin_boundary)
+                .defer(AdminBoundary.geom)
+                .defer(AdminBoundary.bbox)
+            )
+            .where(AppUser.email == email.strip().lower())
+        )
         return self.db.execute(stmt).scalars().first()
 
     def get_user_by_id(self, user_id: uuid.UUID) -> Optional[AppUser]:
         """Retrieves user by UUID primary key."""
-        stmt = select(AppUser).where(AppUser.id == user_id)
+        stmt = (
+            select(AppUser)
+            .options(
+                joinedload(AppUser.admin_boundary)
+                .defer(AdminBoundary.geom)
+                .defer(AdminBoundary.bbox)
+            )
+            .where(AppUser.id == user_id)
+        )
         return self.db.execute(stmt).scalars().first()
 
     def create_user(
@@ -82,10 +98,15 @@ class AuthRepository:
         return session
 
     def get_session_by_token_hash(self, token_hash: str) -> Optional[UserSession]:
-        """Looks up session by SHA-256 hash digest, eagerly loading the associated user."""
+        """Looks up session by SHA-256 hash digest, eagerly loading the associated user and jurisdiction."""
         stmt = (
             select(UserSession)
-            .options(joinedload(UserSession.user))
+            .options(
+                joinedload(UserSession.user)
+                .joinedload(AppUser.admin_boundary)
+                .defer(AdminBoundary.geom)
+                .defer(AdminBoundary.bbox)
+            )
             .where(UserSession.session_token_hash == token_hash)
         )
         return self.db.execute(stmt).scalars().first()

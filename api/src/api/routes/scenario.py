@@ -9,7 +9,12 @@ import uuid
 from fastapi import APIRouter, Depends, Body
 from sqlalchemy.orm import Session
 
-from api.dependencies import get_db, require_serving_version, require_permission
+from api.dependencies import (
+    get_db,
+    require_serving_version,
+    require_permission,
+    resolve_effective_admin_id,
+)
 from api.routes.common import error_responses
 from api.services.scenario_service import ScenarioService
 from core.db_models import AppUser
@@ -29,7 +34,7 @@ router = APIRouter(prefix="/scenario", tags=["Scenario & Decision Analysis"])
         "Allows decision-makers to adjust hazard weights w_h and loss history amplifier gamma, "
         "recomputing priority scores, rank deltas, and triage tier shifts. "
         "Optionally simulates min-cost flow relocation allocation without modifying database records. "
-        "Requires authenticated user with 'scenario.run' permission (Government Official)."
+        "Requires authenticated user with 'scenario.run' permission (Government Official) and authorized jurisdiction scope."
     ),
 )
 def evaluate_scenario(
@@ -41,5 +46,6 @@ def evaluate_scenario(
     _current_user: AppUser = Depends(require_permission(Permission.SCENARIO_RUN)),
     _sv: uuid.UUID = Depends(require_serving_version),
 ) -> ScenarioResponse:
+    effective_admin_id = resolve_effective_admin_id(_current_user, payload.admin_id)
     service = ScenarioService(db)
-    return service.evaluate_scenario(payload)
+    return service.evaluate_scenario(payload, admin_id=effective_admin_id)

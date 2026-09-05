@@ -104,9 +104,11 @@ class AdminBoundary(Base):
         BigInteger, ForeignKey("admin_boundary.id", ondelete="CASCADE"), nullable=True
     )
     geom: Mapped[Optional[Any]] = mapped_column(
-        Geometry("MULTIPOLYGON", srid=4326), nullable=True
+        Geometry("MULTIPOLYGON", srid=4326), nullable=True, deferred=True
     )
-    bbox: Mapped[Optional[Any]] = mapped_column(Geometry("POLYGON", srid=4326), nullable=True)
+    bbox: Mapped[Optional[Any]] = mapped_column(
+        Geometry("POLYGON", srid=4326), nullable=True, deferred=True
+    )
 
     children: Mapped[List[AdminBoundary]] = relationship(
         "AdminBoundary", backref="parent", remote_side=[id]
@@ -443,10 +445,26 @@ class AppUser(Base):
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
     )
     last_login_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    admin_id: Mapped[Optional[int]] = mapped_column(
+        BigInteger, ForeignKey("admin_boundary.id", ondelete="SET NULL"), nullable=True, index=True
+    )
 
+    admin_boundary: Mapped[Optional[AdminBoundary]] = relationship("AdminBoundary")
     sessions: Mapped[List[UserSession]] = relationship(
         "UserSession", back_populates="user", cascade="all, delete-orphan"
     )
+
+    @property
+    def jurisdiction(self) -> Optional[dict[str, Any]]:
+        """Safe serializable jurisdiction descriptor for frontend contract."""
+        if self.admin_boundary is not None:
+            return {
+                "admin_id": self.admin_boundary.id,
+                "name": self.admin_boundary.name,
+                "level": self.admin_boundary.level,
+                "lgd_code": self.admin_boundary.lgd_code,
+            }
+        return None
 
 
 class UserSession(Base):

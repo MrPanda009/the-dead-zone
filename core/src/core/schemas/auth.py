@@ -45,6 +45,16 @@ class RegisterRequest(BaseModel):
     full_name: str = Field(..., min_length=1, max_length=200, description="Full name of the user.", examples=["Asha Nair"])
 
 
+class JurisdictionDTO(BaseModel):
+    """Authoritative administrative jurisdiction assignment."""
+    model_config = ConfigDict(from_attributes=True)
+
+    admin_id: int = Field(..., description="Canonical administrative boundary ID (admin_boundary.id).")
+    name: str = Field(..., description="Administrative boundary name (e.g. Wayanad, Kodagu).")
+    level: str = Field(..., description="Administrative boundary level (e.g. district, state).")
+    lgd_code: Optional[int] = Field(None, description="Local Government Directory (LGD) code.")
+
+
 class UserResponse(BaseModel):
     """Safe authenticated identity DTO.
     
@@ -59,6 +69,10 @@ class UserResponse(BaseModel):
     is_active: bool = Field(..., description="Whether user account is active.")
     created_at: datetime = Field(..., description="Account creation timestamp.")
     last_login_at: Optional[datetime] = Field(None, description="Timestamp of most recent successful login.")
+    jurisdiction: Optional[JurisdictionDTO] = Field(
+        default=None,
+        description="Administrative jurisdiction assigned to privileged user, or None for unconstrained/civilian users.",
+    )
 
 
 class LogoutResponse(BaseModel):

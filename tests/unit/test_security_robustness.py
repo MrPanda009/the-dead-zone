@@ -35,6 +35,7 @@ def _authenticate_as_government_official_for_unit_tests():
         password_hash="mock_hash",
         full_name="Test Officer",
         role=Role.GOVERNMENT_OFFICIAL.value,
+        admin_id=158,
         is_active=True,
         created_at=datetime.now(timezone.utc),
         updated_at=datetime.now(timezone.utc),

@@ -186,6 +186,7 @@ class AllocationService:
     def generate_allocation_plan(
         self,
         request: AllocationPlanRequest,
+        admin_id: Optional[int] = None,
     ) -> AllocationPlanResponse:
         """Executes min-cost flow solver and persists relocation assignments."""
         # 1. Validate search radius & parameters
@@ -197,10 +198,11 @@ class AllocationService:
         if not request.target_tiers:
             raise InvalidParametersError("At least one target triage tier must be specified for allocation.")
 
-        # 2. Query eligible habitations
+        # 2. Query eligible habitations within effective admin_id scope
+        effective_admin_id = admin_id if admin_id is not None else request.admin_id
         target_tier_strings = [t.value if isinstance(t, Tier) else str(t) for t in request.target_tiers]
         hab_rows = self.repo.get_habitations_for_allocation(
-            admin_id=request.admin_id,
+            admin_id=effective_admin_id,
             target_tiers=target_tier_strings,
         )
 
@@ -301,7 +303,7 @@ class AllocationService:
         try:
             self.repo.save_allocation_run(
                 run_id=run_id,
-                admin_id=request.admin_id,
+                admin_id=effective_admin_id,
                 solver_latency_ms=result.solver_latency_ms,
                 total_relocated=result.total_relocated_households,
                 assignments=raw_assignments_to_save,
@@ -312,7 +314,7 @@ class AllocationService:
         return AllocationPlanResponse(
             allocation_run_id=run_id,
             status=result.status,
-            admin_id=request.admin_id,
+            admin_id=effective_admin_id,
             total_demand_households=result.total_demand_households,
             total_relocated_households=result.total_relocated_households,
             unmet_demand_households=result.unmet_demand_households,

@@ -671,7 +671,7 @@
           "Candidate Sites & Capacity"
         ],
         "summary": "Recompute candidate site carrying capacity with overridden policy norms",
-        "description": "Simulates carrying capacity under modified policy parameters (e.g. plot area, LPCD, spare school/health capacity). Returns the baseline capacity, scenario capacity, net delta in supportable households, and augmented relief options. Requires authenticated user with 'capacity.recompute' permission (Government Official).",
+        "description": "Simulates carrying capacity under modified policy parameters (e.g. plot area, LPCD, spare school/health capacity). Returns the baseline capacity, scenario capacity, net delta in supportable households, and augmented relief options. Requires authenticated user with 'capacity.recompute' permission (Government Official) and authorized jurisdiction scope.",
         "operationId": "recompute_site_capacity_sites__id__capacity_post",
         "parameters": [
           {
@@ -1115,7 +1115,7 @@
           "Relocation Planning & Allocation"
         ],
         "summary": "Solve optimal habitation-to-site relocation allocation via min-cost flow",
-        "description": "Executes exact min-cost flow optimization (Google OR-Tools) to assign vulnerable habitations to candidate relocation sites. Respects carrying capacity constraints (Day 5), maximizes composite suitability/priority benefit, minimizes distance penalty, and explicitly reports any village household group splits requiring social sign-off. Requires authenticated user with 'allocation.run' permission (Government Official).",
+        "description": "Executes exact min-cost flow optimization (Google OR-Tools) to assign vulnerable habitations to candidate relocation sites. Respects carrying capacity constraints (Day 5), maximizes composite suitability/priority benefit, minimizes distance penalty, and explicitly reports any village household group splits requiring social sign-off. Requires authenticated user with 'allocation.run' permission (Government Official) and authorized jurisdiction scope.",
         "operationId": "generate_allocation_plan_plan_allocate_post",
         "requestBody": {
           "content": {
@@ -1198,7 +1198,7 @@
           "Scenario & Decision Analysis"
         ],
         "summary": "Evaluate hypothetical policy and hazard weight scenarios without mutating baseline data",
-        "description": "Executes a pure, stateless scenario evaluation over habitation baselines. Allows decision-makers to adjust hazard weights w_h and loss history amplifier gamma, recomputing priority scores, rank deltas, and triage tier shifts. Optionally simulates min-cost flow relocation allocation without modifying database records. Requires authenticated user with 'scenario.run' permission (Government Official).",
+        "description": "Executes a pure, stateless scenario evaluation over habitation baselines. Allows decision-makers to adjust hazard weights w_h and loss history amplifier gamma, recomputing priority scores, rank deltas, and triage tier shifts. Optionally simulates min-cost flow relocation allocation without modifying database records. Requires authenticated user with 'scenario.run' permission (Government Official) and authorized jurisdiction scope.",
         "operationId": "evaluate_scenario_scenario_post",
         "requestBody": {
           "content": {
@@ -2905,6 +2905,45 @@
         ],
         "title": "HazardDetailDTO"
       },
+      "JurisdictionDTO": {
+        "properties": {
+          "admin_id": {
+            "type": "integer",
+            "title": "Admin Id",
+            "description": "Canonical administrative boundary ID (admin_boundary.id)."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Administrative boundary name (e.g. Wayanad, Kodagu)."
+          },
+          "level": {
+            "type": "string",
+            "title": "Level",
+            "description": "Administrative boundary level (e.g. district, state)."
+          },
+          "lgd_code": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lgd Code",
+            "description": "Local Government Directory (LGD) code."
+          }
+        },
+        "type": "object",
+        "required": [
+          "admin_id",
+          "name",
+          "level"
+        ],
+        "title": "JurisdictionDTO",
+        "description": "Authoritative administrative jurisdiction assignment."
+      },
       "LoginRequest": {
         "properties": {
           "email": {
@@ -3794,6 +3833,17 @@
             ],
             "title": "Last Login At",
             "description": "Timestamp of most recent successful login."
+          },
+          "jurisdiction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JurisdictionDTO"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Administrative jurisdiction assigned to privileged user, or None for unconstrained/civilian users."
           }
         },
         "type": "object",

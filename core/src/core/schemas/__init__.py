@@ -58,6 +58,7 @@ from core.schemas.flood import (
     RowValidationError,
 )
 from core.schemas.auth import (
+    JurisdictionDTO,
     LoginRequest,
     RegisterRequest,
     UserResponse,
@@ -124,6 +125,7 @@ __all__ = [
     "TriggerValidationReport",
     "CanonicalExplanationRecord",
     "ExplanationBatchDTO",
+    "JurisdictionDTO",
     "LoginRequest",
     "RegisterRequest",
     "UserResponse",
