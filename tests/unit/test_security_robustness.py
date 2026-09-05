@@ -20,6 +20,30 @@ from core.errors import InvalidH3IndexError, InvalidBboxError
 client = TestClient(app)
 
 
+@pytest.fixture(autouse=True)
+def _authenticate_as_government_official_for_unit_tests():
+    """Provides an authenticated Government Official user context for security boundary tests."""
+    import uuid
+    from datetime import datetime, timezone
+    from api.dependencies import require_authenticated
+    from core.db_models import AppUser
+    from core.enums import Role
+
+    mock_officer = AppUser(
+        id=uuid.uuid4(),
+        email="officer@setu.gov.in",
+        password_hash="mock_hash",
+        full_name="Test Officer",
+        role=Role.GOVERNMENT_OFFICIAL.value,
+        is_active=True,
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
+    )
+    app.dependency_overrides[require_authenticated] = lambda: mock_officer
+    yield
+    app.dependency_overrides.pop(require_authenticated, None)
+
+
 class TestSecurityAndRobustness:
     """Security boundary checks and untrusted input validation."""
 

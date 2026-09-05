@@ -671,7 +671,7 @@
           "Candidate Sites & Capacity"
         ],
         "summary": "Recompute candidate site carrying capacity with overridden policy norms",
-        "description": "Simulates carrying capacity under modified policy parameters (e.g. plot area, LPCD, spare school/health capacity). Returns the baseline capacity, scenario capacity, net delta in supportable households, and augmented relief options.",
+        "description": "Simulates carrying capacity under modified policy parameters (e.g. plot area, LPCD, spare school/health capacity). Returns the baseline capacity, scenario capacity, net delta in supportable households, and augmented relief options. Requires authenticated user with 'capacity.recompute' permission (Government Official).",
         "operationId": "recompute_site_capacity_sites__id__capacity_post",
         "parameters": [
           {
@@ -706,6 +706,26 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SiteCapacityOverrideResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated - Missing, invalid, expired, or revoked session cookie.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Insufficient permissions or role.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
             }
@@ -1095,7 +1115,7 @@
           "Relocation Planning & Allocation"
         ],
         "summary": "Solve optimal habitation-to-site relocation allocation via min-cost flow",
-        "description": "Executes exact min-cost flow optimization (Google OR-Tools) to assign vulnerable habitations to candidate relocation sites. Respects carrying capacity constraints (Day 5), maximizes composite suitability/priority benefit, minimizes distance penalty, and explicitly reports any village household group splits requiring social sign-off.",
+        "description": "Executes exact min-cost flow optimization (Google OR-Tools) to assign vulnerable habitations to candidate relocation sites. Respects carrying capacity constraints (Day 5), maximizes composite suitability/priority benefit, minimizes distance penalty, and explicitly reports any village household group splits requiring social sign-off. Requires authenticated user with 'allocation.run' permission (Government Official).",
         "operationId": "generate_allocation_plan_plan_allocate_post",
         "requestBody": {
           "content": {
@@ -1115,6 +1135,26 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AllocationPlanResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated - Missing, invalid, expired, or revoked session cookie.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Insufficient permissions or role.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
             }
@@ -1158,7 +1198,7 @@
           "Scenario & Decision Analysis"
         ],
         "summary": "Evaluate hypothetical policy and hazard weight scenarios without mutating baseline data",
-        "description": "Executes a pure, stateless scenario evaluation over habitation baselines. Allows decision-makers to adjust hazard weights w_h and loss history amplifier gamma, recomputing priority scores, rank deltas, and triage tier shifts. Optionally simulates min-cost flow relocation allocation without modifying database records.",
+        "description": "Executes a pure, stateless scenario evaluation over habitation baselines. Allows decision-makers to adjust hazard weights w_h and loss history amplifier gamma, recomputing priority scores, rank deltas, and triage tier shifts. Optionally simulates min-cost flow relocation allocation without modifying database records. Requires authenticated user with 'scenario.run' permission (Government Official).",
         "operationId": "evaluate_scenario_scenario_post",
         "requestBody": {
           "content": {
@@ -1178,6 +1218,26 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ScenarioResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated - Missing, invalid, expired, or revoked session cookie.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Insufficient permissions or role.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
             }

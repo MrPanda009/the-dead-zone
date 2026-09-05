@@ -106,3 +106,30 @@ def require_authenticated(request: Request, db: Session = Depends(get_db)):
 
     service = AuthService(db)
     return service.resolve_session(token)
+
+
+# --------------------------------------------------------------------------- #
+# Authorization & Role Policy Dependencies (Part 2)
+# --------------------------------------------------------------------------- #
+
+def require_permission(permission: str):
+    """Dependency factory enforcing that the authenticated user possesses the required permission.
+    
+    Raises:
+        UnauthenticatedError: HTTP 401 if request has no valid session.
+        ForbiddenError: HTTP 403 if authenticated user's role lacks the requested permission.
+    """
+    from core.db_models import AppUser
+    from core.domain.authorization import Permission as PermissionEnum, has_permission
+    from core.errors import ForbiddenError
+
+    perm_obj = PermissionEnum(permission) if isinstance(permission, str) else permission
+
+    def _permission_checker(current_user: AppUser = Depends(require_authenticated)) -> AppUser:
+        if not has_permission(current_user.role, perm_obj):
+            raise ForbiddenError(
+                f"Permission '{perm_obj.value}' required. Role '{current_user.role}' is not authorized."
+            )
+        return current_user
+
+    return _permission_checker
