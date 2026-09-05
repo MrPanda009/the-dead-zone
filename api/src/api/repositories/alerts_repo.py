@@ -18,6 +18,12 @@ class AlertsRepository:
     def __init__(self, db: Session) -> None:
         self.db = db
 
+    def get_latest_snapshot_valid_at(self) -> Optional[datetime]:
+        """Returns the latest authoritative snapshot timestamp persisted in mhi_snapshot, if any."""
+        query = text("SELECT MAX(valid_at) as max_valid FROM mhi_snapshot;")
+        row = self.db.execute(query).mappings().first()
+        return row["max_valid"] if row and row.get("max_valid") else None
+
     def query_active_alerts(
         self,
         admin_id: Optional[int] = None,
@@ -25,17 +31,28 @@ class AlertsRepository:
         dominant_hazard: Optional[str] = None,
         limit: int = 100,
         offset: int = 0,
+        valid_at: Optional[datetime] = None,
     ) -> tuple[list[dict[str, Any]], int, int]:
-        """Queries H3 cells where dynamic live trigger causes MHI_live >= 0.75 and MHI_static < 0.75.
+        """Queries H3 cells where dynamic live trigger causes MHI_live >= 0.75 and MHI_static < 0.75
+        evaluated against the authoritative latest snapshot (or valid_at if specified).
         
         Returns:
             (records, total_cells_count, total_exposed_population)
         """
+        target_valid_at = valid_at
+        if target_valid_at is None:
+            target_valid_at = self.get_latest_snapshot_valid_at()
+
+        if target_valid_at is None:
+            return [], 0, 0
+
         where_clauses = [
+            "m.valid_at = :snapshot_valid_at",
             "m.mhi_live >= :min_mhi",
             "m.mhi_static < :prz_threshold",
         ]
         params: dict[str, Any] = {
+            "snapshot_valid_at": target_valid_at,
             "min_mhi": float(min_mhi),
             "prz_threshold": float(PRZ_MHI_STATIC),
             "limit": limit,
@@ -62,13 +79,8 @@ class AlertsRepository:
                     ingested_at
                 FROM hazard_dynamic
                 WHERE forecast_cycle_at IS NULL
+                  AND valid_at = :snapshot_valid_at
                 ORDER BY h3, valid_at, ingested_at DESC, id DESC
-            ),
-            latest_snapshots AS (
-                SELECT DISTINCT ON (h3)
-                    h3, valid_at, mhi_static, mhi_live, mhi_fcst, dominant_hazard, zone_class
-                FROM mhi_snapshot
-                ORDER BY h3, valid_at DESC
             )
             SELECT
                 g.h3,
@@ -89,7 +101,7 @@ class AlertsRepository:
                 hd.ingested_at,
                 count(*) OVER() as full_count,
                 sum(g.population) OVER() as full_exposed_pop
-            FROM latest_snapshots m
+            FROM mhi_snapshot m
             JOIN grid_cell g ON m.h3 = g.h3
             LEFT JOIN admin_boundary a ON g.admin_id = a.id
             LEFT JOIN deduplicated_hazard_active hd ON m.h3 = hd.h3 AND m.valid_at = hd.valid_at

@@ -167,7 +167,7 @@ def check_fatal_event_last_3_monsoons(
     """
     ref = reference_date or date.today()
     for ev in events:
-        fatalities = ev.get("fatalities") or 0
+        fatalities = ev.get("fatalities") if ev.get("fatalities") is not None else 0
         if fatalities <= 0:
             continue
         dist = ev.get("distance_km")

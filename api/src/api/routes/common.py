@@ -20,6 +20,10 @@ COMMON_ERROR_RESPONSES: dict[int, dict[str, Any]] = {
         "model": ErrorEnvelope,
         "description": "Internal Server Error - An unexpected system or database error occurred.",
     },
+    503: {
+        "model": ErrorEnvelope,
+        "description": "Service Unavailable - No valid serving version is active. Pipeline data is not ready.",
+    },
 }
 
 

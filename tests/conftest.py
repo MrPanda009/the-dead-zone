@@ -55,6 +55,14 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(pytest.mark.db)
 
 
+@pytest.fixture(autouse=True)
+def _reset_global_model_registry():
+    """Ensure global model_registry state does not leak across tests."""
+    yield
+    from core.ml.registry import model_registry
+    model_registry.reset()
+
+
 def mask_db_url(url: str) -> str:
     """Mask credentials in connection URL for safe diagnostic output."""
     try:

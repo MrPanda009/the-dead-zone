@@ -11,7 +11,8 @@ import math
 
 from core.enums import Hazard, ZoneClass
 from core.ml.types import LandslideFeatures, FloodFeatures
-from core.ml.registry import BaselineLandslideProvider, BaselineFloodProvider
+from core.ml.protocols import LandslideModelProtocol, FloodSurfaceProtocol
+from core.ml.registry import model_registry, ModelRegistry
 from core.domain.hazard import compute_mhi, get_dominant_hazard, classify_zone
 from core.constants import SCREENING_GRADE_NOTICE
 
@@ -21,11 +22,17 @@ class TerrainHazardEvaluator:
 
     def __init__(
         self,
-        landslide_provider: BaselineLandslideProvider | None = None,
-        flood_provider: BaselineFloodProvider | None = None,
+        landslide_provider: LandslideModelProtocol | None = None,
+        flood_provider: FloodSurfaceProtocol | None = None,
+        registry: ModelRegistry | None = None,
     ) -> None:
-        self.landslide_provider = landslide_provider or BaselineLandslideProvider()
-        self.flood_provider = flood_provider or BaselineFloodProvider()
+        reg = registry if registry is not None else model_registry
+        self.landslide_provider = (
+            landslide_provider if landslide_provider is not None else reg.landslide_model
+        )
+        self.flood_provider = (
+            flood_provider if flood_provider is not None else reg.flood_model
+        )
 
     def evaluate_cell(
         self,
@@ -99,14 +106,14 @@ class TerrainHazardEvaluator:
                 "feature": c.feature,
                 "value": c.value,
                 "contribution": c.contribution,
-                "method": "heuristic",
+                "method": getattr(c, "method", "heuristic") or "heuristic",
             })
         for c in fl_pred.explanation:
             combined_factors.append({
                 "feature": c.feature,
                 "value": c.value,
                 "contribution": c.contribution,
-                "method": "heuristic",
+                "method": getattr(c, "method", "heuristic") or "heuristic",
             })
         # Sort factors by absolute contribution DESC
         combined_factors.sort(key=lambda x: abs(x["contribution"]), reverse=True)

@@ -20,12 +20,27 @@ class HabitationsRepository:
         admin_id: Optional[int] = None,
         tier: Optional[str] = None,
         sort: SortMode = SortMode.URGENCY,
-        limit: int = 50,
+        limit: Optional[int] = 50,
         offset: int = 0,
     ) -> tuple[list[dict[str, Any]], int]:
         """Queries habitations in a single query using window count and indexed ordering."""
         conditions = ["1=1"]
-        params: dict[str, Any] = {"limit": limit, "offset": offset}
+        params: dict[str, Any] = {}
+
+        if limit is not None:
+            params["limit"] = limit
+            limit_clause = "LIMIT :limit"
+        else:
+            limit_clause = ""
+
+        if offset:
+            params["offset"] = offset
+            offset_clause = "OFFSET :offset"
+        elif limit is not None:
+            params["offset"] = 0
+            offset_clause = "OFFSET :offset"
+        else:
+            offset_clause = ""
 
         if admin_id is not None:
             conditions.append("(h.admin_id = :admin_id OR a.lgd_code = :admin_id)")
@@ -89,7 +104,7 @@ class HabitationsRepository:
             LEFT JOIN habitation_risk hr ON h.id = hr.habitation_id
             WHERE {where_clause}
             ORDER BY {order_clause}
-            LIMIT :limit OFFSET :offset;
+            {limit_clause} {offset_clause};
         """)
 
         results = self.db.execute(query, params).mappings().all()

@@ -6,11 +6,12 @@ Endpoints:
 - GET /habitations/{id}/sites
 """
 
+import uuid
 from typing import Optional
 from fastapi import APIRouter, Depends, Query, Path
 from sqlalchemy.orm import Session
 
-from api.dependencies import get_db
+from api.dependencies import get_db, require_serving_version
 from api.routes.common import error_responses
 from api.services.habitations_service import HabitationsService
 from api.services.sites_service import SitesService
@@ -25,7 +26,7 @@ router = APIRouter(prefix="/habitations", tags=["Habitations & Triage"])
 @router.get(
     "",
     response_model=PaginatedResponse[HabitationListItem],
-    responses=error_responses(422, 500),
+    responses=error_responses(422, 500, 503),
     summary="Get prioritized habitation triage queue",
     description=(
         "Returns a paginated list of habitations ranked by Per-Capita Urgency or Caseload. "
@@ -57,6 +58,7 @@ def get_habitations(
         ge=0,
     ),
     db: Session = Depends(get_db),
+    _sv: uuid.UUID = Depends(require_serving_version),
 ) -> PaginatedResponse[HabitationListItem]:
     service = HabitationsService(db)
     return service.get_habitations(
@@ -71,7 +73,7 @@ def get_habitations(
 @router.get(
     "/{id}/risk",
     response_model=HabitationRiskDossier,
-    responses=error_responses(404, 422, 500),
+    responses=error_responses(404, 422, 500, 503),
     summary="Get complete risk dossier for a habitation",
     description="Retrieves vulnerability breakdown (SoVI), time-decayed loss history, and priority score explanation.",
 )
@@ -82,6 +84,7 @@ def get_habitation_risk_dossier(
         examples=[1],
     ),
     db: Session = Depends(get_db),
+    _sv: uuid.UUID = Depends(require_serving_version),
 ) -> HabitationRiskDossier:
     service = HabitationsService(db)
     return service.get_habitation_risk_dossier(id)
@@ -90,7 +93,7 @@ def get_habitation_risk_dossier(
 @router.get(
     "/{id}/sites",
     response_model=PaginatedResponse[CandidateSiteItem],
-    responses=error_responses(404, 422, 500),
+    responses=error_responses(404, 422, 500, 503),
     summary="Get ranked candidate relocation sites for a habitation",
     description=(
         "Retrieves candidate relocation sites within search radius (default 15 km) "
@@ -127,6 +130,7 @@ def get_habitation_candidate_sites(
         ge=0,
     ),
     db: Session = Depends(get_db),
+    _sv: uuid.UUID = Depends(require_serving_version),
 ) -> PaginatedResponse[CandidateSiteItem]:
     service = SitesService(db)
     return service.get_candidate_sites_for_habitation(

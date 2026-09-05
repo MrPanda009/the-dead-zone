@@ -241,7 +241,7 @@ class AllocationService:
                 id=s["id"],
                 name=s["name"],
                 capacity_households=int(s["capacity"]),
-                suitability=int(s.get("suitability") if s.get("suitability") is not None else 50),
+                suitability=int(s["suitability"]) if s.get("suitability") is not None else None,
                 lat=s.get("lat"),
                 lon=s.get("lon"),
             )
@@ -363,7 +363,7 @@ class AllocationService:
                 id=s["id"],
                 name=s["name"],
                 capacity_households=int(s["capacity"]),
-                suitability=int(s.get("suitability") if s.get("suitability") is not None else 50),
+                suitability=int(s["suitability"]) if s.get("suitability") is not None else None,
                 lat=s.get("lat"),
                 lon=s.get("lon"),
             )

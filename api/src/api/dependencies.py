@@ -1,11 +1,13 @@
 """FastAPI dependencies for database sessions, pagination, and request context."""
 
+import uuid
 from typing import Generator
-from fastapi import Request
-from sqlalchemy import create_engine
+from fastapi import Depends, Request
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from core.config import settings
+from core.errors import PipelineNotReadyError
 
 # Direct/Pooled database engine
 # Using psycopg3 sync engine for stable Prepared Statement support with Neon & Martin
@@ -31,3 +33,39 @@ def get_db() -> Generator[Session, None, None]:
 def get_request_id(request: Request) -> str:
     """Retrieves request_id attached by RequestIdAndLoggingMiddleware."""
     return getattr(request.state, "request_id", "unknown")
+
+
+# --------------------------------------------------------------------------- #
+# H13: Serving-version readiness gate
+# --------------------------------------------------------------------------- #
+# Per H13 specification, only 'READY' is a valid servable status.
+# If the referenced pipeline_run has status != 'READY', the API must refuse to serve data.
+_SERVING_READY_STATUS = "READY"
+
+
+def require_serving_version(db: Session = Depends(get_db)) -> uuid.UUID:
+    """Enforces that a valid, ready serving version exists before serving data.
+
+    The ``serving_version`` table has ``dataset_name`` as its PRIMARY KEY,
+    so exactly one row per dataset name — no ambiguous ``LIMIT 1`` is needed.
+
+    Raises:
+        PipelineNotReadyError: HTTP 503 when no valid serving version exists
+            or the linked pipeline run status != 'READY'.
+
+    Returns:
+        The ``pipeline_run_id`` of the active serving version.
+    """
+    row = db.execute(
+        text(
+            "SELECT sv.pipeline_run_id, pr.status "
+            "FROM serving_version sv "
+            "JOIN pipeline_run pr ON sv.pipeline_run_id = pr.id "
+            "WHERE sv.dataset_name = 'default';"
+        )
+    ).mappings().first()
+
+    if row is None or row["status"] != _SERVING_READY_STATUS:
+        raise PipelineNotReadyError("default")
+
+    return row["pipeline_run_id"]

@@ -313,12 +313,9 @@ export interface components {
             /** Dominant Hazard */
             dominant_hazard: string;
             /** Trigger Source */
-            trigger_source: string;
-            /**
-             * Valid At
-             * Format: date-time
-             */
-            valid_at: string;
+            trigger_source?: string | null;
+            /** Valid At */
+            valid_at?: string | null;
             /**
              * Exposed Population
              * @default 0
@@ -346,11 +343,8 @@ export interface components {
             total_active_cells: number;
             /** Total Exposed Population */
             total_exposed_population: number;
-            /**
-             * Issued At
-             * Format: date-time
-             */
-            issued_at: string;
+            /** Issued At */
+            issued_at?: string | null;
             /** Items */
             items?: components["schemas"]["ActiveAlertItem"][];
         };
@@ -369,8 +363,11 @@ export interface components {
             tier: components["schemas"]["Tier"];
             /** Priority Score */
             priority_score: number;
-            /** Site Suitability */
-            site_suitability: number;
+            /**
+             * Site Suitability
+             * @description Composite suitability score (0-100, None if unassigned/provisional).
+             */
+            site_suitability?: number | null;
             /**
              * Has Group Split
              * @default false
@@ -720,29 +717,37 @@ export interface components {
              */
             h3_postgis: boolean;
         };
-        /** FeatureContributionDTO */
+        /**
+         * FeatureContributionDTO
+         * @description Single feature attribution item for a cell or habitation.
+         */
         FeatureContributionDTO: {
             /**
              * Feature
-             * @description Feature name, e.g. slope_deg, hand_m, dist_to_road_m.
+             * @description Feature name, e.g. slope_deg, hand_m, dist_to_road_m, rainfall_72h.
              */
             feature: string;
             /**
              * Value
-             * @description Observed feature value.
+             * @description Observed or calculated feature value.
              */
             value: number;
             /**
              * Contribution
-             * @description SHAP attribution or heuristic weight.
+             * @description Attribution weight or SHAP value contribution.
              */
             contribution: number;
             /**
              * Method
-             * @description Explanation calculation method (e.g. 'heuristic', 'treeshap').
+             * @description Explanation method ('treeshap', 'kernelshap', 'heuristic', 'pca_loading').
              * @default heuristic
              */
             method: string;
+            /**
+             * Rank
+             * @description Rank of this feature in importance (1 = top contributing factor).
+             */
+            rank?: number | null;
         };
         /**
          * ForecastAlertItem
@@ -768,11 +773,8 @@ export interface components {
             mhi_static: number;
             /** Dominant Hazard */
             dominant_hazard: string;
-            /**
-             * Issuing Model
-             * @default ECMWF Open Data
-             */
-            issuing_model: string;
+            /** Issuing Model */
+            issuing_model?: string | null;
             /** Forecast Cycle At */
             forecast_cycle_at?: string | null;
             /** Valid At */
@@ -798,11 +800,8 @@ export interface components {
             total_forecast_cells: number;
             /** Total Exposed Population */
             total_exposed_population: number;
-            /**
-             * Issuing Model
-             * @default ECMWF Open Data
-             */
-            issuing_model: string;
+            /** Issuing Model */
+            issuing_model?: string | null;
             /** Forecast Cycle At */
             forecast_cycle_at?: string | null;
             /** Horizon Hours */
@@ -954,9 +953,7 @@ export interface components {
             /** Past Disasters */
             past_disasters?: components["schemas"]["LossEventDTO"][];
             /** Top Contributing Factors */
-            top_contributing_factors?: {
-                [key: string]: unknown;
-            }[];
+            top_contributing_factors?: components["schemas"]["FeatureContributionDTO"][];
             /**
              * Screening Grade
              * @default Screening Grade: Cell-level screening and prioritisation tool. Geotechnical investigation, hydraulic study, and community consultation required before executing relocation orders.
@@ -1711,6 +1708,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description Service Unavailable - No valid serving version is active. Pipeline data is not ready. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
         };
     };
     get_zone_detail_zones__h3__get: {
@@ -1770,6 +1776,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description Service Unavailable - No valid serving version is active. Pipeline data is not ready. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
         };
     };
     get_habitations_habitations_get: {
@@ -1812,6 +1827,15 @@ export interface operations {
             };
             /** @description Internal Server Error - An unexpected system or database error occurred. */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Service Unavailable - No valid serving version is active. Pipeline data is not ready. */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1862,6 +1886,15 @@ export interface operations {
             };
             /** @description Internal Server Error - An unexpected system or database error occurred. */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Service Unavailable - No valid serving version is active. Pipeline data is not ready. */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1928,6 +1961,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description Service Unavailable - No valid serving version is active. Pipeline data is not ready. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
         };
     };
     recompute_site_capacity_sites__id__capacity_post: {
@@ -1975,6 +2017,15 @@ export interface operations {
             };
             /** @description Internal Server Error - An unexpected system or database error occurred. */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Service Unavailable - No valid serving version is active. Pipeline data is not ready. */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2032,6 +2083,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description Service Unavailable - No valid serving version is active. Pipeline data is not ready. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
         };
     };
     get_active_alerts_alerts_active_get: {
@@ -2074,6 +2134,15 @@ export interface operations {
             };
             /** @description Internal Server Error - An unexpected system or database error occurred. */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Service Unavailable - No valid serving version is active. Pipeline data is not ready. */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2130,6 +2199,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description Service Unavailable - No valid serving version is active. Pipeline data is not ready. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
         };
     };
     generate_allocation_plan_plan_allocate_post: {
@@ -2172,6 +2250,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description Service Unavailable - No valid serving version is active. Pipeline data is not ready. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
         };
     };
     evaluate_scenario_scenario_post: {
@@ -2207,6 +2294,15 @@ export interface operations {
             };
             /** @description Internal Server Error - An unexpected system or database error occurred. */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Service Unavailable - No valid serving version is active. Pipeline data is not ready. */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

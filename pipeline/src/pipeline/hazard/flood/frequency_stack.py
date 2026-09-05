@@ -11,16 +11,10 @@ import rasterio
 from rasterio.warp import reproject, Resampling
 from pyproj import Transformer
 
-try:
-    from .aoi import get_barpeta_bbox_wgs84
-    from .water_mask import stream_and_clip_raster, linear_to_db, detect_water, DEFAULT_VV_WATER_THRESHOLD_DB
-    from .permanent_water import generate_permanent_water_mask, filter_permanent_water
-    from .stac import extract_scene_metadata
-except (ImportError, ValueError):
-    from aoi import get_barpeta_bbox_wgs84
-    from water_mask import stream_and_clip_raster, linear_to_db, detect_water, DEFAULT_VV_WATER_THRESHOLD_DB
-    from permanent_water import generate_permanent_water_mask, filter_permanent_water
-    from stac import extract_scene_metadata
+from .aoi import get_barpeta_bbox_wgs84
+from .water_mask import stream_and_clip_raster, linear_to_db, detect_water, DEFAULT_VV_WATER_THRESHOLD_DB
+from .permanent_water import generate_permanent_water_mask, filter_permanent_water
+from .stac import extract_scene_metadata
 
 NODATA_VALUE_UINT8 = 255
 

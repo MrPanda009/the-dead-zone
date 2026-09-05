@@ -151,7 +151,10 @@ class SitesService:
                 suitability=suitability_val,
                 capacity=capacity_dto,
                 augmented=augmented_dto,
-                centroid=[round(float(r.get("lon") or 0.0), 5), round(float(r.get("lat") or 0.0), 5)],
+                centroid=[
+                    round(float(r["lon"] if r.get("lon") is not None else 0.0), 5),
+                    round(float(r["lat"] if r.get("lat") is not None else 0.0), 5),
+                ],
             )
             items.append(item)
 
@@ -235,7 +238,10 @@ class SitesService:
             suitability=suitability_val,
             capacity=capacity_dto,
             augmented=augmented_dto,
-            centroid=[round(float(r.get("lon") or 0.0), 5), round(float(r.get("lat") or 0.0), 5)],
+            centroid=[
+                round(float(r["lon"] if r.get("lon") is not None else 0.0), 5),
+                round(float(r["lat"] if r.get("lat") is not None else 0.0), 5),
+            ],
             geometry=geojson_geom,
         )
 

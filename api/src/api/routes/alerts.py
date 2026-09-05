@@ -5,11 +5,12 @@ Endpoints:
 - GET /alerts/forecast
 """
 
+import uuid
 from typing import Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
-from api.dependencies import get_db
+from api.dependencies import get_db, require_serving_version
 from api.routes.common import error_responses
 from api.services.alerts_service import AlertsService
 from core.constants import FORECAST_HORIZON_HOURS
@@ -21,7 +22,7 @@ router = APIRouter(prefix="/alerts", tags=["Dynamic Alerts & Forecasts"])
 @router.get(
     "/active",
     response_model=ActiveAlertsResponse,
-    responses=error_responses(422, 500),
+    responses=error_responses(422, 500, 503),
     summary="Get active hazard alert zones exceeding emergency threshold",
     description=(
         "Retrieves H3 grid cells currently in Active Alert Zone state (MHI_live >= 0.75 and MHI_static < 0.75). "
@@ -55,6 +56,7 @@ def get_active_alerts(
         description="Pagination offset.",
     ),
     db: Session = Depends(get_db),
+    _sv: uuid.UUID = Depends(require_serving_version),
 ) -> ActiveAlertsResponse:
     service = AlertsService(db)
     return service.get_active_alerts(
@@ -69,7 +71,7 @@ def get_active_alerts(
 @router.get(
     "/forecast",
     response_model=ForecastAlertsResponse,
-    responses=error_responses(422, 500),
+    responses=error_responses(422, 500, 503),
     summary="Get forecast alert zones predicted to cross threshold within 72 hours",
     description=(
         "Retrieves H3 grid cells predicted to cross the hazard threshold (MHI_fcst >= 0.75) within a configurable horizon (1-72h). "
@@ -105,6 +107,7 @@ def get_forecast_alerts(
         description="Pagination offset.",
     ),
     db: Session = Depends(get_db),
+    _sv: uuid.UUID = Depends(require_serving_version),
 ) -> ForecastAlertsResponse:
     service = AlertsService(db)
     return service.get_forecast_alerts(

@@ -16,8 +16,8 @@ from core.schemas.zones import (
     ZoneCellSummary,
     ZoneCellDetail,
     HazardDetailDTO,
-    FeatureContributionDTO,
 )
+from core.schemas.explanation import FeatureContributionDTO
 from api.repositories.zones_repo import ZonesRepository
 
 
@@ -182,6 +182,7 @@ class ZonesService:
                     value=round(float(feat_v if feat_v is not None else 0.0), 2),
                     contribution=round(float(feat_c if feat_c is not None else 0.0), 4),
                     method=f.get("method", "heuristic"),
+                    rank=f.get("rank"),
                 )
             )
 

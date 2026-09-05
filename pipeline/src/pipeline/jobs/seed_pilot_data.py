@@ -38,6 +38,7 @@ from pipeline.grid.district_grid import (
     create_grid_cell_records,
 )
 from pipeline.hazard.terrain_zonal import TerrainHazardEvaluator
+from pipeline.hazard.model_loader import load_pipeline_models
 from pipeline.capacity.site_generator import (
     RawCandidateSiteSpec,
     build_candidate_site_record,
@@ -396,6 +397,7 @@ PILOT_DISTRICTS = [
 
 def seed_database(db_url: Optional[str] = None) -> None:
     """Executes deterministic seeding for pilot districts."""
+    load_pipeline_models()
     url = db_url or settings.get_sqlalchemy_url(direct=True)
     engine = create_engine(url, pool_pre_ping=True)
     rng = random.Random(SEED)

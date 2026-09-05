@@ -21,7 +21,9 @@ from core.domain.priority import (
     check_loss_frequency_rising,
 )
 from core.domain.vulnerability import compute_vulnerability_index, VulnerabilityConfig
+from core.domain.explanation import normalize_feature_contributions
 from core.schemas.common import PaginatedResponse
+from core.schemas.explanation import FeatureContributionDTO
 from core.schemas.habitations import (
     HabitationListItem,
     HabitationRiskDossier,
@@ -220,10 +222,15 @@ class HabitationsService:
         caseload = float(raw_caseload if raw_caseload is not None else eval_result["caseload_score"])
         tier_class = Tier(r["tier"]) if r.get("tier") else eval_result["tier"]
         triage_rationale = r.get("triage_rationale") or eval_result["triage_rationale"]
-        top_factors = r.get("contributing_factors") or eval_result["contributing_factors"]
-        if isinstance(top_factors, str):
+        top_factors_raw = r.get("contributing_factors") or eval_result["contributing_factors"]
+        if isinstance(top_factors_raw, str):
             import json
-            top_factors = json.loads(top_factors)
+            top_factors_raw = json.loads(top_factors_raw)
+        top_factors = normalize_feature_contributions(
+            top_factors_raw or [],
+            default_method="heuristic",
+            max_factors=5,
+        )
 
         loss_dtos = [
             LossEventDTO(

@@ -26,6 +26,13 @@ def client():
 class TestH4AlertProvenance:
     """Rigorous tests proving alert provenance is derived from persisted records only without semantic relabelling."""
 
+    @pytest.fixture(autouse=True)
+    def cleanup_test_data(self, db_session):
+        yield
+        db_session.execute(text("DELETE FROM hazard_dynamic WHERE valid_at >= '2026-09-05';"))
+        db_session.execute(text("DELETE FROM mhi_snapshot WHERE valid_at >= '2026-09-05';"))
+        db_session.commit()
+
     def test_active_alert_provenance_comes_from_persistence(self, client, db_session):
         """Test 1: Proves GET /alerts/active derives trigger_source and valid_at strictly from persisted records.
 
@@ -38,7 +45,7 @@ class TestH4AlertProvenance:
 
         # Distinctive timestamps and source that could never match fabricated defaults
         distinct_source = "CUSTOM_RADAR_TEST_NETWORK_99"
-        distinct_valid_at = datetime(2026, 8, 25, 14, 30, 0, tzinfo=timezone.utc)
+        distinct_valid_at = datetime(2026, 9, 10, 14, 30, 0, tzinfo=timezone.utc)
         valid_at_iso = distinct_valid_at.strftime("%Y-%m-%dT%H:%M:%SZ")
 
         # Clear prior dynamic records for test cell
@@ -163,7 +170,7 @@ class TestH4AlertProvenance:
         test_h3 = cell_row["h3"]
         test_hex = h3_to_str(test_h3)
 
-        test_time = datetime(2026, 8, 29, 8, 0, 0, tzinfo=timezone.utc)
+        test_time = datetime(2026, 9, 11, 8, 0, 0, tzinfo=timezone.utc)
         test_time_iso = test_time.strftime("%Y-%m-%dT%H:%M:%SZ")
 
         db_session.execute(text("DELETE FROM hazard_dynamic WHERE h3 = :h3;"), {"h3": test_h3})
@@ -212,7 +219,7 @@ class TestH4AlertProvenance:
         test_h3 = cell_row["h3"]
         test_hex = h3_to_str(test_h3)
 
-        t_alert = datetime(2026, 8, 30, 4, 0, 0, tzinfo=timezone.utc)
+        t_alert = datetime(2026, 9, 12, 4, 0, 0, tzinfo=timezone.utc)
         db_session.execute(text("DELETE FROM hazard_dynamic WHERE h3 = :h3;"), {"h3": test_h3})
         db_session.execute(text("DELETE FROM mhi_snapshot WHERE h3 = :h3;"), {"h3": test_h3})
 
