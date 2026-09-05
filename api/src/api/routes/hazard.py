@@ -16,6 +16,7 @@ from fastapi import APIRouter, Depends, Path, Query
 from sqlalchemy.orm import Session
 
 from api.dependencies import get_db
+from api.routes.common import error_responses
 from api.services.hazard_service import HazardService
 from core.enums import Hazard
 from core.schemas.hazard import (
@@ -24,7 +25,11 @@ from core.schemas.hazard import (
     HazardLayerSummaryDTO,
 )
 
-router = APIRouter(prefix="/hazard", tags=["Hazard Layers"])
+router = APIRouter(
+    prefix="/hazard",
+    tags=["Hazard Layers"],
+    responses=error_responses(400, 404, 422, 500, 503),
+)
 
 
 @router.get(

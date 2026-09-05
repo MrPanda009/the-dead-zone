@@ -58,8 +58,8 @@ class ScenarioHabitationItem(BaseSchema):
     rank_delta: int = Field(description="Positive means rose in urgency, negative dropped.")
     original_priority_score: float
     scenario_priority_score: float
-    original_tier: Tier
-    scenario_tier: Tier
+    original_tier: Optional[Tier] = None
+    scenario_tier: Optional[Tier] = None
     tier_changed: bool
     population: int
     households: int = Field(default=0)

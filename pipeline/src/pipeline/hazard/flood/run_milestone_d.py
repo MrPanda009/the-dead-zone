@@ -19,7 +19,7 @@ import rasterio
 import yaml
 
 # Ensure workspace root and package folder are in sys.path
-WORKSPACE_ROOT = Path(__file__).resolve().parents[3]
+WORKSPACE_ROOT = Path(__file__).resolve().parents[5]
 PACKAGE_DIR = Path(__file__).resolve().parent
 if str(WORKSPACE_ROOT) not in sys.path:
     sys.path.insert(0, str(WORKSPACE_ROOT))

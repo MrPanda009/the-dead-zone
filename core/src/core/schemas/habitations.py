@@ -9,6 +9,7 @@ from datetime import date, datetime
 from pydantic import Field
 from core.enums import Tier
 from core.schemas.common import BaseSchema, SCREENING_GRADE_NOTICE
+from core.schemas.explanation import FeatureContributionDTO
 
 
 class LossEventDTO(BaseSchema):
@@ -45,7 +46,7 @@ class HabitationListItem(BaseSchema):
     households: int = 0
     priority_score: float = Field(description="Per-capita urgency score PS_j.")
     caseload_score: float = Field(description="Caseload urgency score PS_j * population.")
-    tier: Tier = Field(description="Four-tier triage category.")
+    tier: Optional[Tier] = Field(default=None, description="Four-tier triage category (None if unclassified/monitoring).")
     prz_overlap_pct: float = Field(ge=0.0, le=100.0, description="Percentage of built area inside PRZ.")
     dominant_hazard: str = "landslide"
     centroid: list[float] = Field(description="[longitude, latitude]")
@@ -69,7 +70,7 @@ class HabitationRiskDossier(BaseSchema):
     # Prioritization & Triage
     priority_score: float
     caseload_score: float
-    tier: Tier
+    tier: Optional[Tier] = Field(default=None, description="Four-tier triage category (None if unclassified/monitoring).")
     triage_rationale: str
     prz_overlap_pct: float
     hazard_intensity: float
@@ -86,6 +87,6 @@ class HabitationRiskDossier(BaseSchema):
     # Risk Components
     vulnerability: VulnerabilityBreakdownDTO
     past_disasters: List[LossEventDTO] = Field(default_factory=list)
-    top_contributing_factors: List[dict[str, Any]] = Field(default_factory=list)
+    top_contributing_factors: List[FeatureContributionDTO] = Field(default_factory=list)
 
     screening_grade: str = SCREENING_GRADE_NOTICE

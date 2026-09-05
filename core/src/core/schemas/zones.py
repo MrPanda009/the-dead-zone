@@ -9,13 +9,7 @@ from pydantic import Field
 from core.enums import ZoneClass, Hazard
 from core.schemas.common import BaseSchema, SCREENING_GRADE_NOTICE
 
-
-class FeatureContributionDTO(BaseSchema):
-    feature: str = Field(description="Feature name, e.g. slope_deg, hand_m, dist_to_road_m.")
-    value: float = Field(description="Observed feature value.")
-    contribution: float = Field(description="SHAP attribution or heuristic weight.")
-    method: str = Field(default="heuristic", description="Explanation calculation method (e.g. 'heuristic', 'treeshap').")
-
+from core.schemas.explanation import FeatureContributionDTO
 
 class HazardDetailDTO(BaseSchema):
     hazard_type: str = Field(description="Hazard type (landslide, flash_flood, etc.).")

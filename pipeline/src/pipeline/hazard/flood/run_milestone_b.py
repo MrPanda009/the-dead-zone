@@ -13,36 +13,18 @@ import matplotlib.colors as mcolors
 import numpy as np
 import rasterio
 
-# Ensure workspace root and package folder are in sys.path
-WORKSPACE_ROOT = Path(__file__).resolve().parents[3]
-PACKAGE_DIR = Path(__file__).resolve().parent
-if str(WORKSPACE_ROOT) not in sys.path:
-    sys.path.insert(0, str(WORKSPACE_ROOT))
-if str(PACKAGE_DIR) not in sys.path:
-    sys.path.insert(0, str(PACKAGE_DIR))
+WORKSPACE_ROOT = Path(__file__).resolve().parents[5]
 
-try:
-    from .aoi import get_barpeta_bbox_wgs84
-    from .stac import query_sentinel1_rtc
-    from .water_mask import save_raster_geotiff
-    from .permanent_water import generate_permanent_water_mask
-    from .cropland import generate_cropland_fraction
-    from .frequency_stack import (
-        create_master_grid,
-        accumulate_inundation_stack,
-        calculate_inundation_frequency,
-    )
-except (ImportError, ValueError):
-    from aoi import get_barpeta_bbox_wgs84
-    from stac import query_sentinel1_rtc
-    from water_mask import save_raster_geotiff
-    from permanent_water import generate_permanent_water_mask
-    from cropland import generate_cropland_fraction
-    from frequency_stack import (
-        create_master_grid,
-        accumulate_inundation_stack,
-        calculate_inundation_frequency,
-    )
+from pipeline.hazard.flood.aoi import get_barpeta_bbox_wgs84
+from pipeline.hazard.flood.stac import query_sentinel1_rtc
+from pipeline.hazard.flood.water_mask import save_raster_geotiff
+from pipeline.hazard.flood.permanent_water import generate_permanent_water_mask
+from pipeline.hazard.flood.cropland import generate_cropland_fraction
+from pipeline.hazard.flood.frequency_stack import (
+    create_master_grid,
+    accumulate_inundation_stack,
+    calculate_inundation_frequency,
+)
 
 
 def main():

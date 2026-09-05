@@ -10,9 +10,11 @@ from core.schemas.common import (
     MultiPolygonGeometryDTO,
     SCREENING_GRADE_NOTICE,
     ProvenanceMetadataDTO,
+    ErrorDetail,
+    ErrorEnvelope,
+    ErrorResponse,
 )
 from core.schemas.zones import (
-    FeatureContributionDTO,
     HazardDetailDTO,
     ZoneCellSummary,
     ZoneCellDetail,
@@ -73,6 +75,7 @@ from core.schemas.dynamic_triggers import (
     TriggerValidationReport,
 )
 from core.schemas.explanation import (
+    FeatureContributionDTO,
     CanonicalExplanationRecord,
     ExplanationBatchDTO,
 )
@@ -86,6 +89,10 @@ __all__ = [
     "PolygonGeometryDTO",
     "MultiPolygonGeometryDTO",
     "SCREENING_GRADE_NOTICE",
+    "ProvenanceMetadataDTO",
+    "ErrorDetail",
+    "ErrorEnvelope",
+    "ErrorResponse",
     "FeatureContributionDTO",
     "HazardDetailDTO",
     "ZoneCellSummary",

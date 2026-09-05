@@ -8,15 +8,15 @@ import psycopg
 from core.config import settings
 
 
-def apply_migrations():
+def apply_migrations(conninfo: str | None = None):
     repo_root = Path(__file__).resolve().parents[1]
     migrations_dir = repo_root / "infra" / "migrations"
-    conninfo = settings.get_direct_psycopg_conninfo()
+    target_conninfo = conninfo or settings.get_direct_psycopg_conninfo()
 
     print(f"Applying migrations from: {migrations_dir}")
     print(f"Connecting to database...")
 
-    with psycopg.connect(conninfo, autocommit=True) as conn:
+    with psycopg.connect(target_conninfo, autocommit=True) as conn:
         with conn.cursor() as cur:
             # 1. Create schema_migrations tracker
             cur.execute("""

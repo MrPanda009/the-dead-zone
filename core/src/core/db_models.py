@@ -323,7 +323,12 @@ class HabitationRisk(Base):
     v_index: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     priority_score: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     caseload_score: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
-    tier: Mapped[str] = mapped_column(String, default="medium_term", nullable=False)
+    active_deformation: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    fatal_event_last_3_monsoons: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    mitigation_cost: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    relocation_cost: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    adverse_trend: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
+    tier: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     triage_rationale: Mapped[str] = mapped_column(String, default="", nullable=False)
     contributing_factors: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, default=list, nullable=False)
     dominant_hazard: Mapped[str] = mapped_column(String, default="landslide", nullable=False)
@@ -375,7 +380,7 @@ class CandidateSite(Base):
     cc_final: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     binding_constraint: Mapped[str] = mapped_column(String, nullable=False)
     augmented: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
-    suitability: Mapped[int] = mapped_column(SmallInteger, default=50, nullable=False)
+    suitability: Mapped[Optional[int]] = mapped_column(SmallInteger, default=None, nullable=True)
     metadata_: Mapped[dict[str, Any]] = mapped_column(
         "metadata", JSONB, default=dict, nullable=False
     )

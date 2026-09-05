@@ -5,6 +5,7 @@
     "dev:web": "pnpm --filter web dev",
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",
+    "export:openapi": "uv run python scripts/export_openapi.py",
     "generate:types": "pnpm --filter web generate:types"
   }
 }

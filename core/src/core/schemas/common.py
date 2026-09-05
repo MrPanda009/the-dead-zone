@@ -66,3 +66,19 @@ class PolygonGeometryDTO(BaseSchema):
 class MultiPolygonGeometryDTO(BaseSchema):
     type: str = "MultiPolygon"
     coordinates: list[list[list[list[float]]]] = Field(description="MultiPolygon linear rings")
+
+
+class ErrorDetail(BaseSchema):
+    """Standardized error details conforming to SETU-DRR API error envelope."""
+    code: str = Field(description="Standardized machine-readable error code string.")
+    message: str = Field(description="Human-readable explanation of the error.")
+    request_id: Optional[str] = Field(default=None, description="Unique request tracing identifier.")
+    details: dict[str, Any] = Field(default_factory=dict, description="Contextual error details or validation breakdown.")
+
+
+class ErrorEnvelope(BaseSchema):
+    """Canonical API error response envelope."""
+    error: ErrorDetail = Field(description="Error details payload.")
+
+
+ErrorResponse = ErrorEnvelope

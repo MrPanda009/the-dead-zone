@@ -155,7 +155,7 @@ if __name__ == "__main__":
     try:
         from .frequency_stack import create_master_grid
     except (ImportError, ValueError):
-        from hazard.flood.frequency_stack import create_master_grid
+        from pipeline.hazard.flood.frequency_stack import create_master_grid
 
     print("Testing ESA WorldCover cropland extraction for Barpeta...")
     bbox = get_barpeta_bbox_wgs84()

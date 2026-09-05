@@ -64,7 +64,7 @@ class AllocationRepository:
         max_radius_m: float = 15000.0,
         min_suitability: Optional[int] = None,
     ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-        """Queries candidate relocation sites within search radius of target habitations."""
+        """Queries candidate relocation sites within search radius of target habitations enforcing H7 eligibility."""
         if not habitation_ids:
             return [], []
 
@@ -72,10 +72,18 @@ class AllocationRepository:
             "h.id = ANY(:hab_ids)",
             "ST_DWithin(h.geom_point::geography, cs.centroid::geography, :radius_m)",
             "cs.cc_final > 0",
+            # H7 Hard Eligibility Constraints on canonical table columns (PRD §6.8, FR-7.2, FR-7.3)
+            "cs.mhi_max < :max_static_mhi",
+            "cs.slope_mean < :max_slope_deg",
+            "cs.area_ha >= :min_area_ha",
+            "cs.tenure IN ('government_revenue', 'private')",
         ]
         params: dict[str, Any] = {
             "hab_ids": list(habitation_ids),
             "radius_m": float(max_radius_m),
+            "max_static_mhi": 0.25,
+            "max_slope_deg": 15.0,
+            "min_area_ha": 2.0,
         }
 
         if min_suitability is not None:
@@ -91,6 +99,11 @@ class AllocationRepository:
                 COALESCE(cs.metadata->>'name', 'Site #' || cs.id) as site_name,
                 cs.cc_final as capacity,
                 cs.suitability,
+                cs.area_ha,
+                cs.tenure,
+                cs.slope_mean,
+                cs.mhi_max,
+                cs.metadata as metadata_info,
                 ST_X(cs.centroid::geometry) as site_lon,
                 ST_Y(cs.centroid::geometry) as site_lat,
                 ST_Distance(h.geom_point::geography, cs.centroid::geography) / 1000.0 as distance_km
@@ -118,6 +131,11 @@ class AllocationRepository:
                     "suitability": r["suitability"],
                     "lat": r["site_lat"],
                     "lon": r["site_lon"],
+                    "area_ha": float(r["area_ha"]) if r.get("area_ha") is not None else None,
+                    "tenure": r.get("tenure"),
+                    "slope_mean": float(r["slope_mean"]) if r.get("slope_mean") is not None else None,
+                    "mhi_max": float(r["mhi_max"]) if r.get("mhi_max") is not None else None,
+                    "metadata": r.get("metadata_info"),
                 }
             distances.append({
                 "habitation_id": r["habitation_id"],

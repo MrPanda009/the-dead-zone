@@ -19,12 +19,14 @@ from sqlalchemy.orm import Session
 from api.repositories.habitations_repo import HabitationsRepository
 from api.services.allocation_service import AllocationService
 from core.constants import (
+    CAUTION_MHI_MIN,
     HAZARD_WEIGHTS,
     PRIORITY_GAMMA,
     PRZ_MHI_STATIC,
     SCREENING_GRADE_NOTICE,
 )
 from core.domain.allocation import HabitationDemand
+from core.domain.priority import evaluate_in_situ_cost_cheaper
 from core.domain.scenario import (
     HabitationBaselineState,
     ScenarioEngine,
@@ -71,26 +73,29 @@ class ScenarioService:
         clamped_offset = max(0, request.offset)
 
         # 2. Query baseline habitations
-        # Fetch up to 500 habitations within the boundary to establish comprehensive ranking
+        # Fetch all habitations within the boundary to establish comprehensive ranking without truncation (M10)
         raw_habs, total_count = self.hab_repo.query_habitations(
             admin_id=request.admin_id,
-            limit=500,
+            limit=None,
             offset=0,
             sort=request.sort_mode,
         )
 
+        hab_ids = [int(r["id"]) for r in raw_habs]
+        hab_hazard_scores = self.hab_repo.get_hazard_scores_for_habitations(hab_ids)
+
         baseline_states: list[HabitationBaselineState] = []
         for r in raw_habs:
-            pop = int(r.get("population") or 0)
-            hh = int(r.get("households") or max(1, pop // 4))
+            pop = int(r.get("population") if r.get("population") is not None else 0)
+            hh = int(r.get("households") if r.get("households") is not None else max(1, pop // 4))
             h_id = int(r["id"])
             name = str(r.get("name") or f"Habitation-{h_id}")
 
-            prz_overlap = float(r.get("prz_overlap_pct") or 0.0)
+            prz_overlap = float(r.get("prz_overlap_pct") if r.get("prz_overlap_pct") is not None else 0.0)
             pop_frac = prz_overlap / 100.0
-            hazard_intensity = float(r.get("hazard_intensity") or 0.5)
-            v_index = float(r.get("v_index") or 0.5)
-            decayed_loss = float(r.get("decayed_loss") or 0.0)
+            hazard_intensity = float(r.get("hazard_intensity") if r.get("hazard_intensity") is not None else 0.5)
+            v_index = float(r.get("v_index") if r.get("v_index") is not None else 0.5)
+            decayed_loss = float(r.get("decayed_loss") if r.get("decayed_loss") is not None else 0.0)
 
             # Resolve baseline tier
             raw_tier = r.get("tier")
@@ -99,19 +104,27 @@ class ScenarioService:
             except ValueError:
                 tier_enum = Tier.SHORT_TERM
 
-            base_ps = float(r.get("priority_score") or 0.5)
+            base_ps = float(r.get("priority_score") if r.get("priority_score") is not None else 0.5)
 
-            # High risk indicators (Chooralmala, Mundakkai, Bhagamandala)
-            is_high_risk = name in ("Chooralmala", "Mundakkai", "Bhagamandala")
-            active_deformation = is_high_risk and name in ("Chooralmala", "Mundakkai")
-            fatal_event = is_high_risk
+            active_deformation = bool(r.get("active_deformation", False))
+            fatal_event = bool(r.get("fatal_event_last_3_monsoons", False))
 
-            # Map static hazard scores
-            hazard_scores = {
-                Hazard.LANDSLIDE: hazard_intensity,
-                Hazard.FLASH_FLOOD: 0.85 if is_high_risk else 0.35,
-                Hazard.RIVERINE_FLOOD: 0.20,
-            }
+            # Map static hazard scores from persisted hazard_static data
+            hazard_scores = hab_hazard_scores.get(h_id)
+            if not hazard_scores:
+                dom_str = r.get("dominant_hazard") or "landslide"
+                try:
+                    dom_hazard = Hazard(dom_str)
+                except ValueError:
+                    dom_hazard = Hazard.LANDSLIDE
+                hazard_scores = {dom_hazard: hazard_intensity}
+
+            m_cost = r.get("mitigation_cost")
+            r_cost = r.get("relocation_cost")
+            in_situ_cheaper = evaluate_in_situ_cost_cheaper(m_cost, r_cost)
+            adv_trend = r.get("adverse_trend")
+            is_caution = (CAUTION_MHI_MIN <= hazard_intensity < PRZ_MHI_STATIC) or (0.45 <= hazard_intensity < 0.75)
+            caution_adverse = is_caution and (adv_trend is True)
 
             baseline_states.append(
                 HabitationBaselineState(
@@ -126,11 +139,13 @@ class ScenarioService:
                     decayed_loss=decayed_loss,
                     active_deformation=active_deformation,
                     fatal_event_last_3_monsoons=fatal_event,
+                    in_situ_cost_cheaper=in_situ_cheaper,
+                    is_caution_with_adverse_trend=caution_adverse,
                     hazard_scores=hazard_scores,
                     baseline_priority_score=base_ps,
                     baseline_tier=tier_enum,
-                    lat=r.get("centroid_lat") or r.get("lat"),
-                    lon=r.get("centroid_lon") or r.get("lon"),
+                    lat=r.get("centroid_lat") if r.get("centroid_lat") is not None else r.get("lat"),
+                    lon=r.get("centroid_lon") if r.get("centroid_lon") is not None else r.get("lon"),
                 )
             )
 

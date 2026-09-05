@@ -30,7 +30,7 @@ import psycopg
 import yaml
 
 # Ensure workspace root and pipeline packages are in sys.path
-WORKSPACE_ROOT = Path(__file__).resolve().parents[3]
+WORKSPACE_ROOT = Path(__file__).resolve().parents[5]
 PACKAGE_DIR = Path(__file__).resolve().parent
 for p in [WORKSPACE_ROOT, PACKAGE_DIR, WORKSPACE_ROOT / "core" / "src", WORKSPACE_ROOT / "pipeline" / "src"]:
     if str(p) not in sys.path:

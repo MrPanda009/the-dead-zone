@@ -29,5 +29,8 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
-pythonpath = ["core/src", "api/src", "pipeline/src"]
+pythonpath = ["core/src", "api/src", "pipeline/src", "."]
+markers = [
+    "db: mark test as requiring a PostgreSQL/PostGIS database",
+]
 

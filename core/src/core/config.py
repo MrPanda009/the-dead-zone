@@ -23,6 +23,10 @@ class Settings(BaseSettings):
         default=None,
         description="Direct non-pooled connection string (required for migrations, Martin, and heavy ETL).",
     )
+    TEST_DATABASE_URL: str | None = Field(
+        default=None,
+        description="Dedicated isolated test database connection string.",
+    )
 
     # Runtime & Mode
     DEMO_MODE: bool = Field(
@@ -36,6 +40,20 @@ class Settings(BaseSettings):
     MODEL_VERSION: str = Field(
         default="v1.0.0",
         description="Default machine learning model version tag.",
+    )
+
+    # ML Model Checkpoint Paths
+    MODEL_CHECKPOINT_PATH: str | None = Field(
+        default=None,
+        description="Generic path to model checkpoint file or directory containing checkpoints.",
+    )
+    LANDSLIDE_MODEL_PATH: str | None = Field(
+        default=None,
+        description="Path to serialized trained landslide model checkpoint.",
+    )
+    FLOOD_MODEL_PATH: str | None = Field(
+        default=None,
+        description="Path to serialized trained flood model checkpoint.",
     )
 
     # File paths

@@ -25,6 +25,7 @@ from core.config import settings
 from core.enums import Hazard
 from core.schemas.flood import FloodSemanticType, CanonicalFloodRecord, ValidationReport
 from pipeline.adapters.sentinel1_adapter import sentinel1_adapter
+from pipeline.jobs.compute_dynamic_hazard import compute_and_persist_dynamic_snapshots
 
 logger = logging.getLogger("setu_pipeline.ingest_flood_data")
 
@@ -261,6 +262,15 @@ def ingest_sentinel1_artifact(
                         VALUES (:h3, :hazard_type, :valid_at, :ingested_at, :trigger_value, :source, :pipeline_run_id);
                     """),
                     chunk,
+                )
+
+            # B7 Production Flow: Automatically trigger dynamic hazard evaluation for staged timestamps
+            distinct_valid_timestamps = {r["valid_at"] for r in dynamic_rows}
+            for v_ts in distinct_valid_timestamps:
+                compute_and_persist_dynamic_snapshots(
+                    db=conn,
+                    valid_at=v_ts,
+                    pipeline_run_id=pipeline_run_id,
                 )
 
         # 4.4 Mark Pipeline Run as READY

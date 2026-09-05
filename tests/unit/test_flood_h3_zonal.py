@@ -8,9 +8,10 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT / "pipeline") not in sys.path:
     sys.path.insert(0, str(REPO_ROOT / "pipeline"))
 
+import pytest
 from core.config import settings
-from hazard.flood.aoi import BARPETA_BBOX_WGS84
-from hazard.flood.h3_zonal import (
+from pipeline.hazard.flood.aoi import BARPETA_BBOX_WGS84
+from pipeline.hazard.flood.h3_zonal import (
     polyfill_reporting_aoi,
     h3_cells_to_geodataframe,
     apply_quality_flags,
@@ -114,6 +115,7 @@ def test_parquet_schema_and_contents():
     assert gdf["confidence"].max() <= 1.0
 
 
+@pytest.mark.db
 def test_database_hazard_static_records():
     """Verify live PostgreSQL database has 7,497 riverine_flood rows."""
     conninfo = settings.get_direct_psycopg_conninfo()
@@ -122,7 +124,7 @@ def test_database_hazard_static_records():
             cur.execute("SELECT COUNT(*) FROM hazard_static WHERE hazard_type = 'riverine_flood';")
             count = cur.fetchone()[0]
             if count == 0:
-                from hazard.flood.run_milestone_e import load_database
+                from pipeline.hazard.flood.run_milestone_e import load_database
                 parquet_path = Path("data/processed/flood/barpeta/flood_susceptibility_h3_res8.parquet")
                 if parquet_path.exists():
                     stats_gdf = gpd.read_parquet(parquet_path)

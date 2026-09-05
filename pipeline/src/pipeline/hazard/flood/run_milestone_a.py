@@ -13,34 +13,17 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import numpy as np
 
-# Ensure workspace root and package folder are in sys.path for direct execution
-WORKSPACE_ROOT = Path(__file__).resolve().parents[3]
-PACKAGE_DIR = Path(__file__).resolve().parent
-if str(WORKSPACE_ROOT) not in sys.path:
-    sys.path.insert(0, str(WORKSPACE_ROOT))
-if str(PACKAGE_DIR) not in sys.path:
-    sys.path.insert(0, str(PACKAGE_DIR))
+WORKSPACE_ROOT = Path(__file__).resolve().parents[4]
 
-try:
-    from .aoi import save_barpeta_boundary, get_barpeta_bounds_projected
-    from .stac import query_sentinel1_rtc, extract_scene_metadata
-    from .water_mask import (
-        stream_and_clip_raster,
-        linear_to_db,
-        detect_water,
-        save_raster_geotiff,
-        DEFAULT_VV_WATER_THRESHOLD_DB,
-    )
-except (ImportError, ValueError):
-    from aoi import save_barpeta_boundary, get_barpeta_bounds_projected
-    from stac import query_sentinel1_rtc, extract_scene_metadata
-    from water_mask import (
-        stream_and_clip_raster,
-        linear_to_db,
-        detect_water,
-        save_raster_geotiff,
-        DEFAULT_VV_WATER_THRESHOLD_DB,
-    )
+from pipeline.hazard.flood.aoi import save_barpeta_boundary, get_barpeta_bounds_projected
+from pipeline.hazard.flood.stac import query_sentinel1_rtc, extract_scene_metadata
+from pipeline.hazard.flood.water_mask import (
+    stream_and_clip_raster,
+    linear_to_db,
+    detect_water,
+    save_raster_geotiff,
+    DEFAULT_VV_WATER_THRESHOLD_DB,
+)
 
 
 def main():
