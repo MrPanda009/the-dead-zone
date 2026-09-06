@@ -29,7 +29,10 @@ export class ApiError extends Error {
 }
 
 function buildUrl(path: string, params?: Record<string, string | number | undefined>): string {
-  const url = new URL(`${API_BASE_URL}${path}`);
+  const base = API_BASE_URL.startsWith('http')
+    ? API_BASE_URL
+    : (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000') + API_BASE_URL;
+  const url = new URL(`${base}${path}`);
   if (params) {
     for (const [key, value] of Object.entries(params)) {
       if (value !== undefined && value !== null && value !== '') {
