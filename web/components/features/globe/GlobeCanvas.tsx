@@ -2,7 +2,6 @@
 
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { gsap, M3_EASE, type M3AnimationConfig } from '@/lib/motion/m3';
 import { INTRO_TIMINGS } from '@/lib/motion/introSequence';
 import { usePrefersReducedMotion } from '@/lib/hooks/usePrefersReducedMotion';
@@ -17,7 +16,7 @@ export interface CameraTarget {
 }
 
 export interface GlobeCanvasProps {
-  /** Mode: 'landing' starts framed for hero presentation; 'login' spins and glides globe to 50% off-screen while continuing rotation */
+  /** Mode: 'landing' starts framed for hero presentation; 'login' spins and glides globe off-screen */
   viewMode?: 'landing' | 'login';
   /** Whether earth is auto-rotating */
   isAutoRotating?: boolean;
@@ -37,6 +36,8 @@ export interface GlobeCanvasProps {
   className?: string;
   /** Entrance animation overrides for the canvas container */
   animation?: M3AnimationConfig;
+  /** Normalized scroll progress across the landing narrative track (0.0 to 1.0) */
+  scrollProgress?: number;
 }
 
 export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
@@ -50,6 +51,7 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
   onHoverHotspot,
   className = '',
   animation = {},
+  scrollProgress = 0,
 }) => {
   const primarySpot = hotspots.find((s) => s.id === primaryFocusId) || hotspots[0];
   const defaultLat = primarySpot ? primarySpot.lat : 28.5;
@@ -61,10 +63,15 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
   const prefersReducedMotion = usePrefersReducedMotion();
   const ambientLightRef = useRef<THREE.AmbientLight | null>(null);
   const sunLightRef = useRef<THREE.DirectionalLight | null>(null);
+  const scrollProgressRef = useRef(scrollProgress);
 
   useEffect(() => {
     onHoverHotspotRef.current = onHoverHotspot;
   }, [onHoverHotspot]);
+
+  useEffect(() => {
+    scrollProgressRef.current = scrollProgress;
+  }, [scrollProgress]);
 
   const sceneRef = useRef<{
     earthGroup: THREE.Group;
@@ -74,7 +81,6 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     orbitRing: THREE.Mesh;
     hotspotGroup: THREE.Group;
     primaryBeaconGroup: THREE.Group;
-    controls: OrbitControls;
     isAutoRotating: boolean;
     isRadarActive: boolean;
   } | null>(null);
@@ -101,88 +107,11 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     }
   }, [isAutoRotating, isRadarActive]);
 
-  // Helper to offset camera projection so Earth is framed on the right on desktop,
-  // while keeping controls.target and camera focal axis centered on Earth.
-  const updateCameraOffset = (cam: THREE.PerspectiveCamera, w: number, h: number, isLanding: boolean) => {
-    const isDesktop = w > 1024;
-    if (isLanding && isDesktop) {
-      const visibleWorldHeight = 2 * Math.tan((cam.fov * Math.PI) / 360) * 4.8;
-      const shiftPixels = (1.15 / visibleWorldHeight) * h;
-      cam.setViewOffset(w, h, -shiftPixels, 0, w, h);
-    } else {
-      cam.clearViewOffset();
-    }
-    cam.updateProjectionMatrix();
-  };
-
-  // Handle ViewMode Switch:
-  // 'landing' keeps Earth on the right side on desktop while centering rotation in the Earth
-  useEffect(() => {
-    if (!sceneRef.current) return;
-    const { earthGroup, camera, controls } = sceneRef.current;
-
-    const isDesktop = typeof window !== 'undefined' && window.innerWidth > 1024;
-    const landingX = isDesktop ? 1.15 : 0;
-    const loginX = isDesktop ? 3.3 : 1.7;
-    const width = typeof window !== 'undefined' ? window.innerWidth : 1920;
-    const height = typeof window !== 'undefined' ? window.innerHeight : 1080;
-
-    if (viewMode === 'login') {
-      camera.clearViewOffset();
-      camera.updateProjectionMatrix();
-      controls.target.set(loginX, 0, 0);
-
-      gsap.to(earthGroup.rotation, {
-        y: '+=3.4',
-        duration: 1.5,
-        ease: 'power3.inOut',
-        overwrite: 'auto',
-      });
-      gsap.to(earthGroup.position, {
-        x: loginX,
-        y: 0,
-        z: -0.2,
-        duration: 1.4,
-        ease: 'power3.inOut',
-        overwrite: 'auto',
-      });
-      gsap.to(camera.position, {
-        x: loginX,
-        y: 0,
-        z: 4.8,
-        duration: 1.4,
-        ease: 'power3.inOut',
-        overwrite: 'auto',
-      });
-    } else {
-      updateCameraOffset(camera, width, height, true);
-      controls.target.set(landingX, 0, 0);
-
-      gsap.to(earthGroup.position, {
-        x: landingX,
-        y: 0,
-        z: 0,
-        duration: 1.3,
-        ease: 'power3.out',
-        overwrite: 'auto',
-      });
-      gsap.to(camera.position, {
-        x: landingX,
-        y: 0,
-        z: 4.8,
-        duration: 1.3,
-        ease: 'power3.out',
-        overwrite: 'auto',
-      });
-    }
-  }, [viewMode]);
-
   // Focus Trigger: Smoothly rotate Earth to center on India Hazard Red Zone
   useEffect(() => {
     if (!sceneRef.current || focusTrigger === 0) return;
     const { earthMesh, hotspotGroup, primaryBeaconGroup, camera } = sceneRef.current;
 
-    // Target angle for India (lon ~78°E => -2.93 rad)
     const targetY = -2.93;
     gsap.to([earthMesh.rotation, hotspotGroup.rotation, primaryBeaconGroup.rotation], {
       y: targetY,
@@ -191,7 +120,7 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
       overwrite: 'auto',
     });
     gsap.to(camera.position, {
-      z: 4.5,
+      z: 4.8,
       duration: 1.4,
       ease: 'power2.out',
     });
@@ -200,10 +129,10 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
   // Camera Target transitions
   useEffect(() => {
     if (!sceneRef.current || !cameraTarget) return;
-    const { earthGroup, camera } = sceneRef.current;
+    const { earthMesh, hotspotGroup, primaryBeaconGroup, camera } = sceneRef.current;
     const duration = cameraTarget.duration || 1.4;
 
-    gsap.to(earthGroup.rotation, {
+    gsap.to([earthMesh.rotation, hotspotGroup.rotation, primaryBeaconGroup.rotation], {
       y: cameraTarget.y,
       duration,
       ease: 'power2.inOut',
@@ -224,42 +153,29 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     let width = container.clientWidth || window.innerWidth;
     let height = container.clientHeight || window.innerHeight;
 
-    const isDesktop = width > 1024;
-    const initialLandingX = isDesktop ? 1.15 : 0;
-    const initialTargetX = viewMode === 'landing' ? initialLandingX : 3.3;
-
-    // 1. Scene & Perspective Camera
+    // 1. Scene & Standard Perspective Camera (normal distance z = 4.8, normal size)
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 2000);
-    camera.position.set(initialTargetX, 0, 4.8);
-    if (viewMode === 'landing') {
-      updateCameraOffset(camera, width, height, true);
-    }
+    camera.position.set(0, 0, 4.8);
 
     // 2. WebGL Renderer
-    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'high-performance' });
+    const renderer = new THREE.WebGLRenderer({
+      alpha: true,
+      antialias: true,
+      powerPreference: 'high-performance',
+    });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(width, height);
     if ('toneMapping' in renderer) {
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
       renderer.toneMappingExposure = 1.35;
     }
+    renderer.domElement.style.touchAction = 'none';
+    renderer.domElement.style.cursor = 'grab';
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
 
-    // 3. OrbitControls - Target focused squarely at Earth's center
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.target.set(initialTargetX, 0, 0);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
-    controls.rotateSpeed = 0.8;
-    controls.enableZoom = true;
-    controls.zoomSpeed = 1.0;
-    controls.minDistance = 2.2;
-    controls.maxDistance = 10.0;
-    controls.enablePan = false;
-
-    // 4. Directional & Atmospheric Lighting
+    // 3. Directional & Atmospheric Lighting
     const sunLight = new THREE.DirectionalLight(0xfff8ee, isLight ? 2.2 : 1.9);
     sunLight.position.set(6, 4, 4.5);
     sunLightRef.current = sunLight;
@@ -273,7 +189,7 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     ambientLightRef.current = ambientLight;
     scene.add(ambientLight);
 
-    // 5. Starfield Dust Particles
+    // 4. Starfield Dust Particles
     const starGeo = new THREE.BufferGeometry();
     const starCount = 1800;
     const starPositions = new Float32Array(starCount * 3);
@@ -306,13 +222,17 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     const starField = new THREE.Points(starGeo, starMat);
     scene.add(starField);
 
-    // 6. Earth Group: Positioned on the right on desktop (landingX = 1.15)
+    // 5. Earth Group:
+    // Moves across the screen in 3D in the empty space next to text!
+    // Rotation is centered on its own local origin (0, 0, 0).
+    const isDesktop = width > 1024;
+    const initialLandingX = isDesktop ? 1.15 : 0;
     const earthGroup = new THREE.Group();
     earthGroup.rotation.z = 23.4 * (Math.PI / 180);
-    earthGroup.position.set(initialTargetX, 0, 0);
+    earthGroup.position.set(viewMode === 'landing' ? initialLandingX : 3.3, 0, 0);
     scene.add(earthGroup);
 
-    // 7. Earth Mesh with Procedural Cartography & NASA Fallback
+    // 6. Earth Mesh (Normal size: radius 2.0)
     const proceduralCanvas = generateProceduralEarthCanvas();
     const proceduralTexture = new THREE.CanvasTexture(proceduralCanvas);
     proceduralTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
@@ -325,8 +245,7 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
       bumpScale: 0.05,
     });
     const earthMesh = new THREE.Mesh(earthGeo, earthMat);
-    // INITIAL ROTATION: Set to -2.93 rad to bring India front and center!
-    earthMesh.rotation.y = -2.93;
+    earthMesh.rotation.y = -2.93; // India front and center
     earthGroup.add(earthMesh);
 
     // Background NASA texture loader
@@ -343,7 +262,7 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
       () => {}
     );
 
-    // 8. Atmosphere Rim Glow Shader
+    // 7. Atmosphere Rim Glow Shader
     const atmosphereGeo = new THREE.SphereGeometry(2.05, 64, 64);
     const atmosphereMat = new THREE.ShaderMaterial({
       vertexShader: `
@@ -368,14 +287,8 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     const atmosphereMesh = new THREE.Mesh(atmosphereGeo, atmosphereMat);
     earthGroup.add(atmosphereMesh);
 
-    // 9. Glowing Lime Elliptical Orbital Trajectory Ring (Material 3 Feature)
-    const orbitCurve = new THREE.EllipseCurve(
-      0, 0,
-      2.8, 2.65,
-      0, 2 * Math.PI,
-      false,
-      0
-    );
+    // 8. Glowing Lime Elliptical Orbital Trajectory Ring
+    const orbitCurve = new THREE.EllipseCurve(0, 0, 2.8, 2.65, 0, 2 * Math.PI, false, 0);
     const curvePoints = orbitCurve.getPoints(128);
     const points3D = curvePoints.map((p) => new THREE.Vector3(p.x, 0, p.y));
     const path3D = new THREE.CatmullRomCurve3(points3D, true);
@@ -390,7 +303,7 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     orbitRing.rotation.z = -Math.PI / 6.5;
     earthGroup.add(orbitRing);
 
-    // 10. Secondary Cyber Orbital Radar Sweep Ring
+    // 9. Secondary Cyber Orbital Radar Sweep Ring
     const radarGeo = new THREE.RingGeometry(2.28, 2.32, 64);
     const radarMat = new THREE.MeshBasicMaterial({
       color: 0xd2f83f,
@@ -413,22 +326,19 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
       );
     };
 
-    // 11. Concentric Disaster Hazard Beacon (Pulsing Radar Wave Rings on India)
+    // 10. Concentric Disaster Hazard Beacon on India
     const primaryBeaconGroup = new THREE.Group();
-    primaryBeaconGroup.rotation.y = -2.93; // sync with initial Earth rotation
+    primaryBeaconGroup.rotation.y = -2.93;
     earthGroup.add(primaryBeaconGroup);
 
-    // Primary India coordinate (Himalayan Arc / Uttarakhand)
     const indiaPos = latLonToVector3(defaultLat, defaultLon, 2.035);
 
-    // Center solid red hazard core
     const coreGeo = new THREE.SphereGeometry(0.048, 16, 16);
     const coreMat = new THREE.MeshBasicMaterial({ color: 0xff1e38 });
     const coreMesh = new THREE.Mesh(coreGeo, coreMat);
     coreMesh.position.copy(indiaPos);
     primaryBeaconGroup.add(coreMesh);
 
-    // 3 Concentric Expanding Ripple Rings (Concentric Beacon)
     const rippleRings: THREE.Mesh<THREE.RingGeometry, THREE.MeshBasicMaterial>[] = [];
     for (let r = 0; r < 3; r++) {
       const ringGeo = new THREE.RingGeometry(0.04, 0.12, 32);
@@ -451,7 +361,7 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
       rippleRings.push(ringMesh);
     }
 
-    // 12. Hotspot Pins for all disaster zones
+    // 11. Hotspot Pins for disaster zones
     const hotspotGroup = new THREE.Group();
     hotspotGroup.rotation.y = -2.93;
     earthGroup.add(hotspotGroup);
@@ -479,6 +389,57 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
       hotspotGroup.add(pinMesh);
       hotspotGroup.add(auraMesh);
     });
+
+    // 12. Direct Sphere Drag Rotation:
+    // User requested: "make the globe interactable like it was before"
+    // Provides full tactile drag-to-spin with momentum physics around the sphere's own center!
+    let isPointerDown = false;
+    let prevPointer = { x: 0, y: 0 };
+    let dragVelocity = { x: 0, y: 0 };
+
+    const domEl = renderer.domElement;
+
+    const handlePointerDown = (e: PointerEvent) => {
+      if (e.button !== 0 && e.pointerType === 'mouse') return;
+      isPointerDown = true;
+      prevPointer = { x: e.clientX, y: e.clientY };
+      dragVelocity = { x: 0, y: 0 };
+      domEl.style.cursor = 'grabbing';
+      try {
+        domEl.setPointerCapture(e.pointerId);
+      } catch {}
+    };
+
+    const handlePointerMoveDrag = (e: PointerEvent) => {
+      if (!isPointerDown) return;
+      const dx = e.clientX - prevPointer.x;
+      const dy = e.clientY - prevPointer.y;
+      prevPointer = { x: e.clientX, y: e.clientY };
+
+      const rotSpeed = 0.005;
+      dragVelocity = { x: dx * rotSpeed, y: dy * rotSpeed };
+
+      earthMesh.rotation.y += dragVelocity.x;
+      hotspotGroup.rotation.y += dragVelocity.x;
+      primaryBeaconGroup.rotation.y += dragVelocity.x;
+
+      earthGroup.rotation.x = Math.max(-0.45, Math.min(0.45, earthGroup.rotation.x + dragVelocity.y));
+    };
+
+    const handlePointerUp = (e: PointerEvent) => {
+      if (isPointerDown) {
+        isPointerDown = false;
+        domEl.style.cursor = 'grab';
+        try {
+          domEl.releasePointerCapture(e.pointerId);
+        } catch {}
+      }
+    };
+
+    domEl.addEventListener('pointerdown', handlePointerDown);
+    domEl.addEventListener('pointermove', handlePointerMoveDrag);
+    domEl.addEventListener('pointerup', handlePointerUp);
+    domEl.addEventListener('pointercancel', handlePointerUp);
 
     // 13. Raycasting for hover tooltips
     const raycaster = new THREE.Raycaster();
@@ -508,20 +469,13 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
 
     window.addEventListener('mousemove', handleMouseMove);
 
-    // 14. Responsive Resize
+    // Responsive Resize Handler
     const handleResize = () => {
       if (!container) return;
       width = container.clientWidth || window.innerWidth;
       height = container.clientHeight || window.innerHeight;
       camera.aspect = width / height;
-
-      const desktop = width > 1024;
-      const targetX = viewMode === 'landing' ? (desktop ? 1.15 : 0) : (desktop ? 3.3 : 1.7);
-      earthGroup.position.x = targetX;
-      controls.target.set(targetX, 0, 0);
-      camera.position.x = targetX;
-
-      updateCameraOffset(camera, width, height, viewMode === 'landing');
+      camera.updateProjectionMatrix();
       renderer.setSize(width, height);
     };
     window.addEventListener('resize', handleResize);
@@ -534,25 +488,100 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
       orbitRing,
       hotspotGroup,
       primaryBeaconGroup,
-      controls,
       isAutoRotating,
       isRadarActive,
     };
 
-    // 15. Animation Render Loop
+    // Calculate Target 3D Position for Zig-Zag Narrative Motion
+    // The globe moves into the empty space next to the text on every scroll:
+    // Hero: text LEFT -> globe RIGHT (ampX)
+    // Section 1: text RIGHT -> globe LEFT (-ampX)
+    // Section 2: text LEFT -> globe RIGHT (ampX)
+    // Section 3: text RIGHT -> globe LEFT (-ampX)
+    // Horizon / Footer: globe BOTTOM CENTER (x = 0, y = bottomY)
+    const getTargetPosition = (progress: number, w: number) => {
+      if (viewMode === 'login') {
+        const desktop = w > 1024;
+        return {
+          x: desktop ? 3.3 : 1.7,
+          y: 0,
+        };
+      }
+
+      const desktop = w > 1024;
+      const ampX = desktop ? 1.2 : w > 640 ? 0.8 : 0.4;
+      const bottomY = -1.75;
+
+      const p = Math.max(0, Math.min(1, progress));
+      const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+      const smoothstep = (t: number) => 0.5 - 0.5 * Math.cos(t * Math.PI);
+
+      if (p <= 0.25) {
+        // Hero (0.0: Right) -> Section 1 (0.25: Left)
+        const t = smoothstep(p / 0.25);
+        return {
+          x: lerp(ampX, -ampX, t),
+          y: 0,
+        };
+      } else if (p <= 0.50) {
+        // Section 1 (0.25: Left) -> Section 2 (0.50: Right)
+        const t = smoothstep((p - 0.25) / 0.25);
+        return {
+          x: lerp(-ampX, ampX, t),
+          y: 0,
+        };
+      } else if (p <= 0.75) {
+        // Section 2 (0.50: Right) -> Section 3 (0.75: Left)
+        const t = smoothstep((p - 0.50) / 0.25);
+        return {
+          x: lerp(ampX, -ampX, t),
+          y: 0,
+        };
+      } else {
+        // Section 3 (0.75: Left) -> Section 4 (1.00: Center & Bottom 50%)
+        const t = smoothstep((p - 0.75) / 0.25);
+        return {
+          x: lerp(-ampX, 0, t),
+          y: lerp(0, bottomY, t),
+        };
+      }
+    };
+
+    let currentX = getTargetPosition(scrollProgressRef.current, width).x;
+    let currentY = getTargetPosition(scrollProgressRef.current, width).y;
+
+    // 14. Animation Render Loop
     let animationFrameId: number;
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
       const elapsed = performance.now() * 0.001;
 
-      // Earth & Pins Auto-Rotation
+      // Continuous Auto-Rotation:
+      // Always rotates around the center of the sphere non-stop!
       if (sceneRef.current?.isAutoRotating) {
         earthMesh.rotation.y += 0.0012;
         hotspotGroup.rotation.y += 0.0012;
         primaryBeaconGroup.rotation.y += 0.0012;
       }
 
-      // Orbital lime ring gentle slow breathing & tilt wobble
+      // Drag inertia momentum decay (matching OrbitControls feel)
+      if (!isPointerDown) {
+        dragVelocity.x *= 0.95;
+        dragVelocity.y *= 0.95;
+        if (Math.abs(dragVelocity.x) > 0.00005) {
+          earthMesh.rotation.y += dragVelocity.x;
+          hotspotGroup.rotation.y += dragVelocity.x;
+          primaryBeaconGroup.rotation.y += dragVelocity.x;
+        }
+        if (Math.abs(dragVelocity.y) > 0.00005) {
+          earthGroup.rotation.x = Math.max(
+            -0.45,
+            Math.min(0.45, earthGroup.rotation.x + dragVelocity.y)
+          );
+        }
+      }
+
+      // Orbital lime ring gentle wobble
       if (orbitRing) {
         orbitRing.rotation.y += 0.0004;
       }
@@ -573,16 +602,24 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
         ring.material.opacity = Math.max(0, (1 - progress) * 0.75);
       });
 
-      controls.update();
+      // Smoothly move globe in zig-zag 3D path based on scroll progress
+      const target = getTargetPosition(scrollProgressRef.current, width);
+      currentX += (target.x - currentX) * 0.1;
+      currentY += (target.y - currentY) * 0.1;
+      earthGroup.position.set(currentX, currentY, 0);
+
       renderer.render(scene, camera);
     };
     animate();
 
     return () => {
       cancelAnimationFrame(animationFrameId);
+      domEl.removeEventListener('pointerdown', handlePointerDown);
+      domEl.removeEventListener('pointermove', handlePointerMoveDrag);
+      domEl.removeEventListener('pointerup', handlePointerUp);
+      domEl.removeEventListener('pointercancel', handlePointerUp);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('resize', handleResize);
-      controls.dispose();
       renderer.dispose();
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
@@ -596,9 +633,7 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     delay: introDelay = INTRO_TIMINGS.globe,
   } = animation;
 
-  // Fade the WebGL stage in with the rest of the intro. Kept as a bare effect
-  // (not useGSAP) to match how the rest of this component drives GSAP against
-  // Three.js objects, and because it must run once per mount only.
+  // Fade the WebGL stage in with the rest of the intro
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -627,7 +662,7 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     <div
       ref={containerRef}
       id="globe-container"
-      className={`fixed inset-0 z-0 cursor-grab active:cursor-grabbing ${className}`}
+      className={`fixed inset-0 z-0 pointer-events-auto cursor-grab active:cursor-grabbing select-none ${className}`}
     />
   );
 };

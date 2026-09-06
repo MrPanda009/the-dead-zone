@@ -53,7 +53,7 @@ export default function RootLayout({
       </head>
       <body
         suppressHydrationWarning
-        className="min-h-full flex flex-col bg-bg-base text-text-primary font-sans overflow-hidden select-none selection:bg-citron/30 selection:text-citron transition-colors duration-200"
+        className="min-h-full flex flex-col bg-bg-base text-text-primary font-sans overflow-x-hidden select-none selection:bg-citron/30 selection:text-citron transition-colors duration-200"
       >
         <AppProviders>{children}</AppProviders>
       </body>

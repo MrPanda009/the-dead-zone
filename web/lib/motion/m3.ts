@@ -4,15 +4,16 @@ import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { Flip } from 'gsap/Flip';
 import { CustomEase } from 'gsap/CustomEase';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 /**
  * Single registration point for the GSAP plugins the Material 3 motion system
- * needs. Importing this module anywhere guarantees `Flip` and `CustomEase` are
- * registered before any timeline references them.
+ * needs. Importing this module anywhere guarantees `Flip`, `CustomEase`, and
+ * `ScrollTrigger` are registered before any timeline references them.
  *
- * Both plugins ship inside the public `gsap` package (3.15) — no extra install.
+ * All plugins ship inside the public `gsap` package (3.15) — no extra install.
  */
-gsap.registerPlugin(useGSAP, Flip, CustomEase);
+gsap.registerPlugin(useGSAP, Flip, CustomEase, ScrollTrigger);
 
 /**
  * M3's `emphasized` curve is specified as two chained beziers, so a single CSS
@@ -63,4 +64,4 @@ export interface M3AnimationConfig {
   delay?: number;
 }
 
-export { gsap, Flip, CustomEase, useGSAP };
+export { gsap, Flip, CustomEase, ScrollTrigger, useGSAP };
