@@ -33,9 +33,13 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${plusJakarta.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable} dark h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-bg-base text-text-primary font-sans overflow-hidden select-none selection:bg-citron/30 selection:text-citron">
+      <body
+        suppressHydrationWarning
+        className="min-h-full flex flex-col bg-bg-base text-text-primary font-sans overflow-hidden select-none selection:bg-citron/30 selection:text-citron"
+      >
         {children}
       </body>
     </html>

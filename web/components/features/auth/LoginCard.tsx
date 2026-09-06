@@ -1,21 +1,31 @@
 'use client';
 
 import React, { useRef } from 'react';
+import Link from 'next/link';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 
 export interface LoginCardProps {
-  /** Callback when user clicks "Return to Overview" */
-  onBackToOverview: () => void;
-  /** Callback when user logs in as a Government Official */
-  onLoginGov: () => void;
-  /** Callback when user logs in as a Normal User (Citizen) */
-  onLoginCitizen: () => void;
+  /** Target link for returning to overview (default '/') */
+  overviewHref?: string;
+  /** Target link for Government Official login (default '/gov') */
+  govHref?: string;
+  /** Target link for Citizen Portal (default '/stories') */
+  citizenHref?: string;
+  /** Optional callback when user clicks "Return to Overview" */
+  onBackToOverview?: () => void;
+  /** Optional callback when user logs in as a Government Official */
+  onLoginGov?: () => void;
+  /** Optional callback when user logs in as a Normal User (Citizen) */
+  onLoginCitizen?: () => void;
   /** Custom root className */
   className?: string;
 }
 
 export const LoginCard: React.FC<LoginCardProps> = ({
+  overviewHref = '/',
+  govHref = '/gov',
+  citizenHref = '/stories',
   onBackToOverview,
   onLoginGov,
   onLoginCitizen,
@@ -32,6 +42,20 @@ export const LoginCard: React.FC<LoginCardProps> = ({
     );
   }, { scope: containerRef });
 
+  const handleGovClick = (e: React.MouseEvent) => {
+    if (onLoginGov) {
+      e.preventDefault();
+      onLoginGov();
+    }
+  };
+
+  const handleCitizenClick = (e: React.MouseEvent) => {
+    if (onLoginCitizen) {
+      e.preventDefault();
+      onLoginCitizen();
+    }
+  };
+
   return (
     <div
       ref={containerRef}
@@ -43,14 +67,14 @@ export const LoginCard: React.FC<LoginCardProps> = ({
           <span className="w-2 h-2 rounded-full bg-citron animate-ping" />
           <span>SETU-DRR :: SECURE DISASTER INTELLIGENCE PORTAL</span>
         </span>
-        <button
+        <Link
+          href={overviewHref}
           onClick={onBackToOverview}
-          type="button"
           className="text-xs font-mono text-text-muted hover:text-text-primary transition-colors flex items-center gap-1.5 cursor-pointer py-1 px-2.5 rounded-lg hover:bg-white/5"
         >
           <span className="material-symbols-outlined text-sm">arrow_back</span>
           <span>Overview</span>
-        </button>
+        </Link>
       </div>
 
       {/* Title & Subtitle */}
@@ -66,10 +90,10 @@ export const LoginCard: React.FC<LoginCardProps> = ({
       {/* Two Dedicated Login Buttons / Action Pathways */}
       <div className="grid grid-cols-1 gap-4">
         {/* 1. GOVERNMENT OFFICIALS LOGIN BUTTON */}
-        <button
-          type="button"
-          onClick={onLoginGov}
-          className="group text-left p-5 sm:p-6 rounded-2xl bg-[#162522]/80 hover:bg-[#162522] border border-[#a3e635]/40 hover:border-[#a3e635] shadow-lg transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer relative overflow-hidden"
+        <Link
+          href={govHref}
+          onClick={handleGovClick}
+          className="group text-left p-5 sm:p-6 rounded-2xl bg-[#162522]/80 hover:bg-[#162522] border border-[#a3e635]/40 hover:border-[#a3e635] shadow-lg transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer relative overflow-hidden block"
         >
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-start gap-4">
@@ -96,13 +120,13 @@ export const LoginCard: React.FC<LoginCardProps> = ({
               arrow_forward
             </span>
           </div>
-        </button>
+        </Link>
 
         {/* 2. NORMAL USERS / CITIZEN LOGIN BUTTON */}
-        <button
-          type="button"
-          onClick={onLoginCitizen}
-          className="group text-left p-5 sm:p-6 rounded-2xl bg-black/40 hover:bg-black/60 border border-white/15 hover:border-[#a3e635]/70 shadow-lg transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer relative overflow-hidden"
+        <Link
+          href={citizenHref}
+          onClick={handleCitizenClick}
+          className="group text-left p-5 sm:p-6 rounded-2xl bg-black/40 hover:bg-black/60 border border-white/15 hover:border-[#a3e635]/70 shadow-lg transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer relative overflow-hidden block"
         >
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-start gap-4">
@@ -129,7 +153,7 @@ export const LoginCard: React.FC<LoginCardProps> = ({
               arrow_forward
             </span>
           </div>
-        </button>
+        </Link>
       </div>
 
       {/* Footer Security Notice */}

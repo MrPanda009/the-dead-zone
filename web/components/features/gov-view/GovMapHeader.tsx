@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 
 export interface GovMapHeaderProps {
   /** Current theme */
@@ -15,9 +16,15 @@ export interface GovMapHeaderProps {
   onToggleExplainDrawer: () => void;
   /** Whether the explain drawer is open */
   isExplainDrawerOpen: boolean;
-  /** Callback to switch to Public Citizen Portal */
+  /** Target link for switching to Citizen Stories Portal (default '/stories') */
+  storiesHref?: string;
+  /** Target link for returning to landing overview (default '/') */
+  overviewHref?: string;
+  /** Target link for opening the 3-panel command workspace (default '/workspace') */
+  workspaceHref?: string;
+  /** Optional callback to switch to Public Citizen Portal */
   onSwitchToPublicPortal?: () => void;
-  /** Callback to return to landing overview */
+  /** Optional callback to return to landing overview */
   onBackToOverview?: () => void;
   /** Custom root className */
   className?: string;
@@ -39,6 +46,9 @@ export const GovMapHeader: React.FC<GovMapHeaderProps> = ({
   onSelectStage,
   onToggleExplainDrawer,
   isExplainDrawerOpen,
+  storiesHref = '/stories',
+  overviewHref = '/',
+  workspaceHref = '/workspace',
   onSwitchToPublicPortal,
   onBackToOverview,
   className = '',
@@ -127,8 +137,22 @@ export const GovMapHeader: React.FC<GovMapHeaderProps> = ({
           <span className="hidden sm:inline">Explained</span>
         </button>
 
+        {/* Open Operational Decision Workspace */}
+        <Link
+          href={workspaceHref}
+          className={`px-3 py-1.5 rounded-xl border font-mono text-xs flex items-center gap-1.5 transition-all cursor-pointer backdrop-blur-md ${
+            isDarkTheme
+              ? 'bg-citron/15 hover:bg-citron/25 border-citron/40 text-citron font-semibold'
+              : 'bg-[#162522]/10 hover:bg-[#162522]/20 border-[#162522]/30 text-[#162522] font-semibold'
+          }`}
+          title="Open NDRF Triage & Risk Dossier Workspace"
+        >
+          <span className="material-symbols-outlined text-sm">dashboard</span>
+          <span>Workspace</span>
+        </Link>
+
         {/* Switch to Citizen Stories Portal */}
-        {onSwitchToPublicPortal && (
+        {onSwitchToPublicPortal ? (
           <button
             type="button"
             onClick={onSwitchToPublicPortal}
@@ -141,10 +165,22 @@ export const GovMapHeader: React.FC<GovMapHeaderProps> = ({
             <span className="material-symbols-outlined text-sm">explore</span>
             <span>Citizen Stories</span>
           </button>
+        ) : (
+          <Link
+            href={storiesHref}
+            className={`px-3 py-1.5 rounded-xl border font-mono text-xs flex items-center gap-1.5 transition-all cursor-pointer backdrop-blur-md ${
+              isDarkTheme
+                ? 'bg-[#143d2c]/80 hover:bg-[#143d2c] border-[#a3e635]/40 text-[#a3e635]'
+                : 'bg-[#22543d]/10 hover:bg-[#22543d]/20 border-[#22543d]/30 text-[#22543d]'
+            }`}
+          >
+            <span className="material-symbols-outlined text-sm">explore</span>
+            <span>Citizen Stories</span>
+          </Link>
         )}
 
         {/* Overview / Back */}
-        {onBackToOverview && (
+        {onBackToOverview ? (
           <button
             type="button"
             onClick={onBackToOverview}
@@ -157,6 +193,18 @@ export const GovMapHeader: React.FC<GovMapHeaderProps> = ({
           >
             <span className="material-symbols-outlined text-base">logout</span>
           </button>
+        ) : (
+          <Link
+            href={overviewHref}
+            className={`p-1.5 rounded-xl border transition-colors cursor-pointer backdrop-blur-md ${
+              isDarkTheme
+                ? 'bg-white/10 hover:bg-white/20 border-white/20 text-cream'
+                : 'bg-[#162522]/10 hover:bg-[#162522]/20 border-[#162522]/20 text-[#162522]'
+            }`}
+            title="Return to Overview"
+          >
+            <span className="material-symbols-outlined text-base">logout</span>
+          </Link>
         )}
       </div>
     </header>

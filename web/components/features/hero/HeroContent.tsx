@@ -1,10 +1,13 @@
 'use client';
 
 import React, { useRef } from 'react';
+import Link from 'next/link';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 
 export interface HeroContentProps {
+  /** Target link for the command portal (default '/login') */
+  portalHref?: string;
   /** Callback to reveal the login / command portal */
   onEnterPortal?: () => void;
   /** Custom root className */
@@ -12,6 +15,7 @@ export interface HeroContentProps {
 }
 
 export const HeroContent: React.FC<HeroContentProps> = ({
+  portalHref = '/login',
   onEnterPortal,
   className = '',
 }) => {
@@ -96,13 +100,14 @@ export const HeroContent: React.FC<HeroContentProps> = ({
 
         {/* Minimalist Solid Citron Action Button (Reference Image 1 - Flat, Zero Gradients) */}
         <div className="hero-cta pointer-events-auto flex items-center space-x-4">
-          <button
+          <Link
+            href={portalHref || '/login'}
             onClick={onEnterPortal}
-            className="btn-citron px-7 py-3.5 rounded-full font-display text-sm tracking-wide flex items-center space-x-2 cursor-pointer transition-transform hover:scale-105 active:scale-95"
+            className="btn-citron px-7 py-3.5 rounded-full font-display text-sm tracking-wide flex items-center space-x-2 cursor-pointer transition-transform hover:scale-105 active:scale-95 text-forest-dark font-bold"
           >
             <span>Access Command Portal</span>
             <span className="material-symbols-outlined text-base font-bold">arrow_forward</span>
-          </button>
+          </Link>
         </div>
 
       </div>

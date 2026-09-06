@@ -1,18 +1,20 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 export interface NavRailProps {
   /** Callback for Global Overview click */
-  onGlobalOverviewClick: () => void;
+  onGlobalOverviewClick?: () => void;
   /** Callback for Hazard Map click */
-  onHazardMapClick: () => void;
+  onHazardMapClick?: () => void;
   /** Callback for Habitations & Risk click */
-  onHabitationsClick: () => void;
+  onHabitationsClick?: () => void;
   /** Callback for Relocation Sites click */
-  onRelocationClick: () => void;
+  onRelocationClick?: () => void;
   /** Callback for Sensor Alerts click */
-  onSensorAlertsClick: () => void;
+  onSensorAlertsClick?: () => void;
   /** Custom root className */
   className?: string;
 }
@@ -25,43 +27,122 @@ export const NavRail: React.FC<NavRailProps> = ({
   onSensorAlertsClick,
   className = '',
 }) => {
+  const pathname = usePathname();
+
   return (
     <aside
       id="app-aside"
       className={`fixed left-0 top-16 bottom-0 w-16 border-r border-white/[0.08] bg-forest-dark/60 backdrop-blur-xl z-30 hidden sm:flex flex-col items-center py-5 space-y-4 ${className}`}
     >
-      <button
-        onClick={onGlobalOverviewClick}
-        title="Global Overview"
-        className="w-10 h-10 rounded-xl bg-citron/15 text-citron border border-citron/30 flex items-center justify-center transition-all hover:scale-105 cursor-pointer"
-      >
-        <span className="material-symbols-outlined text-xl">travel_explore</span>
-      </button>
+      {/* 1. Global Overview */}
+      {onGlobalOverviewClick ? (
+        <button
+          onClick={onGlobalOverviewClick}
+          title="Global Overview"
+          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:scale-105 cursor-pointer ${
+            pathname === '/'
+              ? 'bg-citron/15 text-citron border border-citron/30'
+              : 'text-text-muted hover:text-text-primary hover:bg-white/5'
+          }`}
+        >
+          <span className="material-symbols-outlined text-xl">travel_explore</span>
+        </button>
+      ) : (
+        <Link
+          href="/"
+          title="Global Overview"
+          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:scale-105 cursor-pointer ${
+            pathname === '/'
+              ? 'bg-citron/15 text-citron border border-citron/30'
+              : 'text-text-muted hover:text-text-primary hover:bg-white/5'
+          }`}
+        >
+          <span className="material-symbols-outlined text-xl">travel_explore</span>
+        </Link>
+      )}
 
-      <button
-        onClick={onHazardMapClick}
-        title="Hazard Map"
-        className="w-10 h-10 rounded-xl text-text-muted hover:text-text-primary hover:bg-white/5 flex items-center justify-center transition-all hover:scale-105 cursor-pointer"
-      >
-        <span className="material-symbols-outlined text-xl">map</span>
-      </button>
+      {/* 2. Operational Decision Workspace */}
+      {onHazardMapClick ? (
+        <button
+          onClick={onHazardMapClick}
+          title="SETU-DRR Workspace"
+          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:scale-105 cursor-pointer ${
+            pathname === '/workspace'
+              ? 'bg-citron/15 text-citron border border-citron/30'
+              : 'text-text-muted hover:text-text-primary hover:bg-white/5'
+          }`}
+        >
+          <span className="material-symbols-outlined text-xl">map</span>
+        </button>
+      ) : (
+        <Link
+          href="/workspace"
+          title="SETU-DRR Workspace"
+          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:scale-105 cursor-pointer ${
+            pathname === '/workspace'
+              ? 'bg-citron/15 text-citron border border-citron/30'
+              : 'text-text-muted hover:text-text-primary hover:bg-white/5'
+          }`}
+        >
+          <span className="material-symbols-outlined text-xl">map</span>
+        </Link>
+      )}
 
-      <button
-        onClick={onHabitationsClick}
-        title="Habitations & Risk"
-        className="w-10 h-10 rounded-xl text-text-muted hover:text-text-primary hover:bg-white/5 flex items-center justify-center transition-all hover:scale-105 cursor-pointer"
-      >
-        <span className="material-symbols-outlined text-xl">home_pin</span>
-      </button>
+      {/* 3. Hex Simulation / Gov View */}
+      {onHabitationsClick ? (
+        <button
+          onClick={onHabitationsClick}
+          title="Hex Simulation"
+          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:scale-105 cursor-pointer ${
+            pathname === '/gov'
+              ? 'bg-citron/15 text-citron border border-citron/30'
+              : 'text-text-muted hover:text-text-primary hover:bg-white/5'
+          }`}
+        >
+          <span className="material-symbols-outlined text-xl">hexagon</span>
+        </button>
+      ) : (
+        <Link
+          href="/gov"
+          title="Hex Simulation"
+          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:scale-105 cursor-pointer ${
+            pathname === '/gov'
+              ? 'bg-citron/15 text-citron border border-citron/30'
+              : 'text-text-muted hover:text-text-primary hover:bg-white/5'
+          }`}
+        >
+          <span className="material-symbols-outlined text-xl">hexagon</span>
+        </Link>
+      )}
 
-      <button
-        onClick={onRelocationClick}
-        title="Relocation Sites"
-        className="w-10 h-10 rounded-xl text-text-muted hover:text-text-primary hover:bg-white/5 flex items-center justify-center transition-all hover:scale-105 cursor-pointer"
-      >
-        <span className="material-symbols-outlined text-xl">moving</span>
-      </button>
+      {/* 4. Citizen Stories */}
+      {onRelocationClick ? (
+        <button
+          onClick={onRelocationClick}
+          title="Citizen Stories"
+          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:scale-105 cursor-pointer ${
+            pathname === '/stories'
+              ? 'bg-citron/15 text-citron border border-citron/30'
+              : 'text-text-muted hover:text-text-primary hover:bg-white/5'
+          }`}
+        >
+          <span className="material-symbols-outlined text-xl">explore</span>
+        </button>
+      ) : (
+        <Link
+          href="/stories"
+          title="Citizen Stories"
+          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:scale-105 cursor-pointer ${
+            pathname === '/stories'
+              ? 'bg-citron/15 text-citron border border-citron/30'
+              : 'text-text-muted hover:text-text-primary hover:bg-white/5'
+          }`}
+        >
+          <span className="material-symbols-outlined text-xl">explore</span>
+        </Link>
+      )}
 
+      {/* 5. Sensor Alerts */}
       <button
         onClick={onSensorAlertsClick}
         title="Sensor Alerts"

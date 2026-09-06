@@ -8,6 +8,12 @@ import { GovAnimationDrawer } from './GovAnimationDrawer';
 import { DEMO_HABITATIONS } from '../dashboard/demoData';
 
 export interface GovHexMapPageProps {
+  /** Target link for returning to landing overview (default '/') */
+  overviewHref?: string;
+  /** Target link for switching to Citizen Stories Portal (default '/stories') */
+  storiesHref?: string;
+  /** Target link for opening the 3-panel command workspace (default '/workspace') */
+  workspaceHref?: string;
   /** Callback to return to landing overview */
   onBackToOverview?: () => void;
   /** Callback to switch to Public Citizen Portal */
@@ -19,6 +25,9 @@ export interface GovHexMapPageProps {
 const STAGE_TIMES = [1.0, 3.5, 6.0, 10.0, 14.0, 17.0];
 
 export const GovHexMapPage: React.FC<GovHexMapPageProps> = ({
+  overviewHref = '/',
+  storiesHref = '/stories',
+  workspaceHref = '/workspace',
   onBackToOverview,
   onSwitchToPublicPortal,
   className = '',
@@ -66,6 +75,9 @@ export const GovHexMapPage: React.FC<GovHexMapPageProps> = ({
         onSelectStage={handleSelectStage}
         isExplainDrawerOpen={isExplainDrawerOpen}
         onToggleExplainDrawer={() => setIsExplainDrawerOpen((prev) => !prev)}
+        overviewHref={overviewHref}
+        storiesHref={storiesHref}
+        workspaceHref={workspaceHref}
         onSwitchToPublicPortal={onSwitchToPublicPortal}
         onBackToOverview={onBackToOverview}
         className="relative z-20"

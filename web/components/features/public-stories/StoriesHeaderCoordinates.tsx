@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useRef } from 'react';
+import Link from 'next/link';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 
@@ -9,9 +10,13 @@ export interface StoriesHeaderCoordinatesProps {
   latitude: string;
   /** Longitude display string */
   longitude: string;
-  /** Callback to switch to Government Official Portal */
+  /** Target link for Government Official portal (default '/gov') */
+  govHref?: string;
+  /** Target link for returning to landing overview (default '/') */
+  overviewHref?: string;
+  /** Optional callback to switch to Government Official Portal */
   onSwitchToGovPortal?: () => void;
-  /** Callback to return to landing overview */
+  /** Optional callback to return to landing overview */
   onBackToOverview?: () => void;
   /** Custom root className */
   className?: string;
@@ -20,6 +25,8 @@ export interface StoriesHeaderCoordinatesProps {
 export const StoriesHeaderCoordinates: React.FC<StoriesHeaderCoordinatesProps> = ({
   latitude = 'N 28° 36\' 23.047"',
   longitude = 'E 77° 12\' 23.906"',
+  govHref = '/gov',
+  overviewHref = '/',
   onSwitchToGovPortal,
   onBackToOverview,
   className = '',
@@ -41,7 +48,7 @@ export const StoriesHeaderCoordinates: React.FC<StoriesHeaderCoordinatesProps> =
     >
       {/* Left Action Buttons: Overview & Switch to Gov */}
       <div className="flex items-center gap-2 sm:gap-3">
-        {onBackToOverview && (
+        {onBackToOverview ? (
           <button
             type="button"
             onClick={onBackToOverview}
@@ -50,9 +57,17 @@ export const StoriesHeaderCoordinates: React.FC<StoriesHeaderCoordinatesProps> =
             <span className="material-symbols-outlined text-sm">arrow_back</span>
             <span>Overview</span>
           </button>
+        ) : (
+          <Link
+            href={overviewHref}
+            className="text-xs font-mono tracking-wider text-cream/70 hover:text-cream px-3 py-1.5 rounded-lg bg-black/20 hover:bg-black/40 border border-cream/10 transition-all flex items-center gap-1.5 cursor-pointer backdrop-blur-md"
+          >
+            <span className="material-symbols-outlined text-sm">arrow_back</span>
+            <span>Overview</span>
+          </Link>
         )}
 
-        {onSwitchToGovPortal && (
+        {onSwitchToGovPortal ? (
           <button
             type="button"
             onClick={onSwitchToGovPortal}
@@ -61,6 +76,14 @@ export const StoriesHeaderCoordinates: React.FC<StoriesHeaderCoordinatesProps> =
             <span className="material-symbols-outlined text-sm">verified_user</span>
             <span>Official Hex Map</span>
           </button>
+        ) : (
+          <Link
+            href={govHref}
+            className="text-xs font-mono tracking-wider text-cream/80 hover:text-cream px-3 py-1.5 rounded-lg bg-[#162522]/70 hover:bg-[#162522] border border-[#a3e635]/30 hover:border-[#a3e635] text-[#a3e635] transition-all flex items-center gap-1.5 cursor-pointer shadow-sm backdrop-blur-md"
+          >
+            <span className="material-symbols-outlined text-sm">verified_user</span>
+            <span>Official Hex Map</span>
+          </Link>
         )}
       </div>
 

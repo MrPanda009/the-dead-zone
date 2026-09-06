@@ -9,6 +9,10 @@ import { IndiaStoriesMap } from './IndiaStoriesMap';
 import { HazardSlideshowModal } from './HazardSlideshowModal';
 
 export interface PublicStoriesPageProps {
+  /** Target link for returning to landing page / overview (default '/') */
+  overviewHref?: string;
+  /** Target link for switching to Government Official Portal (default '/gov') */
+  govHref?: string;
   /** Callback to return to landing page / overview */
   onBackToOverview?: () => void;
   /** Callback to switch to Government Official Portal */
@@ -18,6 +22,8 @@ export interface PublicStoriesPageProps {
 }
 
 export const PublicStoriesPage: React.FC<PublicStoriesPageProps> = ({
+  overviewHref = '/',
+  govHref = '/gov',
   onBackToOverview,
   onSwitchToGovPortal,
   className = '',
@@ -40,6 +46,8 @@ export const PublicStoriesPage: React.FC<PublicStoriesPageProps> = ({
         <StoriesHeaderCoordinates
           latitude={activeStory.coordinates.display.lat}
           longitude={activeStory.coordinates.display.lng}
+          overviewHref={overviewHref}
+          govHref={govHref}
           onBackToOverview={onBackToOverview}
           onSwitchToGovPortal={onSwitchToGovPortal}
         />

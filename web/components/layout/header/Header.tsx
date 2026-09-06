@@ -1,11 +1,16 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 
 export interface HeaderProps {
   /** Active view mode */
   viewMode?: 'landing' | 'login';
-  /** Toggle between Landing and Login view */
+  /** Target link for the brand pill (default '/') */
+  homeHref?: string;
+  /** Target link for portal access (default '/login') */
+  portalHref?: string;
+  /** Optional callback for backward compatibility */
   onToggleViewMode?: (mode: 'landing' | 'login') => void;
   /** Whether radar sweep is active */
   isRadarActive?: boolean;
@@ -21,6 +26,8 @@ export interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({
   viewMode = 'landing',
+  homeHref = '/',
+  portalHref = '/login',
   onToggleViewMode,
   isRadarActive = true,
   onToggleRadar,
@@ -35,7 +42,8 @@ export const Header: React.FC<HeaderProps> = ({
     >
       {/* Top Left: Elsa Nills / Brand Pill Style (Matching Reference Image 1) */}
       <div className="pointer-events-auto">
-        <div
+        <Link
+          href={homeHref}
           onClick={() => onToggleViewMode && onToggleViewMode('landing')}
           className="capsule-pill px-4 py-2 rounded-full flex items-center space-x-2 text-xs font-mono text-text-secondary cursor-pointer hover:bg-white/10 transition-all select-none"
         >
@@ -43,16 +51,23 @@ export const Header: React.FC<HeaderProps> = ({
           <span className="text-text-muted">::</span>
           <span className="font-semibold text-text-primary tracking-wider">SETU-DRR</span>
           <span className="w-1.5 h-1.5 rounded-full bg-citron animate-ping ml-1" />
-        </div>
+        </Link>
       </div>
 
       {/* Center Top Capsule Pill (Matching Reference Image 2) */}
       <div className="pointer-events-auto hidden md:block">
-        <div className="capsule-pill px-10 py-2.5 rounded-full shadow-lg border border-white/15">
-          <span className="font-display text-sm font-bold tracking-[0.25em] text-text-primary uppercase select-none">
+        <Link
+          href="/workspace"
+          className="capsule-pill px-10 py-2.5 rounded-full shadow-lg border border-white/15 hover:border-citron/40 transition-all flex items-center gap-2 group"
+          title="Open SETU-DRR Command Workspace"
+        >
+          <span className="font-display text-sm font-bold tracking-[0.25em] text-text-primary uppercase select-none group-hover:text-citron transition-colors">
             SETU-DRR
           </span>
-        </div>
+          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/10 text-text-muted group-hover:text-citron group-hover:bg-citron/15 transition-colors">
+            WORKSPACE
+          </span>
+        </Link>
       </div>
 
       {/* Right Controls Pill */}
@@ -81,7 +96,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         )}
 
-        {onToggleViewMode && (
+        {onToggleViewMode ? (
           <button
             onClick={() => onToggleViewMode(viewMode === 'landing' ? 'login' : 'landing')}
             className="capsule-pill px-4 py-2 rounded-full text-xs font-mono font-medium text-text-secondary hover:text-text-primary hover:bg-white/10 transition-all cursor-pointer flex items-center gap-1.5"
@@ -91,6 +106,16 @@ export const Header: React.FC<HeaderProps> = ({
             </span>
             <span>{viewMode === 'landing' ? 'Portal Access' : 'Earth View'}</span>
           </button>
+        ) : (
+          <Link
+            href={viewMode === 'landing' ? portalHref : homeHref}
+            className="capsule-pill px-4 py-2 rounded-full text-xs font-mono font-medium text-text-secondary hover:text-text-primary hover:bg-white/10 transition-all cursor-pointer flex items-center gap-1.5"
+          >
+            <span className="material-symbols-outlined text-sm">
+              {viewMode === 'landing' ? 'login' : 'public'}
+            </span>
+            <span>{viewMode === 'landing' ? 'Portal Access' : 'Earth View'}</span>
+          </Link>
         )}
       </div>
     </header>
