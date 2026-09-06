@@ -16,6 +16,7 @@ export const DossierSkeleton = ({ rows = 6, className = '' }: DossierSkeletonPro
     <div className="grid grid-cols-2 gap-2">
       <MetricCardSkeleton />
       <MetricCardSkeleton />
+      <MetricCardSkeleton className="col-span-2" />
     </div>
     <div className="flex flex-col gap-2.5">
       {Array.from({ length: rows }).map((_, index) => (

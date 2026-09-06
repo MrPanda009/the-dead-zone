@@ -15,6 +15,7 @@ import pandas as pd
 import geopandas as gpd
 from shapely.geometry import Polygon
 import exactextract
+import rasterio
 
 try:
     from .aoi import BARPETA_BBOX_WGS84
@@ -194,6 +195,25 @@ def compute_zonal_statistics(
         res_df["hard_zero_fraction"] = hz_stats["mean"].astype("float32")
     else:
         res_df["hard_zero_fraction"] = np.float32(0.0)
+
+    # 8. Population Count (sum of people per pixel within cell)
+    if "population" in raster_paths and raster_paths["population"]:
+        pop_path = str(raster_paths["population"])
+        with rasterio.open(pop_path) as pop_src:
+            pop_crs = str(pop_src.crs)
+
+        # Match CRS: use native EPSG:4326 cells if raster is in EPSG:4326 to preserve counts
+        if "4326" in pop_crs:
+            pop_features = cells_gdf
+        elif pop_crs == str(cells_proj.crs):
+            pop_features = cells_proj
+        else:
+            pop_features = cells_gdf.to_crs(pop_crs)
+
+        pop_stats = exactextract.exact_extract(pop_path, pop_features, ["sum"], output="pandas")
+        res_df["population"] = np.nan_to_num(pop_stats["sum"].to_numpy(), nan=0.0).round().astype("float32")
+    else:
+        res_df["population"] = np.float32(0.0)
 
     return res_df
 

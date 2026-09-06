@@ -70,6 +70,7 @@ except (ImportError, ValueError):
 INTERIM_SUSC_DIR = WORKSPACE_ROOT / "data" / "interim" / "susceptibility"
 INTERIM_FREQ_DIR = WORKSPACE_ROOT / "data" / "interim" / "frequency"
 INTERIM_HAND_DIR = WORKSPACE_ROOT / "data" / "interim" / "hand"
+INTERIM_EXPOSURE_DIR = WORKSPACE_ROOT / "data" / "interim" / "exposure"
 
 INPUT_RASTERS = {
     "susceptibility": INTERIM_SUSC_DIR / "barpeta_flood_susceptibility.tif",
@@ -79,6 +80,7 @@ INPUT_RASTERS = {
     "slope": INTERIM_HAND_DIR / "barpeta_slope.tif",
     "cropland": INTERIM_SUSC_DIR / "barpeta_cropland_fraction.tif",
     "hard_zero": INTERIM_HAND_DIR / "barpeta_hard_zero_mask.tif",
+    "population": INTERIM_EXPOSURE_DIR / "barpeta_worldpop_100m.tif",
 }
 
 # Output directories
@@ -108,6 +110,7 @@ def copy_final_rasters(dest_dir: Path) -> dict[str, Path]:
         "hand": ("hand.tif", INPUT_RASTERS["hand"]),
         "slope": ("slope.tif", INPUT_RASTERS["slope"]),
         "cropland": ("cropland_fraction.tif", INPUT_RASTERS["cropland"]),
+        "population": ("population.tif", INPUT_RASTERS["population"]),
     }
     copied = {}
     for key, (filename, src_path) in mapping.items():
@@ -160,6 +163,7 @@ def load_database(stats_gdf: gpd.GeoDataFrame) -> dict:
             print(f"  [+] Upserting {len(stats_gdf)} cells into grid_cell...")
             grid_data = []
             for _, row in stats_gdf.iterrows():
+                pop_val = float(row["population"]) if "population" in row and not np.isnan(row["population"]) else 0.0
                 grid_data.append((
                     int(row["h3_int"]),
                     8,
@@ -167,7 +171,7 @@ def load_database(stats_gdf: gpd.GeoDataFrame) -> dict:
                     float(row["centroid_lon"]),
                     float(row["centroid_lat"]),
                     row["geometry"].wkt,
-                    0.0,
+                    pop_val,
                     0.0,
                     "barpeta-h3-res8-v1",
                 ))
@@ -184,7 +188,8 @@ def load_database(stats_gdf: gpd.GeoDataFrame) -> dict:
                 ON CONFLICT (h3) DO UPDATE SET
                     admin_id = COALESCE(grid_cell.admin_id, EXCLUDED.admin_id),
                     geom = EXCLUDED.geom,
-                    centroid = EXCLUDED.centroid;
+                    centroid = EXCLUDED.centroid,
+                    population = EXCLUDED.population;
             """, grid_data)
 
             # 4. Upsert hazard_static records
@@ -518,6 +523,8 @@ def main():
     print(f"  [+] Susceptibility Range: [{stats_gdf['susceptibility'].min():.4f}, {stats_gdf['susceptibility'].max():.4f}], Mean: {stats_gdf['susceptibility'].mean():.4f}")
     print(f"  [+] Confidence Range:     [{stats_gdf['confidence'].min():.4f}, {stats_gdf['confidence'].max():.4f}], Mean: {stats_gdf['confidence'].mean():.4f}")
     print(f"  [+] Cropland Frac Mean:   {stats_gdf['mean_cropland_fraction'].mean():.4f}")
+    if "population" in stats_gdf.columns:
+        print(f"  [+] Total District Population Sum: {stats_gdf['population'].sum():,.0f} citizens")
 
     # -----------------------------------------------------------------
     # 5. Export GeoParquet & Copy Rasters
