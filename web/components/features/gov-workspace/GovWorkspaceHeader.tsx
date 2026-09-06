@@ -9,6 +9,8 @@ import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { HAZARD_LABELS } from '@/lib/map/constants';
 import type { HazardType } from '@/lib/api/types';
 
+import { useAuth } from '@/lib/hooks/useAuth';
+
 export interface GovWorkspaceHeaderProps {
   viewMode: '3d' | 'gis';
   onViewModeChange: (mode: '3d' | 'gis') => void;
@@ -35,6 +37,11 @@ export const GovWorkspaceHeader: React.FC<GovWorkspaceHeaderProps> = ({
   className = '',
 }) => {
   const rootRef = useRef<HTMLElement>(null);
+  const { user, logout } = useAuth();
+
+  const displayName = user
+    ? `${user.full_name}${user.jurisdiction?.name ? ` · ${user.jurisdiction.name}` : ''}`
+    : officerId;
 
   useGSAP(() => {
     if (!rootRef.current) return;
@@ -143,11 +150,27 @@ export const GovWorkspaceHeader: React.FC<GovWorkspaceHeaderProps> = ({
         {/* Universal Theme Toggle */}
         <ThemeToggle />
 
-        {/* Officer Badge */}
-        <span className="hidden xl:inline-block text-[10px] font-mono text-text-muted border-l border-line pl-2.5">
-          {officerId}
+        {/* Officer Identity Badge */}
+        <span
+          className="hidden xl:inline-block text-[11px] font-mono text-text-secondary border-l border-line pl-2.5 max-w-[220px] truncate"
+          title={displayName}
+        >
+          {displayName}
         </span>
+
+        {/* Logout Action */}
+        {user && (
+          <button
+            onClick={() => logout()}
+            className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-mono text-text-muted hover:text-red-500 hover:bg-red-500/10 border border-line transition-colors cursor-pointer"
+            title="Log out of government workspace"
+          >
+            <span className="material-symbols-outlined text-sm">logout</span>
+            <span className="hidden md:inline">Logout</span>
+          </button>
+        )}
       </div>
     </header>
   );
 };
+

@@ -5,3 +5,10 @@ export type {
   ThemeContextValue,
   ThemeProviderProps,
 } from './ThemeProvider';
+
+export { AuthProvider, useAuth } from './AuthProvider';
+export type {
+  AuthContextValue,
+  AuthProviderProps,
+} from './AuthProvider';
+

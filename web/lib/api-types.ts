@@ -337,7 +337,7 @@ export interface paths {
         put?: never;
         /**
          * Authenticate user with email and password
-         * @description Verifies credentials using Argon2id, creates a secure server-side session, and sets an HTTP-only session cookie. Returns the safe authenticated identity.
+         * @description Verifies credentials using Argon2id, creates a secure server-side session, and sets an HTTP-only session cookie. Returns the safe authenticated identity. Protected by configurable sliding-window rate limiting.
          */
         post: operations["login_auth_login_post"];
         delete?: never;
@@ -397,7 +397,7 @@ export interface paths {
         put?: never;
         /**
          * Register a new civilian user
-         * @description Public self-registration for civilian users. Privileged roles (GOVERNMENT_OFFICIAL, RESCUE_OFFICER) cannot be selected and are strictly rejected.
+         * @description Public self-registration for civilian users. Privileged roles (GOVERNMENT_OFFICIAL, SYSTEM_ADMIN) cannot be selected and are strictly rejected.
          */
         post: operations["register_auth_register_post"];
         delete?: never;
@@ -445,7 +445,10 @@ export interface components {
             admin_id?: number | null;
             /** Admin Name */
             admin_name?: string | null;
-            /** Mhi Live */
+            /**
+             * Mhi Live
+             * @description Active live MHI in [0, 1].
+             */
             mhi_live: number;
             /**
              * Mhi Static
@@ -458,6 +461,13 @@ export interface components {
             trigger_source?: string | null;
             /** Valid At */
             valid_at?: string | null;
+            /**
+             * Age Hours
+             * @description Age of dynamic trigger observation in hours.
+             */
+            age_hours?: number | null;
+            /** @description Data quality / provenance classification. */
+            data_quality?: components["schemas"]["DataQuality"] | null;
             /**
              * Exposed Population
              * @default 0
@@ -969,7 +979,10 @@ export interface components {
             admin_id?: number | null;
             /** Admin Name */
             admin_name?: string | null;
-            /** Mhi Fcst */
+            /**
+             * Mhi Fcst
+             * @description Forecast MHI in [0, 1].
+             */
             mhi_fcst: number;
             /**
              * Mhi Static
@@ -986,6 +999,8 @@ export interface components {
             valid_at?: string | null;
             /** Horizon Hours */
             horizon_hours: number;
+            /** @description Data quality / provenance classification. */
+            data_quality?: components["schemas"]["DataQuality"] | null;
             /**
              * Exposed Population
              * @default 0
@@ -1144,7 +1159,7 @@ export interface components {
             dataset_version: string;
             /**
              * Data Quality
-             * @default observed
+             * @default synthetic
              */
             data_quality: string;
             /**
@@ -1630,7 +1645,7 @@ export interface components {
          * @description User identity roles for SETU-DRR authentication.
          * @enum {string}
          */
-        Role: "CIVILIAN" | "GOVERNMENT_OFFICIAL" | "RESCUE_OFFICER";
+        Role: "CIVILIAN" | "GOVERNMENT_OFFICIAL" | "SYSTEM_ADMIN";
         /**
          * ScenarioAllocationParams
          * @description Optional configuration for simulated allocation execution.
@@ -1775,7 +1790,7 @@ export interface components {
              * @default baseline-v1
              */
             model_version: string;
-            /** @default valid */
+            /** @default synthetic */
             data_quality: components["schemas"]["DataQuality"];
             /** Warnings */
             warnings?: string[];
@@ -1933,7 +1948,7 @@ export interface components {
              * @description Full name of user.
              */
             full_name: string;
-            /** @description User role (CIVILIAN, GOVERNMENT_OFFICIAL, RESCUE_OFFICER). */
+            /** @description User role (CIVILIAN, GOVERNMENT_OFFICIAL, SYSTEM_ADMIN). */
             role: components["schemas"]["Role"];
             /**
              * Is Active
@@ -3170,6 +3185,15 @@ export interface operations {
             };
             /** @description Validation Error - Request parameter or payload validation failed. */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too Many Requests - Rate limit exceeded. Please try again later. */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
