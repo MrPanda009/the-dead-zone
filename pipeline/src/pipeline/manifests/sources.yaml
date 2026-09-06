@@ -33,14 +33,6 @@ sources:
     role: absolute population counts
     licence: CC-BY-4.0
     attribution: "WorldPop India 100m Constrained (2020)"
-    fallback: landscan_global_2024
-    quota: { limit: null, window: null, calls_needed: null }
-
-  - id: landscan_global_2024
-    tier: A
-    role: fallback population counts
-    licence: ORNL Open Research / DOI 10.48690/1532445
-    attribution: "LandScan Global 2024, Oak Ridge National Laboratory"
     fallback: null
     quota: { limit: null, window: null, calls_needed: null }
 

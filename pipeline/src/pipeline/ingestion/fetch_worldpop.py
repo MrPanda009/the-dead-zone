@@ -31,8 +31,9 @@ RAW_WORLDPOP_DIR = REPO_ROOT / "data" / "raw" / "worldpop"
 DEFAULT_RAW_FILE = RAW_WORLDPOP_DIR / "ind_ppp_2020_constrained.tif"
 INTERIM_EXPOSURE_DIR = REPO_ROOT / "data" / "interim" / "exposure"
 DEFAULT_OUTPUT_FILE = INTERIM_EXPOSURE_DIR / "barpeta_worldpop_100m.tif"
-DEFAULT_DISTRICTS_SHP = REPO_ROOT / "2011_Dist.shp"
-DEFAULT_LANDSCAN_FILE = REPO_ROOT / "landscan-global-2024.tif"
+BOUNDARIES_DIR = REPO_ROOT / "data" / "raw" / "boundaries"
+DEFAULT_DISTRICTS_SHP = BOUNDARIES_DIR / "2011_Dist.shp"
+FALLBACK_DISTRICTS_SHP = REPO_ROOT / "2011_Dist.shp"
 
 
 def download_worldpop(
@@ -107,9 +108,10 @@ def crop_population_raster(
         raise FileNotFoundError(f"Source population raster not found: {source_raster}")
 
     shapes = None
-    if districts_shp.exists():
-        print(f"  [+] Loading district boundaries from {districts_shp.name}...")
-        districts = gpd.read_file(districts_shp)
+    target_shp = districts_shp if districts_shp.exists() else FALLBACK_DISTRICTS_SHP
+    if target_shp.exists():
+        print(f"  [+] Loading district boundaries from {target_shp.name}...")
+        districts = gpd.read_file(target_shp)
         matched = districts[districts["DISTRICT"].astype(str).str.lower() == district_name.lower()]
         if not matched.empty:
             shapes = matched.geometry.values
@@ -168,9 +170,10 @@ def main() -> None:
         help="Skip downloading and crop existing raw raster.",
     )
     parser.add_argument(
-        "--fallback-landscan",
-        action="store_true",
-        help="Use local landscan-global-2024.tif as source instead of downloading WorldPop.",
+        "--fallback-raster",
+        type=Path,
+        default=None,
+        help="Use local raster file instead of downloading WorldPop.",
     )
     parser.add_argument(
         "--district",
@@ -195,12 +198,12 @@ def main() -> None:
     print("🌍 SETU-DRR: WorldPop Population Ingestion Pipeline")
     print("=" * 60)
 
-    if args.fallback_landscan:
-        print("  [*] Mode: Fallback to LandScan Global 2024")
-        if not DEFAULT_LANDSCAN_FILE.exists():
-            print(f"  [✗] Error: {DEFAULT_LANDSCAN_FILE} not found!")
+    if args.fallback_raster:
+        print(f"  [*] Mode: Fallback to local raster: {args.fallback_raster}")
+        if not args.fallback_raster.exists():
+            print(f"  [✗] Error: {args.fallback_raster} not found!")
             sys.exit(1)
-        source_raster = DEFAULT_LANDSCAN_FILE
+        source_raster = args.fallback_raster
     else:
         if args.crop_only:
             print("  [*] Mode: Crop existing WorldPop raw raster")
