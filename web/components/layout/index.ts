@@ -12,3 +12,6 @@ export type { RightPanelProps } from './RightPanel';
 
 export { ThreePanelLayout } from './ThreePanelLayout';
 export type { ThreePanelLayoutProps } from './ThreePanelLayout';
+
+export * from './header';
+export * from './nav-rail';
