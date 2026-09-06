@@ -8,6 +8,14 @@ COMMON_ERROR_RESPONSES: dict[int, dict[str, Any]] = {
         "model": ErrorEnvelope,
         "description": "Bad Request - Invalid parameters or malformed input format.",
     },
+    401: {
+        "model": ErrorEnvelope,
+        "description": "Unauthenticated - Missing, invalid, expired, or revoked session cookie.",
+    },
+    403: {
+        "model": ErrorEnvelope,
+        "description": "Forbidden - Insufficient permissions or role.",
+    },
     404: {
         "model": ErrorEnvelope,
         "description": "Not Found - Requested resource, cell, or entity does not exist.",

@@ -116,3 +116,10 @@ class DataQuality(StrEnum):
     INVALID = "invalid"
     SYNTHETIC = "synthetic"
 
+
+class Role(StrEnum):
+    """User identity roles for SETU-DRR authentication."""
+    CIVILIAN = "CIVILIAN"
+    GOVERNMENT_OFFICIAL = "GOVERNMENT_OFFICIAL"
+    RESCUE_OFFICER = "RESCUE_OFFICER"
+

@@ -1017,7 +1017,7 @@
           "Candidate Sites & Capacity"
         ],
         "summary": "Recompute candidate site carrying capacity with overridden policy norms",
-        "description": "Simulates carrying capacity under modified policy parameters (e.g. plot area, LPCD, spare school/health capacity). Returns the baseline capacity, scenario capacity, net delta in supportable households, and augmented relief options.",
+        "description": "Simulates carrying capacity under modified policy parameters (e.g. plot area, LPCD, spare school/health capacity). Returns the baseline capacity, scenario capacity, net delta in supportable households, and augmented relief options. Requires authenticated user with 'capacity.recompute' permission (Government Official) and authorized jurisdiction scope.",
         "operationId": "recompute_site_capacity_sites__id__capacity_post",
         "parameters": [
           {
@@ -1052,6 +1052,26 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SiteCapacityOverrideResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated - Missing, invalid, expired, or revoked session cookie.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Insufficient permissions or role.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
             }
@@ -1441,7 +1461,7 @@
           "Relocation Planning & Allocation"
         ],
         "summary": "Solve optimal habitation-to-site relocation allocation via min-cost flow",
-        "description": "Executes exact min-cost flow optimization (Google OR-Tools) to assign vulnerable habitations to candidate relocation sites. Respects carrying capacity constraints (Day 5), maximizes composite suitability/priority benefit, minimizes distance penalty, and explicitly reports any village household group splits requiring social sign-off.",
+        "description": "Executes exact min-cost flow optimization (Google OR-Tools) to assign vulnerable habitations to candidate relocation sites. Respects carrying capacity constraints (Day 5), maximizes composite suitability/priority benefit, minimizes distance penalty, and explicitly reports any village household group splits requiring social sign-off. Requires authenticated user with 'allocation.run' permission (Government Official) and authorized jurisdiction scope.",
         "operationId": "generate_allocation_plan_plan_allocate_post",
         "requestBody": {
           "content": {
@@ -1461,6 +1481,26 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AllocationPlanResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated - Missing, invalid, expired, or revoked session cookie.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Insufficient permissions or role.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
             }
@@ -1504,7 +1544,7 @@
           "Scenario & Decision Analysis"
         ],
         "summary": "Evaluate hypothetical policy and hazard weight scenarios without mutating baseline data",
-        "description": "Executes a pure, stateless scenario evaluation over habitation baselines. Allows decision-makers to adjust hazard weights w_h and loss history amplifier gamma, recomputing priority scores, rank deltas, and triage tier shifts. Optionally simulates min-cost flow relocation allocation without modifying database records.",
+        "description": "Executes a pure, stateless scenario evaluation over habitation baselines. Allows decision-makers to adjust hazard weights w_h and loss history amplifier gamma, recomputing priority scores, rank deltas, and triage tier shifts. Optionally simulates min-cost flow relocation allocation without modifying database records. Requires authenticated user with 'scenario.run' permission (Government Official) and authorized jurisdiction scope.",
         "operationId": "evaluate_scenario_scenario_post",
         "requestBody": {
           "content": {
@@ -1524,6 +1564,26 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ScenarioResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated - Missing, invalid, expired, or revoked session cookie.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Insufficient permissions or role.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
             }
@@ -1550,6 +1610,214 @@
           },
           "503": {
             "description": "Service Unavailable - No valid serving version is active. Pipeline data is not ready.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": [
+          "Authentication & Identity"
+        ],
+        "summary": "Authenticate user with email and password",
+        "description": "Verifies credentials using Argon2id, creates a secure server-side session, and sets an HTTP-only session cookie. Returns the safe authenticated identity.",
+        "operationId": "login_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid parameters or malformed input format.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated - Missing, invalid, expired, or revoked session cookie.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error - Request parameter or payload validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error - An unexpected system or database error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "tags": [
+          "Authentication & Identity"
+        ],
+        "summary": "Get authenticated user identity",
+        "description": "Resolves the current authenticated user identity from the session cookie. Returns 401 if unauthenticated, expired, or revoked.",
+        "operationId": "get_me_auth_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated - Missing, invalid, expired, or revoked session cookie.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error - An unexpected system or database error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": [
+          "Authentication & Identity"
+        ],
+        "summary": "Revoke session and log out",
+        "description": "Revokes the active server-side session and clears the session cookie.",
+        "operationId": "logout_auth_logout_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogoutResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error - An unexpected system or database error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "tags": [
+          "Authentication & Identity"
+        ],
+        "summary": "Register a new civilian user",
+        "description": "Public self-registration for civilian users. Privileged roles (GOVERNMENT_OFFICIAL, RESCUE_OFFICER) cannot be selected and are strictly rejected.",
+        "operationId": "register_auth_register_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid parameters or malformed input format.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error - Request parameter or payload validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error - An unexpected system or database error occurred.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3449,6 +3717,88 @@
         "title": "HazardLayerSummaryDTO",
         "description": "One available static hazard layer (GET /hazard/layers)."
       },
+      "JurisdictionDTO": {
+        "properties": {
+          "admin_id": {
+            "type": "integer",
+            "title": "Admin Id",
+            "description": "Canonical administrative boundary ID (admin_boundary.id)."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Administrative boundary name (e.g. Wayanad, Kodagu)."
+          },
+          "level": {
+            "type": "string",
+            "title": "Level",
+            "description": "Administrative boundary level (e.g. district, state)."
+          },
+          "lgd_code": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lgd Code",
+            "description": "Local Government Directory (LGD) code."
+          }
+        },
+        "type": "object",
+        "required": [
+          "admin_id",
+          "name",
+          "level"
+        ],
+        "title": "JurisdictionDTO",
+        "description": "Authoritative administrative jurisdiction assignment."
+      },
+      "LoginRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+            "title": "Email",
+            "description": "User account email address.",
+            "examples": [
+              "officer@setu.gov.in"
+            ]
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Password",
+            "description": "Account password.",
+            "examples": [
+              "********"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "LoginRequest",
+        "description": "Request payload for user authentication."
+      },
+      "LogoutResponse": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "Status message.",
+            "default": "Logged out successfully."
+          }
+        },
+        "type": "object",
+        "title": "LogoutResponse",
+        "description": "Response returned upon successful session revocation."
+      },
       "LossEventDTO": {
         "properties": {
           "id": {
@@ -3644,6 +3994,54 @@
         ],
         "title": "ReadinessResponse",
         "description": "Health check readiness response envelope."
+      },
+      "RegisterRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+            "title": "Email",
+            "description": "Valid email address.",
+            "examples": [
+              "citizen@example.org"
+            ]
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "title": "Password",
+            "description": "Secure password (minimum 8 characters)."
+          },
+          "full_name": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Full Name",
+            "description": "Full name of the user.",
+            "examples": [
+              "Asha Nair"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "email",
+          "password",
+          "full_name"
+        ],
+        "title": "RegisterRequest",
+        "description": "Request payload for public civilian registration.\n\nRole is strictly not accepted from client and is automatically set to CIVILIAN."
+      },
+      "Role": {
+        "type": "string",
+        "enum": [
+          "CIVILIAN",
+          "GOVERNMENT_OFFICIAL",
+          "RESCUE_OFFICER"
+        ],
+        "title": "Role",
+        "description": "User identity roles for SETU-DRR authentication."
       },
       "ScenarioAllocationParams": {
         "properties": {
@@ -4201,6 +4599,76 @@
         ],
         "title": "Tier",
         "description": "Four-tier triage categorization for relocation planning (PRD \u00a76.7)."
+      },
+      "UserResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id",
+            "description": "Unique user identifier."
+          },
+          "email": {
+            "type": "string",
+            "title": "Email",
+            "description": "User email address."
+          },
+          "full_name": {
+            "type": "string",
+            "title": "Full Name",
+            "description": "Full name of user."
+          },
+          "role": {
+            "$ref": "#/components/schemas/Role",
+            "description": "User role (CIVILIAN, GOVERNMENT_OFFICIAL, RESCUE_OFFICER)."
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "description": "Whether user account is active."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Account creation timestamp."
+          },
+          "last_login_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Login At",
+            "description": "Timestamp of most recent successful login."
+          },
+          "jurisdiction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JurisdictionDTO"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Administrative jurisdiction assigned to privileged user, or None for unconstrained/civilian users."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "email",
+          "full_name",
+          "role",
+          "is_active",
+          "created_at"
+        ],
+        "title": "UserResponse",
+        "description": "Safe authenticated identity DTO.\n\nGuaranteed never to expose password hashes, session tokens, or internal secrets."
       },
       "VulnerabilityBreakdownDTO": {
         "properties": {

@@ -12,9 +12,22 @@ from fastapi.testclient import TestClient
 from api.main import app
 
 
+from core.config import settings
+
+
 @pytest.fixture
 def client():
     return TestClient(app)
+
+
+@pytest.fixture
+def officer_client():
+    c = TestClient(app)
+    c.post("/auth/login", json={
+        "email": "officer@setu.gov.in",
+        "password": settings.DEMO_OFFICER_PASSWORD,
+    })
+    return c
 
 
 class TestCandidateSitesAPI:
@@ -137,11 +150,11 @@ class TestCandidateSitesAPI:
         assert "error" in data
         assert data["error"]["code"] == "SITE_NOT_FOUND"
 
-    def test_recompute_site_capacity_simulation(self, client):
+    def test_recompute_site_capacity_simulation(self, officer_client):
         # 1. Fetch site ID
-        hab_res = client.get("/habitations?limit=1")
+        hab_res = officer_client.get("/habitations?limit=1")
         hab_id = hab_res.json()["items"][0]["id"]
-        sites_res = client.get(f"/habitations/{hab_id}/sites?radius_km=50")
+        sites_res = officer_client.get(f"/habitations/{hab_id}/sites?radius_km=50")
         if sites_res.json()["total"] == 0:
             pytest.skip("No candidate sites found in test database.")
 
@@ -156,7 +169,7 @@ class TestCandidateSitesAPI:
             "spare_health_capacity_pop": 5000,
             "livelihood_multiplier": 1.0,
         }
-        res = client.post(f"/sites/{site_id}/capacity", json=payload)
+        res = officer_client.post(f"/sites/{site_id}/capacity", json=payload)
         assert res.status_code == 200
         data = res.json()
 
@@ -167,10 +180,10 @@ class TestCandidateSitesAPI:
         assert "augmented_options" in data
         assert "screening_grade" in data
 
-    def test_recompute_site_capacity_invalid_input_422(self, client):
+    def test_recompute_site_capacity_invalid_input_422(self, officer_client):
         # Negative plot area should fail validation with standard error envelope
         payload = {"plot_area_m2": -50.0}
-        res = client.post("/sites/1/capacity", json=payload)
+        res = officer_client.post("/sites/1/capacity", json=payload)
         assert res.status_code == 422
         data = res.json()
         assert "error" in data

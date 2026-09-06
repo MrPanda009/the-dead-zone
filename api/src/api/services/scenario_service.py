@@ -57,7 +57,11 @@ class ScenarioService:
         self.hab_repo = HabitationsRepository(db)
         self.engine = ScenarioEngine(baseline_weights=AUTHORITATIVE_SCIENTIFIC.baseline_hazard_weights)
 
-    def evaluate_scenario(self, request: ScenarioWeightOverrideRequest) -> ScenarioResponse:
+    def evaluate_scenario(
+        self,
+        request: ScenarioWeightOverrideRequest,
+        admin_id: Optional[int] = None,
+    ) -> ScenarioResponse:
         """Evaluates hypothetical scenario assumptions without mutating baseline data."""
         # 1. Parameter guards & boundary checks
         if request.priority_gamma is not None:
@@ -74,8 +78,9 @@ class ScenarioService:
 
         # 2. Query baseline habitations
         # Fetch all habitations within the boundary to establish comprehensive ranking without truncation (M10)
+        effective_admin_id = admin_id if admin_id is not None else request.admin_id
         raw_habs, total_count = self.hab_repo.query_habitations(
-            admin_id=request.admin_id,
+            admin_id=effective_admin_id,
             limit=None,
             offset=0,
             sort=request.sort_mode,

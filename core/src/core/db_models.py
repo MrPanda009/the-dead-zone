@@ -104,9 +104,11 @@ class AdminBoundary(Base):
         BigInteger, ForeignKey("admin_boundary.id", ondelete="CASCADE"), nullable=True
     )
     geom: Mapped[Optional[Any]] = mapped_column(
-        Geometry("MULTIPOLYGON", srid=4326), nullable=True
+        Geometry("MULTIPOLYGON", srid=4326), nullable=True, deferred=True
     )
-    bbox: Mapped[Optional[Any]] = mapped_column(Geometry("POLYGON", srid=4326), nullable=True)
+    bbox: Mapped[Optional[Any]] = mapped_column(
+        Geometry("POLYGON", srid=4326), nullable=True, deferred=True
+    )
 
     children: Mapped[List[AdminBoundary]] = relationship(
         "AdminBoundary", backref="parent", remote_side=[id]
@@ -449,3 +451,67 @@ class RelocationPlan(Base):
     candidate_site: Mapped[CandidateSite] = relationship(
         "CandidateSite", back_populates="relocation_plans"
     )
+
+
+class AppUser(Base):
+    """User account entity for SETU-DRR authentication."""
+    __tablename__ = "app_user"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    email: Mapped[str] = mapped_column(String, unique=True, nullable=False, index=True)
+    password_hash: Mapped[str] = mapped_column(String, nullable=False)
+    full_name: Mapped[str] = mapped_column(String, nullable=False)
+    role: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+    last_login_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    admin_id: Mapped[Optional[int]] = mapped_column(
+        BigInteger, ForeignKey("admin_boundary.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+
+    admin_boundary: Mapped[Optional[AdminBoundary]] = relationship("AdminBoundary")
+    sessions: Mapped[List[UserSession]] = relationship(
+        "UserSession", back_populates="user", cascade="all, delete-orphan"
+    )
+
+    @property
+    def jurisdiction(self) -> Optional[dict[str, Any]]:
+        """Safe serializable jurisdiction descriptor for frontend contract."""
+        if self.admin_boundary is not None:
+            return {
+                "admin_id": self.admin_boundary.id,
+                "name": self.admin_boundary.name,
+                "level": self.admin_boundary.level,
+                "lgd_code": self.admin_boundary.lgd_code,
+            }
+        return None
+
+
+class UserSession(Base):
+    """Server-side authenticated session."""
+    __tablename__ = "user_session"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True), ForeignKey("app_user.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    session_token_hash: Mapped[str] = mapped_column(String, unique=True, nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+    revoked_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_seen_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+    user: Mapped[AppUser] = relationship("AppUser", back_populates="sessions")
