@@ -185,3 +185,21 @@ def get_site_district_admin_id(db: Session, site_id: int) -> Optional[int]:
     elif len(rows) > 1:
         raise ForbiddenError(f"Candidate site {site_id} spans multiple conflicting district jurisdictions.")
     return None
+
+
+# --------------------------------------------------------------------------- #
+# Login Rate Limiter Dependency (Batch E)
+# --------------------------------------------------------------------------- #
+from core.domain.rate_limit import LoginRateLimiter
+
+_login_rate_limiter = LoginRateLimiter(
+    max_attempts=settings.LOGIN_RATE_LIMIT_MAX_ATTEMPTS,
+    max_ip_attempts=settings.LOGIN_RATE_LIMIT_MAX_IP_ATTEMPTS,
+    window_seconds=settings.LOGIN_RATE_LIMIT_WINDOW_SECONDS,
+    enabled=settings.LOGIN_RATE_LIMIT_ENABLED,
+)
+
+
+def get_login_rate_limiter() -> LoginRateLimiter:
+    """Returns the application-scoped login rate limiter singleton."""
+    return _login_rate_limiter

@@ -63,6 +63,16 @@ def _reset_global_model_registry():
     model_registry.reset()
 
 
+@pytest.fixture(autouse=True)
+def _reset_global_login_rate_limiter():
+    """Ensure login rate limiter state does not leak across tests."""
+    from api.dependencies import get_login_rate_limiter
+    limiter = get_login_rate_limiter()
+    limiter.reset()
+    yield
+    limiter.reset()
+
+
 def mask_db_url(url: str) -> str:
     """Mask credentials in connection URL for safe diagnostic output."""
     try:

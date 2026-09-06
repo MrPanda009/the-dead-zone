@@ -1627,7 +1627,7 @@
           "Authentication & Identity"
         ],
         "summary": "Authenticate user with email and password",
-        "description": "Verifies credentials using Argon2id, creates a secure server-side session, and sets an HTTP-only session cookie. Returns the safe authenticated identity.",
+        "description": "Verifies credentials using Argon2id, creates a secure server-side session, and sets an HTTP-only session cookie. Returns the safe authenticated identity. Protected by configurable sliding-window rate limiting.",
         "operationId": "login_auth_login_post",
         "requestBody": {
           "content": {
@@ -1672,6 +1672,16 @@
           },
           "422": {
             "description": "Validation Error - Request parameter or payload validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests - Rate limit exceeded. Please try again later.",
             "content": {
               "application/json": {
                 "schema": {
