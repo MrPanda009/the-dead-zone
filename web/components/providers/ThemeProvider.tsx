@@ -48,6 +48,20 @@ function getServerSystemSnapshot(): ResolvedTheme {
 
 const emptySubscribe = () => () => {};
 
+function isTheme(value: string | null): value is Theme {
+  return value === 'light' || value === 'dark' || value === 'system';
+}
+
+/** Reads the persisted preference, tolerating environments without storage. */
+function getStoredTheme(storageKey: string): Theme | null {
+  try {
+    const saved = localStorage.getItem(storageKey);
+    return isTheme(saved) ? saved : null;
+  } catch {
+    return null;
+  }
+}
+
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({
   children,
   defaultTheme = 'dark',
@@ -65,18 +79,22 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
     getServerSystemSnapshot
   );
 
-  const [theme, setThemeState] = useState<Theme>(() => {
-    if (typeof window === 'undefined') return defaultTheme;
-    try {
-      const saved = localStorage.getItem(storageKey) as Theme | null;
-      if (saved && (saved === 'light' || saved === 'dark' || saved === 'system')) {
-        return saved;
-      }
-    } catch {
-      // Fallback
-    }
-    return defaultTheme;
-  });
+  /*
+   * The persisted preference is read through useSyncExternalStore, matching how
+   * `systemTheme` above is read. React uses the server snapshot for the
+   * hydration render and only then swaps in the client value, so the first
+   * client render agrees with the server's HTML. Reading localStorage directly
+   * in a state initialiser instead makes them disagree, and React reports a
+   * hydration mismatch on every element that varies by theme (icons, labels,
+   * titles). The blocking script in the document head has already painted the
+   * right theme on <html>, so this costs no flash.
+   */
+  const getStoredSnapshot = useCallback(() => getStoredTheme(storageKey), [storageKey]);
+  const storedTheme = useSyncExternalStore(emptySubscribe, getStoredSnapshot, () => null);
+
+  /** An explicit choice made in this session, which outranks what was stored. */
+  const [chosenTheme, setChosenTheme] = useState<Theme | null>(null);
+  const theme: Theme = chosenTheme ?? storedTheme ?? defaultTheme;
 
   // Compute resolved theme
   const resolvedTheme: ResolvedTheme = useMemo(() => {
@@ -99,7 +117,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
 
   const setTheme = useCallback(
     (newTheme: Theme) => {
-      setThemeState(newTheme);
+      setChosenTheme(newTheme);
       try {
         localStorage.setItem(storageKey, newTheme);
       } catch {

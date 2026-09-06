@@ -71,7 +71,7 @@ export const StoriesHeroText: React.FC<StoriesHeroTextProps> = ({
         }`}
       >
         Discover{' '}
-        <span className="text-[#a3e635] font-medium transition-colors duration-300">
+        <span className="text-m3-accent-foliage font-medium transition-colors duration-300">
           stories
         </span>
         <br />

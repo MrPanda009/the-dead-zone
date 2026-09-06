@@ -72,7 +72,7 @@ export const StoriesHeaderCoordinates: React.FC<StoriesHeaderCoordinatesProps> =
           <button
             type="button"
             onClick={onSwitchToGovPortal}
-            className="text-xs font-mono tracking-wider text-citron hover:text-citron-hover dark:text-[#a3e635] px-3 py-1.5 rounded-lg bg-surface-1/90 hover:bg-surface-2 dark:bg-[#162522]/70 dark:hover:bg-[#162522] border border-line hover:border-citron dark:border-[#a3e635]/30 dark:hover:border-[#a3e635] transition-all flex items-center gap-1.5 cursor-pointer shadow-sm backdrop-blur-md"
+            className="text-xs font-mono tracking-wider text-m3-accent-foliage hover:opacity-80 px-3 py-1.5 rounded-lg bg-surface-1/90 hover:bg-surface-2 dark:bg-[#162522]/70 dark:hover:bg-[#162522] border border-line hover:border-citron dark:border-[#a3e635]/30 dark:hover:border-[#a3e635] transition-all flex items-center gap-1.5 cursor-pointer shadow-sm backdrop-blur-md"
           >
             <span className="material-symbols-outlined text-sm">verified_user</span>
             <span>Official Hex Map</span>
@@ -80,7 +80,7 @@ export const StoriesHeaderCoordinates: React.FC<StoriesHeaderCoordinatesProps> =
         ) : (
           <Link
             href={govHref}
-            className="text-xs font-mono tracking-wider text-citron hover:text-citron-hover dark:text-[#a3e635] px-3 py-1.5 rounded-lg bg-surface-1/90 hover:bg-surface-2 dark:bg-[#162522]/70 dark:hover:bg-[#162522] border border-line hover:border-citron dark:border-[#a3e635]/30 dark:hover:border-[#a3e635] transition-all flex items-center gap-1.5 cursor-pointer shadow-sm backdrop-blur-md"
+            className="text-xs font-mono tracking-wider text-m3-accent-foliage hover:opacity-80 px-3 py-1.5 rounded-lg bg-surface-1/90 hover:bg-surface-2 dark:bg-[#162522]/70 dark:hover:bg-[#162522] border border-line hover:border-citron dark:border-[#a3e635]/30 dark:hover:border-[#a3e635] transition-all flex items-center gap-1.5 cursor-pointer shadow-sm backdrop-blur-md"
           >
             <span className="material-symbols-outlined text-sm">verified_user</span>
             <span>Official Hex Map</span>

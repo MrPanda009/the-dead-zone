@@ -15,3 +15,4 @@ export type { ThreePanelLayoutProps } from './ThreePanelLayout';
 
 export * from './header';
 export * from './nav-rail';
+export * from './transition';

@@ -89,12 +89,12 @@ html.light {
 
   /* SETU-DRR operations console palette (Light - crisp daylight readability) */
   --surface-0: #ffffff;
-  --surface-1: #f4f7f5;
-  --surface-2: #e7eeea;
+  --surface-1: #f4f8f1;
+  --surface-2: #e7eee2;
   --panel: #ffffff;
 
-  --line: #d6e0da;
-  --line-strong: #b8c8be;
+  --line: #c3d2c8;
+  --line-strong: #9db0a3;
 
   --ink: #0d1a14;
   --ink-muted: #3d5449;
@@ -108,17 +108,17 @@ html.light {
   --safe: #16a34a;
 
   /* Surface / Atmosphere tokens */
-  --color-bg-base: #f5f8f5;
-  --color-forest-deep: #ebf2ec;
-  --color-forest-mid: #dce7df;
-  --color-forest-light: #cde0d3;
+  --color-bg-base: #eaf1e6;
+  --color-forest-deep: #e2ebdd;
+  --color-forest-mid: #d5e2d0;
+  --color-forest-light: #c7d8c2;
   --color-forest-surface: #ffffff;
-  --color-forest-surface-hover: #eaf1ec;
-  --color-forest-dark: #e8f0ea;
+  --color-forest-surface-hover: #f1f6ee;
+  --color-forest-dark: #f2f7ef;
 
   /* Citron & Brand Accents (Adapted for contrast on light mode) */
-  --color-citron: #4d7a18;
-  --color-citron-hover: #3d6313;
+  --color-citron: #d2f83f;
+  --color-citron-hover: #c0e62d;
   --color-accent-emerald: #059669;
   --color-accent-emerald-bright: #10b981;
   --color-accent-emerald-light: #047857;
@@ -142,13 +142,148 @@ html.light {
   --color-gov-surface: #ffffff;
   --color-gov-surface-hover: #edeae2;
   --color-gov-surface-light: #ffffff;
-  --color-gov-border: #d4ded6;
+  --color-gov-border: #c2d1c6;
   --color-gov-sage: #507153;
   --color-gov-sage-light: #6f8f72;
   --color-gov-red: #b9433f;
   --color-gov-orange: #c96b3b;
   --color-gov-amber: #d49a45;
   --color-gov-green: #3d6040;
+}
+
+/*
+ * ---------------------------------------------------------------------------
+ * Material 3 system layer.
+ *
+ * Layered on top of the forest/citron palette above rather than replacing it,
+ * so existing components keep resolving their current tokens. M3 roles are
+ * mapped onto the same hues: primary is citron, the surface-container ramp is
+ * the forest scale, and outline follows --line.
+ * ---------------------------------------------------------------------------
+ */
+:root {
+  /* Motion — durations */
+  --m3-dur-short2: 100ms;
+  --m3-dur-short4: 200ms;
+  --m3-dur-medium2: 300ms;
+  --m3-dur-medium4: 400ms;
+  --m3-dur-long2: 500ms;
+  --m3-dur-extra-long2: 700ms;
+
+  /* Motion — easing. `emphasized` is a two-segment curve in the M3 spec and
+     cannot be expressed as a single cubic-bezier(); CSS gets the standard
+     curve, JS gets the real thing via CustomEase (see lib/motion/m3.ts). */
+  --m3-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --m3-ease-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --m3-ease-emphasized-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
+
+  /* Shape scale */
+  --m3-shape-xs: 4px;
+  --m3-shape-sm: 8px;
+  --m3-shape-md: 12px;
+  --m3-shape-lg: 16px;
+  --m3-shape-xl: 28px;
+  --m3-shape-full: 9999px;
+}
+
+/*
+ * Dock roles. The floating header dock is dark in BOTH themes, so its contents
+ * cannot use the page-level surface roles — those invert with the theme and
+ * would vanish against it. These are M3's inverse-surface idea, scoped to the
+ * dock: light pills and dark ink regardless of the ambient theme, softened a
+ * little at night so the strip does not glare.
+ */
+:root {
+  --m3-dock: #384134;
+  --m3-dock-surface: #ffffff;
+  --m3-dock-surface-variant: #eff3ec;
+  --m3-dock-on-surface: #1c241d;
+  --m3-dock-on-surface-variant: #475745;
+  --m3-dock-outline: rgba(255, 255, 255, 0.14);
+  --m3-dock-inverse: #1b221a;
+  --m3-dock-on-inverse: #f4f7f2;
+}
+
+html.dark {
+  --m3-dock: #161e19;
+  --m3-dock-surface: rgba(255, 255, 255, 0.16);
+  --m3-dock-surface-variant: rgba(255, 255, 255, 0.09);
+  --m3-dock-on-surface: #eef3ee;
+  --m3-dock-on-surface-variant: #c3d0c4;
+  --m3-dock-outline: rgba(255, 255, 255, 0.1);
+  --m3-dock-inverse: #0d130e;
+  --m3-dock-on-inverse: #eef3ee;
+}
+
+:root,
+html.dark {
+  /* Tonal surfaces (dark) */
+  --m3-surface: #101712;
+  --m3-surface-container-lowest: #06100c;
+  --m3-surface-container-low: #0e1611;
+  --m3-surface-container: #161e19;
+  --m3-surface-container-high: #1d2720;
+  --m3-surface-container-highest: #253027;
+
+  --m3-on-surface: #e6eee7;
+  --m3-on-surface-variant: #bcc9be;
+  --m3-outline: #8a9a8d;
+  --m3-outline-variant: #3c4a3f;
+
+  --m3-primary: #d4f15d;
+  --m3-on-primary: #1c2411;
+  --m3-primary-container: #3a4a1a;
+  --m3-on-primary-container: #e8ffa0;
+
+  --m3-secondary-container: #253027;
+  --m3-on-secondary-container: #d4e2d6;
+
+  /* Editorial accent for the hero tagline — olive, not the teal emerald. */
+  --m3-accent-foliage: #8ee638;
+
+  --m3-scrim: #000000;
+
+  /* Elevation (dark: deeper, lower-alpha ambient) */
+  --m3-elev-1: 0 1px 2px rgba(0, 0, 0, 0.5), 0 1px 3px 1px rgba(0, 0, 0, 0.3);
+  --m3-elev-2: 0 1px 2px rgba(0, 0, 0, 0.5), 0 2px 6px 2px rgba(0, 0, 0, 0.3);
+  --m3-elev-3: 0 4px 8px 3px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.5);
+  --m3-elev-4: 0 6px 10px 4px rgba(0, 0, 0, 0.3), 0 2px 3px rgba(0, 0, 0, 0.5);
+  --m3-elev-5: 0 8px 12px 6px rgba(0, 0, 0, 0.32), 0 4px 4px rgba(0, 0, 0, 0.5);
+}
+
+html.light {
+  /* Tonal surfaces (light) */
+  --m3-surface: #f4f8f1;
+  --m3-surface-container-lowest: #ffffff;
+  --m3-surface-container-low: #f0f5ed;
+  --m3-surface-container: #eaf1e6;
+  --m3-surface-container-high: #e4ebe0;
+  --m3-surface-container-highest: #dee6da;
+
+  --m3-on-surface: #171d15;
+  --m3-on-surface-variant: #414b3d;
+  --m3-outline: #6b7666;
+  --m3-outline-variant: #bccbb7;
+
+  --m3-primary: #d2f83f;
+  --m3-on-primary: #141d13;
+  --m3-primary-container: #e6ffa8;
+  --m3-on-primary-container: #253300;
+
+  --m3-secondary-container: #dbe7d5;
+  --m3-on-secondary-container: #2b3628;
+
+  /* Editorial accent for the hero tagline — olive, not the teal emerald. */
+  --m3-accent-foliage: #3f8819;
+
+  --m3-scrim: #000000;
+
+  /* Elevation (light: soft green-grey ambient) */
+  --m3-elev-1: 0 1px 2px rgba(20, 35, 25, 0.3), 0 1px 3px 1px rgba(20, 35, 25, 0.15);
+  --m3-elev-2: 0 1px 2px rgba(20, 35, 25, 0.3), 0 2px 6px 2px rgba(20, 35, 25, 0.15);
+  --m3-elev-3: 0 4px 8px 3px rgba(20, 35, 25, 0.15), 0 1px 3px rgba(20, 35, 25, 0.3);
+  --m3-elev-4: 0 6px 10px 4px rgba(20, 35, 25, 0.15), 0 2px 3px rgba(20, 35, 25, 0.3);
+  --m3-elev-5: 0 8px 12px 6px rgba(20, 35, 25, 0.15), 0 4px 4px rgba(20, 35, 25, 0.3);
 }
 
 @theme inline {
@@ -215,6 +350,54 @@ html.light {
   --color-gov-amber: var(--color-gov-amber);
   --color-gov-green: var(--color-gov-green);
 
+  /* Material 3 tonal surfaces -> bg-m3-surface, text-m3-on-surface, ... */
+  --color-m3-surface: var(--m3-surface);
+  --color-m3-surface-container-lowest: var(--m3-surface-container-lowest);
+  --color-m3-surface-container-low: var(--m3-surface-container-low);
+  --color-m3-surface-container: var(--m3-surface-container);
+  --color-m3-surface-container-high: var(--m3-surface-container-high);
+  --color-m3-surface-container-highest: var(--m3-surface-container-highest);
+  --color-m3-on-surface: var(--m3-on-surface);
+  --color-m3-on-surface-variant: var(--m3-on-surface-variant);
+  --color-m3-outline: var(--m3-outline);
+  --color-m3-outline-variant: var(--m3-outline-variant);
+  --color-m3-primary: var(--m3-primary);
+  --color-m3-on-primary: var(--m3-on-primary);
+  --color-m3-primary-container: var(--m3-primary-container);
+  --color-m3-on-primary-container: var(--m3-on-primary-container);
+  --color-m3-secondary-container: var(--m3-secondary-container);
+  --color-m3-accent-foliage: var(--m3-accent-foliage);
+  --color-m3-on-secondary-container: var(--m3-on-secondary-container);
+
+  /* Dock roles (dark dock in both themes) -> bg-m3-dock-surface, ... */
+  --color-m3-dock: var(--m3-dock);
+  --color-m3-dock-surface: var(--m3-dock-surface);
+  --color-m3-dock-surface-variant: var(--m3-dock-surface-variant);
+  --color-m3-dock-on-surface: var(--m3-dock-on-surface);
+  --color-m3-dock-on-surface-variant: var(--m3-dock-on-surface-variant);
+  --color-m3-dock-outline: var(--m3-dock-outline);
+  --color-m3-dock-inverse: var(--m3-dock-inverse);
+  --color-m3-dock-on-inverse: var(--m3-dock-on-inverse);
+
+  /* Material 3 shape scale -> rounded-m3-xl, ... */
+  --radius-m3-xs: var(--m3-shape-xs);
+  --radius-m3-sm: var(--m3-shape-sm);
+  --radius-m3-md: var(--m3-shape-md);
+  --radius-m3-lg: var(--m3-shape-lg);
+  --radius-m3-xl: var(--m3-shape-xl);
+
+  /* Material 3 elevation -> shadow-m3-1, ... */
+  --shadow-m3-1: var(--m3-elev-1);
+  --shadow-m3-2: var(--m3-elev-2);
+  --shadow-m3-3: var(--m3-elev-3);
+  --shadow-m3-4: var(--m3-elev-4);
+  --shadow-m3-5: var(--m3-elev-5);
+
+  /* Material 3 easing -> ease-m3-standard, ... */
+  --ease-m3-standard: var(--m3-ease-standard);
+  --ease-m3-decelerate: var(--m3-ease-emphasized-decelerate);
+  --ease-m3-accelerate: var(--m3-ease-emphasized-accelerate);
+
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
   --font-display: var(--font-display);
@@ -270,7 +453,7 @@ body {
   pointer-events: none;
 }
 html.light .forest-atmosphere {
-  background: radial-gradient(ellipse at 65% 45%, rgba(185, 215, 195, 0.55) 0%, rgba(235, 244, 238, 0.88) 55%, #f5f8f5 100%);
+  background: radial-gradient(ellipse at 65% 45%, rgba(247, 251, 244, 0.75) 0%, rgba(238, 245, 234, 0.9) 55%, #eaf1e6 100%);
 }
 
 /* Frosted Dark / Sage Glass Panels */
@@ -316,31 +499,153 @@ html.light .pill-badge {
 
 /* Minimalist Citron Solid Button (Image 1 Style - Zero Gradients) */
 .btn-citron {
-  background-color: var(--color-citron);
-  color: #06100c;
+  background-color: var(--m3-primary);
+  color: var(--m3-on-primary);
   font-weight: 700;
-  transition: all 0.2s ease;
+  border-radius: var(--m3-shape-full);
+  box-shadow: var(--m3-elev-1);
+  transition: background-color var(--m3-dur-short4) var(--m3-ease-standard),
+    box-shadow var(--m3-dur-short4) var(--m3-ease-standard);
 }
 
 .btn-citron:hover {
   background-color: var(--color-citron-hover);
-  transform: translateY(-2px);
-  box-shadow: 0 12px 28px rgba(212, 241, 93, 0.25);
+  box-shadow: var(--m3-elev-2), 0 12px 28px color-mix(in srgb, var(--m3-primary) 30%, transparent);
 }
 
-.btn-citron:active {
-  transform: translateY(0) scale(0.98);
+/* Material 3 Floating Pill Dock */
+.m3-floating-dock {
+  background: color-mix(in srgb, var(--m3-dock) 92%, transparent);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--m3-dock-outline);
+  border-radius: var(--m3-shape-full);
+  box-shadow: var(--m3-elev-3);
+  transition: background-color var(--m3-dur-medium2) var(--m3-ease-standard),
+    border-color var(--m3-dur-medium2) var(--m3-ease-standard);
+}
+html.dark .m3-floating-dock {
+  box-shadow: var(--m3-elev-4);
 }
 
-html.light .btn-citron {
-  background-color: #9fe32a;
-  color: #0d1a14;
-  box-shadow: 0 10px 24px rgba(120, 180, 20, 0.25);
+/* Material 3 Circular Floating Action Button (FAB) */
+.m3-fab {
+  background: var(--m3-surface-container-lowest);
+  color: var(--m3-on-surface);
+  border: 1px solid var(--m3-outline-variant);
+  border-radius: var(--m3-shape-full);
+  box-shadow: var(--m3-elev-3);
+  transition: background-color var(--m3-dur-short4) var(--m3-ease-standard),
+    border-color var(--m3-dur-short4) var(--m3-ease-standard),
+    box-shadow var(--m3-dur-short4) var(--m3-ease-standard),
+    color var(--m3-dur-short4) var(--m3-ease-standard);
+}
+.m3-fab:hover {
+  box-shadow: var(--m3-elev-4);
+}
+html.dark .m3-fab {
+  background: var(--m3-surface-container-high);
+  color: var(--m3-on-surface);
+}
+html.dark .m3-fab:hover {
+  background: var(--m3-surface-container-highest);
+  border-color: color-mix(in srgb, var(--m3-primary) 40%, transparent);
+  color: var(--m3-primary);
 }
 
-html.light .btn-citron:hover {
-  background-color: #8ed31d;
-  box-shadow: 0 12px 28px rgba(120, 180, 20, 0.35);
+/* Material 3 Status Pill Card */
+.m3-status-card {
+  background: color-mix(in srgb, var(--m3-surface-container-lowest) 95%, transparent);
+  color: var(--m3-on-surface);
+  border: 1px solid var(--m3-outline-variant);
+  box-shadow: var(--m3-elev-3);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+html.dark .m3-status-card {
+  background: color-mix(in srgb, var(--m3-surface-container) 95%, transparent);
+  box-shadow: var(--m3-elev-4);
+}
+
+/*
+ * Material 3 state layer. An element with .m3-state-layer gets a currentColor
+ * overlay that rises to 8% on hover and 12% on keyboard focus. This is the M3
+ * replacement for ad-hoc `hover:bg-white/20` classes, and it tints correctly in
+ * both themes because it inherits currentColor from the host.
+ */
+.m3-state-layer {
+  position: relative;
+  isolation: isolate;
+}
+
+.m3-state-layer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-color: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 0;
+  transition: opacity var(--m3-dur-short4) var(--m3-ease-standard);
+}
+
+.m3-state-layer:hover::before {
+  opacity: 0.08;
+}
+
+.m3-state-layer:focus-visible::before {
+  opacity: 0.12;
+}
+
+.m3-state-layer:disabled::before,
+.m3-state-layer[aria-disabled='true']::before {
+  opacity: 0;
+}
+
+/* Keep real content above the state layer and any ripple. */
+.m3-state-layer > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Ripple host: clips the expanding circle to the component's own shape. */
+.m3-ripple-layer {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/*
+ * Route container-transform surface. Lives in the root shell so it survives
+ * navigation; fixed so it never introduces a scroll container on the
+ * overflow-hidden body.
+ */
+.m3-morph-surface {
+  position: fixed;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  will-change: transform, width, height, top, left, border-radius, opacity;
+}
+
+.m3-morph-surface[data-active='true'] {
+  visibility: visible;
+  pointer-events: auto;
+}
+
+/* Referenced by the header's scrolling tab strip. */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
 /* Dead Zone Radiant Glows */

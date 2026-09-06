@@ -71,14 +71,14 @@ export const HazardSlideCard: React.FC<HazardSlideCardProps> = ({
         {/* Bottom Image Caption */}
         <div className="absolute bottom-4 left-4 right-4 text-xs font-mono text-cream/80 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 flex items-center justify-between">
           <span>InSAR / SAR Geodesy Verified</span>
-          <span className="text-[#a3e635]">● Active Monitored Zone</span>
+          <span className="text-m3-accent-foliage">● Active Monitored Zone</span>
         </div>
       </div>
 
       {/* Narrative & Telemetry Column (Col 8-12) */}
       <div className="lg:col-span-5 flex flex-col justify-between h-full py-2">
         <div>
-          <span className="text-xs font-mono text-[#a3e635] tracking-widest uppercase">
+          <span className="text-xs font-mono text-m3-accent-foliage tracking-widest uppercase">
             {slide.subtitle}
           </span>
           <h3 className="font-display text-2xl sm:text-3xl font-bold text-cream mt-1 mb-3 leading-tight">
@@ -108,11 +108,11 @@ export const HazardSlideCard: React.FC<HazardSlideCardProps> = ({
 
         {/* Adaptation & Relocation Banner */}
         <div className="p-3 rounded-xl bg-[#22543d]/30 border border-[#a3e635]/30 flex items-start gap-2.5">
-          <span className="material-symbols-outlined text-[#a3e635] text-lg shrink-0 mt-0.5">
+          <span className="material-symbols-outlined text-m3-accent-foliage text-lg shrink-0 mt-0.5">
             shield
           </span>
           <p className="text-[11px] text-cream/80 leading-snug font-sans">
-            <strong className="text-[#a3e635] font-semibold">
+            <strong className="text-m3-accent-foliage font-semibold">
               Action Plan:{' '}
             </strong>
             {slide.mitigation}

@@ -43,7 +43,7 @@ export function createIndiaLandmass(
   const mainlandGeom = new THREE.ExtrudeGeometry(shape, extrudeSettings);
   const mainlandEdgesGeom = new THREE.EdgesGeometry(mainlandGeom, 22);
 
-  const landColor = isDark ? 0x132720 : 0xe4ede7;
+  const landColor = isDark ? 0x132720 : 0xf8fbf4;
   const landMaterial = new THREE.MeshStandardMaterial({
     color: landColor,
     roughness: 0.72,
@@ -88,7 +88,7 @@ export function createIndiaLandmass(
   });
 
   const updateTheme = (dark: boolean) => {
-    const nextColor = dark ? 0x132720 : 0xe4ede7;
+    const nextColor = dark ? 0x132720 : 0xf8fbf4;
     landMaterial.color.setHex(nextColor);
     edgeMaterial.opacity = dark ? 0.38 : 0.55;
   };

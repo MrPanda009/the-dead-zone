@@ -82,7 +82,7 @@ export const HazardSlideshowModal: React.FC<HazardSlideshowModalProps> = ({
         <div className="flex items-center justify-between border-b border-line dark:border-white/10 pb-4 mb-6">
           <div className="flex items-center gap-3">
             <span className="w-2.5 h-2.5 rounded-full bg-citron animate-ping" />
-            <span className="font-mono text-xs uppercase tracking-widest text-citron font-semibold">
+            <span className="font-mono text-xs uppercase tracking-widest text-m3-accent-foliage font-semibold">
               Hazard Intelligence Slideshow
             </span>
             <span className="text-ink-faint dark:text-white/30">|</span>
@@ -111,7 +111,7 @@ export const HazardSlideshowModal: React.FC<HazardSlideshowModalProps> = ({
           {/* Slide Counter */}
           <div className="font-mono text-xs text-ink-muted dark:text-cream/60 tracking-wider">
             SLIDE{' '}
-            <span className="text-citron font-bold">
+            <span className="text-m3-accent-foliage font-bold">
               0{currentSlideIndex + 1}
             </span>{' '}
             / 0{slides.length}

@@ -3,7 +3,9 @@
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import gsap from 'gsap';
+import { gsap, M3_EASE, type M3AnimationConfig } from '@/lib/motion/m3';
+import { INTRO_TIMINGS } from '@/lib/motion/introSequence';
+import { usePrefersReducedMotion } from '@/lib/hooks/usePrefersReducedMotion';
 import { useTheme } from '@/components/providers';
 import { HotspotData, DEAD_ZONES_DATA } from './types';
 import { generateProceduralEarthCanvas } from './procedural-textures';
@@ -15,7 +17,7 @@ export interface CameraTarget {
 }
 
 export interface GlobeCanvasProps {
-  /** Mode: 'landing' starts centered; 'login' spins and glides globe to 50% off-screen while continuing rotation */
+  /** Mode: 'landing' starts framed for hero presentation; 'login' spins and glides globe to 50% off-screen while continuing rotation */
   viewMode?: 'landing' | 'login';
   /** Whether earth is auto-rotating */
   isAutoRotating?: boolean;
@@ -25,10 +27,16 @@ export interface GlobeCanvasProps {
   cameraTarget?: CameraTarget | null;
   /** List of hotspots to display */
   hotspots?: HotspotData[];
+  /** Primary focus hotspot ID (default 'himalayan-arc' for India) */
+  primaryFocusId?: string;
+  /** Target trigger counter to re-center on primary hazard */
+  focusTrigger?: number;
   /** Callback when hotspot is hovered */
   onHoverHotspot?: (payload: { spot: HotspotData; position: { x: number; y: number } } | null) => void;
   /** Custom root className */
   className?: string;
+  /** Entrance animation overrides for the canvas container */
+  animation?: M3AnimationConfig;
 }
 
 export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
@@ -37,14 +45,22 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
   isRadarActive = true,
   cameraTarget = null,
   hotspots = DEAD_ZONES_DATA,
+  primaryFocusId = 'himalayan-arc',
+  focusTrigger = 0,
   onHoverHotspot,
   className = '',
+  animation = {},
 }) => {
+  const primarySpot = hotspots.find((s) => s.id === primaryFocusId) || hotspots[0];
+  const defaultLat = primarySpot ? primarySpot.lat : 28.5;
+  const defaultLon = primarySpot ? primarySpot.lon : 78.5;
   const { resolvedTheme } = useTheme();
   const isLight = resolvedTheme === 'light';
   const containerRef = useRef<HTMLDivElement>(null);
   const onHoverHotspotRef = useRef(onHoverHotspot);
+  const prefersReducedMotion = usePrefersReducedMotion();
   const ambientLightRef = useRef<THREE.AmbientLight | null>(null);
+  const sunLightRef = useRef<THREE.DirectionalLight | null>(null);
 
   useEffect(() => {
     onHoverHotspotRef.current = onHoverHotspot;
@@ -55,6 +71,9 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     earthMesh: THREE.Mesh;
     camera: THREE.PerspectiveCamera;
     radarMesh: THREE.Mesh;
+    orbitRing: THREE.Mesh;
+    hotspotGroup: THREE.Group;
+    primaryBeaconGroup: THREE.Group;
     controls: OrbitControls;
     isAutoRotating: boolean;
     isRadarActive: boolean;
@@ -63,8 +82,11 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
   // Dynamically update globe lighting when theme changes
   useEffect(() => {
     if (ambientLightRef.current) {
-      ambientLightRef.current.color.setHex(isLight ? 0x90a89d : 0x0e1b14);
-      ambientLightRef.current.intensity = isLight ? 2.4 : 1.2;
+      ambientLightRef.current.color.setHex(isLight ? 0xc4d4c5 : 0x0e1b14);
+      ambientLightRef.current.intensity = isLight ? 2.5 : 1.3;
+    }
+    if (sunLightRef.current) {
+      sunLightRef.current.intensity = isLight ? 2.2 : 1.9;
     }
   }, [isLight]);
 
@@ -80,17 +102,16 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
   }, [isAutoRotating, isRadarActive]);
 
   // Handle ViewMode Switch:
-  // 'landing' (centered at 0, 0, 0) vs 'login' (spins & glides 50% out of screen on the right, CONTINUING rotation)
+  // 'landing' frames Earth comfortably to the right on desktop, leaving space for left hero content
   useEffect(() => {
     if (!sceneRef.current) return;
     const { earthGroup, camera } = sceneRef.current;
 
     const isDesktop = typeof window !== 'undefined' && window.innerWidth > 1024;
-    // Position at 3.3 puts the center of the 2.0-radius sphere at the viewport edge (50% visible)
-    const sideX = isDesktop ? 3.3 : 1.7;
+    const landingX = isDesktop ? 1.15 : 0;
+    const loginX = isDesktop ? 3.3 : 1.7;
 
     if (viewMode === 'login') {
-      // 1. Earth spins rapidly on Y axis and glides smoothly to 50% off-screen on the right
       gsap.to(earthGroup.rotation, {
         y: '+=3.4',
         duration: 1.5,
@@ -98,7 +119,7 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
         overwrite: 'auto',
       });
       gsap.to(earthGroup.position, {
-        x: sideX,
+        x: loginX,
         y: 0,
         z: -0.2,
         duration: 1.4,
@@ -114,9 +135,8 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
         overwrite: 'auto',
       });
     } else {
-      // 2. Return to centered initial position
       gsap.to(earthGroup.position, {
-        x: 0,
+        x: landingX,
         y: 0,
         z: 0,
         duration: 1.3,
@@ -133,6 +153,26 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
       });
     }
   }, [viewMode]);
+
+  // Focus Trigger: Smoothly rotate Earth to center on India Hazard Red Zone
+  useEffect(() => {
+    if (!sceneRef.current || focusTrigger === 0) return;
+    const { earthMesh, hotspotGroup, primaryBeaconGroup, camera } = sceneRef.current;
+
+    // Target angle for India (lon ~78°E => -2.93 rad)
+    const targetY = -2.93;
+    gsap.to([earthMesh.rotation, hotspotGroup.rotation, primaryBeaconGroup.rotation], {
+      y: targetY,
+      duration: 1.6,
+      ease: 'power3.inOut',
+      overwrite: 'auto',
+    });
+    gsap.to(camera.position, {
+      z: 4.5,
+      duration: 1.4,
+      ease: 'power2.out',
+    });
+  }, [focusTrigger]);
 
   // Camera Target transitions
   useEffect(() => {
@@ -177,7 +217,7 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
 
-    // 3. OrbitControls (Full Zoom & Interactive Rotation)
+    // 3. OrbitControls
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
@@ -189,19 +229,20 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     controls.enablePan = false;
 
     // 4. Directional & Atmospheric Lighting
-    const sunLight = new THREE.DirectionalLight(0xfff8ee, 1.9);
+    const sunLight = new THREE.DirectionalLight(0xfff8ee, isLight ? 2.2 : 1.9);
     sunLight.position.set(6, 4, 4.5);
+    sunLightRef.current = sunLight;
     scene.add(sunLight);
 
     const atmosphereLight = new THREE.DirectionalLight(0x5eead4, 0.6);
     atmosphereLight.position.set(-5, -2, -4);
     scene.add(atmosphereLight);
 
-    const ambientLight = new THREE.AmbientLight(isLight ? 0x90a89d : 0x0e1b14, isLight ? 2.4 : 1.2);
+    const ambientLight = new THREE.AmbientLight(isLight ? 0xc4d4c5 : 0x0e1b14, isLight ? 2.5 : 1.3);
     ambientLightRef.current = ambientLight;
     scene.add(ambientLight);
 
-    // 5. Starfield Particles
+    // 5. Starfield Dust Particles
     const starGeo = new THREE.BufferGeometry();
     const starCount = 1800;
     const starPositions = new Float32Array(starCount * 3);
@@ -234,14 +275,14 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     const starField = new THREE.Points(starGeo, starMat);
     scene.add(starField);
 
-    // 6. Earth Group: INITIALLY CENTERED (0, 0, 0)
+    // 6. Earth Group: Positioned to the right on desktop for landing layout
+    const isDesktop = width > 1024;
     const earthGroup = new THREE.Group();
     earthGroup.rotation.z = 23.4 * (Math.PI / 180);
-    earthGroup.rotation.y = -1.1;
-    earthGroup.position.set(0, 0, 0); // CENTERED initially!
+    earthGroup.position.set(viewMode === 'landing' ? (isDesktop ? 1.15 : 0) : 3.3, 0, 0);
     scene.add(earthGroup);
 
-    // 7. Earth Mesh with Procedural Cartography
+    // 7. Earth Mesh with Procedural Cartography & NASA Fallback
     const proceduralCanvas = generateProceduralEarthCanvas();
     const proceduralTexture = new THREE.CanvasTexture(proceduralCanvas);
     proceduralTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
@@ -254,6 +295,8 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
       bumpScale: 0.05,
     });
     const earthMesh = new THREE.Mesh(earthGeo, earthMat);
+    // INITIAL ROTATION: Set to -2.93 rad to bring India front and center!
+    earthMesh.rotation.y = -2.93;
     earthGroup.add(earthMesh);
 
     // Background NASA texture loader
@@ -270,7 +313,7 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
       () => {}
     );
 
-    // 8. Sleek Atmosphere Shader
+    // 8. Atmosphere Rim Glow Shader
     const atmosphereGeo = new THREE.SphereGeometry(2.05, 64, 64);
     const atmosphereMat = new THREE.ShaderMaterial({
       vertexShader: `
@@ -284,7 +327,7 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
         varying vec3 vNormal;
         void main() {
           float intensity = pow(0.65 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 2.2);
-          gl_FragColor = vec4(0.2, 0.95, 0.65, 1.0) * intensity * 0.45;
+          gl_FragColor = vec4(0.35, 0.95, 0.55, 1.0) * intensity * 0.45;
         }
       `,
       blending: THREE.AdditiveBlending,
@@ -295,22 +338,41 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     const atmosphereMesh = new THREE.Mesh(atmosphereGeo, atmosphereMat);
     earthGroup.add(atmosphereMesh);
 
-    // 9. Cyber Orbital Radar Sweep Ring
+    // 9. Glowing Lime Elliptical Orbital Trajectory Ring (Material 3 Feature)
+    const orbitCurve = new THREE.EllipseCurve(
+      0, 0,
+      2.8, 2.65,
+      0, 2 * Math.PI,
+      false,
+      0
+    );
+    const curvePoints = orbitCurve.getPoints(128);
+    const points3D = curvePoints.map((p) => new THREE.Vector3(p.x, 0, p.y));
+    const path3D = new THREE.CatmullRomCurve3(points3D, true);
+    const orbitTubeGeo = new THREE.TubeGeometry(path3D, 128, 0.009, 8, true);
+    const orbitTubeMat = new THREE.MeshBasicMaterial({
+      color: 0xd2f83f,
+      transparent: true,
+      opacity: 0.65,
+    });
+    const orbitRing = new THREE.Mesh(orbitTubeGeo, orbitTubeMat);
+    orbitRing.rotation.x = Math.PI / 3.4;
+    orbitRing.rotation.z = -Math.PI / 6.5;
+    earthGroup.add(orbitRing);
+
+    // 10. Secondary Cyber Orbital Radar Sweep Ring
     const radarGeo = new THREE.RingGeometry(2.28, 2.32, 64);
     const radarMat = new THREE.MeshBasicMaterial({
-      color: 0xd4f15d,
+      color: 0xd2f83f,
       side: THREE.DoubleSide,
       transparent: true,
-      opacity: 0.28,
+      opacity: 0.22,
     });
     const radarMesh = new THREE.Mesh(radarGeo, radarMat);
     radarMesh.rotation.x = Math.PI / 2.3;
     earthGroup.add(radarMesh);
 
-    // 10. Hazard Red & Orange Hotspots
-    const hotspotGroup = new THREE.Group();
-    earthGroup.add(hotspotGroup);
-
+    // Coordinate conversion utility
     const latLonToVector3 = (lat: number, lon: number, radius = 2.03) => {
       const phi = (90 - lat) * (Math.PI / 180);
       const theta = (lon + 180) * (Math.PI / 180);
@@ -321,45 +383,74 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
       );
     };
 
+    // 11. Concentric Disaster Hazard Beacon (Pulsing Radar Wave Rings on India)
+    const primaryBeaconGroup = new THREE.Group();
+    primaryBeaconGroup.rotation.y = -2.93; // sync with initial Earth rotation
+    earthGroup.add(primaryBeaconGroup);
+
+    // Primary India coordinate (Himalayan Arc / Uttarakhand)
+    const indiaPos = latLonToVector3(defaultLat, defaultLon, 2.035);
+
+    // Center solid red hazard core
+    const coreGeo = new THREE.SphereGeometry(0.048, 16, 16);
+    const coreMat = new THREE.MeshBasicMaterial({ color: 0xff1e38 });
+    const coreMesh = new THREE.Mesh(coreGeo, coreMat);
+    coreMesh.position.copy(indiaPos);
+    primaryBeaconGroup.add(coreMesh);
+
+    // 3 Concentric Expanding Ripple Rings (Concentric Beacon)
+    const rippleRings: THREE.Mesh<THREE.RingGeometry, THREE.MeshBasicMaterial>[] = [];
+    for (let r = 0; r < 3; r++) {
+      const ringGeo = new THREE.RingGeometry(0.04, 0.12, 32);
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: 0xff2840,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.8,
+        blending: THREE.AdditiveBlending,
+      });
+      const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+      ringMesh.position.copy(indiaPos);
+      ringMesh.lookAt(new THREE.Vector3(0, 0, 0));
+      ringMesh.userData = {
+        isRipple: true,
+        phase: (r * Math.PI) / 1.5,
+        speed: 2.2,
+      };
+      primaryBeaconGroup.add(ringMesh);
+      rippleRings.push(ringMesh);
+    }
+
+    // 12. Hotspot Pins for all disaster zones
+    const hotspotGroup = new THREE.Group();
+    hotspotGroup.rotation.y = -2.93;
+    earthGroup.add(hotspotGroup);
+
     hotspots.forEach((spot) => {
       const pos = latLonToVector3(spot.lat, spot.lon);
       const isRed = spot.color > 0xff2000;
 
-      const pinGeo = new THREE.SphereGeometry(isRed ? 0.045 : 0.038, 16, 16);
+      const pinGeo = new THREE.SphereGeometry(isRed ? 0.042 : 0.035, 16, 16);
       const pinMat = new THREE.MeshBasicMaterial({ color: spot.color });
       const pinMesh = new THREE.Mesh(pinGeo, pinMat);
       pinMesh.position.copy(pos);
       pinMesh.userData = spot;
 
-      const auraGeo = new THREE.SphereGeometry(0.09, 16, 16);
+      const auraGeo = new THREE.SphereGeometry(0.08, 16, 16);
       const auraMat = new THREE.MeshBasicMaterial({
         color: spot.color,
         transparent: true,
-        opacity: 0.7,
+        opacity: 0.6,
         blending: THREE.AdditiveBlending,
       });
       const auraMesh = new THREE.Mesh(auraGeo, auraMat);
       auraMesh.position.copy(pos);
 
-      const ringGeo1 = new THREE.RingGeometry(0.04, 0.08, 32);
-      const ringMat1 = new THREE.MeshBasicMaterial({
-        color: spot.color,
-        side: THREE.DoubleSide,
-        transparent: true,
-        opacity: 0.85,
-        blending: THREE.AdditiveBlending,
-      });
-      const ringMesh1 = new THREE.Mesh(ringGeo1, ringMat1);
-      ringMesh1.position.copy(pos);
-      ringMesh1.lookAt(new THREE.Vector3(0, 0, 0));
-      ringMesh1.userData = { isRing: true, phase: Math.random() * Math.PI, speed: 3.5 };
-
       hotspotGroup.add(pinMesh);
       hotspotGroup.add(auraMesh);
-      hotspotGroup.add(ringMesh1);
     });
 
-    // 11. Raycasting
+    // 13. Raycasting for hover tooltips
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
 
@@ -387,7 +478,7 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
 
     window.addEventListener('mousemove', handleMouseMove);
 
-    // 12. Resize
+    // 14. Responsive Resize
     const handleResize = () => {
       if (!container) return;
       width = container.clientWidth || window.innerWidth;
@@ -395,6 +486,11 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
       renderer.setSize(width, height);
+
+      const desktop = width > 1024;
+      if (viewMode === 'landing') {
+        earthGroup.position.x = desktop ? 1.15 : 0;
+      }
     };
     window.addEventListener('resize', handleResize);
 
@@ -403,39 +499,46 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
       earthMesh,
       camera,
       radarMesh,
+      orbitRing,
+      hotspotGroup,
+      primaryBeaconGroup,
       controls,
       isAutoRotating,
       isRadarActive,
     };
 
-    // 13. Non-Stop Render Loop: ALWAYS continues auto-rotating continuously!
+    // 15. Animation Render Loop
     let animationFrameId: number;
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
       const elapsed = performance.now() * 0.001;
 
-      // Earth constantly rotates non-stop while viewing or entering credentials
+      // Earth & Pins Auto-Rotation
       if (sceneRef.current?.isAutoRotating) {
         earthMesh.rotation.y += 0.0012;
         hotspotGroup.rotation.y += 0.0012;
+        primaryBeaconGroup.rotation.y += 0.0012;
       }
 
+      // Orbital lime ring gentle slow breathing & tilt wobble
+      if (orbitRing) {
+        orbitRing.rotation.y += 0.0004;
+      }
+
+      // Cyber Radar Sweep
       if (radarMesh && sceneRef.current?.isRadarActive) {
         radarMesh.rotation.z += 0.008;
-        radarMesh.material.opacity = 0.2 + Math.sin(elapsed * 2) * 0.12;
+        radarMesh.material.opacity = 0.18 + Math.sin(elapsed * 2) * 0.1;
       }
 
-      hotspotGroup.children.forEach((child) => {
-        if (child.userData && child.userData.isRing) {
-          const speed = child.userData.speed || 3.0;
-          const phase = child.userData.phase || 0;
-          const scale = 1 + (Math.sin(elapsed * speed + phase) + 1) * 0.55;
-          child.scale.set(scale, scale, 1);
-          (child as THREE.Mesh<THREE.RingGeometry, THREE.MeshBasicMaterial>).material.opacity = Math.max(
-            0.1,
-            0.9 - (scale - 1) * 0.7
-          );
-        }
+      // Concentric Radar Ripple Waves Animation
+      rippleRings.forEach((ring) => {
+        const phase = ring.userData.phase || 0;
+        const speed = ring.userData.speed || 2.2;
+        const progress = ((elapsed * speed + phase) % Math.PI) / Math.PI;
+        const scale = 1.0 + progress * 2.8;
+        ring.scale.set(scale, scale, 1);
+        ring.material.opacity = Math.max(0, (1 - progress) * 0.75);
       });
 
       controls.update();
@@ -453,7 +556,40 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
         container.removeChild(renderer.domElement);
       }
     };
-  }, [hotspots]);
+  }, [hotspots, viewMode]);
+
+  const {
+    disabled: animationDisabled = false,
+    duration: introDuration = 0.9,
+    delay: introDelay = INTRO_TIMINGS.globe,
+  } = animation;
+
+  // Fade the WebGL stage in with the rest of the intro. Kept as a bare effect
+  // (not useGSAP) to match how the rest of this component drives GSAP against
+  // Three.js objects, and because it must run once per mount only.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    if (animationDisabled || prefersReducedMotion) {
+      gsap.set(el, { opacity: 1, scale: 1 });
+      return;
+    }
+    const tween = gsap.fromTo(
+      el,
+      { opacity: 0, scale: 1.04 },
+      {
+        opacity: 1,
+        scale: 1,
+        duration: introDuration,
+        delay: introDelay,
+        ease: M3_EASE.decelerate,
+      }
+    );
+    return () => {
+      tween.kill();
+      gsap.set(el, { opacity: 1, scale: 1 });
+    };
+  }, [animationDisabled, prefersReducedMotion, introDuration, introDelay]);
 
   return (
     <div

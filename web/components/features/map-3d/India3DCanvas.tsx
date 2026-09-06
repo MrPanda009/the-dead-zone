@@ -96,7 +96,7 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
     const height = containerRef.current.clientHeight;
 
     const scene = new THREE.Scene();
-    const bgColor = isDark ? 0x0b1614 : 0xf4f8f5;
+    const bgColor = isDark ? 0x0b1614 : 0xe9f0e4;
     scene.background = new THREE.Color(bgColor);
     scene.fog = new THREE.FogExp2(bgColor, 0.006);
     sceneRef.current = scene;
@@ -152,7 +152,7 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
     scene.add(rimLight);
 
     // Subtle Cartographic Grid Floor
-    const gridColor = isDark ? 0x163026 : 0xd8e4dc;
+    const gridColor = isDark ? 0x163026 : 0xcfdcc8;
     const gridHelper = new THREE.GridHelper(160, 32, gridColor, gridColor);
     gridHelper.rotation.x = Math.PI / 2;
     gridHelper.position.z = -1.5;
@@ -223,7 +223,7 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
   // Theme synchronization
   useEffect(() => {
     if (!sceneRef.current || !ambientLightRef.current) return;
-    const bgColor = isDark ? 0x0b1614 : 0xf4f8f5;
+    const bgColor = isDark ? 0x0b1614 : 0xe9f0e4;
     sceneRef.current.background = new THREE.Color(bgColor);
     if (sceneRef.current.fog) sceneRef.current.fog.color.setHex(bgColor);
     ambientLightRef.current.intensity = isDark ? 1.0 : 1.6;
