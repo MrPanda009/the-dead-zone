@@ -93,6 +93,19 @@ export const CellDossier = ({
           variant="info"
           description={`Raw ${detail.confidence.toFixed(3)}, normalised against the layer ceiling.`}
         />
+        <MetricCard
+          className="col-span-2"
+          label="Est. Population"
+          value={
+            detail.population !== null && detail.population !== undefined
+              ? Math.round(detail.population).toLocaleString()
+              : '0'
+          }
+          numericValue={detail.population ?? 0}
+          formatNumeric={(v) => Math.round(v).toLocaleString()}
+          variant={detail.population && detail.population > 500 ? 'warning' : 'default'}
+          description="WorldPop 100m constrained sum across hexagon"
+        />
       </div>
 
       {detail.drivers ? <DriverBreakdown drivers={detail.drivers} /> : null}

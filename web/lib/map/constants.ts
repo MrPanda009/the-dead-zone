@@ -83,4 +83,4 @@ export const SOURCE_RESOLUTION = 8;
 export const DEFAULT_CONFIDENCE_HATCH_THRESHOLD = 0.5;
 
 export const MAP_ATTRIBUTION =
-  'Copernicus Sentinel-1 (CC BY 4.0) · ASF GLO-30 HAND · JRC Global Surface Water · ESA WorldCover 10m';
+  'Map © OpenFreeMap, OpenStreetMap contributors · Copernicus Sentinel-1 · ASF GLO-30 HAND · JRC GSW · ESA WorldCover';
