@@ -10,12 +10,23 @@ from core.schemas.common import (
     MultiPolygonGeometryDTO,
     SCREENING_GRADE_NOTICE,
     ProvenanceMetadataDTO,
+    ErrorDetail,
+    ErrorEnvelope,
+    ErrorResponse,
 )
 from core.schemas.zones import (
-    FeatureContributionDTO,
     HazardDetailDTO,
     ZoneCellSummary,
     ZoneCellDetail,
+)
+from core.schemas.hazard import (
+    HazardCellDTO,
+    HazardLayerLegendDTO,
+    HazardLayerCoverageDTO,
+    HazardLayerResponse,
+    HazardLayerSummaryDTO,
+    FloodDriverDTO,
+    HazardCellDetailDTO,
 )
 from core.schemas.habitations import (
     LossEventDTO,
@@ -55,6 +66,13 @@ from core.schemas.flood import (
     ValidationReport,
     RowValidationError,
 )
+from core.schemas.auth import (
+    JurisdictionDTO,
+    LoginRequest,
+    RegisterRequest,
+    UserResponse,
+    LogoutResponse,
+)
 
 from core.schemas.dynamic_triggers import (
     TriggerType,
@@ -64,6 +82,7 @@ from core.schemas.dynamic_triggers import (
     TriggerValidationReport,
 )
 from core.schemas.explanation import (
+    FeatureContributionDTO,
     CanonicalExplanationRecord,
     ExplanationBatchDTO,
 )
@@ -77,10 +96,21 @@ __all__ = [
     "PolygonGeometryDTO",
     "MultiPolygonGeometryDTO",
     "SCREENING_GRADE_NOTICE",
+    "ProvenanceMetadataDTO",
+    "ErrorDetail",
+    "ErrorEnvelope",
+    "ErrorResponse",
     "FeatureContributionDTO",
     "HazardDetailDTO",
     "ZoneCellSummary",
     "ZoneCellDetail",
+    "HazardCellDTO",
+    "HazardLayerLegendDTO",
+    "HazardLayerCoverageDTO",
+    "HazardLayerResponse",
+    "HazardLayerSummaryDTO",
+    "FloodDriverDTO",
+    "HazardCellDetailDTO",
     "LossEventDTO",
     "VulnerabilityBreakdownDTO",
     "HabitationListItem",
@@ -111,6 +141,11 @@ __all__ = [
     "TriggerValidationReport",
     "CanonicalExplanationRecord",
     "ExplanationBatchDTO",
+    "JurisdictionDTO",
+    "LoginRequest",
+    "RegisterRequest",
+    "UserResponse",
+    "LogoutResponse",
 ]
 
 

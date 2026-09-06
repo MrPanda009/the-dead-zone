@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from typing import Any, Optional
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from core.constants import SCREENING_GRADE_NOTICE
 from core.schemas.common import BaseSchema
@@ -27,6 +27,30 @@ class FeatureContributionDTO(BaseSchema):
         ge=1,
         description="Rank of this feature in importance (1 = top contributing factor).",
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _normalize_raw_fields(cls, data: Any) -> Any:
+        """Normalizes legitimate legacy ML attribution keys (name -> feature, shap_value -> contribution).
+        
+        Preserves strict validation: rejects malformed data, does not map non-explanation keys
+        (factor, weight, type), and never manufactures false evidence values (missing value remains invalid).
+        """
+        if isinstance(data, dict):
+            d = dict(data)
+            # Legitimate ML contract alias: 'name' is the feature identifier in TreeSHAP outputs
+            if "feature" not in d and "name" in d and d["name"] is not None:
+                d["feature"] = str(d["name"])
+            # Legitimate ML contract alias: 'shap_value' is the local attribution in TreeSHAP outputs
+            if "contribution" not in d and "shap_value" in d and d["shap_value"] is not None:
+                try:
+                    d["contribution"] = float(d["shap_value"])
+                except (ValueError, TypeError):
+                    pass
+            # Note: We intentionally do NOT map 'factor' -> 'feature', 'weight' -> 'contribution',
+            # 'type' -> 'method', and do NOT default missing 'value' to 0.0.
+            return d
+        return data
 
 
 class CanonicalExplanationRecord(BaseSchema):

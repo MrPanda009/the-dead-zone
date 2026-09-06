@@ -38,7 +38,12 @@ class AllocationAssignmentDTO(BaseSchema):
     households: int
     tier: Tier
     priority_score: float
-    site_suitability: int
+    site_suitability: Optional[int] = Field(
+        default=None,
+        ge=0,
+        le=100,
+        description="Composite suitability score (0-100, None if unassigned/provisional).",
+    )
     has_group_split: bool = False
     split_details: Optional[str] = None
 

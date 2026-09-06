@@ -104,9 +104,11 @@ class AdminBoundary(Base):
         BigInteger, ForeignKey("admin_boundary.id", ondelete="CASCADE"), nullable=True
     )
     geom: Mapped[Optional[Any]] = mapped_column(
-        Geometry("MULTIPOLYGON", srid=4326), nullable=True
+        Geometry("MULTIPOLYGON", srid=4326), nullable=True, deferred=True
     )
-    bbox: Mapped[Optional[Any]] = mapped_column(Geometry("POLYGON", srid=4326), nullable=True)
+    bbox: Mapped[Optional[Any]] = mapped_column(
+        Geometry("POLYGON", srid=4326), nullable=True, deferred=True
+    )
 
     children: Mapped[List[AdminBoundary]] = relationship(
         "AdminBoundary", backref="parent", remote_side=[id]
@@ -190,12 +192,39 @@ class HazardStatic(Base):
     hazard_type: Mapped[str] = mapped_column(String, primary_key=True)
     susceptibility: Mapped[float] = mapped_column(Float, nullable=False)
     confidence: Mapped[float] = mapped_column(Float, default=1.0, nullable=False)
+    quality_flag: Mapped[str] = mapped_column(String, default="full", nullable=False)
     model_version: Mapped[str] = mapped_column(String, default="v1.0.0", nullable=False)
     pipeline_run_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         PG_UUID(as_uuid=True), ForeignKey("pipeline_run.id", ondelete="SET NULL"), nullable=True
     )
 
     grid_cell: Mapped[GridCell] = relationship("GridCell", back_populates="hazard_statics")
+
+
+class HazardStaticFlood(Base):
+    """Per-cell riverine flood drivers from Step 10 zonal aggregation (migration 007)."""
+
+    __tablename__ = "hazard_static_flood"
+
+    h3: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("grid_cell.h3", ondelete="CASCADE"), primary_key=True
+    )
+    max_susceptibility: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    valid_pixel_fraction: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    hard_zero_fraction: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    mean_inundation_frequency: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    mean_hand_m: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    min_hand_m: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    mean_slope_deg: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    mean_cropland_fraction: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    observation_ceiling: Mapped[int] = mapped_column(SmallInteger, default=30, nullable=False)
+    model_version: Mapped[str] = mapped_column(
+        String, default="flood-susceptibility-v0.1", nullable=False
+    )
+    pipeline_run_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        PG_UUID(as_uuid=True), ForeignKey("pipeline_run.id", ondelete="SET NULL"), nullable=True
+    )
+
 
 class HazardDynamic(Base):
     __tablename__ = "hazard_dynamic"
@@ -296,7 +325,12 @@ class HabitationRisk(Base):
     v_index: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     priority_score: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     caseload_score: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
-    tier: Mapped[str] = mapped_column(String, default="medium_term", nullable=False)
+    active_deformation: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    fatal_event_last_3_monsoons: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    mitigation_cost: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    relocation_cost: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    adverse_trend: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
+    tier: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     triage_rationale: Mapped[str] = mapped_column(String, default="", nullable=False)
     contributing_factors: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, default=list, nullable=False)
     dominant_hazard: Mapped[str] = mapped_column(String, default="landslide", nullable=False)
@@ -348,7 +382,7 @@ class CandidateSite(Base):
     cc_final: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     binding_constraint: Mapped[str] = mapped_column(String, nullable=False)
     augmented: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
-    suitability: Mapped[int] = mapped_column(SmallInteger, default=50, nullable=False)
+    suitability: Mapped[Optional[int]] = mapped_column(SmallInteger, default=None, nullable=True)
     metadata_: Mapped[dict[str, Any]] = mapped_column(
         "metadata", JSONB, default=dict, nullable=False
     )
@@ -417,3 +451,67 @@ class RelocationPlan(Base):
     candidate_site: Mapped[CandidateSite] = relationship(
         "CandidateSite", back_populates="relocation_plans"
     )
+
+
+class AppUser(Base):
+    """User account entity for SETU-DRR authentication."""
+    __tablename__ = "app_user"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    email: Mapped[str] = mapped_column(String, unique=True, nullable=False, index=True)
+    password_hash: Mapped[str] = mapped_column(String, nullable=False)
+    full_name: Mapped[str] = mapped_column(String, nullable=False)
+    role: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+    last_login_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    admin_id: Mapped[Optional[int]] = mapped_column(
+        BigInteger, ForeignKey("admin_boundary.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+
+    admin_boundary: Mapped[Optional[AdminBoundary]] = relationship("AdminBoundary")
+    sessions: Mapped[List[UserSession]] = relationship(
+        "UserSession", back_populates="user", cascade="all, delete-orphan"
+    )
+
+    @property
+    def jurisdiction(self) -> Optional[dict[str, Any]]:
+        """Safe serializable jurisdiction descriptor for frontend contract."""
+        if self.admin_boundary is not None:
+            return {
+                "admin_id": self.admin_boundary.id,
+                "name": self.admin_boundary.name,
+                "level": self.admin_boundary.level,
+                "lgd_code": self.admin_boundary.lgd_code,
+            }
+        return None
+
+
+class UserSession(Base):
+    """Server-side authenticated session."""
+    __tablename__ = "user_session"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True), ForeignKey("app_user.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    session_token_hash: Mapped[str] = mapped_column(String, unique=True, nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+    revoked_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_seen_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+    user: Mapped[AppUser] = relationship("AppUser", back_populates="sessions")

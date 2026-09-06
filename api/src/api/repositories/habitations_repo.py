@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import json
-from typing import Optional, Any
+from typing import Optional, Any, Sequence
 from sqlalchemy import text
 from sqlalchemy.orm import Session
-from core.enums import SortMode
+from core.enums import Hazard, SortMode
 
 
 class HabitationsRepository:
@@ -20,19 +20,34 @@ class HabitationsRepository:
         admin_id: Optional[int] = None,
         tier: Optional[str] = None,
         sort: SortMode = SortMode.URGENCY,
-        limit: int = 50,
+        limit: Optional[int] = 50,
         offset: int = 0,
     ) -> tuple[list[dict[str, Any]], int]:
         """Queries habitations in a single query using window count and indexed ordering."""
         conditions = ["1=1"]
-        params: dict[str, Any] = {"limit": limit, "offset": offset}
+        params: dict[str, Any] = {}
+
+        if limit is not None:
+            params["limit"] = limit
+            limit_clause = "LIMIT :limit"
+        else:
+            limit_clause = ""
+
+        if offset:
+            params["offset"] = offset
+            offset_clause = "OFFSET :offset"
+        elif limit is not None:
+            params["offset"] = 0
+            offset_clause = "OFFSET :offset"
+        else:
+            offset_clause = ""
 
         if admin_id is not None:
             conditions.append("(h.admin_id = :admin_id OR a.lgd_code = :admin_id)")
             params["admin_id"] = admin_id
 
         if tier is not None:
-            conditions.append("(hr.tier IS NULL OR hr.tier = :tier)")
+            conditions.append("hr.tier = :tier")
             params["tier"] = tier
 
         where_clause = " AND ".join(conditions)
@@ -76,6 +91,11 @@ class HabitationsRepository:
                 hr.dataset_version,
                 hr.data_quality,
                 hr.confidence,
+                hr.active_deformation,
+                hr.fatal_event_last_3_monsoons,
+                hr.mitigation_cost,
+                hr.relocation_cost,
+                hr.adverse_trend,
                 hr.calculated_at,
                 count(*) OVER() as full_count
             FROM habitation h
@@ -84,7 +104,7 @@ class HabitationsRepository:
             LEFT JOIN habitation_risk hr ON h.id = hr.habitation_id
             WHERE {where_clause}
             ORDER BY {order_clause}
-            LIMIT :limit OFFSET :offset;
+            {limit_clause} {offset_clause};
         """)
 
         results = self.db.execute(query, params).mappings().all()
@@ -137,6 +157,11 @@ class HabitationsRepository:
                 hr.dataset_version,
                 hr.data_quality,
                 hr.confidence,
+                hr.active_deformation,
+                hr.fatal_event_last_3_monsoons,
+                hr.mitigation_cost,
+                hr.relocation_cost,
+                hr.adverse_trend,
                 hr.calculated_at
             FROM habitation h
             LEFT JOIN admin_boundary a ON h.admin_id = a.id
@@ -173,6 +198,11 @@ class HabitationsRepository:
                 dataset_version,
                 data_quality,
                 confidence,
+                active_deformation,
+                fatal_event_last_3_monsoons,
+                mitigation_cost,
+                relocation_cost,
+                adverse_trend,
                 calculated_at,
                 pipeline_run_id
             ) VALUES (
@@ -195,6 +225,11 @@ class HabitationsRepository:
                 :dataset_version,
                 :data_quality,
                 :confidence,
+                :active_deformation,
+                :fatal_event_last_3_monsoons,
+                :mitigation_cost,
+                :relocation_cost,
+                :adverse_trend,
                 :calculated_at,
                 :pipeline_run_id
             )
@@ -217,12 +252,24 @@ class HabitationsRepository:
                 dataset_version = EXCLUDED.dataset_version,
                 data_quality = EXCLUDED.data_quality,
                 confidence = EXCLUDED.confidence,
+                active_deformation = EXCLUDED.active_deformation,
+                fatal_event_last_3_monsoons = EXCLUDED.fatal_event_last_3_monsoons,
+                mitigation_cost = EXCLUDED.mitigation_cost,
+                relocation_cost = EXCLUDED.relocation_cost,
+                adverse_trend = EXCLUDED.adverse_trend,
                 calculated_at = EXCLUDED.calculated_at,
                 pipeline_run_id = EXCLUDED.pipeline_run_id;
         """)
         factors = risk_record.get("contributing_factors", [])
+        m_cost = risk_record.get("mitigation_cost")
+        r_cost = risk_record.get("relocation_cost")
         params = {
             **risk_record,
+            "mitigation_cost": float(m_cost) if m_cost is not None else None,
+            "relocation_cost": float(r_cost) if r_cost is not None else None,
+            "adverse_trend": bool(risk_record.get("adverse_trend", False)),
+            "active_deformation": bool(risk_record.get("active_deformation", False)),
+            "fatal_event_last_3_monsoons": bool(risk_record.get("fatal_event_last_3_monsoons", False)),
             "contributing_factors": json.dumps(factors) if isinstance(factors, list) else factors,
         }
         self.db.execute(query, params)
@@ -279,3 +326,38 @@ class HabitationsRepository:
             {"lon": lon, "lat": lat, "radius_m": radius_km * 1000.0},
         ).mappings().all()
         return [dict(r) for r in results]
+
+    def get_hazard_scores_for_habitations(
+        self, habitation_ids: Sequence[int]
+    ) -> dict[int, dict[Hazard, float]]:
+        """Retrieves static hazard scores for habitations aggregated from underlying H3 grid cells.
+        
+        Follows PRD §10.4 aggregation semantics: mean susceptibility across intersecting cells.
+        Point habitations map to their containing H3 cell.
+        """
+        if not habitation_ids:
+            return {}
+        query = text("""
+            SELECT 
+                h.id AS habitation_id,
+                hs.hazard_type,
+                AVG(hs.susceptibility) AS susceptibility
+            FROM habitation h
+            JOIN grid_cell gc ON (gc.habitation_id = h.id OR ST_Contains(gc.geom, h.geom_point))
+            JOIN hazard_static hs ON gc.h3 = hs.h3
+            WHERE h.id = ANY(:hab_ids)
+            GROUP BY h.id, hs.hazard_type;
+        """)
+        rows = self.db.execute(query, {"hab_ids": list(habitation_ids)}).mappings().all()
+        result: dict[int, dict[Hazard, float]] = {}
+        for r in rows:
+            h_id = int(r["habitation_id"])
+            try:
+                h_enum = Hazard(r["hazard_type"])
+            except ValueError:
+                continue
+            if h_id not in result:
+                result[h_id] = {}
+            result[h_id][h_enum] = round(float(r["susceptibility"]), 4)
+        return result
+

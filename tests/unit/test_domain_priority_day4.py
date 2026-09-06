@@ -71,14 +71,15 @@ class TestPriorityScoringAndTriageDay4:
         Permanent relocation is governed by static/chronic risk.
         Emergency evacuation is governed by dynamic alerts.
         """
-        # Case A: Low chronic risk settlement (Caution zone / Medium-term)
+        # Case A: Caution zone with adverse trend (Medium-term)
         tier_baseline = classify_triage_tier(
             has_prz_overlap=False,
             active_deformation=False,
             fatal_event_last_3_monsoons=False,
             pop_fraction_in_prz=0.0,
-            hazard_intensity=0.40,
+            hazard_intensity=0.55,
             priority_score=0.15,
+            is_caution_with_adverse_trend=True,
             has_active_trigger=False,
         )
         assert tier_baseline == Tier.MEDIUM_TERM
@@ -89,8 +90,9 @@ class TestPriorityScoringAndTriageDay4:
             active_deformation=False,
             fatal_event_last_3_monsoons=False,
             pop_fraction_in_prz=0.0,
-            hazard_intensity=0.40,
+            hazard_intensity=0.55,
             priority_score=0.15,
+            is_caution_with_adverse_trend=True,
             has_active_trigger=True,  # Active emergency trigger
         )
         assert tier_during_active_alert == Tier.MEDIUM_TERM

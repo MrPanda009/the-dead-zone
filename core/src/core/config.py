@@ -23,6 +23,10 @@ class Settings(BaseSettings):
         default=None,
         description="Direct non-pooled connection string (required for migrations, Martin, and heavy ETL).",
     )
+    TEST_DATABASE_URL: str | None = Field(
+        default=None,
+        description="Dedicated isolated test database connection string.",
+    )
 
     # Runtime & Mode
     DEMO_MODE: bool = Field(
@@ -38,6 +42,20 @@ class Settings(BaseSettings):
         description="Default machine learning model version tag.",
     )
 
+    # ML Model Checkpoint Paths
+    MODEL_CHECKPOINT_PATH: str | None = Field(
+        default=None,
+        description="Generic path to model checkpoint file or directory containing checkpoints.",
+    )
+    LANDSLIDE_MODEL_PATH: str | None = Field(
+        default=None,
+        description="Path to serialized trained landslide model checkpoint.",
+    )
+    FLOOD_MODEL_PATH: str | None = Field(
+        default=None,
+        description="Path to serialized trained flood model checkpoint.",
+    )
+
     # File paths
     DATA_ROOT: Path = Field(
         default=DATA_DIR,
@@ -47,7 +65,42 @@ class Settings(BaseSettings):
     # API & CORS
     API_PORT: int = Field(default=8000)
     API_HOST: str = Field(default="0.0.0.0")
-    ALLOWED_ORIGINS: list[str] = Field(default=["*"])
+    ALLOWED_ORIGINS: list[str] = Field(
+        default=["http://localhost:3000", "http://127.0.0.1:3000"],
+        description="Allowed CORS origins for credentialed cookie-based requests.",
+    )
+
+    # Authentication & Session Cookies (Part 1)
+    SESSION_COOKIE_NAME: str = Field(
+        default="setu_session",
+        description="Name of the HTTP-only session cookie.",
+    )
+    SESSION_DURATION_DAYS: int = Field(
+        default=7,
+        description="Session validity period in days before expiration.",
+    )
+    SESSION_COOKIE_SECURE: bool = Field(
+        default=False,
+        description="Whether to enforce HTTPS-only Secure flag on session cookie.",
+    )
+    SESSION_COOKIE_SAMESITE: str = Field(
+        default="lax",
+        description="SameSite cookie policy (lax, strict, none).",
+    )
+
+    # Demo Account Passwords (Configurable / Dev Only)
+    DEMO_CIVILIAN_PASSWORD: str = Field(
+        default="DemoCivilian123!",
+        description="Development password for seeded demo civilian account.",
+    )
+    DEMO_OFFICER_PASSWORD: str = Field(
+        default="DemoOfficer123!",
+        description="Development password for seeded demo government official account.",
+    )
+    DEMO_RESCUE_PASSWORD: str = Field(
+        default="DemoRescue123!",
+        description="Development password for seeded demo rescue officer account.",
+    )
 
     model_config = SettingsConfigDict(
         env_file=str(REPO_ROOT / ".env"),

@@ -30,6 +30,8 @@ class ErrorCode(StrEnum):
     PIPELINE_NOT_READY = "PIPELINE_NOT_READY"
     DATABASE_ERROR = "DATABASE_ERROR"
     VALIDATION_ERROR = "VALIDATION_ERROR"
+    UNAUTHENTICATED = "UNAUTHENTICATED"
+    FORBIDDEN = "FORBIDDEN"
     INTERNAL_ERROR = "INTERNAL_ERROR"
 
 
@@ -169,5 +171,25 @@ class AllocationFailedError(AppError):
             message=f"Allocation solver failed: {reason}",
             status_code=422,
             details=details,
+        )
+
+
+class UnauthenticatedError(AppError):
+    def __init__(self, message: str = "Authentication required.", details: dict[str, Any] | None = None) -> None:
+        super().__init__(
+            code=ErrorCode.UNAUTHENTICATED,
+            message=message,
+            status_code=401,
+            details=details or {},
+        )
+
+
+class ForbiddenError(AppError):
+    def __init__(self, message: str = "Access forbidden.", details: dict[str, Any] | None = None) -> None:
+        super().__init__(
+            code=ErrorCode.FORBIDDEN,
+            message=message,
+            status_code=403,
+            details=details or {},
         )
 

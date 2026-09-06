@@ -49,9 +49,11 @@ def compute_mhi(
     for hazard_key, score in hazard_scores.items():
         # Map string to enum if necessary
         hazard_enum = hazard_key if isinstance(hazard_key, Hazard) else Hazard(str(hazard_key))
-        w = active_weights.get(hazard_enum, 1.0)
+        w_val = active_weights.get(hazard_enum)
+        w = float(w_val if w_val is not None else 1.0)
         clamped_score = min(max(score, 0.0), 1.0)
-        prob_complement_product *= (1.0 - w * clamped_score)
+        weighted_term = min(max(w * clamped_score, 0.0), 1.0)
+        prob_complement_product *= (1.0 - weighted_term)
 
     mhi = 1.0 - prob_complement_product
     return min(max(mhi, 0.0), 1.0)
@@ -71,7 +73,8 @@ def get_dominant_hazard(
 
     for hazard_key, score in hazard_scores.items():
         hazard_enum = hazard_key if isinstance(hazard_key, Hazard) else Hazard(str(hazard_key))
-        w = active_weights.get(hazard_enum, 1.0)
+        w_val = active_weights.get(hazard_enum)
+        w = float(w_val if w_val is not None else 1.0)
         weighted_score = w * min(max(score, 0.0), 1.0)
         if weighted_score > max_val:
             max_val = weighted_score

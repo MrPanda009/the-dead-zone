@@ -28,3 +28,6 @@ models/*
 .DS_Store
 dist/
 *.log
+
+# Playwright MCP screenshot output
+.playwright-mcp/

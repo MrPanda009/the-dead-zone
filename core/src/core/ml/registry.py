@@ -242,6 +242,14 @@ class ModelRegistry:
         logger.info(f"Registering trigger model: {model.metadata.model_name} ({model.metadata.model_version})")
         self.trigger_model = model
 
+    def reset(self) -> None:
+        """Resets all registered models back to default baseline heuristic providers."""
+        self.landslide_model = BaselineLandslideProvider()
+        self.flood_model = BaselineFloodProvider()
+        self.vulnerability_model = BaselineVulnerabilityProvider()
+        self.trigger_model = BaselineTriggerProvider()
+        logger.info("ModelRegistry reset to default baseline heuristic providers.")
+
     def get_status(self) -> dict[str, dict[str, str]]:
         """Returns metadata of currently active ML model providers."""
         return {

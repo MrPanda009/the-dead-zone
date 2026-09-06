@@ -59,8 +59,9 @@ class AlertsService:
         for r in records:
             h_int = r["h3"]
             h_str = h3_to_str(h_int)
-            mhi_live = float(r.get("mhi_live") or 0.0)
-            mhi_static = float(r.get("mhi_static") or 0.0)
+            mhi_live = float(r.get("mhi_live") if r.get("mhi_live") is not None else 0.0)
+            mhi_static = float(r.get("mhi_static") if r.get("mhi_static") is not None else 0.0)
+            item_source = r.get("trigger_source") or r.get("source")
 
             items.append(
                 ActiveAlertItem(
@@ -72,10 +73,10 @@ class AlertsService:
                     mhi_live=round(mhi_live, 4),
                     mhi_static=round(mhi_static, 4),
                     dominant_hazard=r.get("dominant_hazard") or "landslide",
-                    trigger_source="IMERG Early / Live Ingestion",
-                    valid_at=r.get("valid_at") or datetime.now(timezone.utc),
-                    exposed_population=round(float(r.get("population") or 0.0), 2),
-                    exposed_built_area_m2=round(float(r.get("built_area_m2") or 0.0), 2),
+                    trigger_source=item_source,
+                    valid_at=r.get("valid_at"),
+                    exposed_population=round(float(r.get("population") if r.get("population") is not None else 0.0), 2),
+                    exposed_built_area_m2=round(float(r.get("built_area_m2") if r.get("built_area_m2") is not None else 0.0), 2),
                     centroid=[r["lon"], r["lat"]],
                     screening_grade=SCREENING_GRADE_NOTICE,
                 )
@@ -84,7 +85,7 @@ class AlertsService:
         return ActiveAlertsResponse(
             total_active_cells=total_cells,
             total_exposed_population=total_pop,
-            issued_at=datetime.now(timezone.utc),
+            issued_at=None,
             items=items,
         )
 
@@ -116,14 +117,22 @@ class AlertsService:
             offset=clamped_offset,
         )
 
-        now_utc = datetime.now(timezone.utc)
+        # Resolve forecast cycle from records or repository without fabricating now_utc
+        resolved_cycle: Optional[datetime] = None
+        if records and records[0].get("forecast_cycle_at"):
+            resolved_cycle = records[0]["forecast_cycle_at"]
+        else:
+            resolved_cycle = self.repo.get_latest_forecast_cycle()
+
         items: list[ForecastAlertItem] = []
 
         for r in records:
             h_int = r["h3"]
             h_str = h3_to_str(h_int)
-            mhi_fcst = float(r.get("mhi_fcst") or 0.0)
-            mhi_static = float(r.get("mhi_static") or 0.0)
+            mhi_fcst = float(r.get("mhi_fcst") if r.get("mhi_fcst") is not None else 0.0)
+            mhi_static = float(r.get("mhi_static") if r.get("mhi_static") is not None else 0.0)
+            item_cycle = r.get("forecast_cycle_at") or resolved_cycle
+            item_horizon = r.get("horizon_hours") if r.get("horizon_hours") is not None else horizon_hours
 
             items.append(
                 ForecastAlertItem(
@@ -135,11 +144,11 @@ class AlertsService:
                     mhi_fcst=round(mhi_fcst, 4),
                     mhi_static=round(mhi_static, 4),
                     dominant_hazard=r.get("dominant_hazard") or "landslide",
-                    issuing_model="ECMWF Open Data",
-                    forecast_cycle_at=now_utc,
-                    valid_at=r.get("valid_at") or now_utc,
-                    horizon_hours=horizon_hours,
-                    exposed_population=round(float(r.get("population") or 0.0), 2),
+                    issuing_model=None,
+                    forecast_cycle_at=item_cycle,
+                    valid_at=r.get("valid_at"),
+                    horizon_hours=item_horizon,
+                    exposed_population=round(float(r.get("population") if r.get("population") is not None else 0.0), 2),
                     centroid=[r["lon"], r["lat"]],
                     screening_grade=SCREENING_GRADE_NOTICE,
                 )
@@ -148,8 +157,9 @@ class AlertsService:
         return ForecastAlertsResponse(
             total_forecast_cells=total_cells,
             total_exposed_population=total_pop,
-            issuing_model="ECMWF Open Data",
-            forecast_cycle_at=now_utc,
+            issuing_model=None,
+            forecast_cycle_at=resolved_cycle,
             horizon_hours=horizon_hours,
             items=items,
         )
+

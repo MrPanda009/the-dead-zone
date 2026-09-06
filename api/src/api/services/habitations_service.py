@@ -17,9 +17,13 @@ from core.domain.priority import (
     PriorityScoringEngine,
     TriageRuleConfig,
     compute_time_decayed_loss,
+    check_fatal_event_last_3_monsoons,
+    check_loss_frequency_rising,
 )
 from core.domain.vulnerability import compute_vulnerability_index, VulnerabilityConfig
+from core.domain.explanation import normalize_feature_contributions
 from core.schemas.common import PaginatedResponse
+from core.schemas.explanation import FeatureContributionDTO
 from core.schemas.habitations import (
     HabitationListItem,
     HabitationRiskDossier,
@@ -70,41 +74,51 @@ class HabitationsService:
 
         items = []
         for r in raw_items:
-            pop = int(r.get("population") or 0)
+            pop = int(r.get("population") if r.get("population") is not None else 0)
             
             # If priority_score is persisted in habitation_risk
             if r.get("priority_score") is not None and r.get("tier") is not None:
                 ps = float(r["priority_score"])
-                caseload = float(r["caseload_score"])
+                caseload = float(r.get("caseload_score") if r.get("caseload_score") is not None else (ps * pop))
                 tier_class = Tier(r["tier"]) if isinstance(r["tier"], str) else r["tier"]
-                prz_overlap = float(r.get("prz_overlap_pct") or 0.0)
+                prz_overlap = float(r.get("prz_overlap_pct") if r.get("prz_overlap_pct") is not None else 0.0)
                 dominant_hazard = r.get("dominant_hazard") or "landslide"
                 model_ver = r.get("model_version") or "baseline-v1"
                 scoring_ver = r.get("scoring_version") or self.scoring_config.scoring_version
                 dataset_ver = r.get("dataset_version") or "v1.0"
             else:
                 # On-the-fly fallback evaluation
-                v_demo = float(r.get("v_demographic") or 0.5)
-                v_struct = float(r.get("v_structural") or 0.5)
-                v_access = float(r.get("v_access") or 0.5)
-                v_econ = float(r.get("v_economic") or 0.5)
+                v_demo = float(r.get("v_demographic") if r.get("v_demographic") is not None else 0.5)
+                v_struct = float(r.get("v_structural") if r.get("v_structural") is not None else 0.5)
+                v_access = float(r.get("v_access") if r.get("v_access") is not None else 0.5)
+                v_econ = float(r.get("v_economic") if r.get("v_economic") is not None else 0.5)
                 v_index = float(
                     r.get("v_index")
                     if r.get("v_index") is not None
                     else compute_vulnerability_index(v_demo, v_struct, v_access, v_econ, self.vulnerability_config)
                 )
-                is_high_risk = r["name"] in ("Chooralmala", "Mundakkai", "Bhagamandala")
-                hazard_intensity = 0.85 if is_high_risk else 0.45
-                prz_overlap = 85.0 if r["name"] in ("Chooralmala", "Mundakkai") else (65.0 if r["name"] == "Bhagamandala" else 25.0)
+                active_def = bool(r.get("active_deformation", False))
+                fatal_3_monsoons = bool(r.get("fatal_event_last_3_monsoons", False))
+                m_cost = r.get("mitigation_cost")
+                r_cost = r.get("relocation_cost")
+                adv_trend = r.get("adverse_trend")
+                raw_hi = r.get("hazard_intensity")
+                hazard_intensity = float(raw_hi if raw_hi is not None else 0.45)
+                raw_prz = r.get("prz_overlap_pct")
+                prz_overlap = float(raw_prz if raw_prz is not None else 25.0)
+                decayed_loss = float(r.get("decayed_loss") if r.get("decayed_loss") is not None else 0.0)
 
                 eval_result = self.engine.evaluate_habitation(
                     hazard_intensity=hazard_intensity,
                     pop_fraction_in_prz=prz_overlap / 100.0,
                     vulnerability_index=v_index,
-                    decayed_loss=1.0 if is_high_risk else 0.0,
+                    decayed_loss=decayed_loss,
                     population=pop,
-                    active_deformation=is_high_risk,
-                    fatal_event_last_3_monsoons=is_high_risk and r["name"] in ("Chooralmala", "Mundakkai"),
+                    active_deformation=active_def,
+                    fatal_event_last_3_monsoons=fatal_3_monsoons,
+                    mitigation_cost=float(m_cost) if m_cost is not None else None,
+                    relocation_cost=float(r_cost) if r_cost is not None else None,
+                    adverse_trend=bool(adv_trend) if adv_trend is not None else None,
                 )
 
                 ps = eval_result["priority_score"]
@@ -124,7 +138,7 @@ class HabitationsService:
                     admin_id=r["admin_id"],
                     admin_name=r["admin_name"],
                     population=pop,
-                    households=int(r.get("households") or 0),
+                    households=int(r.get("households") if r.get("households") is not None else 0),
                     priority_score=ps,
                     caseload_score=caseload,
                     tier=tier_class,
@@ -151,11 +165,11 @@ class HabitationsService:
         if not r:
             raise HabitationNotFoundError(habitation_id)
 
-        pop = int(r.get("population") or 0)
-        v_demo = float(r.get("v_demographic") or 0.5)
-        v_struct = float(r.get("v_structural") or 0.5)
-        v_access = float(r.get("v_access") or 0.5)
-        v_econ = float(r.get("v_economic") or 0.5)
+        pop = int(r.get("population") if r.get("population") is not None else 0)
+        v_demo = float(r.get("v_demographic") if r.get("v_demographic") is not None else 0.5)
+        v_struct = float(r.get("v_structural") if r.get("v_structural") is not None else 0.5)
+        v_access = float(r.get("v_access") if r.get("v_access") is not None else 0.5)
+        v_econ = float(r.get("v_economic") if r.get("v_economic") is not None else 0.5)
         v_index = float(
             r.get("v_index")
             if r.get("v_index") is not None
@@ -170,39 +184,63 @@ class HabitationsService:
             half_life_years=self.scoring_config.loss_half_life_years,
         )
 
-        is_high_risk = r["name"] in ("Chooralmala", "Mundakkai", "Bhagamandala")
-        hazard_intensity = float(r.get("hazard_intensity") or (0.85 if is_high_risk else 0.45))
-        prz_overlap = float(r.get("prz_overlap_pct") or (85.0 if r["name"] in ("Chooralmala", "Mundakkai") else (65.0 if r["name"] == "Bhagamandala" else 25.0)))
+        raw_hi = r.get("hazard_intensity")
+        hazard_intensity = float(raw_hi if raw_hi is not None else 0.45)
+        raw_prz = r.get("prz_overlap_pct")
+        prz_overlap = float(raw_prz if raw_prz is not None else 25.0)
 
-        has_fatal = any((ev.get("fatalities") or 0) > 0 for ev in nearby_events)
+        active_def = bool(r.get("active_deformation", False))
+        if r.get("fatal_event_last_3_monsoons") is not None:
+            fatal_3_monsoons = bool(r["fatal_event_last_3_monsoons"])
+        else:
+            # Canonical derivation from nearby disaster events
+            fatal_3_monsoons = check_fatal_event_last_3_monsoons(nearby_events, reference_date=date.today())
+
+        m_cost = r.get("mitigation_cost")
+        r_cost = r.get("relocation_cost")
+        if r.get("adverse_trend") is not None:
+            adv_trend = bool(r["adverse_trend"])
+        else:
+            adv_trend = check_loss_frequency_rising(nearby_events, reference_date=date.today())
+
         eval_result = self.engine.evaluate_habitation(
             hazard_intensity=hazard_intensity,
             pop_fraction_in_prz=prz_overlap / 100.0,
             vulnerability_index=v_index,
             decayed_loss=decayed_loss,
             population=pop,
-            active_deformation=is_high_risk,
-            fatal_event_last_3_monsoons=has_fatal and r["name"] in ("Chooralmala", "Mundakkai"),
+            active_deformation=active_def,
+            fatal_event_last_3_monsoons=fatal_3_monsoons,
+            mitigation_cost=float(m_cost) if m_cost is not None else None,
+            relocation_cost=float(r_cost) if r_cost is not None else None,
+            adverse_trend=adv_trend,
         )
 
-        ps = float(r.get("priority_score") or eval_result["priority_score"])
-        caseload = float(r.get("caseload_score") or eval_result["caseload_score"])
+        raw_ps = r.get("priority_score")
+        ps = float(raw_ps if raw_ps is not None else eval_result["priority_score"])
+        raw_caseload = r.get("caseload_score")
+        caseload = float(raw_caseload if raw_caseload is not None else eval_result["caseload_score"])
         tier_class = Tier(r["tier"]) if r.get("tier") else eval_result["tier"]
         triage_rationale = r.get("triage_rationale") or eval_result["triage_rationale"]
-        top_factors = r.get("contributing_factors") or eval_result["contributing_factors"]
-        if isinstance(top_factors, str):
+        top_factors_raw = r.get("contributing_factors") or eval_result["contributing_factors"]
+        if isinstance(top_factors_raw, str):
             import json
-            top_factors = json.loads(top_factors)
+            top_factors_raw = json.loads(top_factors_raw)
+        top_factors = normalize_feature_contributions(
+            top_factors_raw or [],
+            default_method="heuristic",
+            max_factors=5,
+        )
 
         loss_dtos = [
             LossEventDTO(
                 id=ev["id"],
                 ts=ev["ts"],
                 hazard_type=ev["hazard_type"],
-                fatalities=ev.get("fatalities") or 0,
-                injured=ev.get("injured") or 0,
-                houses_damaged=ev.get("houses_damaged") or 0,
-                severity=float(ev.get("severity") or 1.0),
+                fatalities=ev.get("fatalities") if ev.get("fatalities") is not None else 0,
+                injured=ev.get("injured") if ev.get("injured") is not None else 0,
+                houses_damaged=ev.get("houses_damaged") if ev.get("houses_damaged") is not None else 0,
+                severity=float(ev.get("severity") if ev.get("severity") is not None else 1.0),
                 source=ev["source"],
                 source_ref=ev.get("source_ref"),
             )
@@ -222,7 +260,7 @@ class HabitationsService:
             admin_id=r["admin_id"],
             admin_name=r["admin_name"],
             population=pop,
-            households=int(r.get("households") or 0),
+            households=int(r.get("households") if r.get("households") is not None else 0),
             centroid=[r["lon"], r["lat"]],
             priority_score=ps,
             caseload_score=caseload,
@@ -235,7 +273,7 @@ class HabitationsService:
             scoring_version=r.get("scoring_version") or self.scoring_config.scoring_version,
             dataset_version=r.get("dataset_version") or "v1.0",
             data_quality=r.get("data_quality") or "observed",
-            confidence=float(r.get("confidence") or 1.0),
+            confidence=float(r.get("confidence") if r.get("confidence") is not None else 1.0),
             calculated_at=r.get("calculated_at") or datetime.now(timezone.utc),
             vulnerability=VulnerabilityBreakdownDTO(
                 v_demographic=v_demo,

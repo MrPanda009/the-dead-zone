@@ -20,6 +20,16 @@ class ZonesRepository:
     def __init__(self, db: Session) -> None:
         self.db = db
 
+    def resolve_snapshot_valid_at(self, valid_at: Optional[datetime] = None) -> Optional[datetime]:
+        """Resolves the coherent snapshot timestamp as of valid_at (or latest if None)."""
+        if valid_at is not None:
+            query = text("SELECT MAX(valid_at) as target_time FROM mhi_snapshot WHERE valid_at <= :valid_at;")
+            row = self.db.execute(query, {"valid_at": valid_at}).mappings().first()
+        else:
+            query = text("SELECT MAX(valid_at) as target_time FROM mhi_snapshot;")
+            row = self.db.execute(query).mappings().first()
+        return row["target_time"] if row and row.get("target_time") else None
+
     def query_zones(
         self,
         res: int,
@@ -29,6 +39,7 @@ class ZonesRepository:
         max_lat: Optional[float] = None,
         admin_id: Optional[int] = None,
         limit: int = 1000,
+        valid_at: Optional[datetime] = None,
     ) -> list[dict[str, Any]]:
         """Queries grid cells and joins their latest MHI snapshot within the spatial bounding box."""
         # Using raw SQL with spatial index for sub-10ms performance
@@ -53,6 +64,23 @@ class ZonesRepository:
         admin_join = "LEFT JOIN admin_boundary a ON g.admin_id = a.id" if admin_id is not None else ""
         where_clause = " AND ".join(conditions)
 
+        if valid_at is not None:
+            lateral_sql = """
+                SELECT mhi_static, mhi_live, mhi_fcst, dominant_hazard, zone_class
+                FROM mhi_snapshot
+                WHERE h3 = g.h3 AND valid_at = :snapshot_time
+                LIMIT 1
+            """
+            params["snapshot_time"] = valid_at
+        else:
+            lateral_sql = """
+                SELECT mhi_static, mhi_live, mhi_fcst, dominant_hazard, zone_class
+                FROM mhi_snapshot
+                WHERE h3 = g.h3
+                ORDER BY valid_at DESC
+                LIMIT 1
+            """
+
         query = text(f"""
             SELECT 
                 g.h3,
@@ -70,16 +98,11 @@ class ZonesRepository:
             FROM grid_cell g
             {admin_join}
             LEFT JOIN LATERAL (
-                SELECT mhi_static, mhi_live, mhi_fcst, dominant_hazard, zone_class
-                FROM mhi_snapshot
-                WHERE h3 = g.h3
-                ORDER BY valid_at DESC
-                LIMIT 1
+                {lateral_sql}
             ) m ON true
             WHERE {where_clause}
             LIMIT :limit;
         """)
-
 
         results = self.db.execute(query, params).mappings().all()
         return [dict(r) for r in results]
