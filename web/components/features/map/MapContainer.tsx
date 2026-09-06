@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import * as maplibregl from 'maplibre-gl';
-import type { Map as MapLibreMap, MapMouseEvent } from 'maplibre-gl';
+import type { Map as MapLibreMap, MapMouseEvent, StyleSpecification } from 'maplibre-gl';
 import { MapboxOverlay } from '@deck.gl/mapbox';
 import type { Layer, PickingInfo } from '@deck.gl/core';
 
@@ -77,12 +77,19 @@ export const MapContainer = ({
   const onMapLoadRef = useRef(onMapLoad);
   const onZoomChangeRef = useRef(onZoomChange);
   const onBackgroundClickRef = useRef(onBackgroundClick);
+  const resolvedThemeRef = useRef(resolvedTheme);
+  const styleUrlRef = useRef(styleUrl);
+  const layersRef = useRef(layers);
+  const currentStyleRef = useRef<string | StyleSpecification | null>(null);
 
   useEffect(() => {
     onMapLoadRef.current = onMapLoad;
     onZoomChangeRef.current = onZoomChange;
     onBackgroundClickRef.current = onBackgroundClick;
-  }, [onMapLoad, onZoomChange, onBackgroundClick]);
+    resolvedThemeRef.current = resolvedTheme;
+    styleUrlRef.current = styleUrl;
+    layersRef.current = layers;
+  }, [onMapLoad, onZoomChange, onBackgroundClick, resolvedTheme, styleUrl, layers]);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -93,9 +100,13 @@ export const MapContainer = ({
       if (disposed || !containerRef.current) return;
       maplibregl.setWorkerUrl('/maplibre-gl-worker.mjs');
 
+      const isDark = resolvedThemeRef.current === 'dark';
+      const initialStyle = resolveBasemapStyle(styleUrlRef.current, isDark);
+      currentStyleRef.current = initialStyle;
+
       const map = new maplibregl.Map({
         container: containerRef.current,
-        style: resolveBasemapStyle(styleUrl, resolvedTheme === 'dark'),
+        style: initialStyle,
         center: [initialViewState.longitude, initialViewState.latitude],
         zoom: initialViewState.zoom,
         pitch: initialViewState.pitch ?? 0,
@@ -111,6 +122,13 @@ export const MapContainer = ({
 
       const overlay = new MapboxOverlay({ interleaved: false, layers: [] });
       map.addControl(overlay);
+
+      // Keep deck.gl layers synchronized across basemap style switches
+      map.on('styledata', () => {
+        if (overlayRef.current && layersRef.current) {
+          overlayRef.current.setProps({ layers: layersRef.current });
+        }
+      });
 
       map.on('zoomend', () => onZoomChangeRef.current?.(map.getZoom()));
       map.on('click', (event: MapMouseEvent) => {
@@ -137,6 +155,7 @@ export const MapContainer = ({
       overlayRef.current = null;
       mapRef.current?.remove();
       mapRef.current = null;
+      currentStyleRef.current = null;
       setIsOverlayReady(false);
     };
     // Style and initial camera are creation-time settings; changing them later would
@@ -144,16 +163,25 @@ export const MapContainer = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Update canvas background when theme changes
+  // Dynamically switch basemap style when theme or styleUrl changes
   useEffect(() => {
-    if (!mapRef.current || styleUrl) return;
-    const bg = resolvedTheme === 'dark' ? '#0b0f16' : '#f4f7f5';
+    const map = mapRef.current;
+    if (!map) return;
+    const isDark = resolvedTheme === 'dark';
+    const nextStyle = resolveBasemapStyle(styleUrl, isDark);
+
+    const isSame =
+      typeof currentStyleRef.current === 'string' && typeof nextStyle === 'string'
+        ? currentStyleRef.current === nextStyle
+        : JSON.stringify(currentStyleRef.current) === JSON.stringify(nextStyle);
+
+    if (isSame) return;
+    currentStyleRef.current = nextStyle;
+
     try {
-      if (mapRef.current.getLayer('background')) {
-        mapRef.current.setPaintProperty('background', 'background-color', bg);
-      }
-    } catch {
-      // Ignore if map style is not loaded yet
+      map.setStyle(nextStyle, { diff: false });
+    } catch (err) {
+      console.error('Failed to update basemap style:', err);
     }
   }, [resolvedTheme, styleUrl]);
 

@@ -47,7 +47,17 @@ export const RouteStage: React.FC<RouteStageProps> = ({
       gsap.fromTo(
         stage,
         { opacity: 0, y: 8 },
-        { opacity: 1, y: 0, duration: M3_DURATION.medium4, ease: M3_EASE.decelerate }
+        {
+          opacity: 1,
+          y: 0,
+          duration: M3_DURATION.medium4,
+          ease: M3_EASE.decelerate,
+          // Drop the inline transform once settled: a lingering `transform` on
+          // `.route-stage` makes it the containing block for `position: fixed`
+          // descendants (the globe canvas, the header), trapping them inside the
+          // full-height scroll page instead of the viewport.
+          clearProps: 'transform',
+        }
       );
     },
     { scope: stageRef }

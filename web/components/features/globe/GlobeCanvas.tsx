@@ -150,8 +150,13 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     const container = containerRef.current;
     if (!container) return;
 
-    let width = container.clientWidth || window.innerWidth;
-    let height = container.clientHeight || window.innerHeight;
+    // The container is `fixed inset-0`, i.e. always viewport-sized. Measure the
+    // viewport directly rather than the container: a transformed ancestor (such
+    // as the GSAP page-entrance tween on `.route-stage`) traps `position: fixed`
+    // and makes `container.clientHeight` report the full scroll height, which
+    // blows the globe up to several times its intended size.
+    let width = window.innerWidth;
+    let height = window.innerHeight;
 
     // 1. Scene & Standard Perspective Camera (normal distance z = 4.8, normal size)
     const scene = new THREE.Scene();
@@ -472,8 +477,8 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     // Responsive Resize Handler
     const handleResize = () => {
       if (!container) return;
-      width = container.clientWidth || window.innerWidth;
-      height = container.clientHeight || window.innerHeight;
+      width = window.innerWidth;
+      height = window.innerHeight;
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
       renderer.setSize(width, height);

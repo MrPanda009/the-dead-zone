@@ -4,6 +4,8 @@ import gsap from 'gsap';
 export interface HexTargetBeaconController {
   group: THREE.Group;
   setPosition: (pos: { x: number; y: number; z: number } | null) => void;
+  /** Scales the beacon to the grid it is marking; built at 1 world unit. */
+  setScale: (scale: number) => void;
   updateTheme: (isDark: boolean) => void;
   dispose: () => void;
 }
@@ -79,6 +81,11 @@ export function createHexTargetBeacon(
     group.position.set(pos.x, pos.y, pos.z);
   };
 
+  const setScale = (scale: number) => {
+    if (!Number.isFinite(scale) || scale <= 0) return;
+    group.scale.setScalar(scale);
+  };
+
   const updateTheme = (dark: boolean) => {
     beamMat.opacity = dark ? 0.75 : 0.85;
   };
@@ -94,5 +101,5 @@ export function createHexTargetBeacon(
     pointMat.dispose();
   };
 
-  return { group, setPosition, updateTheme, dispose };
+  return { group, setPosition, setScale, updateTheme, dispose };
 }
