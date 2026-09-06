@@ -101,17 +101,37 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     }
   }, [isAutoRotating, isRadarActive]);
 
+  // Helper to offset camera projection so Earth is framed on the right on desktop,
+  // while keeping controls.target and camera focal axis centered on Earth.
+  const updateCameraOffset = (cam: THREE.PerspectiveCamera, w: number, h: number, isLanding: boolean) => {
+    const isDesktop = w > 1024;
+    if (isLanding && isDesktop) {
+      const visibleWorldHeight = 2 * Math.tan((cam.fov * Math.PI) / 360) * 4.8;
+      const shiftPixels = (1.15 / visibleWorldHeight) * h;
+      cam.setViewOffset(w, h, -shiftPixels, 0, w, h);
+    } else {
+      cam.clearViewOffset();
+    }
+    cam.updateProjectionMatrix();
+  };
+
   // Handle ViewMode Switch:
-  // 'landing' frames Earth comfortably to the right on desktop, leaving space for left hero content
+  // 'landing' keeps Earth on the right side on desktop while centering rotation in the Earth
   useEffect(() => {
     if (!sceneRef.current) return;
-    const { earthGroup, camera } = sceneRef.current;
+    const { earthGroup, camera, controls } = sceneRef.current;
 
     const isDesktop = typeof window !== 'undefined' && window.innerWidth > 1024;
     const landingX = isDesktop ? 1.15 : 0;
     const loginX = isDesktop ? 3.3 : 1.7;
+    const width = typeof window !== 'undefined' ? window.innerWidth : 1920;
+    const height = typeof window !== 'undefined' ? window.innerHeight : 1080;
 
     if (viewMode === 'login') {
+      camera.clearViewOffset();
+      camera.updateProjectionMatrix();
+      controls.target.set(loginX, 0, 0);
+
       gsap.to(earthGroup.rotation, {
         y: '+=3.4',
         duration: 1.5,
@@ -127,7 +147,7 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
         overwrite: 'auto',
       });
       gsap.to(camera.position, {
-        x: 0,
+        x: loginX,
         y: 0,
         z: 4.8,
         duration: 1.4,
@@ -135,6 +155,9 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
         overwrite: 'auto',
       });
     } else {
+      updateCameraOffset(camera, width, height, true);
+      controls.target.set(landingX, 0, 0);
+
       gsap.to(earthGroup.position, {
         x: landingX,
         y: 0,
@@ -144,7 +167,7 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
         overwrite: 'auto',
       });
       gsap.to(camera.position, {
-        x: 0,
+        x: landingX,
         y: 0,
         z: 4.8,
         duration: 1.3,
@@ -201,10 +224,17 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     let width = container.clientWidth || window.innerWidth;
     let height = container.clientHeight || window.innerHeight;
 
+    const isDesktop = width > 1024;
+    const initialLandingX = isDesktop ? 1.15 : 0;
+    const initialTargetX = viewMode === 'landing' ? initialLandingX : 3.3;
+
     // 1. Scene & Perspective Camera
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 2000);
-    camera.position.set(0, 0, 4.8);
+    camera.position.set(initialTargetX, 0, 4.8);
+    if (viewMode === 'landing') {
+      updateCameraOffset(camera, width, height, true);
+    }
 
     // 2. WebGL Renderer
     const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'high-performance' });
@@ -217,8 +247,9 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
 
-    // 3. OrbitControls
+    // 3. OrbitControls - Target focused squarely at Earth's center
     const controls = new OrbitControls(camera, renderer.domElement);
+    controls.target.set(initialTargetX, 0, 0);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
     controls.rotateSpeed = 0.8;
@@ -275,11 +306,10 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     const starField = new THREE.Points(starGeo, starMat);
     scene.add(starField);
 
-    // 6. Earth Group: Positioned to the right on desktop for landing layout
-    const isDesktop = width > 1024;
+    // 6. Earth Group: Positioned on the right on desktop (landingX = 1.15)
     const earthGroup = new THREE.Group();
     earthGroup.rotation.z = 23.4 * (Math.PI / 180);
-    earthGroup.position.set(viewMode === 'landing' ? (isDesktop ? 1.15 : 0) : 3.3, 0, 0);
+    earthGroup.position.set(initialTargetX, 0, 0);
     scene.add(earthGroup);
 
     // 7. Earth Mesh with Procedural Cartography & NASA Fallback
@@ -484,13 +514,15 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
       width = container.clientWidth || window.innerWidth;
       height = container.clientHeight || window.innerHeight;
       camera.aspect = width / height;
-      camera.updateProjectionMatrix();
-      renderer.setSize(width, height);
 
       const desktop = width > 1024;
-      if (viewMode === 'landing') {
-        earthGroup.position.x = desktop ? 1.15 : 0;
-      }
+      const targetX = viewMode === 'landing' ? (desktop ? 1.15 : 0) : (desktop ? 3.3 : 1.7);
+      earthGroup.position.x = targetX;
+      controls.target.set(targetX, 0, 0);
+      camera.position.x = targetX;
+
+      updateCameraOffset(camera, width, height, viewMode === 'landing');
+      renderer.setSize(width, height);
     };
     window.addEventListener('resize', handleResize);
 

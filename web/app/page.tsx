@@ -11,7 +11,6 @@ import {
   HotspotTooltip,
   HotspotData,
   FloatingQuickControls,
-  SatelliteStatusCard,
 } from '@/components/features/globe';
 import { HeroContent } from '@/components/features/hero';
 
@@ -98,13 +97,7 @@ export default function HomePage() {
         animation={{ delay: INTRO_TIMINGS.fabRail }}
       />
 
-      {/* Bottom Right Satellite Telemetry Status Card (India Subcontinent) */}
-      <SatelliteStatusCard
-        region="India Subcontinent"
-        subtitle="Live Satellite View"
-        statusText="Live"
-        animation={{ delay: INTRO_TIMINGS.statusCard }}
-      />
+
 
       {/* 3D Red Zone Hover Tooltip */}
       <HotspotTooltip

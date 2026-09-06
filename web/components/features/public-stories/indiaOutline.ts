@@ -15,8 +15,8 @@ const mercY = (lat: number): number => {
 
 /** Project WGS84 lon/lat to the 800x900 SVG coordinate space. */
 export const projectLonLat = (lon: number, lat: number): { x: number; y: number } => ({
-  x: S * ((lon * Math.PI) / 180) + OX,
-  y: OY - S * mercY(lat),
+  x: Math.round((S * ((lon * Math.PI) / 180) + OX) * 100) / 100,
+  y: Math.round((OY - S * mercY(lat)) * 100) / 100,
 });
 
 /** True lon/lat of each story hotspot (single source of truth). */
