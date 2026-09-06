@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTheme } from '@/components/providers';
 import { GovNavRail, NavTab } from './GovNavRail';
 import { GovHeader } from './GovHeader';
 import { GovTelemetryMetrics } from './GovTelemetryMetrics';
@@ -36,6 +37,9 @@ export const GovDashboard: React.FC<GovDashboardProps> = ({
   onLogout,
   className = ''
 }) => {
+  const { resolvedTheme, toggleTheme } = useTheme();
+  const isDarkTheme = resolvedTheme === 'dark';
+
   // Navigation & View State
   const [activeTab, setActiveTab] = useState<NavTab>('risk-map');
   const [currentView, setCurrentView] = useState<'map' | 'relocation'>('map');
@@ -45,7 +49,6 @@ export const GovDashboard: React.FC<GovDashboardProps> = ({
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [isLooping, setIsLooping] = useState<boolean>(true);
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
-  const [isDarkTheme, setIsDarkTheme] = useState<boolean>(true);
 
   // Filter States
   const [selectedHazard, setSelectedHazard] = useState<HazardFilter>('All');
@@ -212,7 +215,7 @@ export const GovDashboard: React.FC<GovDashboardProps> = ({
                     onSelectScenarioTime={setSelectedScenarioTime}
                     onResetFilters={handleResetFilters}
                     isDarkTheme={isDarkTheme}
-                    onToggleTheme={() => setIsDarkTheme((prev) => !prev)}
+                    onToggleTheme={toggleTheme}
                   />
                 </div>
 

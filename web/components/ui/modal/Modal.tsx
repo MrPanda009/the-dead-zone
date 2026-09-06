@@ -84,15 +84,15 @@ export const Modal: React.FC<ModalProps> = ({
           onClose();
         }
       }}
-      className={`fixed inset-0 z-50 bg-black/80 backdrop-blur-xl flex items-center justify-center p-4 sm:p-6 ${isOpen ? 'pointer-events-auto' : 'pointer-events-none'} ${classNames.root || ''} ${className}`}
+      className={`fixed inset-0 z-50 bg-black/60 dark:bg-black/80 backdrop-blur-xl flex items-center justify-center p-4 sm:p-6 ${isOpen ? 'pointer-events-auto' : 'pointer-events-none'} ${classNames.root || ''} ${className}`}
     >
       <div
         ref={containerRef}
-        className={`${maxWidthClassName} w-full max-h-[90vh] glass-card rounded-3xl border border-white/15 overflow-hidden flex flex-col shadow-2xl ${classNames.container || ''}`}
+        className={`${maxWidthClassName} w-full max-h-[90vh] glass-card rounded-3xl border border-line dark:border-white/15 overflow-hidden flex flex-col shadow-2xl bg-surface-0/95 dark:bg-forest-dark/95 text-ink dark:text-text-primary ${classNames.container || ''}`}
       >
         {/* Header */}
         {header && (
-          <div className={`p-6 border-b border-white/10 flex items-center justify-between bg-forest-deep/50 ${classNames.header || ''}`}>
+          <div className={`p-6 border-b border-line dark:border-white/10 flex items-center justify-between bg-surface-1/70 dark:bg-forest-deep/50 ${classNames.header || ''}`}>
             {header}
           </div>
         )}
@@ -104,7 +104,7 @@ export const Modal: React.FC<ModalProps> = ({
 
         {/* Footer */}
         {footer && (
-          <div className={`p-5 border-t border-white/10 bg-forest-deep/80 flex flex-col sm:flex-row items-center justify-between gap-3 ${classNames.footer || ''}`}>
+          <div className={`p-5 border-t border-line dark:border-white/10 bg-surface-1/80 dark:bg-forest-deep/80 flex flex-col sm:flex-row items-center justify-between gap-3 ${classNames.footer || ''}`}>
             {footer}
           </div>
         )}

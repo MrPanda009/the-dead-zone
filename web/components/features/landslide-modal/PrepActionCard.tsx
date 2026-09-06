@@ -41,7 +41,7 @@ export const PrepActionCard: React.FC<PrepActionCardProps> = ({
       gsap.to(el, {
         y: 0,
         boxShadow: 'none',
-        borderColor: 'rgba(255, 255, 255, 0.1)',
+        clearProps: 'borderColor',
         duration: 0.25,
         ease: 'power2.out',
         overwrite: 'auto',
@@ -60,13 +60,13 @@ export const PrepActionCard: React.FC<PrepActionCardProps> = ({
   return (
     <div
       ref={cardRef}
-      className={`prep-card-item glass-card p-4 rounded-xl border border-white/10 transition-colors select-none ${className}`}
+      className={`prep-card-item glass-card p-4 rounded-xl border border-line dark:border-white/10 transition-colors select-none ${className}`}
     >
       <div className={`w-8 h-8 rounded-lg ${iconBgClass} ${iconColorClass} flex items-center justify-center mb-2.5`}>
         <span className="material-symbols-outlined text-lg">{icon}</span>
       </div>
-      <div className="font-semibold text-white text-sm">{title}</div>
-      <p className="text-xs text-text-muted mt-1 leading-relaxed">{description}</p>
+      <div className="font-semibold text-ink dark:text-white text-sm">{title}</div>
+      <p className="text-xs text-text-secondary dark:text-text-muted mt-1 leading-relaxed">{description}</p>
     </div>
   );
 };

@@ -1,21 +1,26 @@
 @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 /*
  * SETU-DRR operations console & atmospheric forest palette.
- *
- * Dark-first: the hazard ramp is calibrated against a dark ground, and a light surface
- * would wash out the low classes where most of the Barpeta distribution sits.
+ * Dual theme configuration:
+ *  - Dark: Calibrated against dark ground for hazard luminous contrast.
+ *  - Light: Calibrated for sunlight & command clarity with crisp high-contrast dark forest ink.
  */
 :root {
-  color-scheme: dark;
-
   /* Typography / Fonts */
   --font-sans: var(--font-geist-sans), 'Plus Jakarta Sans', sans-serif;
   --font-display: 'Space Grotesk', sans-serif;
   --font-mono: var(--font-geist-mono), 'JetBrains Mono', monospace;
+}
 
-  /* SETU-DRR operations console palette */
+:root,
+html.dark {
+  color-scheme: dark;
+
+  /* SETU-DRR operations console palette (Dark) */
   --surface-0: #0b0f16;
   --surface-1: #111823;
   --surface-2: #18212e;
@@ -77,6 +82,73 @@
   --color-gov-orange: #c96b3b;
   --color-gov-amber: #d49a45;
   --color-gov-green: #4d7050;
+}
+
+html.light {
+  color-scheme: light;
+
+  /* SETU-DRR operations console palette (Light - crisp daylight readability) */
+  --surface-0: #ffffff;
+  --surface-1: #f4f7f5;
+  --surface-2: #e7eeea;
+  --panel: #ffffff;
+
+  --line: #d6e0da;
+  --line-strong: #b8c8be;
+
+  --ink: #0d1a14;
+  --ink-muted: #3d5449;
+  --ink-faint: #6a8274;
+
+  --accent: #0284c7;
+  --accent-strong: #0369a1;
+
+  --critical: #dc2626;
+  --warning: #d97706;
+  --safe: #16a34a;
+
+  /* Surface / Atmosphere tokens */
+  --color-bg-base: #f5f8f5;
+  --color-forest-deep: #ebf2ec;
+  --color-forest-mid: #dce7df;
+  --color-forest-light: #cde0d3;
+  --color-forest-surface: #ffffff;
+  --color-forest-surface-hover: #eaf1ec;
+  --color-forest-dark: #e8f0ea;
+
+  /* Citron & Brand Accents (Adapted for contrast on light mode) */
+  --color-citron: #4d7a18;
+  --color-citron-hover: #3d6313;
+  --color-accent-emerald: #059669;
+  --color-accent-emerald-bright: #10b981;
+  --color-accent-emerald-light: #047857;
+
+  /* Editorial & Text */
+  --color-cream: #121f1a;
+  --color-text-primary: #0f1c16;
+  --color-text-secondary: #334b3e;
+  --color-text-muted: #5e776a;
+  --color-text-dim: #8b9f93;
+
+  /* Hazard & Alert Severities */
+  --color-hazard-red: #dc2626;
+  --color-hazard-orange: #ea580c;
+  --color-hazard-amber: #d97706;
+  --color-hazard-green: #16a34a;
+
+  /* Gov Resilience Command Center Palette */
+  --color-gov-bg: #f7f5f0;
+  --color-gov-bg-light: #ffffff;
+  --color-gov-surface: #ffffff;
+  --color-gov-surface-hover: #edeae2;
+  --color-gov-surface-light: #ffffff;
+  --color-gov-border: #d4ded6;
+  --color-gov-sage: #507153;
+  --color-gov-sage-light: #6f8f72;
+  --color-gov-red: #b9433f;
+  --color-gov-orange: #c96b3b;
+  --color-gov-amber: #d49a45;
+  --color-gov-green: #3d6040;
 }
 
 @theme inline {
@@ -197,8 +269,11 @@ body {
   background: radial-gradient(ellipse at 65% 45%, rgba(48, 72, 57, 0.5) 0%, rgba(22, 34, 27, 0.88) 55%, #0e1611 100%);
   pointer-events: none;
 }
+html.light .forest-atmosphere {
+  background: radial-gradient(ellipse at 65% 45%, rgba(185, 215, 195, 0.55) 0%, rgba(235, 244, 238, 0.88) 55%, #f5f8f5 100%);
+}
 
-/* Frosted Dark Sage Glass Panels */
+/* Frosted Dark / Sage Glass Panels */
 .glass-card {
   background: rgba(20, 31, 24, 0.78);
   backdrop-filter: blur(24px);
@@ -206,6 +281,11 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 25px 50px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.08);
   will-change: transform, box-shadow, border-color;
+}
+html.light .glass-card {
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 20px 45px rgba(20, 40, 30, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.95);
 }
 
 /* Capsule Pill Header (Matching Reference Image 2) */
@@ -216,6 +296,11 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.15);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 }
+html.light .capsule-pill {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 25px rgba(20, 40, 30, 0.07);
+}
 
 /* Pill badge */
 .pill-badge {
@@ -224,11 +309,15 @@ body {
   backdrop-filter: blur(12px);
   will-change: transform, background-color, border-color;
 }
+html.light .pill-badge {
+  background: rgba(235, 244, 238, 0.92);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
 
 /* Minimalist Citron Solid Button (Image 1 Style - Zero Gradients) */
 .btn-citron {
   background-color: var(--color-citron);
-  color: var(--color-bg-base);
+  color: #06100c;
   font-weight: 700;
   transition: all 0.2s ease;
 }
@@ -241,6 +330,17 @@ body {
 
 .btn-citron:active {
   transform: translateY(0) scale(0.98);
+}
+
+html.light .btn-citron {
+  background-color: #9fe32a;
+  color: #0d1a14;
+  box-shadow: 0 10px 24px rgba(120, 180, 20, 0.25);
+}
+
+html.light .btn-citron:hover {
+  background-color: #8ed31d;
+  box-shadow: 0 12px 28px rgba(120, 180, 20, 0.35);
 }
 
 /* Dead Zone Radiant Glows */
@@ -260,6 +360,9 @@ body {
   pointer-events: none;
   user-select: none;
 }
+html.light .watermark-text {
+  color: rgba(13, 26, 20, 0.07);
+}
 
 /* MapLibre's default controls are light-themed; pull them onto the app palette. */
 .maplibregl-ctrl-group {
@@ -274,6 +377,10 @@ body {
 
 .maplibregl-ctrl-group button .maplibregl-ctrl-icon {
   filter: invert(1) brightness(0.85);
+}
+
+html.light .maplibregl-ctrl-group button .maplibregl-ctrl-icon {
+  filter: none;
 }
 
 .maplibregl-ctrl-attrib {
@@ -323,6 +430,10 @@ input[type='range']::-moz-range-thumb {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-citron);
+}
+
+html.light ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.18);
 }
 
 @media (prefers-reduced-motion: reduce) {

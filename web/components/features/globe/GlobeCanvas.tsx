@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import gsap from 'gsap';
+import { useTheme } from '@/components/providers';
 import { HotspotData, DEAD_ZONES_DATA } from './types';
 import { generateProceduralEarthCanvas } from './procedural-textures';
 
@@ -39,8 +40,11 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
   onHoverHotspot,
   className = '',
 }) => {
+  const { resolvedTheme } = useTheme();
+  const isLight = resolvedTheme === 'light';
   const containerRef = useRef<HTMLDivElement>(null);
   const onHoverHotspotRef = useRef(onHoverHotspot);
+  const ambientLightRef = useRef<THREE.AmbientLight | null>(null);
 
   useEffect(() => {
     onHoverHotspotRef.current = onHoverHotspot;
@@ -55,6 +59,14 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     isAutoRotating: boolean;
     isRadarActive: boolean;
   } | null>(null);
+
+  // Dynamically update globe lighting when theme changes
+  useEffect(() => {
+    if (ambientLightRef.current) {
+      ambientLightRef.current.color.setHex(isLight ? 0x90a89d : 0x0e1b14);
+      ambientLightRef.current.intensity = isLight ? 2.4 : 1.2;
+    }
+  }, [isLight]);
 
   // Sync animation flags
   useEffect(() => {
@@ -185,7 +197,8 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     atmosphereLight.position.set(-5, -2, -4);
     scene.add(atmosphereLight);
 
-    const ambientLight = new THREE.AmbientLight(0x0e1b14, 1.2);
+    const ambientLight = new THREE.AmbientLight(isLight ? 0x90a89d : 0x0e1b14, isLight ? 2.4 : 1.2);
+    ambientLightRef.current = ambientLight;
     scene.add(ambientLight);
 
     // 5. Starfield Particles

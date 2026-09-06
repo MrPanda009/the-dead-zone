@@ -13,10 +13,11 @@ import type { StyleSpecification } from 'maplibre-gl';
 
 export const BASEMAP_STYLE_URL = process.env.NEXT_PUBLIC_BASEMAP_STYLE_URL ?? '';
 
-/** Canvas colours are read from CSS custom properties so the map tracks the app theme. */
-const FALLBACK_BACKGROUND = '#0b0f16';
+/** Canvas colours are read from theme palette so the map tracks the app theme. */
+export const FALLBACK_BACKGROUND_DARK = '#0b0f16';
+export const FALLBACK_BACKGROUND_LIGHT = '#f4f7f5';
 
-export function createFallbackStyle(background = FALLBACK_BACKGROUND): StyleSpecification {
+export function createFallbackStyle(background = FALLBACK_BACKGROUND_DARK): StyleSpecification {
   return {
     version: 8,
     // MapLibre requires a glyph endpoint before any symbol layer can render. None is
@@ -35,8 +36,11 @@ export function createFallbackStyle(background = FALLBACK_BACKGROUND): StyleSpec
 /** Returns the style to hand MapLibre: the configured URL, or the flat fallback. */
 export function resolveBasemapStyle(
   styleUrl = BASEMAP_STYLE_URL,
+  isDark = true,
 ): string | StyleSpecification {
-  return styleUrl ? styleUrl : createFallbackStyle();
+  return styleUrl
+    ? styleUrl
+    : createFallbackStyle(isDark ? FALLBACK_BACKGROUND_DARK : FALLBACK_BACKGROUND_LIGHT);
 }
 
 /**

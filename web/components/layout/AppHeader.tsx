@@ -6,6 +6,7 @@ import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 
 import { usePrefersReducedMotion } from '@/lib/hooks/usePrefersReducedMotion';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 export interface AppHeaderProps {
   title: ReactNode;
@@ -63,7 +64,7 @@ export const AppHeader = ({
     <header
       ref={rootRef}
       className={[
-        'flex h-12 shrink-0 items-center justify-between gap-4 border-b border-line bg-surface-0 px-4',
+        'flex h-12 shrink-0 items-center justify-between gap-4 border-b border-line bg-surface-0 px-4 transition-colors duration-200',
         classNames.root ?? '',
         className,
       ]
@@ -94,7 +95,7 @@ export const AppHeader = ({
           <div className="flex items-center gap-2">
             <Link
               href="/gov"
-              className="px-2.5 py-1 rounded-md text-xs font-mono bg-white/5 hover:bg-white/10 text-cream/70 hover:text-cream transition-colors flex items-center gap-1"
+              className="px-2.5 py-1 rounded-md text-xs font-mono bg-surface-1 hover:bg-surface-2 text-ink-muted hover:text-ink border border-line transition-colors flex items-center gap-1"
               title="View Hex Simulation"
             >
               <span className="material-symbols-outlined text-xs">hexagon</span>
@@ -102,12 +103,13 @@ export const AppHeader = ({
             </Link>
             <Link
               href="/stories"
-              className="px-2.5 py-1 rounded-md text-xs font-mono bg-white/5 hover:bg-white/10 text-cream/70 hover:text-cream transition-colors flex items-center gap-1"
+              className="px-2.5 py-1 rounded-md text-xs font-mono bg-surface-1 hover:bg-surface-2 text-ink-muted hover:text-ink border border-line transition-colors flex items-center gap-1"
               title="View Citizen Stories"
             >
               <span className="material-symbols-outlined text-xs">explore</span>
               <span>Stories</span>
             </Link>
+            <ThemeToggle variant="icon" size="sm" />
           </div>
         )}
       </div>

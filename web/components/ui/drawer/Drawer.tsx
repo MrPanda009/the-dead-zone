@@ -72,11 +72,11 @@ export const Drawer: React.FC<DrawerProps> = ({
       <div
         ref={drawerRef}
         style={{ transform: 'translateX(100%)' }}
-        className={`fixed inset-y-0 right-0 ${maxWidthClassName} w-full z-50 bg-forest-dark/95 backdrop-blur-2xl border-l border-white/10 shadow-[0_0_80px_rgba(0,0,0,0.9)] flex flex-col ${isOpen ? 'pointer-events-auto' : 'pointer-events-none'} ${classNames.root || ''} ${className}`}
+        className={`fixed inset-y-0 right-0 ${maxWidthClassName} w-full z-50 bg-surface-0/95 dark:bg-forest-dark/95 backdrop-blur-2xl border-l border-line dark:border-white/10 shadow-[0_0_80px_rgba(0,0,0,0.5)] flex flex-col text-ink dark:text-text-primary transition-colors duration-200 ${isOpen ? 'pointer-events-auto' : 'pointer-events-none'} ${classNames.root || ''} ${className}`}
       >
         {/* Header */}
         {(title || icon) && (
-          <div className={`p-6 border-b border-white/10 flex items-center justify-between ${classNames.header || ''}`}>
+          <div className={`p-6 border-b border-line dark:border-white/10 flex items-center justify-between ${classNames.header || ''}`}>
             <div className="flex items-center space-x-3">
               {icon && (
                 <div className="w-9 h-9 rounded-xl bg-citron/15 border border-citron/30 flex items-center justify-center text-citron">
@@ -84,13 +84,13 @@ export const Drawer: React.FC<DrawerProps> = ({
                 </div>
               )}
               <div>
-                {title && <h3 className="font-display text-lg font-bold text-white tracking-tight">{title}</h3>}
-                {subtitle && <p className="text-xs text-text-muted">{subtitle}</p>}
+                {title && <h3 className="font-display text-lg font-bold text-ink dark:text-white tracking-tight">{title}</h3>}
+                {subtitle && <p className="text-xs text-ink-faint dark:text-text-muted">{subtitle}</p>}
               </div>
             </div>
             <button
               onClick={onClose}
-              className="p-2 rounded-xl text-text-muted hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+              className="p-2 rounded-xl text-ink-muted dark:text-text-muted hover:text-ink dark:hover:text-white hover:bg-surface-2 dark:hover:bg-white/5 transition-colors cursor-pointer"
             >
               <span className="material-symbols-outlined text-2xl">close</span>
             </button>
@@ -104,7 +104,7 @@ export const Drawer: React.FC<DrawerProps> = ({
 
         {/* Footer */}
         {footer && (
-          <div className={`p-4 border-t border-white/10 bg-forest-deep/60 flex items-center justify-between ${classNames.footer || ''}`}>
+          <div className={`p-4 border-t border-line dark:border-white/10 bg-surface-1/80 dark:bg-forest-deep/60 flex items-center justify-between ${classNames.footer || ''}`}>
             {footer}
           </div>
         )}

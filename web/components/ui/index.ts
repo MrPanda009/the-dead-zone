@@ -17,3 +17,4 @@ export * from './pill';
 export * from './progress';
 export * from './drawer';
 export * from './modal';
+export * from './theme-toggle';

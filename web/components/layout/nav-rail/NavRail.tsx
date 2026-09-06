@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 export interface NavRailProps {
   /** Callback for Global Overview click */
@@ -32,7 +33,7 @@ export const NavRail: React.FC<NavRailProps> = ({
   return (
     <aside
       id="app-aside"
-      className={`fixed left-0 top-16 bottom-0 w-16 border-r border-white/[0.08] bg-forest-dark/60 backdrop-blur-xl z-30 hidden sm:flex flex-col items-center py-5 space-y-4 ${className}`}
+      className={`fixed left-0 top-16 bottom-0 w-16 border-r border-line bg-surface-0/80 dark:bg-forest-dark/60 backdrop-blur-xl z-30 hidden sm:flex flex-col items-center py-5 space-y-4 transition-colors duration-200 ${className}`}
     >
       {/* 1. Global Overview */}
       {onGlobalOverviewClick ? (
@@ -42,7 +43,7 @@ export const NavRail: React.FC<NavRailProps> = ({
           className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:scale-105 cursor-pointer ${
             pathname === '/'
               ? 'bg-citron/15 text-citron border border-citron/30'
-              : 'text-text-muted hover:text-text-primary hover:bg-white/5'
+              : 'text-text-muted hover:text-text-primary hover:bg-surface-2'
           }`}
         >
           <span className="material-symbols-outlined text-xl">travel_explore</span>
@@ -54,7 +55,7 @@ export const NavRail: React.FC<NavRailProps> = ({
           className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:scale-105 cursor-pointer ${
             pathname === '/'
               ? 'bg-citron/15 text-citron border border-citron/30'
-              : 'text-text-muted hover:text-text-primary hover:bg-white/5'
+              : 'text-text-muted hover:text-text-primary hover:bg-surface-2'
           }`}
         >
           <span className="material-symbols-outlined text-xl">travel_explore</span>
@@ -69,7 +70,7 @@ export const NavRail: React.FC<NavRailProps> = ({
           className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:scale-105 cursor-pointer ${
             pathname === '/workspace'
               ? 'bg-citron/15 text-citron border border-citron/30'
-              : 'text-text-muted hover:text-text-primary hover:bg-white/5'
+              : 'text-text-muted hover:text-text-primary hover:bg-surface-2'
           }`}
         >
           <span className="material-symbols-outlined text-xl">map</span>
@@ -81,7 +82,7 @@ export const NavRail: React.FC<NavRailProps> = ({
           className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:scale-105 cursor-pointer ${
             pathname === '/workspace'
               ? 'bg-citron/15 text-citron border border-citron/30'
-              : 'text-text-muted hover:text-text-primary hover:bg-white/5'
+              : 'text-text-muted hover:text-text-primary hover:bg-surface-2'
           }`}
         >
           <span className="material-symbols-outlined text-xl">map</span>
@@ -96,7 +97,7 @@ export const NavRail: React.FC<NavRailProps> = ({
           className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:scale-105 cursor-pointer ${
             pathname === '/gov'
               ? 'bg-citron/15 text-citron border border-citron/30'
-              : 'text-text-muted hover:text-text-primary hover:bg-white/5'
+              : 'text-text-muted hover:text-text-primary hover:bg-surface-2'
           }`}
         >
           <span className="material-symbols-outlined text-xl">hexagon</span>
@@ -108,7 +109,7 @@ export const NavRail: React.FC<NavRailProps> = ({
           className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:scale-105 cursor-pointer ${
             pathname === '/gov'
               ? 'bg-citron/15 text-citron border border-citron/30'
-              : 'text-text-muted hover:text-text-primary hover:bg-white/5'
+              : 'text-text-muted hover:text-text-primary hover:bg-surface-2'
           }`}
         >
           <span className="material-symbols-outlined text-xl">hexagon</span>
@@ -123,7 +124,7 @@ export const NavRail: React.FC<NavRailProps> = ({
           className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:scale-105 cursor-pointer ${
             pathname === '/stories'
               ? 'bg-citron/15 text-citron border border-citron/30'
-              : 'text-text-muted hover:text-text-primary hover:bg-white/5'
+              : 'text-text-muted hover:text-text-primary hover:bg-surface-2'
           }`}
         >
           <span className="material-symbols-outlined text-xl">explore</span>
@@ -135,7 +136,7 @@ export const NavRail: React.FC<NavRailProps> = ({
           className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:scale-105 cursor-pointer ${
             pathname === '/stories'
               ? 'bg-citron/15 text-citron border border-citron/30'
-              : 'text-text-muted hover:text-text-primary hover:bg-white/5'
+              : 'text-text-muted hover:text-text-primary hover:bg-surface-2'
           }`}
         >
           <span className="material-symbols-outlined text-xl">explore</span>
@@ -146,7 +147,7 @@ export const NavRail: React.FC<NavRailProps> = ({
       <button
         onClick={onSensorAlertsClick}
         title="Sensor Alerts"
-        className="w-10 h-10 rounded-xl text-text-muted hover:text-text-primary hover:bg-white/5 flex items-center justify-center transition-all hover:scale-105 cursor-pointer relative"
+        className="w-10 h-10 rounded-xl text-text-muted hover:text-text-primary hover:bg-surface-2 flex items-center justify-center transition-all hover:scale-105 cursor-pointer relative"
       >
         <span className="material-symbols-outlined text-xl">notifications_active</span>
         <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-hazard-red animate-pulse" />
@@ -154,10 +155,13 @@ export const NavRail: React.FC<NavRailProps> = ({
 
       <div className="flex-grow" />
 
+      {/* Theme Toggle in Rail */}
+      <ThemeToggle variant="icon" size="sm" />
+
       {/* Officer Avatar */}
       <div
         title="Duty Officer"
-        className="w-8 h-8 rounded-full bg-forest-surface border border-citron/40 text-citron text-xs font-bold flex items-center justify-center select-none"
+        className="w-8 h-8 rounded-full bg-surface-1 border border-citron/40 text-citron text-xs font-bold flex items-center justify-center select-none"
       >
         DO
       </div>

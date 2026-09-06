@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 export interface HeaderProps {
   /** Active view mode */
@@ -45,7 +46,7 @@ export const Header: React.FC<HeaderProps> = ({
         <Link
           href={homeHref}
           onClick={() => onToggleViewMode && onToggleViewMode('landing')}
-          className="capsule-pill px-4 py-2 rounded-full flex items-center space-x-2 text-xs font-mono text-text-secondary cursor-pointer hover:bg-white/10 transition-all select-none"
+          className="capsule-pill px-4 py-2 rounded-full flex items-center space-x-2 text-xs font-mono text-text-secondary cursor-pointer hover:bg-surface-2 transition-all select-none"
         >
           <span className="text-citron font-bold">*</span>
           <span className="text-text-muted">::</span>
@@ -58,13 +59,13 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="pointer-events-auto hidden md:block">
         <Link
           href="/workspace"
-          className="capsule-pill px-10 py-2.5 rounded-full shadow-lg border border-white/15 hover:border-citron/40 transition-all flex items-center gap-2 group"
+          className="capsule-pill px-10 py-2.5 rounded-full shadow-lg border border-line hover:border-citron/40 transition-all flex items-center gap-2 group"
           title="Open SETU-DRR Command Workspace"
         >
           <span className="font-display text-sm font-bold tracking-[0.25em] text-text-primary uppercase select-none group-hover:text-citron transition-colors">
             SETU-DRR
           </span>
-          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/10 text-text-muted group-hover:text-citron group-hover:bg-citron/15 transition-colors">
+          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface-2 text-text-muted group-hover:text-citron group-hover:bg-citron/15 transition-colors">
             WORKSPACE
           </span>
         </Link>
@@ -72,6 +73,8 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Right Controls Pill */}
       <div className="pointer-events-auto flex items-center space-x-2.5">
+        <ThemeToggle variant="pill" size="sm" showLabel={false} />
+
         {onToggleRadar && (
           <button
             onClick={onToggleRadar}
@@ -99,7 +102,7 @@ export const Header: React.FC<HeaderProps> = ({
         {onToggleViewMode ? (
           <button
             onClick={() => onToggleViewMode(viewMode === 'landing' ? 'login' : 'landing')}
-            className="capsule-pill px-4 py-2 rounded-full text-xs font-mono font-medium text-text-secondary hover:text-text-primary hover:bg-white/10 transition-all cursor-pointer flex items-center gap-1.5"
+            className="capsule-pill px-4 py-2 rounded-full text-xs font-mono font-medium text-text-secondary hover:text-text-primary hover:bg-surface-2 transition-all cursor-pointer flex items-center gap-1.5"
           >
             <span className="material-symbols-outlined text-sm">
               {viewMode === 'landing' ? 'login' : 'public'}
@@ -109,7 +112,7 @@ export const Header: React.FC<HeaderProps> = ({
         ) : (
           <Link
             href={viewMode === 'landing' ? portalHref : homeHref}
-            className="capsule-pill px-4 py-2 rounded-full text-xs font-mono font-medium text-text-secondary hover:text-text-primary hover:bg-white/10 transition-all cursor-pointer flex items-center gap-1.5"
+            className="capsule-pill px-4 py-2 rounded-full text-xs font-mono font-medium text-text-secondary hover:text-text-primary hover:bg-surface-2 transition-all cursor-pointer flex items-center gap-1.5"
           >
             <span className="material-symbols-outlined text-sm">
               {viewMode === 'landing' ? 'login' : 'public'}

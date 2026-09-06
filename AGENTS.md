@@ -121,6 +121,22 @@ These guidelines are mandatory for all work inside `web/` (Next.js 16 + React 19
 
 ---
 
+### 4. Universal Light & Dark Mode Compliance (`ThemeProvider`)
+- **Global Theme Provider**: The application uses a global `ThemeProvider` located at `web/components/providers/ThemeProvider.tsx` (re-exported via `@/components/providers`). It supports `'light' | 'dark' | 'system'` modes with `localStorage` persistence and an anti-flash hydration script in `<head>`.
+- **Mandatory Dual Theme Compatibility**: Every single component, layout, modal, drawer, badge, and widget created or modified **MUST** look pristine in both light and dark modes.
+  - **Never Hardcode Dark-Only Values**: Do NOT hardcode `#0b1c15`, `text-white`, `border-white/10`, or `bg-[#0e261d]` without providing their light mode counterparts.
+  - **Tailwind v4 Semantic Tokens**: Use defined CSS variables and semantic classes:
+    - Backgrounds: `bg-bg-base`, `bg-surface-0 dark:bg-forest-dark`, `bg-surface-1 dark:bg-forest-surface`
+    - Borders: `border-line dark:border-white/10`, `border-line-strong dark:border-white/20`
+    - Text: `text-ink dark:text-text-primary`, `text-text-secondary`, `text-text-muted`
+    - Cards & Panels: `.glass-card` (automatically adopts light/dark styling from `globals.css`)
+  - **Three.js, WebGL & MapLibre Sync**: For canvas or graphic elements that do not read CSS classes directly:
+    - Consume `const { resolvedTheme } = useTheme();` from `@/components/providers`.
+    - Adapt lighting, backgrounds, and meshes reactively (e.g., `map.setPaintProperty('background', 'background-color', ...)` or Three.js `AmbientLight`).
+  - **Theme Toggle Widget**: Use `<ThemeToggle />` from `@/components/ui/theme-toggle` (or `@/components/ui`) for user controls. It features smooth GSAP-animated sun/moon microinteractions.
+
+---
+
 ## 🏛️ Project Architecture Context
 
 - **SETU-DRR Platform**: Relocation & Hazard Decision Support for NDRF / Disaster Management Division.

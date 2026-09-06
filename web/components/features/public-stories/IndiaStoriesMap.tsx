@@ -92,14 +92,14 @@ export const IndiaStoriesMap: React.FC<IndiaStoriesMapProps> = ({
     >
       <svg
         viewBox="0 0 800 900"
-        className="w-full h-full max-h-[88vh] object-contain drop-shadow-[0_20px_40px_rgba(0,0,0,0.6)]"
+        className="w-full h-full max-h-[88vh] object-contain drop-shadow-lg dark:drop-shadow-[0_20px_40px_rgba(0,0,0,0.6)]"
         preserveAspectRatio="xMidYMid meet"
       >
         <defs>
           {/* Subtle Ambient Radial Glow for India */}
           <radialGradient id="mapGlow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#22543d" stopOpacity="0.45" />
-            <stop offset="100%" stopColor="#0d231a" stopOpacity="0" />
+            <stop offset="0%" className="text-[#95b8a6] dark:text-[#22543d]" stopColor="currentColor" stopOpacity="0.35" />
+            <stop offset="100%" className="text-[#edf3ef] dark:text-[#0d231a]" stopColor="currentColor" stopOpacity="0" />
           </radialGradient>
 
           {/* Active Region Clip Paths */}
@@ -133,16 +133,15 @@ export const IndiaStoriesMap: React.FC<IndiaStoriesMapProps> = ({
              C 170,440 180,380 200,340 
              C 220,300 270,280 290,240 
              C 305,200 295,160 300,120 Z"
-          fill="#132b21"
-          fillOpacity="0.85"
-          stroke="#fef08a"
-          strokeOpacity="0.45"
+          className="fill-[#cfe0d5] dark:fill-[#132b21] stroke-[#2d6a4f] dark:stroke-[#fef08a] transition-colors duration-300"
+          fillOpacity="0.9"
+          strokeOpacity="0.5"
           strokeWidth="1.6"
           strokeLinejoin="round"
         />
 
         {/* --- INTERNAL STATE BOUNDARIES (Subtle Cartographic Lines) --- */}
-        <g stroke="#fef08a" strokeOpacity="0.22" strokeWidth="1" fill="none" strokeDasharray="3 3">
+        <g className="stroke-[#2d6a4f]/50 dark:stroke-[#fef08a]/25" strokeWidth="1" fill="none" strokeDasharray="3 3">
           {/* North Borders */}
           <path d="M 300,180 Q 360,210 440,190" />
           <path d="M 340,240 Q 420,230 460,260" />
@@ -175,7 +174,7 @@ export const IndiaStoriesMap: React.FC<IndiaStoriesMapProps> = ({
           <path
             d={activeRegion.clipPath}
             fill="none"
-            stroke="#fef08a"
+            className="stroke-[#2d6a4f] dark:stroke-[#fef08a]"
             strokeWidth="2.2"
             strokeOpacity="0.8"
           />
@@ -196,9 +195,9 @@ export const IndiaStoriesMap: React.FC<IndiaStoriesMapProps> = ({
                 cx={hotspot.cx}
                 cy={hotspot.cy}
                 r="16"
-                className="hotspot-pulse"
                 fill="none"
-                stroke={isSelected ? '#a3e635' : '#fef08a'}
+                stroke={isSelected ? '#16a34a' : 'currentColor'}
+                className="hotspot-pulse text-[#2d6a4f] dark:text-[#fef08a]"
                 strokeWidth="1.5"
               />
 
@@ -207,15 +206,15 @@ export const IndiaStoriesMap: React.FC<IndiaStoriesMapProps> = ({
                 cx={hotspot.cx}
                 cy={hotspot.cy}
                 r={isSelected ? 6.5 : 5}
-                fill={isSelected ? '#a3e635' : '#fef08a'}
-                className="transition-all duration-200 shadow-md group-hover:scale-125"
+                fill={isSelected ? '#16a34a' : 'currentColor'}
+                className="text-[#2d6a4f] dark:text-[#fef08a] transition-all duration-200 shadow-md group-hover:scale-125"
               />
             </g>
           );
         })}
 
         {/* Andaman & Nicobar Islands Cartographic Inset */}
-        <g stroke="#fef08a" strokeOpacity="0.4" strokeWidth="1.2" fill="#132b21">
+        <g className="stroke-[#2d6a4f]/70 dark:stroke-[#fef08a]/40 fill-[#cfe0d5] dark:fill-[#132b21]" strokeWidth="1.2">
           <ellipse cx="680" cy="680" rx="3" ry="12" />
           <ellipse cx="682" cy="710" rx="2.5" ry="8" />
           <ellipse cx="684" cy="740" rx="3" ry="14" />

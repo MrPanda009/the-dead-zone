@@ -36,10 +36,10 @@ export const PublicStoriesPage: React.FC<PublicStoriesPageProps> = ({
 
   return (
     <div
-      className={`relative w-screen h-screen overflow-hidden bg-[#0e261d] text-cream flex flex-col justify-between p-6 sm:p-8 lg:p-10 select-none ${className}`}
+      className={`relative w-screen h-screen overflow-hidden bg-bg-base text-text-primary dark:bg-[#0e261d] dark:text-cream flex flex-col justify-between p-6 sm:p-8 lg:p-10 select-none transition-colors duration-300 ${className}`}
     >
       {/* Background Subtle Ambient Vignette */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#143d2c]/40 via-[#0e261d] to-[#081813] pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-forest-mid/25 via-bg-base to-forest-deep/15 dark:from-[#143d2c]/40 dark:via-[#0e261d] dark:to-[#081813] pointer-events-none" />
 
       {/* 1. TOP HEADER: Navigation & Coordinates Readout */}
       <div className="relative z-20 w-full mb-2">

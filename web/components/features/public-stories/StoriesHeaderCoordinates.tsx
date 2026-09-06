@@ -4,6 +4,7 @@ import React, { useRef } from 'react';
 import Link from 'next/link';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 export interface StoriesHeaderCoordinatesProps {
   /** Latitude display string */
@@ -46,13 +47,13 @@ export const StoriesHeaderCoordinates: React.FC<StoriesHeaderCoordinatesProps> =
     <div
       className={`w-full flex items-center justify-between pointer-events-auto select-none ${className}`}
     >
-      {/* Left Action Buttons: Overview & Switch to Gov */}
+      {/* Left Action Buttons: Overview, Switch to Gov, Theme Toggle */}
       <div className="flex items-center gap-2 sm:gap-3">
         {onBackToOverview ? (
           <button
             type="button"
             onClick={onBackToOverview}
-            className="text-xs font-mono tracking-wider text-cream/70 hover:text-cream px-3 py-1.5 rounded-lg bg-black/20 hover:bg-black/40 border border-cream/10 transition-all flex items-center gap-1.5 cursor-pointer backdrop-blur-md"
+            className="text-xs font-mono tracking-wider text-ink-muted hover:text-ink dark:text-cream/70 dark:hover:text-cream px-3 py-1.5 rounded-lg bg-surface-1/80 hover:bg-surface-2 dark:bg-black/20 dark:hover:bg-black/40 border border-line dark:border-cream/10 transition-all flex items-center gap-1.5 cursor-pointer backdrop-blur-md"
           >
             <span className="material-symbols-outlined text-sm">arrow_back</span>
             <span>Overview</span>
@@ -60,7 +61,7 @@ export const StoriesHeaderCoordinates: React.FC<StoriesHeaderCoordinatesProps> =
         ) : (
           <Link
             href={overviewHref}
-            className="text-xs font-mono tracking-wider text-cream/70 hover:text-cream px-3 py-1.5 rounded-lg bg-black/20 hover:bg-black/40 border border-cream/10 transition-all flex items-center gap-1.5 cursor-pointer backdrop-blur-md"
+            className="text-xs font-mono tracking-wider text-ink-muted hover:text-ink dark:text-cream/70 dark:hover:text-cream px-3 py-1.5 rounded-lg bg-surface-1/80 hover:bg-surface-2 dark:bg-black/20 dark:hover:bg-black/40 border border-line dark:border-cream/10 transition-all flex items-center gap-1.5 cursor-pointer backdrop-blur-md"
           >
             <span className="material-symbols-outlined text-sm">arrow_back</span>
             <span>Overview</span>
@@ -71,7 +72,7 @@ export const StoriesHeaderCoordinates: React.FC<StoriesHeaderCoordinatesProps> =
           <button
             type="button"
             onClick={onSwitchToGovPortal}
-            className="text-xs font-mono tracking-wider text-cream/80 hover:text-cream px-3 py-1.5 rounded-lg bg-[#162522]/70 hover:bg-[#162522] border border-[#a3e635]/30 hover:border-[#a3e635] text-[#a3e635] transition-all flex items-center gap-1.5 cursor-pointer shadow-sm backdrop-blur-md"
+            className="text-xs font-mono tracking-wider text-citron hover:text-citron-hover dark:text-[#a3e635] px-3 py-1.5 rounded-lg bg-surface-1/90 hover:bg-surface-2 dark:bg-[#162522]/70 dark:hover:bg-[#162522] border border-line hover:border-citron dark:border-[#a3e635]/30 dark:hover:border-[#a3e635] transition-all flex items-center gap-1.5 cursor-pointer shadow-sm backdrop-blur-md"
           >
             <span className="material-symbols-outlined text-sm">verified_user</span>
             <span>Official Hex Map</span>
@@ -79,12 +80,14 @@ export const StoriesHeaderCoordinates: React.FC<StoriesHeaderCoordinatesProps> =
         ) : (
           <Link
             href={govHref}
-            className="text-xs font-mono tracking-wider text-cream/80 hover:text-cream px-3 py-1.5 rounded-lg bg-[#162522]/70 hover:bg-[#162522] border border-[#a3e635]/30 hover:border-[#a3e635] text-[#a3e635] transition-all flex items-center gap-1.5 cursor-pointer shadow-sm backdrop-blur-md"
+            className="text-xs font-mono tracking-wider text-citron hover:text-citron-hover dark:text-[#a3e635] px-3 py-1.5 rounded-lg bg-surface-1/90 hover:bg-surface-2 dark:bg-[#162522]/70 dark:hover:bg-[#162522] border border-line hover:border-citron dark:border-[#a3e635]/30 dark:hover:border-[#a3e635] transition-all flex items-center gap-1.5 cursor-pointer shadow-sm backdrop-blur-md"
           >
             <span className="material-symbols-outlined text-sm">verified_user</span>
             <span>Official Hex Map</span>
           </Link>
         )}
+
+        <ThemeToggle variant="button" size="sm" showLabel={false} />
       </div>
 
       {/* Top Right Monospace Coordinates Readout */}

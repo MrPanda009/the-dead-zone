@@ -44,19 +44,19 @@ export const LandslideModal: React.FC<LandslideModalProps> = ({
           <div className="flex items-center space-x-3">
             <button
               onClick={onClose}
-              className="p-2 rounded-xl text-text-muted hover:text-white hover:bg-white/5 transition-colors flex items-center gap-1 text-xs font-mono cursor-pointer"
+              className="p-2 rounded-xl text-text-muted hover:text-ink dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center gap-1 text-xs font-mono cursor-pointer"
             >
               <span className="material-symbols-outlined text-base">arrow_back</span>
               <span>Back to Map</span>
             </button>
-            <span className="text-white/20">•</span>
+            <span className="text-line-strong dark:text-white/20">•</span>
             <span className="text-xs font-mono uppercase tracking-wider text-citron font-semibold">
               Disaster Profile #01
             </span>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl text-text-muted hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+            className="p-2 rounded-xl text-text-muted hover:text-ink dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
           >
             <span className="material-symbols-outlined text-xl">close</span>
           </button>
@@ -73,7 +73,7 @@ export const LandslideModal: React.FC<LandslideModalProps> = ({
           <div className="flex items-center space-x-3">
             <button
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs text-text-secondary hover:text-white transition-colors cursor-pointer"
+              className="px-4 py-2 rounded-xl text-xs text-text-secondary hover:text-ink dark:hover:text-white transition-colors cursor-pointer"
             >
               Dismiss
             </button>
@@ -95,7 +95,7 @@ export const LandslideModal: React.FC<LandslideModalProps> = ({
             <div className="text-xs font-mono uppercase tracking-widest text-citron font-semibold">
               You Selected
             </div>
-            <h2 className="font-display text-3xl sm:text-4xl font-extrabold text-white flex items-center gap-2 tracking-tight">
+            <h2 className="font-display text-3xl sm:text-4xl font-extrabold text-ink dark:text-white flex items-center gap-2 tracking-tight">
               Landslide 🏔️
             </h2>
             <p className="text-sm text-text-secondary leading-relaxed">
@@ -135,7 +135,7 @@ export const LandslideModal: React.FC<LandslideModalProps> = ({
           </div>
 
           {/* Rescue Image */}
-          <div className="lg:col-span-5 rounded-2xl overflow-hidden border border-white/15 relative h-64 lg:h-72 bg-forest-surface shadow-2xl">
+          <div className="lg:col-span-5 rounded-2xl overflow-hidden border border-line dark:border-white/15 relative h-64 lg:h-72 bg-surface-1 dark:bg-forest-surface shadow-2xl">
             <img
               src="https://images.unsplash.com/photo-1541888946425-d0fbb186f5f7?auto=format&fit=crop&w=800&q=80"
               alt="Rescue Operations"
@@ -146,19 +146,19 @@ export const LandslideModal: React.FC<LandslideModalProps> = ({
               <span className="pill-badge px-2.5 py-1 rounded-md text-[10px] text-citron font-mono">
                 NDRF Rapid Deployment
               </span>
-              <span className="text-[10px] text-text-secondary font-mono">Status: Alert Level 3</span>
+              <span className="text-[10px] text-white/80 font-mono">Status: Alert Level 3</span>
             </div>
           </div>
         </div>
 
         {/* Guidance & Preparedness Section */}
-        <div className="pt-6 border-t border-white/10">
+        <div className="pt-6 border-t border-line dark:border-white/10">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-2">
             <div>
               <div className="text-xs font-mono uppercase tracking-wider text-citron font-semibold">
                 From Risk to Readiness
               </div>
-              <h3 className="font-display text-xl sm:text-2xl font-bold text-white tracking-tight">
+              <h3 className="font-display text-xl sm:text-2xl font-bold text-ink dark:text-white tracking-tight">
                 Safety Measures & Readiness Guidance
               </h3>
             </div>

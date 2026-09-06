@@ -71,15 +71,15 @@ export const HazardDrawer: React.FC<HazardDrawerProps> = ({
           <input
             type="text"
             placeholder="Search state, district or village in India..."
-            className="w-full bg-forest-surface/90 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-xs text-text-primary placeholder-text-dim focus:outline-none focus:border-citron/50 transition-colors"
+            className="w-full bg-surface-1/90 dark:bg-forest-surface/90 border border-line dark:border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-xs text-text-primary placeholder-text-dim focus:outline-none focus:border-citron/50 transition-colors"
           />
         </div>
 
         {/* Welcome Greeting Card */}
-        <div className="glass-card p-4 rounded-2xl border border-white/10 bg-gradient-to-r from-forest-deep/60 to-forest-mid/30">
+        <div className="glass-card p-4 rounded-2xl border border-line dark:border-white/10 bg-gradient-to-r from-surface-1/90 to-surface-2/70 dark:from-forest-deep/60 dark:to-forest-mid/30">
           <div className="flex items-start justify-between">
             <div>
-              <div className="text-sm font-display font-bold text-white flex items-center gap-1.5">
+              <div className="text-sm font-display font-bold text-ink dark:text-white flex items-center gap-1.5">
                 Welcome, Officer <span className="text-base">👋</span>
               </div>
               <p className="text-xs text-text-secondary mt-1 leading-relaxed">
@@ -95,7 +95,7 @@ export const HazardDrawer: React.FC<HazardDrawerProps> = ({
         {/* Explore Hazards Grid */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h4 className="font-display font-bold text-white text-sm tracking-tight">Explore Prominent Hazards</h4>
+            <h4 className="font-display font-bold text-ink dark:text-white text-sm tracking-tight">Explore Prominent Hazards</h4>
             <span className="text-[11px] font-mono text-text-muted">India Vulnerability Map</span>
           </div>
 

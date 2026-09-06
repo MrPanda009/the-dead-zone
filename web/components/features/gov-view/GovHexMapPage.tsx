@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useTheme } from '@/components/providers';
 import { GovMapStage } from '../dashboard/GovMapStage';
 import { GovMapHeader } from './GovMapHeader';
 import { GovMapBottomBar } from './GovMapBottomBar';
@@ -32,7 +33,8 @@ export const GovHexMapPage: React.FC<GovHexMapPageProps> = ({
   onSwitchToPublicPortal,
   className = '',
 }) => {
-  const [isDarkTheme, setIsDarkTheme] = useState(true);
+  const { resolvedTheme, toggleTheme } = useTheme();
+  const isDarkTheme = resolvedTheme === 'dark';
   const [currentTime, setCurrentTime] = useState<number>(10.0); // Start at Intensity Builds
   const [activeStageIndex, setActiveStageIndex] = useState<number>(3);
   const [isExplainDrawerOpen, setIsExplainDrawerOpen] = useState(false);
@@ -70,7 +72,7 @@ export const GovHexMapPage: React.FC<GovHexMapPageProps> = ({
       {/* 1. MINIMAL FLOATING TOP HEADER */}
       <GovMapHeader
         isDarkTheme={isDarkTheme}
-        onToggleTheme={() => setIsDarkTheme((prev) => !prev)}
+        onToggleTheme={toggleTheme}
         activeStageIndex={activeStageIndex}
         onSelectStage={handleSelectStage}
         isExplainDrawerOpen={isExplainDrawerOpen}

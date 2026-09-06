@@ -87,14 +87,14 @@ export const HeroContent: React.FC<HeroContentProps> = ({
 
         {/* Clean Tagline (Reference Image 2) */}
         <div className="mb-4">
-          <h2 className="font-display text-2xl sm:text-4xl lg:text-5xl font-extrabold text-text-primary tracking-tight leading-tight drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)]">
+          <h2 className="font-display text-2xl sm:text-4xl lg:text-5xl font-extrabold text-text-primary tracking-tight leading-tight drop-shadow-sm dark:drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)]">
             <div className="hero-heading-line">Change the World</div>
             <div className="hero-heading-line text-citron">Live Safely!</div>
           </h2>
         </div>
 
         {/* Descriptive mission text */}
-        <p className="hero-subtext text-xs sm:text-sm text-text-secondary/80 font-sans max-w-md mb-8 leading-relaxed">
+        <p className="hero-subtext text-xs sm:text-sm text-text-secondary font-sans max-w-md mb-8 leading-relaxed">
           National Disaster Red Zone Decision Support &amp; Autonomous Resettlement Routing Engine.
         </p>
 
@@ -114,7 +114,7 @@ export const HeroContent: React.FC<HeroContentProps> = ({
 
       {/* Subtle Bottom Left Badge (Reference Image 2) */}
       <div className="hero-bottom-badge absolute bottom-8 left-8 sm:left-16 pointer-events-auto">
-        <div className="w-9 h-9 rounded-full bg-forest-surface/70 border border-white/15 flex items-center justify-center text-xs font-mono font-bold text-text-secondary shadow-md">
+        <div className="w-9 h-9 rounded-full bg-surface-1/70 dark:bg-forest-surface/70 border border-line dark:border-white/15 flex items-center justify-center text-xs font-mono font-bold text-text-secondary shadow-md">
           N
         </div>
       </div>

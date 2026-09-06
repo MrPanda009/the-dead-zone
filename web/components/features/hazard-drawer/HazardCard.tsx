@@ -58,31 +58,31 @@ export const HazardCard: React.FC<HazardCardProps> = ({
   const colorStyles = {
     emerald: {
       iconBg: 'bg-citron/15 text-citron',
-      border: 'border-citron/30',
+      border: 'border-citron/40 dark:border-citron/30',
       hoverText: 'group-hover:text-citron',
       chevronHover: 'group-hover:text-citron',
     },
     cyan: {
       iconBg: 'bg-accent-emerald-light/15 text-accent-emerald-light',
-      border: 'border-white/5',
+      border: 'border-line dark:border-white/5',
       hoverText: 'group-hover:text-accent-emerald-light',
       chevronHover: 'group-hover:text-accent-emerald-light',
     },
     amber: {
       iconBg: 'bg-hazard-amber/15 text-hazard-amber',
-      border: 'border-white/5',
+      border: 'border-line dark:border-white/5',
       hoverText: 'group-hover:text-hazard-amber',
       chevronHover: 'group-hover:text-hazard-amber',
     },
     teal: {
       iconBg: 'bg-accent-emerald-bright/15 text-accent-emerald-bright',
-      border: 'border-white/5',
+      border: 'border-line dark:border-white/5',
       hoverText: 'group-hover:text-accent-emerald-bright',
       chevronHover: 'group-hover:text-accent-emerald-bright',
     },
     rose: {
       iconBg: 'bg-hazard-red/15 text-hazard-red',
-      border: 'border-white/5',
+      border: 'border-line dark:border-white/5',
       hoverText: 'group-hover:text-hazard-red',
       chevronHover: 'group-hover:text-hazard-red',
     },
@@ -99,7 +99,7 @@ export const HazardCard: React.FC<HazardCardProps> = ({
           <span className="material-symbols-outlined">{icon}</span>
         </div>
         <div>
-          <div className={`text-sm font-semibold text-white ${colorStyles.hoverText} transition-colors`}>
+          <div className={`text-sm font-semibold text-ink dark:text-white ${colorStyles.hoverText} transition-colors`}>
             {title}
           </div>
           <div className="text-xs text-text-muted">{subtitle}</div>
