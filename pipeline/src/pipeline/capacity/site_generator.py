@@ -29,6 +29,10 @@ class RawCandidateSiteSpec:
     spare_health_capacity_pop: Optional[int]
     livelihood_multiplier: float
     suitability: Optional[int] = None
+    is_forest: Optional[bool] = False
+    is_protected_area: Optional[bool] = False
+    is_crz: Optional[bool] = False
+    is_water_body: Optional[bool] = False
 
 
 def create_polygon_wkt(lon: float, lat: float, area_ha: float) -> str:
@@ -69,6 +73,17 @@ def build_candidate_site_record(
         is_hilly_or_tribal=True,
     )
 
+    eval_eligibility = eng.evaluate_site_eligibility(
+        mhi_max=spec.mhi_max,
+        slope_mean=spec.slope_mean,
+        area_ha=spec.area_ha,
+        tenure=spec.tenure,
+        is_forest=getattr(spec, "is_forest", False),
+        is_protected_area=getattr(spec, "is_protected_area", False),
+        is_crz=getattr(spec, "is_crz", False),
+        is_water_body=getattr(spec, "is_water_body", False),
+    )
+
     augmented_dict = {}
     if eval_result.augmented:
         augmented_dict = {
@@ -83,6 +98,13 @@ def build_candidate_site_record(
 
     metadata_dict = {
         "name": spec.name,
+        "is_eligible": eval_eligibility.is_eligible,
+        "rejection_reasons": eval_eligibility.rejection_reasons,
+        "is_forest": getattr(spec, "is_forest", False),
+        "is_protected_area": getattr(spec, "is_protected_area", False),
+        "is_crz": getattr(spec, "is_crz", False),
+        "is_water_body": getattr(spec, "is_water_body", False),
+        "eligibility_policy_version": eng.policy.policy_version,
         "policy_version": eval_result.policy_version,
         "calculation_version": eval_result.calculation_version,
         "data_quality": eval_result.data_quality.value,
@@ -107,4 +129,6 @@ def build_candidate_site_record(
         "augmented": json.dumps(augmented_dict),
         "suitability": spec.suitability,
         "metadata": json.dumps(metadata_dict),
+        "is_eligible": eval_eligibility.is_eligible,
+        "rejection_reasons": eval_eligibility.rejection_reasons,
     }

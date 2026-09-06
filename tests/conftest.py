@@ -6,7 +6,7 @@ Provides:
 - Automatic test categorization: integration and performance tests are marked as `db`.
 - Isolated test database lifecycle targeting a dedicated test database (e.g. `setu_test`).
 - Clean separation: unit and contract tests run in-memory without PostgreSQL dependencies.
-- Canonical migration execution (001_ through 008_) via `infra.apply_migrations`.
+- Canonical migration execution (001_ through 011_) via `infra.apply_migrations`.
 - Deterministic pilot data seeding (SEED=42) via `pipeline.jobs.seed_pilot_data`.
 - Reconfigured application settings and FastAPI dependencies for test isolation.
 - Clear, actionable failure diagnostics when PostgreSQL is unreachable (no silent skips).
@@ -61,6 +61,16 @@ def _reset_global_model_registry():
     yield
     from core.ml.registry import model_registry
     model_registry.reset()
+
+
+@pytest.fixture(autouse=True)
+def _reset_global_login_rate_limiter():
+    """Ensure login rate limiter state does not leak across tests."""
+    from api.dependencies import get_login_rate_limiter
+    limiter = get_login_rate_limiter()
+    limiter.reset()
+    yield
+    limiter.reset()
 
 
 def mask_db_url(url: str) -> str:
@@ -234,7 +244,7 @@ def db_environment():
     # 1. Ensure DB running, created, and extensions enabled
     ensure_database_ready(server_conninfo, test_conninfo, test_db_name)
 
-    # 2. Apply canonical migrations (001_ through 008_)
+    # 2. Apply canonical migrations (001_ through 011_)
     apply_migrations(test_conninfo)
 
     # 3. Deterministically seed pilot fixtures

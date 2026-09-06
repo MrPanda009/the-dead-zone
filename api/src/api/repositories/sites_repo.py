@@ -11,6 +11,9 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 
+from core.domain.capacity import CandidateSitePolicy
+
+
 class SitesRepository:
     """PostGIS data access for candidate relocation sites and spatial queries."""
 
@@ -30,19 +33,31 @@ class SitesRepository:
         limit: int = 50,
         offset: int = 0,
         min_suitability: Optional[int] = None,
+        policy: Optional[CandidateSitePolicy] = None,
     ) -> tuple[list[dict[str, Any]], int]:
         """Queries candidate relocation sites within radius of a source habitation.
         
         Uses spatial indexing on geography centroid:
         ST_DWithin(h.geom_point::geography, cs.centroid::geography, :radius_m).
+        Enforces H7 hard eligibility constraints parameterized from CandidateSitePolicy (PRD §6.8, FR-7.2, FR-7.3).
         Ranks by suitability DESC NULLS LAST, cc_final DESC, distance_km ASC, id ASC.
         """
-        where_clauses = ["h.id = :habitation_id"]
+        p = policy or CandidateSitePolicy()
+        where_clauses = [
+            "h.id = :habitation_id",
+            "cs.mhi_max < :max_static_mhi",
+            "cs.slope_mean < :max_slope_deg",
+            "cs.area_ha >= :min_area_ha",
+            "cs.tenure IN ('government_revenue', 'private')",
+        ]
         params: dict[str, Any] = {
             "habitation_id": habitation_id,
             "radius_m": float(radius_m),
             "limit": limit,
             "offset": offset,
+            "max_static_mhi": p.max_static_mhi,
+            "max_slope_deg": p.max_slope_deg,
+            "min_area_ha": p.min_contiguous_area_ha,
         }
 
         if min_suitability is not None:

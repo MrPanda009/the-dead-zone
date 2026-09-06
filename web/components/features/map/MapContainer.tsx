@@ -91,6 +91,7 @@ export const MapContainer = ({
     const init = async () => {
       await registerPMTilesProtocol();
       if (disposed || !containerRef.current) return;
+      maplibregl.setWorkerUrl('/maplibre-gl-worker.mjs');
 
       const map = new maplibregl.Map({
         container: containerRef.current,

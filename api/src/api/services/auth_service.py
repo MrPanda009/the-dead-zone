@@ -12,7 +12,11 @@ from sqlalchemy.orm import Session
 
 from core.config import settings
 from core.enums import Role
-from core.errors import UnauthenticatedError, InvalidParametersError
+from core.errors import (
+    UnauthenticatedError,
+    InvalidParametersError,
+    RateLimitExceededError,
+)
 from core.db_models import AppUser, UserSession
 from core.domain.auth import (
     hash_password,
@@ -20,44 +24,81 @@ from core.domain.auth import (
     generate_session_token,
     hash_session_token,
 )
+from core.domain.rate_limit import LoginRateLimiter
 from api.repositories.auth_repo import AuthRepository
 
 logger = logging.getLogger("setu_auth_service")
 
-# Dummy hash used to equalize execution time when an email does not exist (prevents timing attacks)
-_DUMMY_ARGON2_HASH = "$argon2id$v=19$m=65536,t=3,p=4$c2V0dWRycnBhc3N3b3Jkc2FsdA$kCj0v6X25v7c0Q0s5h9r4i2v1b8w7e6t3y0u9i8o7p6"
+# Valid Argon2id dummy hash generated with application hasher config
+# Type: Argon2id, Version: 19, Memory: 64 MiB (m=65536), Iterations: 3 (t=3), Parallelism: 4 (p=4)
+# Neutralizes timing difference for unknown emails without failing immediately during string decode
+_DUMMY_ARGON2_HASH = "$argon2id$v=19$m=65536,t=3,p=4$5y2G3rsMThPj9qAruEHYXg$8WF9oUxC13sxol/dU9wcgUg6k+JZN0mDxpS/gCtLpbY"
 
 
 class AuthService:
-    def __init__(self, db: Session) -> None:
+    def __init__(
+        self,
+        db: Session,
+        rate_limiter: Optional[LoginRateLimiter] = None,
+    ) -> None:
         self.db = db
         self.repo = AuthRepository(db)
+        if rate_limiter is None:
+            from api.dependencies import get_login_rate_limiter
+            self.rate_limiter = get_login_rate_limiter()
+        else:
+            self.rate_limiter = rate_limiter
 
-    def login(self, email: str, password: str) -> tuple[AppUser, str]:
+    def login(
+        self,
+        email: str,
+        password: str,
+        client_ip: str = "127.0.0.1",
+    ) -> tuple[AppUser, str]:
         """Authenticates user with email and Argon2id password.
         
         Returns:
             Tuple of (authenticated AppUser, raw_session_token).
         
         Raises:
+            RateLimitExceededError if rate limit is exceeded for email or IP.
             UnauthenticatedError if credentials are invalid or user is inactive.
         """
         norm_email = email.strip().lower()
+
+        # Enforce rate limiting before performing expensive Argon2 work
+        retry_after = self.rate_limiter.check_rate_limit(norm_email, client_ip)
+        if retry_after is not None:
+            logger.warning(
+                f"Rate limit exceeded for login attempt on '{norm_email}' from IP '{client_ip}'. "
+                f"Retry after {retry_after}s"
+            )
+            raise RateLimitExceededError(
+                message="Too many login attempts. Please try again later.",
+                retry_after_seconds=retry_after,
+            )
+
         user = self.repo.get_user_by_email(norm_email)
 
         if user is None:
-            # Perform dummy verification to neutralize timing difference
+            # Perform dummy verification using valid Argon2id hash to neutralize timing difference
             verify_password(password, _DUMMY_ARGON2_HASH)
+            self.rate_limiter.record_failed_attempt(norm_email, client_ip)
             logger.warning(f"Failed login attempt: unknown email '{norm_email}'")
             raise UnauthenticatedError("Invalid email or password.")
 
         if not verify_password(password, user.password_hash):
+            self.rate_limiter.record_failed_attempt(norm_email, client_ip)
             logger.warning(f"Failed login attempt: incorrect password for '{norm_email}'")
             raise UnauthenticatedError("Invalid email or password.")
 
         if not user.is_active:
+            self.rate_limiter.record_failed_attempt(norm_email, client_ip)
             logger.warning(f"Failed login attempt: inactive account '{norm_email}'")
             raise UnauthenticatedError("Account is inactive. Please contact your administrator.")
+
+        # Clear failed attempts for this email on successful authentication
+        self.rate_limiter.record_successful_login(norm_email)
 
         # Update last login timestamp
         now = datetime.now(timezone.utc)

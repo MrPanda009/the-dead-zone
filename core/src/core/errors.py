@@ -32,6 +32,7 @@ class ErrorCode(StrEnum):
     VALIDATION_ERROR = "VALIDATION_ERROR"
     UNAUTHENTICATED = "UNAUTHENTICATED"
     FORBIDDEN = "FORBIDDEN"
+    RATE_LIMITED = "RATE_LIMITED"
     INTERNAL_ERROR = "INTERNAL_ERROR"
 
 
@@ -191,5 +192,23 @@ class ForbiddenError(AppError):
             message=message,
             status_code=403,
             details=details or {},
+        )
+
+
+class RateLimitExceededError(AppError):
+    """Raised when a client IP or account exceeds the permitted request rate (HTTP 429)."""
+
+    def __init__(
+        self,
+        message: str = "Too many login attempts. Please try again later.",
+        retry_after_seconds: int = 60,
+        details: dict[str, Any] | None = None,
+    ) -> None:
+        merged_details = {"retry_after_seconds": retry_after_seconds, **(details or {})}
+        super().__init__(
+            code=ErrorCode.RATE_LIMITED,
+            message=message,
+            status_code=429,
+            details=merged_details,
         )
 

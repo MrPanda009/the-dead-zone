@@ -1627,7 +1627,7 @@
           "Authentication & Identity"
         ],
         "summary": "Authenticate user with email and password",
-        "description": "Verifies credentials using Argon2id, creates a secure server-side session, and sets an HTTP-only session cookie. Returns the safe authenticated identity.",
+        "description": "Verifies credentials using Argon2id, creates a secure server-side session, and sets an HTTP-only session cookie. Returns the safe authenticated identity. Protected by configurable sliding-window rate limiting.",
         "operationId": "login_auth_login_post",
         "requestBody": {
           "content": {
@@ -1672,6 +1672,16 @@
           },
           "422": {
             "description": "Validation Error - Request parameter or payload validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests - Rate limit exceeded. Please try again later.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1895,8 +1905,9 @@
           "mhi_live": {
             "type": "number",
             "maximum": 1.0,
-            "minimum": 0.75,
-            "title": "Mhi Live"
+            "minimum": 0.0,
+            "title": "Mhi Live",
+            "description": "Active live MHI in [0, 1]."
           },
           "mhi_static": {
             "type": "number",
@@ -1931,6 +1942,29 @@
               }
             ],
             "title": "Valid At"
+          },
+          "age_hours": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Age Hours",
+            "description": "Age of dynamic trigger observation in hours."
+          },
+          "data_quality": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DataQuality"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Data quality / provenance classification."
           },
           "exposed_population": {
             "type": "number",
@@ -2852,8 +2886,9 @@
           "mhi_fcst": {
             "type": "number",
             "maximum": 1.0,
-            "minimum": 0.75,
-            "title": "Mhi Fcst"
+            "minimum": 0.0,
+            "title": "Mhi Fcst",
+            "description": "Forecast MHI in [0, 1]."
           },
           "mhi_static": {
             "type": "number",
@@ -2906,6 +2941,17 @@
             "maximum": 72.0,
             "minimum": 1.0,
             "title": "Horizon Hours"
+          },
+          "data_quality": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DataQuality"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Data quality / provenance classification."
           },
           "exposed_population": {
             "type": "number",
@@ -3235,7 +3281,7 @@
           "data_quality": {
             "type": "string",
             "title": "Data Quality",
-            "default": "observed"
+            "default": "synthetic"
           },
           "confidence": {
             "type": "number",
@@ -4327,7 +4373,7 @@
           },
           "data_quality": {
             "$ref": "#/components/schemas/DataQuality",
-            "default": "valid"
+            "default": "synthetic"
           },
           "warnings": {
             "items": {

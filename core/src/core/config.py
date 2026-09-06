@@ -41,6 +41,10 @@ class Settings(BaseSettings):
         default="v1.0.0",
         description="Default machine learning model version tag.",
     )
+    MAX_TRIGGER_AGE_HOURS: int = Field(
+        default=24,
+        description="Maximum dynamic live trigger age in hours to qualify as active alert.",
+    )
 
     # ML Model Checkpoint Paths
     MODEL_CHECKPOINT_PATH: str | None = Field(
@@ -86,6 +90,24 @@ class Settings(BaseSettings):
     SESSION_COOKIE_SAMESITE: str = Field(
         default="lax",
         description="SameSite cookie policy (lax, strict, none).",
+    )
+
+    # Login Rate Limiting (Batch E)
+    LOGIN_RATE_LIMIT_ENABLED: bool = Field(
+        default=True,
+        description="Whether sliding-window rate limiting is enabled on POST /auth/login.",
+    )
+    LOGIN_RATE_LIMIT_MAX_ATTEMPTS: int = Field(
+        default=5,
+        description="Maximum failed login attempts allowed per account/email window before 429 lockout.",
+    )
+    LOGIN_RATE_LIMIT_MAX_IP_ATTEMPTS: int = Field(
+        default=20,
+        description="Maximum failed login attempts allowed per client IP window before 429 lockout.",
+    )
+    LOGIN_RATE_LIMIT_WINDOW_SECONDS: int = Field(
+        default=60,
+        description="Sliding window duration in seconds for login rate limiting.",
     )
 
     # Demo Account Passwords (Configurable / Dev Only)

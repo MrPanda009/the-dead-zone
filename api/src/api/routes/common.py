@@ -24,6 +24,10 @@ COMMON_ERROR_RESPONSES: dict[int, dict[str, Any]] = {
         "model": ErrorEnvelope,
         "description": "Validation Error - Request parameter or payload validation failed.",
     },
+    429: {
+        "model": ErrorEnvelope,
+        "description": "Too Many Requests - Rate limit exceeded. Please try again later.",
+    },
     500: {
         "model": ErrorEnvelope,
         "description": "Internal Server Error - An unexpected system or database error occurred.",

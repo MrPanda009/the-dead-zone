@@ -11,7 +11,10 @@
 
 import type { StyleSpecification } from 'maplibre-gl';
 
-export const BASEMAP_STYLE_URL = process.env.NEXT_PUBLIC_BASEMAP_STYLE_URL ?? '';
+export const OPENFREEMAP_DARK_STYLE_URL = '/tiles/dark-style.json';
+
+export const BASEMAP_STYLE_URL =
+  process.env.NEXT_PUBLIC_BASEMAP_STYLE_URL ?? OPENFREEMAP_DARK_STYLE_URL;
 
 /** Canvas colours are read from theme palette so the map tracks the app theme. */
 export const FALLBACK_BACKGROUND_DARK = '#0b0f16';
@@ -33,7 +36,7 @@ export function createFallbackStyle(background = FALLBACK_BACKGROUND_DARK): Styl
   };
 }
 
-/** Returns the style to hand MapLibre: the configured URL, or the flat fallback. */
+/** Returns the style to hand MapLibre: configured URL (defaulting to OpenFreeMap dark), or flat fallback. */
 export function resolveBasemapStyle(
   styleUrl = BASEMAP_STYLE_URL,
   isDark = true,
