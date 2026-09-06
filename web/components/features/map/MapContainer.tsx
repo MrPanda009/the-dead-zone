@@ -8,6 +8,7 @@ import type { Layer, PickingInfo } from '@deck.gl/core';
 
 import { resolveBasemapStyle, registerPMTilesProtocol } from '@/lib/map/basemap';
 import { DEFAULT_VIEW_STATE, MAP_ATTRIBUTION } from '@/lib/map/constants';
+import { useTheme } from '@/components/providers';
 
 import 'maplibre-gl/dist/maplibre-gl.css';
 
@@ -61,6 +62,7 @@ export const MapContainer = ({
   className = '',
   classNames = {},
 }: MapContainerProps) => {
+  const { resolvedTheme } = useTheme();
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const overlayRef = useRef<MapboxOverlay | null>(null);
@@ -93,7 +95,7 @@ export const MapContainer = ({
 
       const map = new maplibregl.Map({
         container: containerRef.current,
-        style: resolveBasemapStyle(styleUrl),
+        style: resolveBasemapStyle(styleUrl, resolvedTheme === 'dark'),
         center: [initialViewState.longitude, initialViewState.latitude],
         zoom: initialViewState.zoom,
         pitch: initialViewState.pitch ?? 0,
@@ -141,6 +143,19 @@ export const MapContainer = ({
     // reset the user's view, so they are deliberately excluded from the dependency list.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Update canvas background when theme changes
+  useEffect(() => {
+    if (!mapRef.current || styleUrl) return;
+    const bg = resolvedTheme === 'dark' ? '#0b0f16' : '#f4f7f5';
+    try {
+      if (mapRef.current.getLayer('background')) {
+        mapRef.current.setPaintProperty('background', 'background-color', bg);
+      }
+    } catch {
+      // Ignore if map style is not loaded yet
+    }
+  }, [resolvedTheme, styleUrl]);
 
   useEffect(() => {
     if (!isOverlayReady) return;

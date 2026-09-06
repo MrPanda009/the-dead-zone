@@ -31,3 +31,14 @@ Apply these guidelines to all web and frontend development in `web/`:
   - **Lists & Tables**: Staggered entrance animations on load (`stagger: 0.04s`, `ease: 'power2.out'`).
   - **Drawers & Modals**: Smooth physics-based slide/fade transitions with cubic easing (`power3.out`, `back.out(1.2)`).
   - **Reduced Motion**: Gracefully respect `prefers-reduced-motion` settings.
+
+## 4. Universal Light & Dark Mode Compliance (`ThemeProvider`)
+- **Global Theme Context**: All components must refer to and support the global theme context (`useTheme()` from `@/components/providers`).
+- **No Dark-Only Assumptions**: Never hardcode dark colors (`text-white`, `bg-[#0e261d]`, `border-white/10`) without providing corresponding light mode classes or using CSS variables.
+- **Design Tokens**:
+  - `bg-bg-base`, `bg-surface-0 dark:bg-forest-dark`, `bg-surface-1 dark:bg-forest-surface`
+  - `text-ink dark:text-text-primary`, `text-text-secondary`, `text-text-muted`
+  - `border-line dark:border-white/10`, `border-line-strong dark:border-white/20`
+  - Utilities: `.glass-card`, `.capsule-pill`, `.pill-badge`, `.btn-citron`
+- **WebGL / Canvases**: When working with Three.js or MapLibre, retrieve `{ resolvedTheme } = useTheme()` and dynamically switch scene lighting, background paint colors, and shaders.
+- **Theme Switcher**: Use `<ThemeToggle />` from `@/components/ui/theme-toggle` (or `@/components/ui`) for user toggling.

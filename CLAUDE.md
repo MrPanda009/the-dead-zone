@@ -67,3 +67,12 @@ When generating or editing frontend code in `web/`, all agents and developers mu
   - **Lists & Data Sets**: Staggered entrance animations (`stagger: 0.04s`, `ease: 'power2.out'`) on load or filter switch.
   - **Drawers & Modals**: Smooth physics-based slide-ins and backdrop blur fades.
   - **Accessibility**: Honor `prefers-reduced-motion` to tone down or bypass animations for users with motion sensitivity.
+
+### 4. Universal Light & Dark Mode Compliance (`ThemeProvider`)
+- **Global Theme Provider**: All frontend code must adhere to the global `ThemeProvider` at `@/components/providers` (`useTheme()`).
+- **Zero Dark-Only Hardcoding**: Every component must work seamlessly in both light and dark modes:
+  - Do NOT hardcode colors like `text-white`, `bg-[#0e261d]`, or `border-white/10` without dual light variants.
+  - Use semantic theme tokens (`text-ink dark:text-text-primary`, `bg-surface-0 dark:bg-forest-dark`, `border-line dark:border-white/10`).
+  - Rely on global classes (`.glass-card`, `.capsule-pill`, `.pill-badge`, `.btn-citron`) which are calibrated for both daylight sage and night forest palettes.
+- **Canvas / 3D Sync**: WebGL (Three.js Earth / GovMapStage) and MapLibre canvases must consume `useTheme()` and reactively adjust ambient lighting, background paints, and mesh colors.
+- **Theme Controls**: Use `<ThemeToggle />` from `@/components/ui/theme-toggle` (or `@/components/ui`) for user theme switching.

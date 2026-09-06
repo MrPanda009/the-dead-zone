@@ -2,6 +2,7 @@
   "name": "the-dead-zone",
   "private": true,
   "scripts": {
+    "dev": "pnpm --filter web dev",
     "dev:web": "pnpm --filter web dev",
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",
