@@ -2,7 +2,7 @@
 
 Section refs: SETU-DRR Auth Part 1 — Tests Required (§28).
 Validates:
-- Seeded demo account logins across all three roles (CIVILIAN, GOVERNMENT_OFFICIAL, RESCUE_OFFICER).
+- Seeded demo account logins across roles (CIVILIAN, GOVERNMENT_OFFICIAL).
 - Session cookie lifecycle: login -> cookie -> /auth/me -> /auth/logout -> 401.
 - State-changing endpoint protection on POST /plan/allocate (401 when unauthenticated).
 - Civilian registration forcing CIVILIAN role.
@@ -46,7 +46,7 @@ class TestAuthApiIntegration:
         assert settings.SESSION_COOKIE_NAME in res.cookies
 
     def test_seeded_demo_rescue_login(self):
-        """Verify seeded demo rescue officer can log in with configured password."""
+        """Verify seeded demo rescue officer can log in and is represented as GOVERNMENT_OFFICIAL."""
         res = client.post("/auth/login", json={
             "email": "rescue@setu.gov.in",
             "password": settings.DEMO_RESCUE_PASSWORD,
@@ -54,7 +54,7 @@ class TestAuthApiIntegration:
         assert res.status_code == 200
         data = res.json()
         assert data["email"] == "rescue@setu.gov.in"
-        assert data["role"] == "RESCUE_OFFICER"
+        assert data["role"] == "GOVERNMENT_OFFICIAL"
         assert data["is_active"] is True
         assert settings.SESSION_COOKIE_NAME in res.cookies
 

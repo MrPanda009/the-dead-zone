@@ -29,7 +29,11 @@ ROLE_PERMISSIONS: Mapping[Role, Set[Permission]] = {
         Permission.SCENARIO_RUN,
         Permission.CAPACITY_RECOMPUTE,
     }),
-    Role.RESCUE_OFFICER: frozenset(),
+    Role.SYSTEM_ADMIN: frozenset({
+        Permission.ALLOCATION_RUN,
+        Permission.SCENARIO_RUN,
+        Permission.CAPACITY_RECOMPUTE,
+    }),
 }
 
 

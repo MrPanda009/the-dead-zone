@@ -1,10 +1,10 @@
 """Unit tests for SETU-DRR Authorization Policy (Part 2).
 
 Tests:
-- has_permission matrix evaluation for all three roles and canonical permissions.
+- has_permission matrix evaluation for all three canonical roles and permissions.
 - Invariance: CIVILIAN has zero privileged permissions.
-- Invariance: RESCUE_OFFICER has zero government planning permissions.
-- Invariance: GOVERNMENT_OFFICIAL has planning/scenario/capacity permissions.
+- Invariance: GOVERNMENT_OFFICIAL and SYSTEM_ADMIN have planning/scenario/capacity permissions.
+- Invariance: RESCUE_OFFICER is excluded from Role enum and legacy strings fail safely.
 - Invariance: Unknown roles and unknown permissions fail safely (return False).
 - String and enum type compatibility.
 """
@@ -33,12 +33,24 @@ def test_civilian_role_has_no_privileged_permissions():
         assert has_permission("CIVILIAN", perm.value) is False
 
 
-def test_rescue_officer_has_no_planning_permissions():
-    """Rescue Officer role must not inherit government planning permissions."""
+def test_role_set_excludes_rescue_officer():
+    """Verify RESCUE_OFFICER is not a member of Role enum, and legacy string fails safely."""
+    assert not hasattr(Role, "RESCUE_OFFICER")
     for perm in (Permission.ALLOCATION_RUN, Permission.SCENARIO_RUN, Permission.CAPACITY_RECOMPUTE):
-        assert has_permission(Role.RESCUE_OFFICER, perm) is False
-        assert has_permission(Role.RESCUE_OFFICER.value, perm.value) is False
+        assert has_permission("RESCUE_OFFICER", perm) is False
         assert has_permission("RESCUE_OFFICER", perm.value) is False
+
+
+def test_system_admin_has_planning_permissions():
+    """System Admin possesses allocation, scenario, and capacity permissions."""
+    assert has_permission(Role.SYSTEM_ADMIN, Permission.ALLOCATION_RUN) is True
+    assert has_permission(Role.SYSTEM_ADMIN, Permission.SCENARIO_RUN) is True
+    assert has_permission(Role.SYSTEM_ADMIN, Permission.CAPACITY_RECOMPUTE) is True
+
+    # Test string representations
+    assert has_permission("SYSTEM_ADMIN", "allocation.run") is True
+    assert has_permission("SYSTEM_ADMIN", "scenario.run") is True
+    assert has_permission("SYSTEM_ADMIN", "capacity.recompute") is True
 
 
 def test_government_official_has_planning_permissions():

@@ -861,14 +861,14 @@ def seed_database(db_url: Optional[str] = None) -> None:
                 ("civilian@setu.gov.in", settings.DEMO_CIVILIAN_PASSWORD, "Demo Citizen", Role.CIVILIAN.value, None),
                 ("officer@setu.gov.in", settings.DEMO_OFFICER_PASSWORD, "District Magistrate Wayanad", Role.GOVERNMENT_OFFICIAL.value, wayanad_admin_id),
                 ("officer_kodagu@setu.gov.in", settings.DEMO_OFFICER_PASSWORD, "District Magistrate Kodagu", Role.GOVERNMENT_OFFICIAL.value, kodagu_admin_id),
-                ("rescue@setu.gov.in", settings.DEMO_RESCUE_PASSWORD, "NDRF Commander 4th BN", Role.RESCUE_OFFICER.value, wayanad_admin_id),
+                ("rescue@setu.gov.in", settings.DEMO_RESCUE_PASSWORD, "NDRF Commander 4th BN", Role.GOVERNMENT_OFFICIAL.value, wayanad_admin_id),
             ]
             for email, pw, name, role, a_id in demo_accounts:
                 conn.execute(
                     text("""
                         INSERT INTO app_user (id, email, password_hash, full_name, role, admin_id, is_active, created_at, updated_at)
                         VALUES (gen_random_uuid(), :email, :pw_hash, :name, :role, :admin_id, true, now(), now())
-                        ON CONFLICT (email) DO UPDATE SET admin_id = EXCLUDED.admin_id;
+                        ON CONFLICT (email) DO UPDATE SET admin_id = EXCLUDED.admin_id, role = EXCLUDED.role;
                     """),
                     {"email": email, "pw_hash": hash_password(pw), "name": name, "role": role, "admin_id": a_id},
                 )

@@ -123,7 +123,7 @@ def logout(
     responses=error_responses(400, 422, 500),
     summary="Register a new civilian user",
     description=(
-        "Public self-registration for civilian users. Privileged roles (GOVERNMENT_OFFICIAL, RESCUE_OFFICER) "
+        "Public self-registration for civilian users. Privileged roles (GOVERNMENT_OFFICIAL, SYSTEM_ADMIN) "
         "cannot be selected and are strictly rejected."
     ),
 )

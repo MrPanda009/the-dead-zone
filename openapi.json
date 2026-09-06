@@ -1783,7 +1783,7 @@
           "Authentication & Identity"
         ],
         "summary": "Register a new civilian user",
-        "description": "Public self-registration for civilian users. Privileged roles (GOVERNMENT_OFFICIAL, RESCUE_OFFICER) cannot be selected and are strictly rejected.",
+        "description": "Public self-registration for civilian users. Privileged roles (GOVERNMENT_OFFICIAL, SYSTEM_ADMIN) cannot be selected and are strictly rejected.",
         "operationId": "register_auth_register_post",
         "requestBody": {
           "content": {
@@ -4084,7 +4084,7 @@
         "enum": [
           "CIVILIAN",
           "GOVERNMENT_OFFICIAL",
-          "RESCUE_OFFICER"
+          "SYSTEM_ADMIN"
         ],
         "title": "Role",
         "description": "User identity roles for SETU-DRR authentication."
@@ -4666,7 +4666,7 @@
           },
           "role": {
             "$ref": "#/components/schemas/Role",
-            "description": "User role (CIVILIAN, GOVERNMENT_OFFICIAL, RESCUE_OFFICER)."
+            "description": "User role (CIVILIAN, GOVERNMENT_OFFICIAL, SYSTEM_ADMIN)."
           },
           "is_active": {
             "type": "boolean",

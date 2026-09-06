@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ThemeProvider } from '@/components/providers';
+import { ThemeProvider, AuthProvider } from '@/components/providers';
 import { RouteTransitionProvider } from '@/components/layout/transition';
 
 export interface AppProvidersProps {
@@ -17,6 +17,9 @@ export interface AppProvidersProps {
  */
 export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => (
   <ThemeProvider defaultTheme="light">
-    <RouteTransitionProvider>{children}</RouteTransitionProvider>
+    <AuthProvider>
+      <RouteTransitionProvider>{children}</RouteTransitionProvider>
+    </AuthProvider>
   </ThemeProvider>
 );
+

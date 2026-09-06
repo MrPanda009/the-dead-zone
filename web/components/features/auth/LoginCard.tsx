@@ -1,9 +1,12 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
+import { useAuth } from '@/components/providers/AuthProvider';
+import { ApiError } from '@/lib/api/client';
 
 export interface LoginCardProps {
   /** Target link for returning to overview (default '/') */
@@ -12,64 +15,146 @@ export interface LoginCardProps {
   govHref?: string;
   /** Target link for Citizen Portal (default '/stories') */
   citizenHref?: string;
-  /** Optional callback when user clicks "Return to Overview" */
-  onBackToOverview?: () => void;
-  /** Optional callback when user logs in as a Government Official */
-  onLoginGov?: () => void;
-  /** Optional callback when user logs in as a Normal User (Citizen) */
-  onLoginCitizen?: () => void;
+  /** Optional callback on successful login with authenticated role */
+  onLoginSuccess?: (role: string) => void;
   /** Custom root className */
   className?: string;
 }
+
+interface DemoAccountPreset {
+  id: string;
+  label: string;
+  sublabel: string;
+  email: string;
+  pass: string;
+  roleBadge: string;
+}
+
+const DEMO_PRESETS: DemoAccountPreset[] = [
+  {
+    id: 'wayanad',
+    label: 'DM Wayanad',
+    sublabel: 'Gov Official • Kerala',
+    email: 'officer@setu.gov.in',
+    pass: 'DemoOfficer123!',
+    roleBadge: 'OFFICIAL',
+  },
+  {
+    id: 'kodagu',
+    label: 'DM Kodagu',
+    sublabel: 'Gov Official • Karnataka',
+    email: 'officer_kodagu@setu.gov.in',
+    pass: 'DemoOfficer123!',
+    roleBadge: 'OFFICIAL',
+  },
+  {
+    id: 'civilian',
+    label: 'Citizen Demo',
+    sublabel: 'Civilian • Public',
+    email: 'civilian@setu.gov.in',
+    pass: 'DemoCivilian123!',
+    roleBadge: 'CIVILIAN',
+  },
+];
 
 export const LoginCard: React.FC<LoginCardProps> = ({
   overviewHref = '/',
   govHref = '/gov',
   citizenHref = '/stories',
-  onBackToOverview,
-  onLoginGov,
-  onLoginCitizen,
+  onLoginSuccess,
   className = '',
 }) => {
+  const router = useRouter();
+  const { login } = useAuth();
   const containerRef = useRef<HTMLDivElement>(null);
+  const submitBtnRef = useRef<HTMLButtonElement>(null);
+
+  const [email, setEmail] = useState<string>('officer@setu.gov.in');
+  const [password, setPassword] = useState<string>('DemoOfficer123!');
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useGSAP(() => {
     if (!containerRef.current) return;
     gsap.fromTo(
       containerRef.current,
-      { x: -60, opacity: 0, scale: 0.96 },
-      { x: 0, opacity: 1, scale: 1, duration: 0.65, ease: 'power3.out' }
+      { x: -50, opacity: 0, scale: 0.97 },
+      { x: 0, opacity: 1, scale: 1, duration: 0.6, ease: 'power3.out' }
     );
   }, { scope: containerRef });
 
-  const handleGovClick = (e: React.MouseEvent) => {
-    if (onLoginGov) {
-      e.preventDefault();
-      onLoginGov();
+  const applyPreset = (preset: DemoAccountPreset) => {
+    setEmail(preset.email);
+    setPassword(preset.pass);
+    setErrorMessage(null);
+
+    // Subtle GSAP highlight on inputs
+    if (containerRef.current) {
+      gsap.fromTo(
+        containerRef.current.querySelectorAll('.auth-input'),
+        { backgroundColor: 'rgba(163, 230, 53, 0.15)' },
+        { backgroundColor: '', duration: 0.5, ease: 'power2.out' }
+      );
     }
   };
 
-  const handleCitizenClick = (e: React.MouseEvent) => {
-    if (onLoginCitizen) {
-      e.preventDefault();
-      onLoginCitizen();
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isSubmitting) return;
+
+    setErrorMessage(null);
+    setIsSubmitting(true);
+
+    try {
+      const user = await login({ email, password });
+      onLoginSuccess?.(user.role);
+
+      if (user.role === 'GOVERNMENT_OFFICIAL' || user.role === 'SYSTEM_ADMIN') {
+        router.push(govHref);
+      } else {
+        router.push(citizenHref);
+      }
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.status === 401) {
+          setErrorMessage('Invalid credentials. Please verify your email and password.');
+        } else if (err.status === 422) {
+          setErrorMessage('Please enter a valid email address and password.');
+        } else if (err.status === 429) {
+          setErrorMessage('Too many login attempts. Please wait 60 seconds before retrying.');
+        } else {
+          setErrorMessage(err.message || 'Authentication failed. Please try again.');
+        }
+      } else {
+        setErrorMessage('Unable to reach authentication service.');
+      }
+
+      // Haptic shake animation on failure
+      if (containerRef.current) {
+        gsap.fromTo(
+          containerRef.current,
+          { x: -8 },
+          { x: 8, duration: 0.08, repeat: 4, yoyo: true, ease: 'sine.inOut' }
+        );
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div
       ref={containerRef}
-      className={`w-full max-w-xl lg:max-w-2xl glass-card p-8 sm:p-10 lg:p-12 rounded-[32px] border border-line dark:border-white/15 shadow-2xl relative z-20 backdrop-blur-2xl transition-colors duration-200 ${className}`}
+      className={`w-full max-w-xl glass-card p-8 sm:p-10 rounded-[28px] border border-line dark:border-white/15 shadow-2xl relative z-20 backdrop-blur-2xl transition-colors duration-200 ${className}`}
     >
       {/* Top Header Pill */}
-      <div className="flex items-center justify-between mb-8">
-        <span className="pill-badge px-3.5 py-1.5 rounded-full text-xs font-mono font-medium text-citron border border-citron/30 bg-citron/10 flex items-center gap-2 shadow-sm">
+      <div className="flex items-center justify-between mb-6">
+        <span className="pill-badge px-3 py-1 rounded-full text-[11px] font-mono font-medium text-citron border border-citron/30 bg-citron/10 flex items-center gap-2 shadow-sm">
           <span className="w-2 h-2 rounded-full bg-citron animate-ping" />
-          <span>SETU-DRR :: SECURE DISASTER INTELLIGENCE PORTAL</span>
+          <span>SETU-DRR :: AUTHENTICATION</span>
         </span>
         <Link
           href={overviewHref}
-          onClick={onBackToOverview}
           className="text-xs font-mono text-text-muted hover:text-text-primary transition-colors flex items-center gap-1.5 cursor-pointer py-1 px-2.5 rounded-lg hover:bg-surface-2 dark:hover:bg-white/5"
         >
           <span className="material-symbols-outlined text-sm">arrow_back</span>
@@ -78,91 +163,134 @@ export const LoginCard: React.FC<LoginCardProps> = ({
       </div>
 
       {/* Title & Subtitle */}
-      <div className="mb-8">
-        <h2 className="font-display text-3xl sm:text-4xl font-extrabold text-text-primary tracking-tight leading-tight">
-          Select Your Access Portal
+      <div className="mb-6">
+        <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-text-primary tracking-tight leading-tight">
+          Sign In to SETU-DRR
         </h2>
-        <p className="text-xs sm:text-sm text-text-secondary mt-2 leading-relaxed max-w-lg font-sans">
-          Authenticate as an authorized Government Official to access the full-screen hexagonal risk map, or enter as a citizen to discover regional hazard stories.
+        <p className="text-xs sm:text-sm text-text-secondary mt-1.5 leading-relaxed font-sans">
+          Connect to disaster response intelligence. Official credentials unlock the high-resolution GIS hazard matrix.
         </p>
       </div>
 
-      {/* Two Dedicated Login Buttons / Action Pathways */}
-      <div className="grid grid-cols-1 gap-4">
-        {/* 1. GOVERNMENT OFFICIALS LOGIN BUTTON */}
-        <Link
-          href={govHref}
-          onClick={handleGovClick}
-          className="group text-left p-5 sm:p-6 rounded-2xl bg-surface-1 hover:bg-surface-2 dark:bg-[#162522]/80 dark:hover:bg-[#162522] border border-citron/40 hover:border-citron shadow-lg transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer relative overflow-hidden block"
-        >
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-xl bg-citron/15 dark:bg-[#22543d] text-citron dark:text-[#a3e635] flex items-center justify-center shadow-inner shrink-0 group-hover:bg-citron group-hover:text-[#06100c] transition-colors">
-                <span className="material-symbols-outlined text-2xl">
-                  verified_user
-                </span>
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="font-display text-lg sm:text-xl font-bold text-text-primary dark:text-cream tracking-tight">
-                    Government Official Login
-                  </h3>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-citron/20 text-citron dark:bg-[#a3e635]/20 dark:text-[#a3e635] border border-citron/30 dark:border-[#a3e635]/30">
-                    OFFICIAL
+      {/* Demo Quick-Fill Presets */}
+      <div className="mb-6">
+        <span className="block text-[10px] font-mono uppercase tracking-wider text-text-muted mb-2">
+          Demo Evaluation Presets (Click to Auto-Fill)
+        </span>
+        <div className="grid grid-cols-3 gap-2">
+          {DEMO_PRESETS.map((p) => {
+            const isSelected = email === p.email;
+            return (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => applyPreset(p)}
+                className={`text-left p-2.5 rounded-xl border transition-all cursor-pointer select-none ${
+                  isSelected
+                    ? 'bg-citron/15 border-citron text-text-primary shadow-sm'
+                    : 'bg-surface-1 hover:bg-surface-2 border-line text-text-secondary hover:text-text-primary'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-display text-xs font-bold truncate">{p.label}</span>
+                  <span className="text-[9px] font-mono px-1 rounded bg-surface-2 dark:bg-white/10 text-text-muted">
+                    {p.roleBadge}
                   </span>
                 </div>
-                <p className="text-xs text-text-secondary dark:text-cream/70 mt-1 font-sans leading-relaxed">
-                  Direct entry to the clean full-screen India map with hazard zones pre-mapped in hexagons (Dark & Light modes).
-                </p>
-              </div>
-            </div>
-            <span className="material-symbols-outlined text-ink-muted dark:text-cream/40 group-hover:text-citron dark:group-hover:text-[#a3e635] group-hover:translate-x-1 transition-all text-xl mt-2 shrink-0">
-              arrow_forward
-            </span>
-          </div>
-        </Link>
-
-        {/* 2. NORMAL USERS / CITIZEN LOGIN BUTTON */}
-        <Link
-          href={citizenHref}
-          onClick={handleCitizenClick}
-          className="group text-left p-5 sm:p-6 rounded-2xl bg-surface-1/90 hover:bg-surface-2 dark:bg-black/40 dark:hover:bg-black/60 border border-line hover:border-citron/70 dark:border-white/15 dark:hover:border-[#a3e635]/70 shadow-lg transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer relative overflow-hidden block"
-        >
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-xl bg-surface-2 dark:bg-white/10 text-amber-500 dark:text-[#fde68a] flex items-center justify-center shadow-inner shrink-0 group-hover:bg-amber-400 group-hover:text-slate-900 transition-colors">
-                <span className="material-symbols-outlined text-2xl">
-                  public
+                <span className="block text-[10px] text-text-muted truncate mt-0.5">
+                  {p.sublabel}
                 </span>
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="font-display text-lg sm:text-xl font-bold text-text-primary dark:text-cream tracking-tight">
-                    Normal Users / Citizen Portal
-                  </h3>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-surface-2 dark:bg-white/10 text-text-muted dark:text-cream/80 border border-line dark:border-white/20">
-                    PUBLIC
-                  </span>
-                </div>
-                <p className="text-xs text-text-secondary dark:text-cream/70 mt-1 font-sans leading-relaxed">
-                  Interactive India map with regional terrain photo cutouts, zone selector, and interactive hazard slideshows.
-                </p>
-              </div>
-            </div>
-            <span className="material-symbols-outlined text-ink-muted dark:text-cream/40 group-hover:text-amber-500 dark:group-hover:text-[#fde68a] group-hover:translate-x-1 transition-all text-xl mt-2 shrink-0">
-              arrow_forward
-            </span>
-          </div>
-        </Link>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
+      {/* Error Banner */}
+      {errorMessage && (
+        <div className="mb-5 p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-xs flex items-start gap-2.5 animate-fadeIn">
+          <span className="material-symbols-outlined text-base shrink-0 mt-0.5">
+            error
+          </span>
+          <span className="leading-snug">{errorMessage}</span>
+        </div>
+      )}
+
+      {/* Login Form */}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label
+            htmlFor="auth-email"
+            className="block text-xs font-mono font-medium text-text-secondary mb-1.5"
+          >
+            Email Address
+          </label>
+          <div className="relative">
+            <input
+              id="auth-email"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="officer@setu.gov.in"
+              className="auth-input w-full px-3.5 py-2.5 rounded-xl bg-surface-1 border border-line focus:border-citron focus:outline-none text-sm text-text-primary font-mono transition-colors"
+            />
+            <span className="material-symbols-outlined absolute right-3 top-2.5 text-text-muted text-lg pointer-events-none">
+              badge
+            </span>
+          </div>
+        </div>
+
+        <div>
+          <label
+            htmlFor="auth-password"
+            className="block text-xs font-mono font-medium text-text-secondary mb-1.5"
+          >
+            Password
+          </label>
+          <div className="relative">
+            <input
+              id="auth-password"
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••••••"
+              className="auth-input w-full px-3.5 py-2.5 rounded-xl bg-surface-1 border border-line focus:border-citron focus:outline-none text-sm text-text-primary font-mono transition-colors"
+            />
+            <span className="material-symbols-outlined absolute right-3 top-2.5 text-text-muted text-lg pointer-events-none">
+              lock
+            </span>
+          </div>
+        </div>
+
+        <button
+          ref={submitBtnRef}
+          type="submit"
+          disabled={isSubmitting}
+          className="w-full mt-2 py-3 px-4 rounded-xl bg-citron text-[#06100c] font-display font-bold text-sm shadow-md hover:bg-citron/90 active:scale-[0.99] disabled:opacity-60 transition-all flex items-center justify-center gap-2 cursor-pointer"
+        >
+          {isSubmitting ? (
+            <>
+              <span className="w-4 h-4 border-2 border-[#06100c] border-t-transparent rounded-full animate-spin" />
+              <span>Verifying Argon2id Hash…</span>
+            </>
+          ) : (
+            <>
+              <span className="material-symbols-outlined text-lg">login</span>
+              <span>Authenticate & Enter Portal</span>
+            </>
+          )}
+        </button>
+      </form>
+
       {/* Footer Security Notice */}
-      <div className="mt-8 pt-5 border-t border-line dark:border-white/[0.08] flex items-center justify-between text-xs text-text-muted font-mono">
+      <div className="mt-6 pt-4 border-t border-line dark:border-white/[0.08] flex items-center justify-between text-[11px] text-text-muted font-mono">
         <span className="flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-citron" />
-          <span>NDRF / ISRO Sentinel-1 SAR Overpass Active</span>
+          <span>HTTP-only Session Cookie</span>
         </span>
-        <span>AES-256 GCM</span>
+        <span>Argon2id Timing-Safe</span>
       </div>
     </div>
   );

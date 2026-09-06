@@ -65,7 +65,7 @@ class UserResponse(BaseModel):
     id: uuid.UUID = Field(..., description="Unique user identifier.")
     email: str = Field(..., description="User email address.")
     full_name: str = Field(..., description="Full name of user.")
-    role: Role = Field(..., description="User role (CIVILIAN, GOVERNMENT_OFFICIAL, RESCUE_OFFICER).")
+    role: Role = Field(..., description="User role (CIVILIAN, GOVERNMENT_OFFICIAL, SYSTEM_ADMIN).")
     is_active: bool = Field(..., description="Whether user account is active.")
     created_at: datetime = Field(..., description="Account creation timestamp.")
     last_login_at: Optional[datetime] = Field(None, description="Timestamp of most recent successful login.")
