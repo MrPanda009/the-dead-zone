@@ -5,6 +5,7 @@ Section refs: docs/PRD1.md §6.9, §14.1 (FR-8.1, FR-8.2, FR-8.3)
 
 from __future__ import annotations
 
+from dataclasses import replace
 import json
 import logging
 import uuid
@@ -74,7 +75,7 @@ class AllocationService:
             if s_id not in site_min_dist or dist < site_min_dist[s_id]:
                 site_min_dist[s_id] = dist
 
-        policy = CandidateSitePolicy(search_radius_km=max_search_radius_km)
+        policy = replace(self.policy, search_radius_km=max_search_radius_km)
 
         def _parse_bool(val: Any) -> Optional[bool]:
             if val is None:
@@ -227,9 +228,11 @@ class AllocationService:
 
         # 3. Query candidate sites within search radius
         hab_ids = [h.id for h in hab_demands]
+        active_policy = replace(self.policy, search_radius_km=request.max_search_radius_km)
         raw_site_rows, raw_distance_rows = self.repo.get_candidate_sites_and_distances(
             habitation_ids=hab_ids,
             max_radius_m=request.max_search_radius_km * 1000.0,
+            policy=active_policy,
         )
 
         site_rows, distance_rows = self._filter_eligible_candidates(
@@ -349,9 +352,11 @@ class AllocationService:
             )
 
         hab_ids = [h.id for h in simulated_demands]
+        active_policy = replace(self.policy, search_radius_km=max_search_radius_km)
         raw_site_rows, raw_distance_rows = self.repo.get_candidate_sites_and_distances(
             habitation_ids=hab_ids,
             max_radius_m=max_search_radius_km * 1000.0,
+            policy=active_policy,
         )
 
         site_rows, distance_rows = self._filter_eligible_candidates(

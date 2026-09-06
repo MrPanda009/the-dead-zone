@@ -11,11 +11,12 @@ Endpoints:
 from fastapi import APIRouter, Depends, Request, Response, status
 from sqlalchemy.orm import Session
 
-from api.dependencies import get_db, require_authenticated
+from api.dependencies import get_db, require_authenticated, get_login_rate_limiter
 from api.routes.common import error_responses
 from api.services.auth_service import AuthService
 from core.config import settings
 from core.db_models import AppUser
+from core.domain.rate_limit import LoginRateLimiter
 from core.schemas.auth import (
     LoginRequest,
     RegisterRequest,
@@ -26,23 +27,38 @@ from core.schemas.auth import (
 router = APIRouter(prefix="/auth", tags=["Authentication & Identity"])
 
 
+def _extract_client_ip(request: Request) -> str:
+    """Extracts client IP from direct socket connection.
+
+    Uses transport-level client host rather than spoofable X-Forwarded-For headers
+    since the application runs standalone without a trusted reverse proxy.
+    """
+    if request.client and request.client.host:
+        return request.client.host
+    return "127.0.0.1"
+
+
 @router.post(
     "/login",
     response_model=UserResponse,
-    responses=error_responses(400, 401, 422, 500),
+    responses=error_responses(400, 401, 422, 429, 500),
     summary="Authenticate user with email and password",
     description=(
         "Verifies credentials using Argon2id, creates a secure server-side session, "
-        "and sets an HTTP-only session cookie. Returns the safe authenticated identity."
+        "and sets an HTTP-only session cookie. Returns the safe authenticated identity. "
+        "Protected by configurable sliding-window rate limiting."
     ),
 )
 def login(
     payload: LoginRequest,
+    request: Request,
     response: Response,
     db: Session = Depends(get_db),
+    rate_limiter: LoginRateLimiter = Depends(get_login_rate_limiter),
 ) -> UserResponse:
-    service = AuthService(db)
-    user, raw_token = service.login(payload.email, payload.password)
+    client_ip = _extract_client_ip(request)
+    service = AuthService(db, rate_limiter=rate_limiter)
+    user, raw_token = service.login(payload.email, payload.password, client_ip=client_ip)
 
     # Set HTTP-only, SameSite session cookie
     response.set_cookie(

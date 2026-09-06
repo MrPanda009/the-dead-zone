@@ -5,6 +5,7 @@ Section refs: docs/PRD1.md §6.8, §9.6
 
 from __future__ import annotations
 
+from dataclasses import replace
 import json
 from typing import Any, Optional
 from sqlalchemy.orm import Session
@@ -63,13 +64,15 @@ class SitesService:
 
         clamped_limit = min(max(1, limit), 200)
 
-        # 3. Query repository
+        # 3. Query repository with canonical policy
+        active_policy = replace(self.policy, search_radius_km=active_radius_km)
         raw_sites, total = self.repo.query_candidate_sites_for_habitation(
             habitation_id=habitation_id,
             radius_m=radius_m,
             limit=clamped_limit,
             offset=offset,
             min_suitability=min_suitability,
+            policy=active_policy,
         )
 
         items: list[CandidateSiteItem] = []
