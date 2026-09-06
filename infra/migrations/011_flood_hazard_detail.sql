@@ -1,4 +1,4 @@
--- 007_flood_hazard_detail.sql
+-- 011_flood_hazard_detail.sql
 -- Coverage provenance + per-hazard driver metrics for the vector map layer (Step 10 / FR-9.3, FR-10.1).
 --
 -- Rationale: `apply_quality_flags()` fills no-coverage cells with susceptibility = 0.0, which is
