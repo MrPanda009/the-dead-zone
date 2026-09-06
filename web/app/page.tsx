@@ -32,27 +32,65 @@ export default function HomePage() {
     position: { x: number; y: number };
   } | null>(null);
 
-  // Track window scroll progress (0.0 to 1.0) to drive globe zig-zag animation with every scroll
+  const [activeSection, setActiveSection] = useState(0);
+
+  // Track active landing page section (0 to 4) so the 3D globe cleanly snaps into the right place per page
   useEffect(() => {
+    const sectionIds = ['hero', 'triage-engine', 'sovi-relocation', 'sar-radar', 'command-horizon'];
+
     const handleScroll = () => {
       const scrollY = window.scrollY || window.pageYOffset || 0;
-      const totalScrollable =
-        document.documentElement.scrollHeight - window.innerHeight;
+      const windowH = window.innerHeight || 1;
+      const docH = document.documentElement.scrollHeight || 1;
+      const totalScrollable = docH - windowH;
+
       if (totalScrollable > 0) {
-        const progress = Math.min(
-          1,
-          Math.max(0, scrollY / totalScrollable)
-        );
+        const progress = Math.min(1, Math.max(0, scrollY / totalScrollable));
         setScrollProgress(progress);
       }
+
+      // Explicit boundary pins for top (Hero) and bottom (Horizon & Footer)
+      if (scrollY <= 40) {
+        setActiveSection(0);
+        return;
+      }
+      if (scrollY + windowH >= docH - 50) {
+        setActiveSection(4);
+        return;
+      }
+
+      // Detect which section occupies the largest visible area in the viewport
+      let bestIndex = 0;
+      let maxOverlap = -1;
+
+      for (let i = 0; i < sectionIds.length; i++) {
+        const el = document.getElementById(sectionIds[i]);
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          const overlap = Math.max(0, Math.min(rect.bottom, windowH) - Math.max(rect.top, 0));
+          if (overlap > maxOverlap) {
+            maxOverlap = overlap;
+            bestIndex = i;
+          }
+        }
+      }
+
+      setActiveSection(bestIndex);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     window.addEventListener('resize', handleScroll, { passive: true });
+    if ('onscrollend' in window) {
+      window.addEventListener('scrollend', handleScroll, { passive: true });
+    }
     handleScroll();
+
     return () => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleScroll);
+      if ('onscrollend' in window) {
+        window.removeEventListener('scrollend', handleScroll);
+      }
     };
   }, []);
 
@@ -85,11 +123,11 @@ export default function HomePage() {
   );
 
   return (
-    <RouteStage className="relative w-full min-h-screen overflow-x-hidden bg-bg-base text-text-primary">
+    <RouteStage disableEntrance className="relative w-full min-h-screen overflow-x-hidden bg-bg-base text-text-primary snap-y snap-proximity scroll-smooth">
       {/* Soft Ambient Forest / Sage Lighting Atmosphere */}
       <div className="fixed inset-0 forest-atmosphere z-0 pointer-events-none" />
 
-      {/* 3D WebGL Earth Globe Canvas (India Focus & Zig-Zag Scroll Animation)
+      {/* 3D WebGL Earth Globe Canvas (India Focus & Section Snap Animation)
           pointer-events-auto ensures full click-and-drag interaction! */}
       <GlobeCanvas
         viewMode="landing"
@@ -98,8 +136,9 @@ export default function HomePage() {
         focusTrigger={focusTrigger}
         onHoverHotspot={setHoveredHotspot}
         scrollProgress={scrollProgress}
+        activeSection={activeSection}
         animation={{ delay: INTRO_TIMINGS.globe }}
-        className="fixed inset-0 z-0 pointer-events-auto cursor-grab active:cursor-grabbing"
+        className="fixed inset-0 z-0 pointer-events-auto cursor-grab active:cursor-grabbing select-none"
       />
 
       {/* Top Floating Dark Dock Navigation */}
@@ -122,12 +161,15 @@ export default function HomePage() {
 
       {/* ============================================================
           SCROLLING STORYTELLING TRACK
-          pointer-events-none allows dragging the globe in the empty space
-          next to the text cards. Individual cards have pointer-events-auto.
+          Sections snap into place as user finishes scrolling onto each page.
+          Individual cards have pointer-events-auto.
           ============================================================ */}
       <main className="relative z-10 w-full flex flex-col pointer-events-none">
         {/* Section 0: Hero Section (Text on Left, Globe in Empty Space on Right) */}
-        <div className="relative min-h-screen shrink-0 w-full flex flex-col justify-between pt-24 pb-8 sm:pb-12 px-6 sm:px-12 lg:px-20 pointer-events-none">
+        <div
+          id="hero"
+          className="relative min-h-screen shrink-0 w-full flex flex-col justify-between pt-24 pb-8 sm:pb-12 px-6 sm:px-12 lg:px-20 pointer-events-none snap-start snap-always"
+        >
           <HeroContent portalHref={APP_ROUTES.login} className="pt-0 px-0 pointer-events-none" />
           <div className="pointer-events-auto mt-6 flex items-center justify-start">
             <ScrollIndicator targetId={LANDING_STORIES[0].id} />
@@ -144,7 +186,7 @@ export default function HomePage() {
             behind the frosted glass footer. */}
         <div
           id="command-horizon"
-          className="relative min-h-screen shrink-0 w-full flex flex-col justify-between pt-28 pointer-events-none"
+          className="relative min-h-screen shrink-0 w-full flex flex-col justify-between pt-28 pointer-events-none snap-start snap-always"
         >
           {/* Horizon Briefing Card */}
           <div className="max-w-xl mx-auto px-6 sm:px-12 text-center pointer-events-auto">

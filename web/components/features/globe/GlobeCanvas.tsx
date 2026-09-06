@@ -38,7 +38,80 @@ export interface GlobeCanvasProps {
   animation?: M3AnimationConfig;
   /** Normalized scroll progress across the landing narrative track (0.0 to 1.0) */
   scrollProgress?: number;
+  /** Active landing section index (0: Hero, 1: Triage, 2: SoVI, 3: SAR, 4: Horizon) for snap transitions */
+  activeSection?: number;
 }
+
+/**
+ * Calculates the exact Y position in 3D world space such that the sphere's
+ * equator aligns with the top edge of the frosted glass footer.
+ * When earthGroup.position.y = getFooterTopY(height), exactly 50% of the sphere
+ * crowns above the frosted footer, while the lower 50% is submerged behind the frosted glass!
+ */
+export const getFooterTopY = (h: number) => {
+  const footerEl = typeof document !== 'undefined' ? document.getElementById('landing-footer') : null;
+  const footerHeight = footerEl ? footerEl.getBoundingClientRect().height : 224;
+  const vFovRad = (45 * Math.PI) / 180;
+  const visibleWorldHeight = 2 * 4.8 * Math.tan(vFovRad / 2); // ~3.97645 at camera z = 4.8
+  const footerWorldHeight = (footerHeight / Math.max(h, 1)) * visibleWorldHeight;
+  return (-visibleWorldHeight / 2) + footerWorldHeight;
+};
+
+/**
+ * Calculates the target position and scale for each discrete landing section:
+ * - Section 0 (Hero): Right side, hero scale (x = 1.55, y = 0, scale = 0.92)
+ * - Section 1 (H3 Triage): Left side empty space, story scale (x = -1.55, y = 0, scale = storyScale)
+ * - Section 2 (SoVI Relocation): Right side empty space, story scale (x = 1.55, y = 0, scale = storyScale)
+ * - Section 3 (Sentinel SAR Radar): Left side empty space, story scale (x = -1.55, y = 0, scale = storyScale)
+ * - Section 4 (Horizon Command): Bottom center, horizon scale, 50% above frosted footer!
+ */
+export const getSectionConfig = (
+  sectionIdx: number,
+  w: number,
+  h: number,
+  viewMode: 'landing' | 'login' = 'landing'
+) => {
+  if (viewMode === 'login') {
+    const desktop = w > 1024;
+    return {
+      x: desktop ? 3.3 : 1.7,
+      y: 0,
+      scale: 1.0,
+    };
+  }
+
+  const desktop = w > 1024;
+  const vFovRad = (45 * Math.PI) / 180;
+  const visibleWorldHeight = 2 * 4.8 * Math.tan(vFovRad / 2);
+  const visibleWorldWidth = visibleWorldHeight * (w / Math.max(h, 1));
+
+  // Target diameter fits cleanly within card height (~400px, ~0.50 of viewport height)
+  // and within the empty horizontal half of the viewport:
+  const targetStoryDiameter = desktop
+    ? Math.min(visibleWorldHeight * 0.52, visibleWorldWidth * 0.36)
+    : Math.min(visibleWorldHeight * 0.44, visibleWorldWidth * 0.65);
+  const storyScale = targetStoryDiameter / 4.0; // ~0.50 - 0.52 on desktop
+
+  const heroScale = desktop ? 0.92 : 0.80;
+  const horizonScale = desktop ? 0.95 : 0.85;
+
+  const ampX = desktop ? 1.55 : w > 640 ? 0.85 : 0.35;
+  const bottomY = getFooterTopY(h);
+
+  switch (sectionIdx) {
+    case 0:
+      return { x: ampX, y: 0.0, scale: heroScale };
+    case 1:
+      return { x: -ampX, y: 0.0, scale: storyScale };
+    case 2:
+      return { x: ampX, y: 0.0, scale: storyScale };
+    case 3:
+      return { x: -ampX, y: 0.0, scale: storyScale };
+    case 4:
+    default:
+      return { x: 0.0, y: bottomY, scale: horizonScale };
+  }
+};
 
 export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
   viewMode = 'landing',
@@ -52,6 +125,7 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
   className = '',
   animation = {},
   scrollProgress = 0,
+  activeSection = 0,
 }) => {
   const primarySpot = hotspots.find((s) => s.id === primaryFocusId) || hotspots[0];
   const defaultLat = primarySpot ? primarySpot.lat : 28.5;
@@ -64,6 +138,7 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
   const ambientLightRef = useRef<THREE.AmbientLight | null>(null);
   const sunLightRef = useRef<THREE.DirectionalLight | null>(null);
   const scrollProgressRef = useRef(scrollProgress);
+  const activeSectionRef = useRef(activeSection);
 
   useEffect(() => {
     onHoverHotspotRef.current = onHoverHotspot;
@@ -72,6 +147,47 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
   useEffect(() => {
     scrollProgressRef.current = scrollProgress;
   }, [scrollProgress]);
+
+  // Section Snap: Smoothly snaps globe position and scale into place as user finishes scrolling onto each page
+  useEffect(() => {
+    activeSectionRef.current = activeSection;
+    if (!sceneRef.current) return;
+    const { earthGroup } = sceneRef.current;
+    const w = typeof window !== 'undefined' ? window.innerWidth : 1920;
+    const h = typeof window !== 'undefined' ? window.innerHeight : 1080;
+    const target = getSectionConfig(activeSection, w, h, viewMode);
+
+    if (activeSection === 4) {
+      // Bottom horizon: smooth glide down into bottom center, 50% above frosted footer
+      gsap.to(earthGroup.position, {
+        x: target.x,
+        y: target.y,
+        duration: 1.15,
+        ease: 'power3.out',
+        overwrite: 'auto',
+      });
+    } else {
+      // Lateral section transitions: slide X, subtle diagonal dip down and recovery to target Y
+      gsap.to(earthGroup.position, {
+        x: target.x,
+        duration: 1.1,
+        ease: 'power3.out',
+        overwrite: 'auto',
+      });
+      gsap.timeline({ overwrite: 'auto' })
+        .to(earthGroup.position, { y: -0.28, duration: 0.45, ease: 'power2.in' })
+        .to(earthGroup.position, { y: target.y, duration: 0.65, ease: 'power3.out' });
+    }
+
+    gsap.to(earthGroup.scale, {
+      x: target.scale,
+      y: target.scale,
+      z: target.scale,
+      duration: 1.1,
+      ease: 'power3.out',
+      overwrite: 'auto',
+    });
+  }, [activeSection, viewMode]);
 
   const sceneRef = useRef<{
     earthGroup: THREE.Group;
@@ -150,15 +266,11 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     const container = containerRef.current;
     if (!container) return;
 
-    // The container is `fixed inset-0`, i.e. always viewport-sized. Measure the
-    // viewport directly rather than the container: a transformed ancestor (such
-    // as the GSAP page-entrance tween on `.route-stage`) traps `position: fixed`
-    // and makes `container.clientHeight` report the full scroll height, which
-    // blows the globe up to several times its intended size.
-    let width = window.innerWidth;
-    let height = window.innerHeight;
+    // Strictly measure browser viewport dimensions (never transformed parent container)
+    let width = typeof window !== 'undefined' ? window.innerWidth : 1920;
+    let height = typeof window !== 'undefined' ? window.innerHeight : 1080;
 
-    // 1. Scene & Standard Perspective Camera (normal distance z = 4.8, normal size)
+    // 1. Scene & Perspective Camera at normal framing distance
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 2000);
     camera.position.set(0, 0, 4.8);
@@ -177,6 +289,12 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     }
     renderer.domElement.style.touchAction = 'none';
     renderer.domElement.style.cursor = 'grab';
+    renderer.domElement.style.position = 'fixed';
+    renderer.domElement.style.top = '0';
+    renderer.domElement.style.left = '0';
+    renderer.domElement.style.width = '100vw';
+    renderer.domElement.style.height = '100vh';
+    renderer.domElement.style.zIndex = '0';
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
 
@@ -230,11 +348,11 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     // 5. Earth Group:
     // Moves across the screen in 3D in the empty space next to text!
     // Rotation is centered on its own local origin (0, 0, 0).
-    const isDesktop = width > 1024;
-    const initialLandingX = isDesktop ? 1.15 : 0;
+    const initialConfig = getSectionConfig(activeSectionRef.current, width, height, viewMode);
     const earthGroup = new THREE.Group();
     earthGroup.rotation.z = 23.4 * (Math.PI / 180);
-    earthGroup.position.set(viewMode === 'landing' ? initialLandingX : 3.3, 0, 0);
+    earthGroup.position.set(initialConfig.x, initialConfig.y, 0);
+    earthGroup.scale.set(initialConfig.scale, initialConfig.scale, initialConfig.scale);
     scene.add(earthGroup);
 
     // 6. Earth Mesh (Normal size: radius 2.0)
@@ -395,12 +513,14 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
       hotspotGroup.add(auraMesh);
     });
 
-    // 12. Direct Sphere Drag Rotation:
-    // User requested: "make the globe interactable like it was before"
-    // Provides full tactile drag-to-spin with momentum physics around the sphere's own center!
+    // 12. Direct Sphere Drag Rotation & Scroll-Spin Physics:
+    // When user scrolls, the scroll actively spins the globe!
+    // When user drags, they rotate the globe around its own center axis!
     let isPointerDown = false;
     let prevPointer = { x: 0, y: 0 };
     let dragVelocity = { x: 0, y: 0 };
+    let scrollSpinVelocity = 0;
+    let lastScrollY = typeof window !== 'undefined' ? window.scrollY : 0;
 
     const domEl = renderer.domElement;
 
@@ -441,10 +561,28 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
       }
     };
 
+    // Scroll spin: responsive, lively rotation as the user scrolls
+    const handleScrollSpin = () => {
+      const currentScrollY = window.scrollY || window.pageYOffset || 0;
+      const deltaY = currentScrollY - lastScrollY;
+      lastScrollY = currentScrollY;
+
+      // Increased impulse a bit as requested
+      const impulse = deltaY * 0.00045;
+      scrollSpinVelocity = Math.max(-0.014, Math.min(0.014, scrollSpinVelocity + impulse));
+    };
+
+    const handleWheelSpin = (e: WheelEvent) => {
+      const impulse = (e.deltaY || 0) * 0.00035;
+      scrollSpinVelocity = Math.max(-0.014, Math.min(0.014, scrollSpinVelocity + impulse));
+    };
+
     domEl.addEventListener('pointerdown', handlePointerDown);
     domEl.addEventListener('pointermove', handlePointerMoveDrag);
     domEl.addEventListener('pointerup', handlePointerUp);
     domEl.addEventListener('pointercancel', handlePointerUp);
+    window.addEventListener('scroll', handleScrollSpin, { passive: true });
+    window.addEventListener('wheel', handleWheelSpin, { passive: true });
 
     // 13. Raycasting for hover tooltips
     const raycaster = new THREE.Raycaster();
@@ -474,14 +612,17 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
 
     window.addEventListener('mousemove', handleMouseMove);
 
-    // Responsive Resize Handler
+    // Responsive Resize Handler: strictly updates with window viewport dimensions
     const handleResize = () => {
-      if (!container) return;
       width = window.innerWidth;
       height = window.innerHeight;
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
       renderer.setSize(width, height);
+
+      const target = getSectionConfig(activeSectionRef.current, width, height, viewMode);
+      earthGroup.position.set(target.x, target.y, 0);
+      earthGroup.scale.set(target.scale, target.scale, target.scale);
     };
     window.addEventListener('resize', handleResize);
 
@@ -497,79 +638,28 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
       isRadarActive,
     };
 
-    // Calculate Target 3D Position for Zig-Zag Narrative Motion
-    // The globe moves into the empty space next to the text on every scroll:
-    // Hero: text LEFT -> globe RIGHT (ampX)
-    // Section 1: text RIGHT -> globe LEFT (-ampX)
-    // Section 2: text LEFT -> globe RIGHT (ampX)
-    // Section 3: text RIGHT -> globe LEFT (-ampX)
-    // Horizon / Footer: globe BOTTOM CENTER (x = 0, y = bottomY)
-    const getTargetPosition = (progress: number, w: number) => {
-      if (viewMode === 'login') {
-        const desktop = w > 1024;
-        return {
-          x: desktop ? 3.3 : 1.7,
-          y: 0,
-        };
-      }
-
-      const desktop = w > 1024;
-      const ampX = desktop ? 1.2 : w > 640 ? 0.8 : 0.4;
-      const bottomY = -1.75;
-
-      const p = Math.max(0, Math.min(1, progress));
-      const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-      const smoothstep = (t: number) => 0.5 - 0.5 * Math.cos(t * Math.PI);
-
-      if (p <= 0.25) {
-        // Hero (0.0: Right) -> Section 1 (0.25: Left)
-        const t = smoothstep(p / 0.25);
-        return {
-          x: lerp(ampX, -ampX, t),
-          y: 0,
-        };
-      } else if (p <= 0.50) {
-        // Section 1 (0.25: Left) -> Section 2 (0.50: Right)
-        const t = smoothstep((p - 0.25) / 0.25);
-        return {
-          x: lerp(-ampX, ampX, t),
-          y: 0,
-        };
-      } else if (p <= 0.75) {
-        // Section 2 (0.50: Right) -> Section 3 (0.75: Left)
-        const t = smoothstep((p - 0.50) / 0.25);
-        return {
-          x: lerp(ampX, -ampX, t),
-          y: 0,
-        };
-      } else {
-        // Section 3 (0.75: Left) -> Section 4 (1.00: Center & Bottom 50%)
-        const t = smoothstep((p - 0.75) / 0.25);
-        return {
-          x: lerp(-ampX, 0, t),
-          y: lerp(0, bottomY, t),
-        };
-      }
-    };
-
-    let currentX = getTargetPosition(scrollProgressRef.current, width).x;
-    let currentY = getTargetPosition(scrollProgressRef.current, width).y;
-
     // 14. Animation Render Loop
     let animationFrameId: number;
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
       const elapsed = performance.now() * 0.001;
 
-      // Continuous Auto-Rotation:
-      // Always rotates around the center of the sphere non-stop!
+      // Continuous Auto-Rotation: increased a bit as requested
       if (sceneRef.current?.isAutoRotating) {
-        earthMesh.rotation.y += 0.0012;
-        hotspotGroup.rotation.y += 0.0012;
-        primaryBeaconGroup.rotation.y += 0.0012;
+        earthMesh.rotation.y += 0.0016;
+        hotspotGroup.rotation.y += 0.0016;
+        primaryBeaconGroup.rotation.y += 0.0016;
       }
 
-      // Drag inertia momentum decay (matching OrbitControls feel)
+      // Scroll-Driven Spin: lively planetary rotation with smooth inertia damping
+      if (Math.abs(scrollSpinVelocity) > 0.00001) {
+        earthMesh.rotation.y += scrollSpinVelocity;
+        hotspotGroup.rotation.y += scrollSpinVelocity;
+        primaryBeaconGroup.rotation.y += scrollSpinVelocity;
+        scrollSpinVelocity *= 0.91;
+      }
+
+      // Manual drag inertia momentum decay
       if (!isPointerDown) {
         dragVelocity.x *= 0.95;
         dragVelocity.y *= 0.95;
@@ -607,12 +697,6 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
         ring.material.opacity = Math.max(0, (1 - progress) * 0.75);
       });
 
-      // Smoothly move globe in zig-zag 3D path based on scroll progress
-      const target = getTargetPosition(scrollProgressRef.current, width);
-      currentX += (target.x - currentX) * 0.1;
-      currentY += (target.y - currentY) * 0.1;
-      earthGroup.position.set(currentX, currentY, 0);
-
       renderer.render(scene, camera);
     };
     animate();
@@ -623,6 +707,8 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
       domEl.removeEventListener('pointermove', handlePointerMoveDrag);
       domEl.removeEventListener('pointerup', handlePointerUp);
       domEl.removeEventListener('pointercancel', handlePointerUp);
+      window.removeEventListener('scroll', handleScrollSpin);
+      window.removeEventListener('wheel', handleWheelSpin);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('resize', handleResize);
       renderer.dispose();

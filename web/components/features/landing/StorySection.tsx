@@ -23,7 +23,7 @@ export const StorySection: React.FC<StorySectionProps> = ({
   return (
     <section
       id={id || data.id}
-      className={`relative min-h-screen shrink-0 w-full flex items-center px-6 sm:px-12 lg:px-20 pointer-events-none py-16 ${
+      className={`relative min-h-screen shrink-0 w-full flex items-center px-6 sm:px-12 lg:px-20 pointer-events-none py-16 snap-start snap-always ${
         isRightAlign ? 'justify-end' : 'justify-start'
       } ${className}`}
     >
