@@ -17,10 +17,14 @@ export interface HotspotPoint {
 export interface IndiaHotspotMarkersProps {
   /** Projected hotspot points (from real lon/lat) */
   hotspots: HotspotPoint[];
-  /** Currently selected zone */
+  /** Currently pinned / selected zone */
   selectedZone: ZoneId;
-  /** Callback when user selects or hovers a hotspot */
+  /** Currently hovered zone for preview */
+  hoveredZone?: ZoneId | null;
+  /** Callback when user clicks to pin a zone */
   onSelectZone: (zone: ZoneId) => void;
+  /** Callback when user hovers a zone */
+  onHoverZone?: (zone: ZoneId | null) => void;
   /** Additional className for the markers group */
   className?: string;
 }
@@ -33,39 +37,64 @@ export interface IndiaHotspotMarkersProps {
 export const IndiaHotspotMarkers: React.FC<IndiaHotspotMarkersProps> = ({
   hotspots,
   selectedZone,
+  hoveredZone = null,
   onSelectZone,
+  onHoverZone,
   className = '',
-}) => (
-  <g className={className}>
-    {hotspots.map((hotspot) => {
-      const isSelected = hotspot.zone === selectedZone;
-      return (
-        <g
-          key={hotspot.zone}
-          onClick={() => onSelectZone(hotspot.zone)}
-          onMouseEnter={() => onSelectZone(hotspot.zone)}
-          className="cursor-pointer group"
-        >
-          <circle
-            cx={hotspot.cx}
-            cy={hotspot.cy}
-            r="16"
-            fill="none"
-            stroke={isSelected ? '#16a34a' : 'currentColor'}
-            className="hotspot-pulse text-[#2d6a4f] dark:text-[#fef08a]"
-            strokeWidth="1.5"
-          />
-          <circle
-            cx={hotspot.cx}
-            cy={hotspot.cy}
-            r={isSelected ? 6.5 : 5}
-            fill={isSelected ? '#16a34a' : 'currentColor'}
-            className="text-[#2d6a4f] dark:text-[#fef08a] transition-all duration-200 shadow-md group-hover:scale-125"
-          />
-        </g>
-      );
-    })}
-  </g>
-);
+}) => {
+  const displayedZone = hoveredZone ?? selectedZone;
+
+  return (
+    <g className={className}>
+      {hotspots.map((hotspot) => {
+        const isSelected = hotspot.zone === selectedZone;
+        const isDisplayed = hotspot.zone === displayedZone;
+        return (
+          <g
+            key={hotspot.zone}
+            onClick={() => onSelectZone(hotspot.zone)}
+            onMouseEnter={() => onHoverZone?.(hotspot.zone)}
+            onMouseLeave={() => onHoverZone?.(null)}
+            className="cursor-pointer group"
+          >
+            {/* Pulsing Outer Ring for active / displayed hotspot */}
+            {isDisplayed && (
+              <circle
+                cx={hotspot.cx}
+                cy={hotspot.cy}
+                r="18"
+                fill="none"
+                stroke={isSelected ? '#16a34a' : '#a3e635'}
+                className="hotspot-pulse text-[#16a34a] dark:text-[#fef08a]"
+                strokeWidth="1.8"
+              />
+            )}
+            {/* Secondary fixed ring for pinned hotspot */}
+            {isSelected && (
+              <circle
+                cx={hotspot.cx}
+                cy={hotspot.cy}
+                r="10"
+                fill="none"
+                stroke="currentColor"
+                className="text-[#16a34a] dark:text-[#fef08a] opacity-60"
+                strokeWidth="1.2"
+                strokeDasharray="2 2"
+              />
+            )}
+            {/* Solid Tactile Dot */}
+            <circle
+              cx={hotspot.cx}
+              cy={hotspot.cy}
+              r={isDisplayed ? 6.5 : 4.5}
+              fill={isSelected ? '#16a34a' : isDisplayed ? '#22c55e' : 'currentColor'}
+              className="text-[#2d6a4f] dark:text-[#fef08a] transition-all duration-200 shadow-md group-hover:scale-125"
+            />
+          </g>
+        );
+      })}
+    </g>
+  );
+};
 
 export default IndiaHotspotMarkers;

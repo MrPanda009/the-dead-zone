@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { ZoneId, REGIONAL_STORIES } from './storyData';
@@ -12,11 +12,13 @@ import {
   projectLonLat,
 } from './indiaOutline';
 import { IndiaHotspotMarkers } from './IndiaHotspotMarkers';
+import { IndiaDistrictOverlay } from './IndiaDistrictOverlay';
+import { DISTRICT_BOUNDARIES } from './districtBoundaries';
 
 export interface IndiaStoriesMapProps {
-  /** Currently selected zone */
+  /** Currently selected / pinned zone */
   selectedZone: ZoneId;
-  /** Callback when user selects or hovers over a zone */
+  /** Callback when user selects or pins a zone */
   onSelectZone: (zone: ZoneId) => void;
   /** Callback to trigger the slideshow for the active zone */
   onOpenSlideshow: (zone: ZoneId) => void;
@@ -24,15 +26,14 @@ export interface IndiaStoriesMapProps {
   className?: string;
 }
 
-/** Radius (SVG px) of the photographic focus cutout around each hotspot. */
-const FOCUS_RADIUS = 105;
-
 /**
  * Interactive India map rendered from the real Natural Earth 50m
- * national outline (mercator-fit to 800x900). Hotspots are projected
- * from true WGS84 lon/lat, so Joshimath, Kutch, Wayanad, Barpeta and
- * Satpura sit where they belong — including the Gujarat jut, the
- * Kanyakumari taper and the Northeast corridor.
+ * national outline (mercator-fit to 800x900) with true administrative district
+ * boundary focus cutouts.
+ *
+ * - Hovering over a district or marker previews its boundary and clipped cover photo.
+ * - Clicking pins the zone as the active story hotspot.
+ * - Cover-fit photographic imagery is rendered within each district's organic shape.
  */
 export const IndiaStoriesMap: React.FC<IndiaStoriesMapProps> = ({
   selectedZone,
@@ -41,7 +42,11 @@ export const IndiaStoriesMap: React.FC<IndiaStoriesMapProps> = ({
   className = '',
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const activeStory = REGIONAL_STORIES[selectedZone];
+  const [hoveredZone, setHoveredZone] = useState<ZoneId | null>(null);
+
+  const displayedZone = hoveredZone ?? selectedZone;
+  const activeStory = REGIONAL_STORIES[displayedZone];
+  const activeDistrict = DISTRICT_BOUNDARIES[displayedZone];
 
   const hotspots = useMemo(
     () =>
@@ -52,8 +57,9 @@ export const IndiaStoriesMap: React.FC<IndiaStoriesMapProps> = ({
       }),
     [],
   );
+
   const activeHotspot =
-    hotspots.find((h) => h.zone === selectedZone) ?? hotspots[0];
+    hotspots.find((h) => h.zone === displayedZone) ?? hotspots[0];
 
   useGSAP(() => {
     if (!containerRef.current) return;
@@ -63,6 +69,11 @@ export const IndiaStoriesMap: React.FC<IndiaStoriesMapProps> = ({
       { scale: 1.8, opacity: 0, duration: 2, repeat: -1, ease: 'power1.out', stagger: 0.4 },
     );
   }, { scope: containerRef });
+
+  const handleSelectZone = (zone: ZoneId) => {
+    onSelectZone(zone);
+    setHoveredZone(null);
+  };
 
   return (
     <div
@@ -79,13 +90,6 @@ export const IndiaStoriesMap: React.FC<IndiaStoriesMapProps> = ({
             <stop offset="0%" className="text-[#95b8a6] dark:text-[#22543d]" stopColor="currentColor" stopOpacity="0.35" />
             <stop offset="100%" className="text-[#edf3ef] dark:text-[#0d231a]" stopColor="currentColor" stopOpacity="0" />
           </radialGradient>
-
-          {/* Circular photographic focus cutouts centred on true hotspot locations */}
-          {hotspots.map((h) => (
-            <clipPath key={h.zone} id={`clip-${h.zone}`}>
-              <circle cx={h.cx} cy={h.cy} r={FOCUS_RADIUS} />
-            </clipPath>
-          ))}
         </defs>
 
         <circle cx="400" cy="460" r="380" fill="url(#mapGlow)" />
@@ -103,50 +107,67 @@ export const IndiaStoriesMap: React.FC<IndiaStoriesMapProps> = ({
           />
         ))}
 
-        {/* --- PHOTOGRAPHIC FOCUS CUTOUT FOR ACTIVE REGION --- */}
-        <g clipPath={`url(#clip-${selectedZone})`} className="transition-all duration-500">
-          <image
-            href={activeStory.previewImage}
-            x={activeHotspot.cx - FOCUS_RADIUS - 12}
-            y={activeHotspot.cy - FOCUS_RADIUS - 12}
-            width={(FOCUS_RADIUS + 12) * 2}
-            height={(FOCUS_RADIUS + 12) * 2}
-            preserveAspectRatio="xMidYMid slice"
-            className="opacity-95 contrast-110 saturate-110 filter drop-shadow-md"
-          />
-          <circle
-            cx={activeHotspot.cx}
-            cy={activeHotspot.cy}
-            r={FOCUS_RADIUS}
-            fill="none"
-            className="stroke-[#2d6a4f] dark:stroke-[#fef08a]"
-            strokeWidth="2.2"
-            strokeOpacity="0.8"
-          />
-        </g>
+        {/* --- ADMINISTRATIVE DISTRICT BOUNDARIES & CLIPPED PHOTOGRAPHIC FOCUS --- */}
+        <IndiaDistrictOverlay
+          selectedZone={selectedZone}
+          hoveredZone={hoveredZone}
+          onHoverZone={setHoveredZone}
+          onSelectZone={handleSelectZone}
+          previewImage={activeStory.previewImage}
+        />
 
+        {/* --- CARTOGRAPHIC LEADER LINE FROM BADGE TO ACTIVE DISTRICT --- */}
+        {activeDistrict && (
+          <line
+            key={`line-${displayedZone}`}
+            x1={activeDistrict.badge.x}
+            y1={activeDistrict.badge.y}
+            x2={activeHotspot.cx}
+            y2={activeHotspot.cy}
+            stroke="currentColor"
+            strokeWidth="1.2"
+            strokeDasharray="3 3"
+            className="text-[#16a34a]/60 dark:text-[#fef08a]/60 pointer-events-none transition-all duration-300"
+          />
+        )}
+
+        {/* --- HOTSPOT MARKERS --- */}
         <IndiaHotspotMarkers
           hotspots={hotspots}
           selectedZone={selectedZone}
-          onSelectZone={onSelectZone}
+          hoveredZone={hoveredZone}
+          onSelectZone={handleSelectZone}
+          onHoverZone={setHoveredZone}
         />
-      </svg>
 
-      {/* --- FLOATING "+ DISCOVER STORIES" CIRCULAR BADGE OVER ACTIVE REGION --- */}
-      <div
-        className="absolute pointer-events-auto transition-all duration-500 transform -translate-x-1/2 -translate-y-1/2 z-20"
-        style={{
-          left: `${(activeHotspot.cx / 800) * 100}%`,
-          top: `${(activeHotspot.cy / 900) * 100}%`,
-        }}
-      >
-        <StoryDiscoverBadge
-          onClick={() => onOpenSlideshow(selectedZone)}
-          size={90}
-        />
-      </div>
+        {/* --- FLOATING "+ DISCOVER STORIES" BADGE IN MAP COORDINATE SPACE --- */}
+        {activeDistrict && (
+          <g
+            key={`badge-group-${displayedZone}`}
+            transform={`translate(${activeDistrict.badge.x}, ${activeDistrict.badge.y})`}
+            className="transition-transform duration-300 ease-out"
+          >
+            <foreignObject
+              x="-45"
+              y="-45"
+              width="90"
+              height="90"
+              className="overflow-visible pointer-events-auto"
+            >
+              <div className="w-full h-full flex items-center justify-center">
+                <StoryDiscoverBadge
+                  onClick={() => onOpenSlideshow(displayedZone)}
+                  size={84}
+                />
+              </div>
+            </foreignObject>
+          </g>
+        )}
+      </svg>
     </div>
   );
 };
 
 export default IndiaStoriesMap;
+
+

@@ -8,7 +8,6 @@ import { INTRO_TIMINGS } from '@/lib/motion/introSequence';
 import { ObservationBadge } from './ObservationBadge';
 import { HeroTypography } from './HeroTypography';
 import { CommandPortalCta } from './CommandPortalCta';
-import { AvatarPills } from './AvatarPills';
 
 export interface HeroContentProps {
   /** Target link for the command portal (default '/login') */
@@ -44,7 +43,7 @@ export const HeroContent: React.FC<HeroContentProps> = ({
       // below animates *from* opacity 0.
       if (!animate) {
         gsap.set(
-          ['.hero-badge-wrap', '.hero-word-line', '.hero-tagline', '.hero-description', '.hero-cta-wrap', '.hero-avatars-wrap'],
+          ['.hero-badge-wrap', '.hero-word-line', '.hero-tagline', '.hero-description', '.hero-cta-wrap'],
           { clearProps: 'all' }
         );
         return;
@@ -80,12 +79,6 @@ export const HeroContent: React.FC<HeroContentProps> = ({
           { y: 25, opacity: 0, scale: 0.94 },
           { y: 0, opacity: 1, scale: 1, duration: M3_DURATION.extraLong2, ease: M3_EASE.decelerate },
           '-=0.2'
-        )
-        .fromTo(
-          '.hero-avatars-wrap',
-          { opacity: 0, scale: 0.7 },
-          { opacity: 1, scale: 1, duration: M3_DURATION.long2, stagger: 0.1 },
-          '-=0.3'
         );
     },
     { scope: containerRef, dependencies: [animate, delay] }
@@ -110,11 +103,6 @@ export const HeroContent: React.FC<HeroContentProps> = ({
         <div className="hero-cta-wrap pointer-events-auto">
           <CommandPortalCta href={portalHref} onClick={onEnterPortal} />
         </div>
-      </div>
-
-      {/* Bottom Left Avatar Pills */}
-      <div className="hero-avatars-wrap pointer-events-auto">
-        <AvatarPills />
       </div>
     </div>
   );

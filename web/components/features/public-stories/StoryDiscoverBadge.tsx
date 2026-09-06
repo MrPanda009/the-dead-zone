@@ -55,9 +55,9 @@ export const StoryDiscoverBadge: React.FC<StoryDiscoverBadgeProps> = ({
         <text
           fontSize="9.2"
           letterSpacing="0.28em"
-          fill="#fef08a"
+          fill="currentColor"
           fontWeight="600"
-          className="font-mono uppercase opacity-95"
+          className="font-mono uppercase opacity-95 text-[#2d6a4f] dark:text-[#fef08a]"
         >
           <textPath href="#discoverTextPath" startOffset="0%">
             + DISCOVER STORIES +
