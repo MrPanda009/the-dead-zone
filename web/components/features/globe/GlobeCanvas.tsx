@@ -295,7 +295,7 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     renderer.domElement.style.left = '0';
     renderer.domElement.style.width = '100vw';
     renderer.domElement.style.height = '100vh';
-    renderer.domElement.style.zIndex = '0';
+    renderer.domElement.style.zIndex = '1';
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
 
@@ -585,16 +585,13 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     window.addEventListener('scroll', handleScrollSpin, { passive: true });
     window.addEventListener('wheel', handleWheelSpin, { passive: true });
 
-    // 13. Raycasting for hover tooltips & mouse parallax
+    // 13. Raycasting for hover tooltips
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
-    const mouseParallax = { x: 0, y: 0, targetX: 0, targetY: 0 };
 
     const handleMouseMove = (e: MouseEvent) => {
       mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
       mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-      mouseParallax.targetX = mouse.x;
-      mouseParallax.targetY = mouse.y;
 
       raycaster.setFromCamera(mouse, camera);
       const intersects = raycaster.intersectObjects(hotspotGroup.children);
@@ -655,12 +652,13 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
         primaryBeaconGroup.rotation.y += 0.0016;
       }
 
-      // Mouse Parallax: Smooth planetary tilt responding to cursor movement
+      // Smooth 3D scroll & mouse parallax on Earth camera
       if (!prefersReducedMotion) {
-        mouseParallax.x += (mouseParallax.targetX - mouseParallax.x) * 0.04;
-        mouseParallax.y += (mouseParallax.targetY - mouseParallax.y) * 0.04;
-        earthGroup.rotation.x = mouseParallax.y * 0.05;
-        earthGroup.rotation.z = -mouseParallax.x * 0.035;
+        const scrollParallaxY = -scrollProgressRef.current * 0.45;
+        const targetCamX = mouse.x * 0.14;
+        const targetCamY = scrollParallaxY + mouse.y * 0.12;
+        camera.position.x += (targetCamX - camera.position.x) * 0.05;
+        camera.position.y += (targetCamY - camera.position.y) * 0.05;
       }
 
       // Scroll-Driven Spin: lively planetary rotation with smooth inertia damping
@@ -765,7 +763,7 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     <div
       ref={containerRef}
       id="globe-container"
-      className={`fixed inset-0 z-0 pointer-events-auto cursor-grab active:cursor-grabbing select-none ${className}`}
+      className={`fixed inset-0 z-[1] pointer-events-auto cursor-grab active:cursor-grabbing select-none ${className}`}
     />
   );
 };

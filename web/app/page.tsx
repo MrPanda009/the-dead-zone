@@ -128,11 +128,11 @@ export default function HomePage() {
       {/* Soft Ambient Forest / Sage Lighting Atmosphere */}
       <div className="fixed inset-0 forest-atmosphere z-0 pointer-events-none" />
 
-      {/* Atmospheric Mist Background Artifact: sits behind 3D Earth at z-0 so it never covers Earth */}
-      <AtmosphericMist scrollProgress={scrollProgress} intensity={1.0} className="z-0" />
+      {/* Atmospheric Mist Background Artifact (Behind Earth, Spreads Across Other Areas, Disperses Slowly) */}
+      <AtmosphericMist scrollProgress={scrollProgress} intensity={1.0} />
 
-      {/* 3D WebGL Earth Globe Canvas (India Focus & Section Snap Animation)
-          z-[1] ensures the Earth globe is layered in front of the background mist */}
+      {/* 3D WebGL Earth Globe Canvas (In Front of Mist, India Focus & Section Snap Animation)
+          pointer-events-auto ensures full click-and-drag interaction! */}
       <GlobeCanvas
         viewMode="landing"
         isAutoRotating={isAutoRotating}
