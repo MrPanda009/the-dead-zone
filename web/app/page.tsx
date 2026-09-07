@@ -19,6 +19,7 @@ import {
   StorySection,
   ScrollIndicator,
 } from '@/components/features/landing';
+import { AtmosphericMist } from '@/components/features/mist';
 
 export default function HomePage() {
   const [isAutoRotating, setIsAutoRotating] = useState(true);
@@ -140,6 +141,9 @@ export default function HomePage() {
         animation={{ delay: INTRO_TIMINGS.globe }}
         className="fixed inset-0 z-0 pointer-events-auto cursor-grab active:cursor-grabbing select-none"
       />
+
+      {/* Atmospheric Mist Background Artifact (Light Mode Only, Disperses on Scroll) */}
+      <AtmosphericMist scrollProgress={scrollProgress} intensity={0.7} />
 
       {/* Top Floating Dark Dock Navigation */}
       <Header

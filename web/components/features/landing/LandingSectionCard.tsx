@@ -93,7 +93,7 @@ export const LandingSectionCard: React.FC<LandingSectionCardProps> = ({
       {/* Top Meta Line: Section Number & Badge */}
       <div className="flex items-center gap-3 mb-4">
         <span className="font-mono text-xs font-bold text-text-muted tracking-wider">
-          //{data.index}
+          {`//${data.index}`}
         </span>
         <span
           className={`px-2.5 py-0.5 text-[10px] font-mono font-semibold tracking-wider uppercase rounded-full border ${getBadgeStyle(

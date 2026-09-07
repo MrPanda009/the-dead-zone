@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable react-hooks/immutability */
 
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
