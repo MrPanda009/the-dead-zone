@@ -9,6 +9,7 @@ export const APP_ROUTES = {
   home: '/',
   login: '/login',
   gov: '/gov',
+  relocation: '/relocation',
   stories: '/stories',
   workspace: '/workspace',
 } as const;
@@ -25,6 +26,7 @@ export const NAV_TABS: NavTabItem[] = [
   { id: 'planetary', label: 'Planetary View', icon: 'public', href: APP_ROUTES.home },
   { id: 'sar_mesh', label: 'Real-time SAR Mesh', icon: 'vital_signs' },
   { id: 'hazards', label: 'Hazards', icon: 'warning', href: APP_ROUTES.workspace },
+  { id: 'relocation', label: 'Relocation', icon: 'moving', href: APP_ROUTES.relocation },
   { id: 'data', label: 'Data', icon: 'database', href: APP_ROUTES.gov },
   { id: 'research', label: 'Research', icon: 'menu_book', href: APP_ROUTES.stories },
 ];

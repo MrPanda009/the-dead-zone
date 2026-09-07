@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable react-hooks/immutability */
 
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
@@ -294,7 +295,7 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     renderer.domElement.style.left = '0';
     renderer.domElement.style.width = '100vw';
     renderer.domElement.style.height = '100vh';
-    renderer.domElement.style.zIndex = '0';
+    renderer.domElement.style.zIndex = '1';
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
 
@@ -532,7 +533,7 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
       domEl.style.cursor = 'grabbing';
       try {
         domEl.setPointerCapture(e.pointerId);
-      } catch {}
+      } catch { }
     };
 
     const handlePointerMoveDrag = (e: PointerEvent) => {
@@ -557,7 +558,7 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
         domEl.style.cursor = 'grab';
         try {
           domEl.releasePointerCapture(e.pointerId);
-        } catch {}
+        } catch { }
       }
     };
 
@@ -649,6 +650,15 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
         earthMesh.rotation.y += 0.0016;
         hotspotGroup.rotation.y += 0.0016;
         primaryBeaconGroup.rotation.y += 0.0016;
+      }
+
+      // Smooth 3D scroll & mouse parallax on Earth camera
+      if (!prefersReducedMotion) {
+        const scrollParallaxY = -scrollProgressRef.current * 0.45;
+        const targetCamX = mouse.x * 0.14;
+        const targetCamY = scrollParallaxY + mouse.y * 0.12;
+        camera.position.x += (targetCamX - camera.position.x) * 0.05;
+        camera.position.y += (targetCamY - camera.position.y) * 0.05;
       }
 
       // Scroll-Driven Spin: lively planetary rotation with smooth inertia damping
@@ -753,7 +763,7 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     <div
       ref={containerRef}
       id="globe-container"
-      className={`fixed inset-0 z-0 pointer-events-auto cursor-grab active:cursor-grabbing select-none ${className}`}
+      className={`fixed inset-0 z-[1] pointer-events-auto cursor-grab active:cursor-grabbing select-none ${className}`}
     />
   );
 };

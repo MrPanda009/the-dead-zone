@@ -19,6 +19,7 @@ import {
   StorySection,
   ScrollIndicator,
 } from '@/components/features/landing';
+import { AtmosphericMist } from '@/components/features/mist';
 
 export default function HomePage() {
   const [isAutoRotating, setIsAutoRotating] = useState(true);
@@ -127,7 +128,10 @@ export default function HomePage() {
       {/* Soft Ambient Forest / Sage Lighting Atmosphere */}
       <div className="fixed inset-0 forest-atmosphere z-0 pointer-events-none" />
 
-      {/* 3D WebGL Earth Globe Canvas (India Focus & Section Snap Animation)
+      {/* Atmospheric Mist Background Artifact (Behind Earth, Spreads Across Other Areas, Disperses Slowly) */}
+      <AtmosphericMist scrollProgress={scrollProgress} intensity={1.0} />
+
+      {/* 3D WebGL Earth Globe Canvas (In Front of Mist, India Focus & Section Snap Animation)
           pointer-events-auto ensures full click-and-drag interaction! */}
       <GlobeCanvas
         viewMode="landing"
@@ -138,7 +142,7 @@ export default function HomePage() {
         scrollProgress={scrollProgress}
         activeSection={activeSection}
         animation={{ delay: INTRO_TIMINGS.globe }}
-        className="fixed inset-0 z-0 pointer-events-auto cursor-grab active:cursor-grabbing select-none"
+        className="fixed inset-0 z-[1] pointer-events-auto cursor-grab active:cursor-grabbing select-none"
       />
 
       {/* Top Floating Dark Dock Navigation */}
