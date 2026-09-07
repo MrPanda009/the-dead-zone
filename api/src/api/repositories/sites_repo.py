@@ -30,38 +30,26 @@ class SitesRepository:
         self,
         habitation_id: int,
         radius_m: float = 15000.0,
-        limit: int = 50,
-        offset: int = 0,
         min_suitability: Optional[int] = None,
-        policy: Optional[CandidateSitePolicy] = None,
-    ) -> tuple[list[dict[str, Any]], int]:
-        """Queries candidate relocation sites within radius of a source habitation.
+        policy: Optional[Any] = None,
+        **kwargs: Any,
+    ) -> list[dict[str, Any]]:
+        """Queries raw candidate relocation sites within spatial radius of a source habitation.
         
         Uses spatial indexing on geography centroid:
         ST_DWithin(h.geom_point::geography, cs.centroid::geography, :radius_m).
-        Enforces H7 hard eligibility constraints parameterized from CandidateSitePolicy (PRD §6.8, FR-7.2, FR-7.3).
-        Ranks by suitability DESC NULLS LAST, cc_final DESC, distance_km ASC, id ASC.
+        Does NOT duplicate business eligibility logic in SQL; delegates evaluation to SitesService.
         """
-        p = policy or CandidateSitePolicy()
         where_clauses = [
             "h.id = :habitation_id",
-            "cs.mhi_max < :max_static_mhi",
-            "cs.slope_mean < :max_slope_deg",
-            "cs.area_ha >= :min_area_ha",
-            "cs.tenure IN ('government_revenue', 'private')",
         ]
         params: dict[str, Any] = {
             "habitation_id": habitation_id,
             "radius_m": float(radius_m),
-            "limit": limit,
-            "offset": offset,
-            "max_static_mhi": p.max_static_mhi,
-            "max_slope_deg": p.max_slope_deg,
-            "min_area_ha": p.min_contiguous_area_ha,
         }
 
         if min_suitability is not None:
-            where_clauses.append("cs.suitability >= :min_suitability")
+            where_clauses.append("(cs.suitability >= :min_suitability OR cs.suitability IS NULL)")
             params["min_suitability"] = int(min_suitability)
 
         where_sql = " AND ".join(where_clauses)
@@ -69,6 +57,7 @@ class SitesRepository:
         sql = f"""
             SELECT
                 cs.id,
+                cs.source_site_id,
                 cs.area_ha,
                 cs.tenure,
                 cs.slope_mean,
@@ -81,31 +70,28 @@ class SitesRepository:
                 cs.binding_constraint,
                 cs.augmented,
                 cs.suitability,
+                cs.assessment_status,
+                cs.eligibility_status,
                 cs.metadata as metadata_info,
                 ST_X(cs.centroid::geometry) as lon,
                 ST_Y(cs.centroid::geometry) as lat,
-                ST_Distance(h.geom_point::geography, cs.centroid::geography) / 1000.0 as distance_km,
-                count(*) OVER() as full_count
+                ST_Distance(h.geom_point::geography, cs.centroid::geography) / 1000.0 as distance_km
             FROM habitation h
             JOIN candidate_site cs
               ON ST_DWithin(h.geom_point::geography, cs.centroid::geography, :radius_m)
             WHERE {where_sql}
-            ORDER BY cs.suitability DESC NULLS LAST, cs.cc_final DESC, distance_km ASC, cs.id ASC
-            LIMIT :limit OFFSET :offset;
+            ORDER BY cs.suitability DESC NULLS LAST, cs.cc_final DESC NULLS LAST, distance_km ASC, cs.id ASC;
         """
 
         rows = self.db.execute(text(sql), params).mappings().fetchall()
-        if not rows:
-            return [], 0
-
-        total = rows[0]["full_count"]
-        return [dict(r) for r in rows], int(total)
+        return [dict(r) for r in rows]
 
     def get_candidate_site_by_id(self, site_id: int) -> Optional[dict[str, Any]]:
         """Retrieves a single candidate site by ID with GeoJSON geometry and centroid."""
         sql = """
             SELECT
                 cs.id,
+                cs.source_site_id,
                 cs.area_ha,
                 cs.tenure,
                 cs.slope_mean,
@@ -118,6 +104,8 @@ class SitesRepository:
                 cs.binding_constraint,
                 cs.augmented,
                 cs.suitability,
+                cs.assessment_status,
+                cs.eligibility_status,
                 cs.metadata as metadata_info,
                 ST_X(cs.centroid::geometry) as lon,
                 ST_Y(cs.centroid::geometry) as lat,

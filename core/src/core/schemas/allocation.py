@@ -60,3 +60,69 @@ class AllocationPlanResponse(BaseSchema):
     assignments: List[AllocationAssignmentDTO] = Field(default_factory=list)
     group_split_warnings: List[str] = Field(default_factory=list)
     screening_grade: str = SCREENING_GRADE_NOTICE
+
+
+class ExternalRecommendationItem(BaseSchema):
+    """External offline recommendation record from upstream partner pipeline."""
+    id: int
+    import_run_id: UUID
+    habitation_id: int
+    habitation_name: Optional[str] = None
+    site_id: int
+    external_habitation_key: str
+    external_site_key: str
+    origin_type: str = "external"
+    decision_status: str = "recommendation"
+    households: int
+    tier: str
+    priority_score: float
+    distance_km: float
+    site_suitability: Optional[int] = None
+    site_cc_final: Optional[int] = None
+    site_binding: Optional[str] = None
+    has_group_split: bool = False
+    rationale: Dict[str, Any] = Field(default_factory=dict)
+    screening_grade: str
+    screening_caveats: Optional[str] = None
+    source_pipeline: str = "external_gis_v1"
+    pipeline_version: str = "v1.0"
+    created_at: datetime
+
+
+class ExternalRecommendationListResponse(BaseSchema):
+    """List response for external recommendations."""
+    district: str
+    total_count: int
+    total_households_recommended: int
+    items: List[ExternalRecommendationItem] = Field(default_factory=list)
+
+
+class AllocationBenchmarkComparisonItem(BaseSchema):
+    """Side-by-side comparison of a habitation's external recommendation vs SETU canonical decision."""
+    habitation_id: int
+    habitation_name: str
+    demand_households: int
+    external_recommendation: Optional[Dict[str, Any]] = None
+    setu_canonical_allocation: Optional[Dict[str, Any]] = None
+    site_match: bool = False
+    household_delta: int = 0
+    distance_delta_km: Optional[float] = None
+    methodology_divergence_notes: List[str] = Field(default_factory=list)
+
+
+class AllocationBenchmarkResponse(BaseSchema):
+    """Comparative evaluation between offline external GIS recommendations and SETU decision engine."""
+    district: str
+    status: str = "comparative"  # 'comparative' or 'external_only'
+    setu_allocation_available: bool = False
+    total_external_recommended_households: int = 0
+    total_setu_allocated_households: int = 0
+    external_recommendations_count: int = 0
+    setu_allocations_count: int = 0
+    comparisons: List[AllocationBenchmarkComparisonItem] = Field(default_factory=list)
+    methodology_summary: Dict[str, str] = Field(
+        default_factory=lambda: {
+            "external_pipeline": "Offline geometric screening, land-capacity proxy, dormant priority scoring",
+            "setu_decision_engine": "Independent H7 hard gate, min-cost flow optimization, multi-hazard priority",
+        }
+    )

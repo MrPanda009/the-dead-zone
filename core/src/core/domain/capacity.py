@@ -23,7 +23,7 @@ from core.constants import (
     SITE_MIN_AREA_HA,
     SITE_SEARCH_RADIUS_KM,
 )
-from core.enums import BindingConstraint, TenureType
+from core.enums import BindingConstraint, EligibilityStatus, TenureType
 
 
 class CapacityDataQuality(StrEnum):
@@ -88,6 +88,7 @@ class EligibilityResult:
     """Evaluation result of spatial, hazard, and environmental eligibility."""
     is_eligible: bool
     rejection_reasons: list[str] = field(default_factory=list)
+    eligibility_status: EligibilityStatus = EligibilityStatus.ELIGIBLE
 
     @property
     def exclusion_reasons(self) -> list[str]:
@@ -112,8 +113,8 @@ class CapacityEvaluationResult:
     cc_school: Optional[int]
     cc_health: Optional[int]
     livelihood_multiplier: float
-    cc_final: int
-    binding_constraint: BindingConstraint
+    cc_final: Optional[int]
+    binding_constraint: Optional[BindingConstraint]
     tied_constraints: list[BindingConstraint] = field(default_factory=list)
     augmented: Optional[AugmentedCapacityResult] = None
     data_quality: CapacityDataQuality = CapacityDataQuality.COMPLETE
@@ -216,12 +217,16 @@ class CapacityEngine:
         cc_water: Optional[int] = None,
         cc_school: Optional[int] = None,
         cc_health: Optional[int] = None,
-    ) -> tuple[int, BindingConstraint, list[BindingConstraint]]:
+    ) -> tuple[Optional[int], Optional[BindingConstraint], list[BindingConstraint]]:
         """Determines the limiting capacity bottleneck via strict argmin with deterministic tie-breaking.
         
-        Only non-None constraints are evaluated, ensuring missing data does not artificially force zero capacity.
+        If all lifelines (water, school, health) are unmeasured, returns (None, None, []) to preserve
+        honest data gaps rather than prematurely assuming land is the final bottleneck.
         Deterministic tie-breaking priority order: LAND -> WATER -> SCHOOL -> HEALTH.
         """
+        if cc_water is None and cc_school is None and cc_health is None:
+            return None, None, []
+
         available: list[tuple[int, BindingConstraint]] = []
         if cc_land is not None:
             available.append((max(0, cc_land), BindingConstraint.LAND))
@@ -233,7 +238,7 @@ class CapacityEngine:
             available.append((max(0, cc_health), BindingConstraint.HEALTH))
 
         if not available:
-            return 0, BindingConstraint.LAND, [BindingConstraint.LAND]
+            return None, None, []
 
         min_val = min(c[0] for c in available)
         tied = [c[1] for c in available if c[0] == min_val]
@@ -248,14 +253,21 @@ class CapacityEngine:
         cc_school: Optional[int] = None,
         cc_health: Optional[int] = None,
         livelihood_multiplier: Optional[float] = None,
-    ) -> tuple[int, BindingConstraint, list[BindingConstraint]]:
+    ) -> tuple[Optional[int], Optional[BindingConstraint], list[BindingConstraint]]:
         """Calculates final carrying capacity = min(CC_land, CC_water, CC_school, CC_health) * mu_livelihood.
         
+        Returns (None, None, []) if all lifelines are unmeasured, preserving honest data gaps.
         Invariant (FR-7.4): Constraints are NEVER averaged.
         """
+        if cc_water is None and cc_school is None and cc_health is None:
+            return None, None, []
+
         min_val, primary_binding, tied = self.determine_binding_constraint(
             cc_land, cc_water, cc_school, cc_health
         )
+        if min_val is None or primary_binding is None:
+            return None, None, []
+
         mu = livelihood_multiplier if livelihood_multiplier is not None else self.norms.default_livelihood_multiplier
         mu_clamped = min(max(mu, self.norms.livelihood_multiplier_min), self.norms.livelihood_multiplier_max)
         final_cc = math.floor(min_val * mu_clamped)
@@ -400,9 +412,18 @@ class CapacityEngine:
         elif distance_km > p.search_radius_km:
             rejection_reasons.append(f"Site distance {distance_km:.2f} km > search radius {p.search_radius_km:.1f} km")
 
+        is_eligible = len(rejection_reasons) == 0
+        if is_eligible:
+            elig_status = EligibilityStatus.ELIGIBLE
+        elif any("missing" in r.lower() or "unverified" in r.lower() or "unknown" in r.lower() for r in rejection_reasons):
+            elig_status = EligibilityStatus.UNKNOWN
+        else:
+            elig_status = EligibilityStatus.INELIGIBLE
+
         return EligibilityResult(
-            is_eligible=len(rejection_reasons) == 0,
+            is_eligible=is_eligible,
             rejection_reasons=rejection_reasons,
+            eligibility_status=elig_status,
         )
 
     def evaluate_site_capacity(
@@ -471,11 +492,17 @@ class CapacityEngine:
         )
 
         mu = livelihood_multiplier if livelihood_multiplier is not None else active_norms.default_livelihood_multiplier
-        cc_final, binding, tied = self.calculate_final_capacity(cc_land, cc_water, cc_school, cc_health, mu)
-
-        augmented = self.calculate_augmented_capacity(
-            cc_land, cc_water, cc_school, cc_health, binding, livelihood_multiplier=mu
-        )
+        if quality == CapacityDataQuality.UNAVAILABLE:
+            # Honest gap: all lifelines are unmeasured. Do not claim final capacity or fake binding constraint.
+            cc_final = None
+            binding = None
+            tied: list[BindingConstraint] = []
+            augmented = None
+        else:
+            cc_final, binding, tied = self.calculate_final_capacity(cc_land, cc_water, cc_school, cc_health, mu)
+            augmented = self.calculate_augmented_capacity(
+                cc_land, cc_water, cc_school, cc_health, binding, livelihood_multiplier=mu
+            )
 
         return CapacityEvaluationResult(
             cc_land=cc_land,

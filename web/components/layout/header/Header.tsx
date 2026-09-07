@@ -99,9 +99,8 @@ export const Header: React.FC<HeaderProps> = ({
     >
       {/* Floating Dark Pill Dock Container (Material 3 Style) */}
       <div
-        className={`header-dock pointer-events-auto m3-floating-dock px-2 py-1.5 flex items-center justify-between gap-3 sm:gap-6 max-w-6xl w-full ${
-          viewMode === 'login' ? 'shadow-m3-4' : ''
-        } ${classNames.dock ?? ''}`}
+        className={`header-dock pointer-events-auto m3-floating-dock px-2 py-1.5 flex items-center justify-between gap-3 sm:gap-6 max-w-6xl w-full ${viewMode === 'login' ? 'shadow-m3-4' : ''
+          } ${classNames.dock ?? ''}`}
       >
         {/* Left Brand / Close Button Pill */}
         <div className="header-slot flex items-center shrink-0">

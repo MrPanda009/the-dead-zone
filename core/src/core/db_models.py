@@ -137,6 +137,11 @@ class Habitation(Base):
     )
     population: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     households: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    source_habitation_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    import_run_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        PG_UUID(as_uuid=True), ForeignKey("data_import_run.id", ondelete="RESTRICT"), nullable=True
+    )
+    risk_status: Mapped[str] = mapped_column(String, default="pending", nullable=False)
 
     admin_boundary: Mapped[Optional[AdminBoundary]] = relationship(
         "AdminBoundary", back_populates="habitations"
@@ -369,18 +374,27 @@ class CandidateSite(Base):
     __tablename__ = "candidate_site"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    source_site_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    admin_id: Mapped[Optional[int]] = mapped_column(
+        BigInteger, ForeignKey("admin_boundary.id", ondelete="SET NULL"), nullable=True
+    )
+    import_run_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        PG_UUID(as_uuid=True), ForeignKey("data_import_run.id", ondelete="RESTRICT"), nullable=True
+    )
+    assessment_status: Mapped[str] = mapped_column(String, default="screening_only", nullable=False)
+    eligibility_status: Mapped[str] = mapped_column(String, default="unknown", nullable=False)
     geom: Mapped[Any] = mapped_column(Geometry("MULTIPOLYGON", srid=4326), nullable=False)
     centroid: Mapped[Any] = mapped_column(Geometry("POINT", srid=4326), nullable=False)
     area_ha: Mapped[float] = mapped_column(Float, nullable=False)
     tenure: Mapped[str] = mapped_column(String, nullable=False)
     slope_mean: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
-    mhi_max: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    mhi_max: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     cc_land: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    cc_water: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    cc_school: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    cc_health: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    cc_final: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    binding_constraint: Mapped[str] = mapped_column(String, nullable=False)
+    cc_water: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    cc_school: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    cc_health: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    cc_final: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    binding_constraint: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     augmented: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
     suitability: Mapped[Optional[int]] = mapped_column(SmallInteger, default=None, nullable=True)
     metadata_: Mapped[dict[str, Any]] = mapped_column(
@@ -390,6 +404,7 @@ class CandidateSite(Base):
         PG_UUID(as_uuid=True), ForeignKey("pipeline_run.id", ondelete="SET NULL"), nullable=True
     )
 
+    admin_boundary: Mapped[Optional[AdminBoundary]] = relationship("AdminBoundary")
     relocation_plans: Mapped[List[RelocationPlan]] = relationship(
         "RelocationPlan", back_populates="candidate_site"
     )
@@ -515,3 +530,68 @@ class UserSession(Base):
     )
 
     user: Mapped[AppUser] = relationship("AppUser", back_populates="sessions")
+
+
+class DataImportRun(Base):
+    """Provenance and lifecycle record for external data imports."""
+    __tablename__ = "data_import_run"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    dataset_name: Mapped[str] = mapped_column(String, nullable=False)
+    district_name: Mapped[str] = mapped_column(String, nullable=False)
+    source_pipeline: Mapped[str] = mapped_column(String, nullable=False)
+    pipeline_version: Mapped[str] = mapped_column(String, nullable=False)
+    manifest_hash: Mapped[str] = mapped_column(String, nullable=False)
+    artifact_hashes: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    status: Mapped[str] = mapped_column(String, default="STAGED", nullable=False)
+    row_counts: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    metadata_: Mapped[dict[str, Any]] = mapped_column("metadata", JSONB, default=dict, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+    validated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    promoted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class ExternalRelocationRecommendation(Base):
+    """Offline recommendation from external GIS pipelines, strictly decoupled from canonical SETU decisions."""
+    __tablename__ = "external_relocation_recommendation"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    import_run_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True), ForeignKey("data_import_run.id", ondelete="RESTRICT"), nullable=False
+    )
+    habitation_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("habitation.id", ondelete="RESTRICT"), nullable=False
+    )
+    site_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("candidate_site.id", ondelete="RESTRICT"), nullable=False
+    )
+    external_habitation_key: Mapped[str] = mapped_column(String, nullable=False)
+    external_site_key: Mapped[str] = mapped_column(String, nullable=False)
+    origin_type: Mapped[str] = mapped_column(String, default="external", nullable=False)
+    decision_status: Mapped[str] = mapped_column(String, default="recommendation", nullable=False)
+    households: Mapped[int] = mapped_column(Integer, nullable=False)
+    tier: Mapped[str] = mapped_column(String, nullable=False)
+    priority_score: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    distance_km: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    site_suitability: Mapped[Optional[int]] = mapped_column(SmallInteger, nullable=True)
+    site_cc_final: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    site_binding: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    has_group_split: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    rationale: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    screening_grade: Mapped[str] = mapped_column(
+        String, default="Screening Grade: Cell-level external recommendation", nullable=False
+    )
+    screening_caveats: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    source_pipeline: Mapped[str] = mapped_column(String, default="external_gis_v1", nullable=False)
+    pipeline_version: Mapped[str] = mapped_column(String, default="v1.0", nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+    import_run: Mapped[DataImportRun] = relationship("DataImportRun")
+    habitation: Mapped[Habitation] = relationship("Habitation")
+    candidate_site: Mapped[CandidateSite] = relationship("CandidateSite")

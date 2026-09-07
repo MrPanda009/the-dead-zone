@@ -50,10 +50,16 @@ class SitesService:
         habitation_id: int,
         radius_km: Optional[float] = None,
         min_suitability: Optional[int] = None,
+        include_screening: bool = False,
         limit: int = 50,
         offset: int = 0,
     ) -> PaginatedResponse[CandidateSiteItem]:
-        """Retrieves ranked candidate relocation sites within search radius of a habitation."""
+        """Retrieves ranked candidate relocation sites within search radius of a habitation.
+        
+        Evaluates canonical CandidateSitePolicy in domain layer.
+        If include_screening=False, filters to only allocatable (eligible) sites.
+        If include_screening=True, includes screening_only/unknown sites with honest gaps.
+        """
         # 1. Verify habitation exists
         if not self.repo.check_habitation_exists(habitation_id):
             raise HabitationNotFoundError(habitation_id)
@@ -64,19 +70,37 @@ class SitesService:
 
         clamped_limit = min(max(1, limit), 200)
 
-        # 3. Query repository with canonical policy
+        # 3. Query repository for spatial candidates
         active_policy = replace(self.policy, search_radius_km=active_radius_km)
-        raw_sites, total = self.repo.query_candidate_sites_for_habitation(
+        raw_result = self.repo.query_candidate_sites_for_habitation(
             habitation_id=habitation_id,
             radius_m=radius_m,
-            limit=clamped_limit,
-            offset=offset,
             min_suitability=min_suitability,
             policy=active_policy,
         )
+        raw_sites = raw_result[0] if isinstance(raw_result, tuple) else raw_result
 
-        items: list[CandidateSiteItem] = []
+        all_items: list[CandidateSiteItem] = []
         for r in raw_sites:
+            tenure_str = str(r.get("tenure") or "tenure_unverified")
+            try:
+                tenure_enum = TenureType(tenure_str)
+            except ValueError:
+                tenure_enum = TenureType.TENURE_UNVERIFIED
+
+            # Canonical policy evaluation
+            eligibility = self.engine.evaluate_site_eligibility(
+                mhi_static=r.get("mhi_max"),
+                slope_mean=float(r.get("slope_mean") or 0.0),
+                area_ha=float(r.get("area_ha") or 0.0),
+                tenure=tenure_str,
+                policy=active_policy,
+            )
+
+            # Unless screening is explicitly requested, filter out non-eligible candidates
+            if not include_screening and not eligibility.is_eligible:
+                continue
+
             # Parse augmented capacity from JSONB
             aug_data = r.get("augmented") or {}
             if isinstance(aug_data, str):
@@ -86,7 +110,7 @@ class SitesService:
                     aug_data = {}
 
             augmented_dto = None
-            if aug_data and "relieved_constraint" in aug_data and "augmented_capacity" in aug_data:
+            if aug_data and "relieved_constraint" in aug_data and aug_data.get("augmented_capacity") is not None:
                 augmented_dto = AugmentedCapacityDTO(
                     relieved_constraint=BindingConstraint(aug_data["relieved_constraint"]),
                     augmented_capacity=int(aug_data["augmented_capacity"]),
@@ -111,47 +135,51 @@ class SitesService:
                     meta = {}
 
             # Build capacity breakdown
-            binding_str = str(r.get("binding_constraint") or "land")
-            try:
-                binding_enum = BindingConstraint(binding_str)
-            except ValueError:
-                binding_enum = BindingConstraint.LAND
-
-            tenure_str = str(r.get("tenure") or "tenure_unverified")
-            try:
-                tenure_enum = TenureType(tenure_str)
-            except ValueError:
-                tenure_enum = TenureType.TENURE_UNVERIFIED
+            binding_str = r.get("binding_constraint")
+            binding_enum = None
+            if binding_str:
+                try:
+                    binding_enum = BindingConstraint(str(binding_str))
+                except ValueError:
+                    binding_enum = None
 
             cc_water_raw = r.get("cc_water")
             cc_school_raw = r.get("cc_school")
             cc_health_raw = r.get("cc_health")
+            cc_final_raw = r.get("cc_final")
+            cc_land_raw = int(r.get("cc_land") if r.get("cc_land") is not None else 0)
 
             capacity_dto = CapacityBreakdownDTO(
-                cc_land=int(r.get("cc_land") if r.get("cc_land") is not None else 0),
+                cc_land=cc_land_raw,
+                land_screening_capacity=cc_land_raw,
                 cc_water=int(cc_water_raw) if cc_water_raw is not None else None,
                 cc_school=int(cc_school_raw) if cc_school_raw is not None else None,
                 cc_health=int(cc_health_raw) if cc_health_raw is not None else None,
                 livelihood_multiplier=float(meta.get("livelihood_multiplier") if meta.get("livelihood_multiplier") is not None else 1.0),
-                cc_final=int(r.get("cc_final") if r.get("cc_final") is not None else 0),
+                cc_final=int(cc_final_raw) if cc_final_raw is not None else None,
                 binding_constraint=binding_enum,
-                tied_constraints=[binding_enum],
-                data_quality=str(meta.get("data_quality") or "complete"),
+                tied_constraints=[binding_enum] if binding_enum else [],
+                assessment_status=str(r.get("assessment_status") or "screening_only"),
+                data_quality=str(meta.get("data_quality") or ("complete" if cc_final_raw is not None else "unavailable")),
                 policy_version=str(meta.get("policy_version") or self.engine.norms.policy_version),
                 calculation_version=str(meta.get("calculation_version") or self.engine.norms.calculation_version),
             )
 
-            # Explicitly preserve None suitability (Audit Requirement 1 & 11)
             suitability_val = int(r["suitability"]) if r.get("suitability") is not None else None
 
             item = CandidateSiteItem(
                 id=int(r["id"]),
+                source_site_id=r.get("source_site_id"),
                 distance_km=round(float(r.get("distance_km") if r.get("distance_km") is not None else 0.0), 2),
                 area_ha=round(float(r.get("area_ha") if r.get("area_ha") is not None else 0.0), 2),
                 tenure=tenure_enum,
                 slope_mean=round(float(r.get("slope_mean") if r.get("slope_mean") is not None else 0.0), 1),
-                mhi_max=round(float(r.get("mhi_max") if r.get("mhi_max") is not None else 0.0), 3),
+                mhi_max=round(float(r["mhi_max"]), 3) if r.get("mhi_max") is not None else None,
                 suitability=suitability_val,
+                assessment_status=str(r.get("assessment_status") or "screening_only"),
+                eligibility_status=eligibility.eligibility_status.value,
+                allocatable=eligibility.is_eligible,
+                rejection_reasons=eligibility.rejection_reasons,
                 capacity=capacity_dto,
                 augmented=augmented_dto,
                 centroid=[
@@ -159,14 +187,17 @@ class SitesService:
                     round(float(r["lat"] if r.get("lat") is not None else 0.0), 5),
                 ],
             )
-            items.append(item)
+            all_items.append(item)
+
+        total = len(all_items)
+        paged_items = all_items[offset : offset + clamped_limit]
 
         return PaginatedResponse(
-            items=items,
+            items=paged_items,
             total=total,
             limit=clamped_limit,
             offset=offset,
-            has_more=(offset + len(items) < total),
+            has_more=(offset + len(paged_items) < total),
         )
 
     def get_candidate_site_detail(self, site_id: int) -> CandidateSiteDetail:
@@ -192,7 +223,7 @@ class SitesService:
                 aug_data = {}
 
         augmented_dto = None
-        if aug_data and "relieved_constraint" in aug_data:
+        if aug_data and "relieved_constraint" in aug_data and aug_data.get("augmented_capacity") is not None:
             augmented_dto = AugmentedCapacityDTO(
                 relieved_constraint=BindingConstraint(aug_data["relieved_constraint"]),
                 augmented_capacity=int(aug_data.get("augmented_capacity") if aug_data.get("augmented_capacity") is not None else 0),
@@ -215,30 +246,62 @@ class SitesService:
         cc_water_raw = r.get("cc_water")
         cc_school_raw = r.get("cc_school")
         cc_health_raw = r.get("cc_health")
+        cc_final_raw = r.get("cc_final")
+        cc_land_raw = int(r.get("cc_land") if r.get("cc_land") is not None else 0)
+
+        binding_str = r.get("binding_constraint")
+        binding_enum = None
+        if binding_str:
+            try:
+                binding_enum = BindingConstraint(str(binding_str))
+            except ValueError:
+                binding_enum = None
 
         capacity_dto = CapacityBreakdownDTO(
-            cc_land=int(r.get("cc_land") if r.get("cc_land") is not None else 0),
+            cc_land=cc_land_raw,
+            land_screening_capacity=cc_land_raw,
             cc_water=int(cc_water_raw) if cc_water_raw is not None else None,
             cc_school=int(cc_school_raw) if cc_school_raw is not None else None,
             cc_health=int(cc_health_raw) if cc_health_raw is not None else None,
             livelihood_multiplier=float(meta.get("livelihood_multiplier") if meta.get("livelihood_multiplier") is not None else 1.0),
-            cc_final=int(r.get("cc_final") if r.get("cc_final") is not None else 0),
-            binding_constraint=BindingConstraint(r.get("binding_constraint") or "land"),
-            data_quality=str(meta.get("data_quality") or "complete"),
+            cc_final=int(cc_final_raw) if cc_final_raw is not None else None,
+            binding_constraint=binding_enum,
+            tied_constraints=[binding_enum] if binding_enum else [],
+            assessment_status=str(r.get("assessment_status") or "screening_only"),
+            data_quality=str(meta.get("data_quality") or ("complete" if cc_final_raw is not None else "unavailable")),
             policy_version=str(meta.get("policy_version") or self.engine.norms.policy_version),
             calculation_version=str(meta.get("calculation_version") or self.engine.norms.calculation_version),
         )
 
         suitability_val = int(r["suitability"]) if r.get("suitability") is not None else None
 
+        tenure_str = str(r.get("tenure") or "tenure_unverified")
+        try:
+            tenure_enum = TenureType(tenure_str)
+        except ValueError:
+            tenure_enum = TenureType.TENURE_UNVERIFIED
+
+        eligibility = self.engine.evaluate_site_eligibility(
+            mhi_static=r.get("mhi_max"),
+            slope_mean=float(r.get("slope_mean") or 0.0),
+            area_ha=float(r.get("area_ha") or 0.0),
+            tenure=tenure_str,
+            policy=self.policy,
+        )
+
         return CandidateSiteDetail(
             id=int(r["id"]),
+            source_site_id=r.get("source_site_id"),
             distance_km=0.0,
             area_ha=round(float(r.get("area_ha") if r.get("area_ha") is not None else 0.0), 2),
-            tenure=TenureType(r.get("tenure") or "tenure_unverified"),
+            tenure=tenure_enum,
             slope_mean=round(float(r.get("slope_mean") if r.get("slope_mean") is not None else 0.0), 1),
-            mhi_max=round(float(r.get("mhi_max") if r.get("mhi_max") is not None else 0.0), 3),
+            mhi_max=round(float(r["mhi_max"]), 3) if r.get("mhi_max") is not None else None,
             suitability=suitability_val,
+            assessment_status=str(r.get("assessment_status") or "screening_only"),
+            eligibility_status=eligibility.eligibility_status.value,
+            allocatable=eligibility.is_eligible,
+            rejection_reasons=eligibility.rejection_reasons,
             capacity=capacity_dto,
             augmented=augmented_dto,
             centroid=[
@@ -334,18 +397,22 @@ class SitesService:
         aug_res = self.engine.calculate_augmented_capacity(
             scen_cc_land, scen_cc_water, scen_cc_school, scen_cc_health, scen_binding, livelihood_multiplier=mu
         )
-        aug_dto = AugmentedCapacityDTO(
-            relieved_constraint=aug_res.relieved_constraint,
-            augmented_capacity=aug_res.augmented_capacity,
-            next_binding_constraint=aug_res.next_binding_constraint,
-            indicative_intervention=aug_res.indicative_intervention,
-            indicative_cost_inr_lakhs=aug_res.indicative_cost_inr_lakhs,
-        )
+        aug_dto = None
+        if aug_res and aug_res.relieved_constraint is not None and aug_res.augmented_capacity is not None:
+            aug_dto = AugmentedCapacityDTO(
+                relieved_constraint=aug_res.relieved_constraint,
+                augmented_capacity=aug_res.augmented_capacity,
+                next_binding_constraint=aug_res.next_binding_constraint,
+                indicative_intervention=aug_res.indicative_intervention,
+                indicative_cost_inr_lakhs=aug_res.indicative_cost_inr_lakhs,
+            )
+
+        delta = (scen_final if scen_final is not None else 0) - (base_cc_final if base_cc_final is not None else 0)
 
         return SiteCapacityOverrideResponse(
             site_id=site_id,
             base_capacity=base_capacity,
             scenario_capacity=scen_capacity,
-            delta_households=scen_final - base_cc_final,
-            augmented_options=[aug_dto],
+            delta_households=delta,
+            augmented_options=[aug_dto] if aug_dto is not None else [],
         )

@@ -930,6 +930,18 @@
             "description": "Filter by minimum composite suitability score (0-100)."
           },
           {
+            "name": "include_screening",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Whether to include unverified screening-grade candidate sites (default False).",
+              "default": false,
+              "title": "Include Screening"
+            },
+            "description": "Whether to include unverified screening-grade candidate sites (default False)."
+          },
+          {
             "name": "limit",
             "in": "query",
             "required": false,
@@ -1497,6 +1509,240 @@
           },
           "403": {
             "description": "Forbidden - Insufficient permissions or role.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error - Request parameter or payload validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error - An unexpected system or database error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable - No valid serving version is active. Pipeline data is not ready.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/habitations/{id}/external-recommendations": {
+      "get": {
+        "tags": [
+          "External Recommendations & Benchmark"
+        ],
+        "summary": "Get external pipeline relocation recommendations for a habitation",
+        "description": "Retrieves offline GIS candidate proposals for this habitation from partner pipelines. These are external evidence records and do not represent authoritative SETU allocation decisions.",
+        "operationId": "get_habitation_external_recommendations_habitations__id__external_recommendations_get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Habitation ID (integer primary key).",
+              "examples": [
+                1
+              ],
+              "title": "Id"
+            },
+            "description": "Habitation ID (integer primary key)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ExternalRecommendationItem"
+                  },
+                  "title": "Response Get Habitation External Recommendations Habitations  Id  External Recommendations Get"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found - Requested resource, cell, or entity does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error - Request parameter or payload validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error - An unexpected system or database error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable - No valid serving version is active. Pipeline data is not ready.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/plan/external-recommendations": {
+      "get": {
+        "tags": [
+          "External Recommendations & Benchmark"
+        ],
+        "summary": "List external pipeline relocation recommendations for a district",
+        "description": "Retrieves all external pipeline candidate relocation recommendations for the specified district.",
+        "operationId": "get_district_external_recommendations_plan_external_recommendations_get",
+        "parameters": [
+          {
+            "name": "district",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Administrative district name (e.g., 'Barpeta').",
+              "default": "Barpeta",
+              "title": "District"
+            },
+            "description": "Administrative district name (e.g., 'Barpeta')."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalRecommendationListResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found - Requested resource, cell, or entity does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error - Request parameter or payload validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error - An unexpected system or database error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable - No valid serving version is active. Pipeline data is not ready.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/plan/benchmark": {
+      "get": {
+        "tags": [
+          "External Recommendations & Benchmark"
+        ],
+        "summary": "Benchmark external pipeline recommendations against authoritative SETU relocation plan",
+        "description": "Performs side-by-side comparative evaluation between partner pipeline proposals and SETU's min-cost flow optimizer. If SETU allocation has not been executed, returns 'external_only' status with external proposals.",
+        "operationId": "get_allocation_benchmark_plan_benchmark_get",
+        "parameters": [
+          {
+            "name": "district",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Administrative district name to benchmark.",
+              "default": "Barpeta",
+              "title": "District"
+            },
+            "description": "Administrative district name to benchmark."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AllocationBenchmarkResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found - Requested resource, cell, or entity does not exist.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2112,6 +2358,140 @@
         ],
         "title": "AllocationAssignmentDTO"
       },
+      "AllocationBenchmarkComparisonItem": {
+        "properties": {
+          "habitation_id": {
+            "type": "integer",
+            "title": "Habitation Id"
+          },
+          "habitation_name": {
+            "type": "string",
+            "title": "Habitation Name"
+          },
+          "demand_households": {
+            "type": "integer",
+            "title": "Demand Households"
+          },
+          "external_recommendation": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Recommendation"
+          },
+          "setu_canonical_allocation": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Setu Canonical Allocation"
+          },
+          "site_match": {
+            "type": "boolean",
+            "title": "Site Match",
+            "default": false
+          },
+          "household_delta": {
+            "type": "integer",
+            "title": "Household Delta",
+            "default": 0
+          },
+          "distance_delta_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Distance Delta Km"
+          },
+          "methodology_divergence_notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Methodology Divergence Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "habitation_id",
+          "habitation_name",
+          "demand_households"
+        ],
+        "title": "AllocationBenchmarkComparisonItem",
+        "description": "Side-by-side comparison of a habitation's external recommendation vs SETU canonical decision."
+      },
+      "AllocationBenchmarkResponse": {
+        "properties": {
+          "district": {
+            "type": "string",
+            "title": "District"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "default": "comparative"
+          },
+          "setu_allocation_available": {
+            "type": "boolean",
+            "title": "Setu Allocation Available",
+            "default": false
+          },
+          "total_external_recommended_households": {
+            "type": "integer",
+            "title": "Total External Recommended Households",
+            "default": 0
+          },
+          "total_setu_allocated_households": {
+            "type": "integer",
+            "title": "Total Setu Allocated Households",
+            "default": 0
+          },
+          "external_recommendations_count": {
+            "type": "integer",
+            "title": "External Recommendations Count",
+            "default": 0
+          },
+          "setu_allocations_count": {
+            "type": "integer",
+            "title": "Setu Allocations Count",
+            "default": 0
+          },
+          "comparisons": {
+            "items": {
+              "$ref": "#/components/schemas/AllocationBenchmarkComparisonItem"
+            },
+            "type": "array",
+            "title": "Comparisons"
+          },
+          "methodology_summary": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Methodology Summary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "district"
+        ],
+        "title": "AllocationBenchmarkResponse",
+        "description": "Comparative evaluation between offline external GIS recommendations and SETU decision engine."
+      },
       "AllocationPlanRequest": {
         "properties": {
           "admin_id": {
@@ -2319,11 +2699,18 @@
             "default": 0.0
           },
           "mhi_max": {
-            "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Mhi Max",
-            "description": "Maximum static multi-hazard index inside site."
+            "description": "Maximum static multi-hazard index inside site (None if unmeasured)."
           },
           "suitability": {
             "anyOf": [
@@ -2362,6 +2749,44 @@
             "title": "Centroid",
             "description": "[longitude, latitude] coordinates."
           },
+          "assessment_status": {
+            "type": "string",
+            "title": "Assessment Status",
+            "description": "Assessment status: 'fully_assessed', 'partial', or 'screening_only'.",
+            "default": "screening_only"
+          },
+          "eligibility_status": {
+            "type": "string",
+            "title": "Eligibility Status",
+            "description": "Eligibility status: 'eligible', 'ineligible', or 'unknown'.",
+            "default": "unknown"
+          },
+          "allocatable": {
+            "type": "boolean",
+            "title": "Allocatable",
+            "description": "True only if site is fully eligible under canonical CandidateSitePolicy.",
+            "default": false
+          },
+          "rejection_reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Rejection Reasons",
+            "description": "Reasons why site is not currently allocatable."
+          },
+          "source_site_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Site Id",
+            "description": "External source record identifier if imported."
+          },
           "screening_grade": {
             "type": "string",
             "title": "Screening Grade",
@@ -2388,7 +2813,6 @@
           "distance_km",
           "area_ha",
           "tenure",
-          "mhi_max",
           "capacity",
           "centroid"
         ],
@@ -2424,11 +2848,18 @@
             "default": 0.0
           },
           "mhi_max": {
-            "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Mhi Max",
-            "description": "Maximum static multi-hazard index inside site."
+            "description": "Maximum static multi-hazard index inside site (None if unmeasured)."
           },
           "suitability": {
             "anyOf": [
@@ -2467,6 +2898,44 @@
             "title": "Centroid",
             "description": "[longitude, latitude] coordinates."
           },
+          "assessment_status": {
+            "type": "string",
+            "title": "Assessment Status",
+            "description": "Assessment status: 'fully_assessed', 'partial', or 'screening_only'.",
+            "default": "screening_only"
+          },
+          "eligibility_status": {
+            "type": "string",
+            "title": "Eligibility Status",
+            "description": "Eligibility status: 'eligible', 'ineligible', or 'unknown'.",
+            "default": "unknown"
+          },
+          "allocatable": {
+            "type": "boolean",
+            "title": "Allocatable",
+            "description": "True only if site is fully eligible under canonical CandidateSitePolicy.",
+            "default": false
+          },
+          "rejection_reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Rejection Reasons",
+            "description": "Reasons why site is not currently allocatable."
+          },
+          "source_site_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Site Id",
+            "description": "External source record identifier if imported."
+          },
           "screening_grade": {
             "type": "string",
             "title": "Screening Grade",
@@ -2480,7 +2949,6 @@
           "distance_km",
           "area_ha",
           "tenure",
-          "mhi_max",
           "capacity",
           "centroid"
         ],
@@ -2494,6 +2962,13 @@
             "minimum": 0.0,
             "title": "Cc Land",
             "description": "Households supportable by developable land area."
+          },
+          "land_screening_capacity": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Land Screening Capacity",
+            "description": "Households supportable by developable land area (screening-only capacity).",
+            "default": 0
           },
           "cc_water": {
             "anyOf": [
@@ -2542,14 +3017,28 @@
             "description": "Multiplier for economic connectivity."
           },
           "cc_final": {
-            "type": "integer",
-            "minimum": 0.0,
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Cc Final",
-            "description": "Binding minimum carrying capacity in households."
+            "description": "Binding minimum carrying capacity in households (None if lifelines unassessed)."
           },
           "binding_constraint": {
-            "$ref": "#/components/schemas/BindingConstraint",
-            "description": "The primary limiting capacity bottleneck."
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BindingConstraint"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The primary limiting capacity bottleneck (None if lifelines unassessed)."
           },
           "tied_constraints": {
             "items": {
@@ -2558,6 +3047,12 @@
             "type": "array",
             "title": "Tied Constraints",
             "description": "All resource constraints matching the minimum bottleneck value."
+          },
+          "assessment_status": {
+            "type": "string",
+            "title": "Assessment Status",
+            "description": "Assessment completeness: 'fully_assessed', 'partial', or 'screening_only'.",
+            "default": "screening_only"
           },
           "data_quality": {
             "type": "string",
@@ -2581,9 +3076,7 @@
         "type": "object",
         "required": [
           "cc_land",
-          "livelihood_multiplier",
-          "cc_final",
-          "binding_constraint"
+          "livelihood_multiplier"
         ],
         "title": "CapacityBreakdownDTO",
         "description": "Structured breakdown of independent resource capacity dimensions."
@@ -2691,6 +3184,193 @@
         ],
         "title": "ExtensionChecksDTO",
         "description": "Geospatial database extension installation status."
+      },
+      "ExternalRecommendationItem": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "import_run_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Import Run Id"
+          },
+          "habitation_id": {
+            "type": "integer",
+            "title": "Habitation Id"
+          },
+          "habitation_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Habitation Name"
+          },
+          "site_id": {
+            "type": "integer",
+            "title": "Site Id"
+          },
+          "external_habitation_key": {
+            "type": "string",
+            "title": "External Habitation Key"
+          },
+          "external_site_key": {
+            "type": "string",
+            "title": "External Site Key"
+          },
+          "origin_type": {
+            "type": "string",
+            "title": "Origin Type",
+            "default": "external"
+          },
+          "decision_status": {
+            "type": "string",
+            "title": "Decision Status",
+            "default": "recommendation"
+          },
+          "households": {
+            "type": "integer",
+            "title": "Households"
+          },
+          "tier": {
+            "type": "string",
+            "title": "Tier"
+          },
+          "priority_score": {
+            "type": "number",
+            "title": "Priority Score"
+          },
+          "distance_km": {
+            "type": "number",
+            "title": "Distance Km"
+          },
+          "site_suitability": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Suitability"
+          },
+          "site_cc_final": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Cc Final"
+          },
+          "site_binding": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Binding"
+          },
+          "has_group_split": {
+            "type": "boolean",
+            "title": "Has Group Split",
+            "default": false
+          },
+          "rationale": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Rationale"
+          },
+          "screening_grade": {
+            "type": "string",
+            "title": "Screening Grade"
+          },
+          "screening_caveats": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Screening Caveats"
+          },
+          "source_pipeline": {
+            "type": "string",
+            "title": "Source Pipeline",
+            "default": "external_gis_v1"
+          },
+          "pipeline_version": {
+            "type": "string",
+            "title": "Pipeline Version",
+            "default": "v1.0"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "import_run_id",
+          "habitation_id",
+          "site_id",
+          "external_habitation_key",
+          "external_site_key",
+          "households",
+          "tier",
+          "priority_score",
+          "distance_km",
+          "screening_grade",
+          "created_at"
+        ],
+        "title": "ExternalRecommendationItem",
+        "description": "External offline recommendation record from upstream partner pipeline."
+      },
+      "ExternalRecommendationListResponse": {
+        "properties": {
+          "district": {
+            "type": "string",
+            "title": "District"
+          },
+          "total_count": {
+            "type": "integer",
+            "title": "Total Count"
+          },
+          "total_households_recommended": {
+            "type": "integer",
+            "title": "Total Households Recommended"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ExternalRecommendationItem"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "district",
+          "total_count",
+          "total_households_recommended"
+        ],
+        "title": "ExternalRecommendationListResponse",
+        "description": "List response for external recommendations."
       },
       "FeatureContributionDTO": {
         "properties": {

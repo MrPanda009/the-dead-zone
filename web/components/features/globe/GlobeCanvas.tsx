@@ -382,7 +382,7 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
         earthMat.needsUpdate = true;
       },
       undefined,
-      () => {}
+      () => { }
     );
 
     // 7. Atmosphere Rim Glow Shader

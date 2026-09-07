@@ -12,6 +12,9 @@ from core.schemas.common import BaseSchema, SCREENING_GRADE_NOTICE
 class CapacityBreakdownDTO(BaseSchema):
     """Structured breakdown of independent resource capacity dimensions."""
     cc_land: int = Field(ge=0, description="Households supportable by developable land area.")
+    land_screening_capacity: int = Field(
+        default=0, ge=0, description="Households supportable by developable land area (screening-only capacity)."
+    )
     cc_water: Optional[int] = Field(
         default=None, ge=0, description="Households supportable by sustainable potable water yield (None if unmeasured)."
     )
@@ -22,11 +25,19 @@ class CapacityBreakdownDTO(BaseSchema):
         default=None, ge=0, description="Households supportable by spare primary health capacity (None if unmeasured)."
     )
     livelihood_multiplier: float = Field(ge=0.0, le=1.0, description="Multiplier for economic connectivity.")
-    cc_final: int = Field(ge=0, description="Binding minimum carrying capacity in households.")
-    binding_constraint: BindingConstraint = Field(description="The primary limiting capacity bottleneck.")
+    cc_final: Optional[int] = Field(
+        default=None, ge=0, description="Binding minimum carrying capacity in households (None if lifelines unassessed)."
+    )
+    binding_constraint: Optional[BindingConstraint] = Field(
+        default=None, description="The primary limiting capacity bottleneck (None if lifelines unassessed)."
+    )
     tied_constraints: List[BindingConstraint] = Field(
         default_factory=list,
         description="All resource constraints matching the minimum bottleneck value.",
+    )
+    assessment_status: str = Field(
+        default="screening_only",
+        description="Assessment completeness: 'fully_assessed', 'partial', or 'screening_only'.",
     )
     data_quality: str = Field(
         default="complete",
@@ -64,7 +75,9 @@ class CandidateSiteItem(BaseSchema):
     area_ha: float = Field(ge=0.0, description="Total contiguous developable area in hectares.")
     tenure: TenureType = Field(description="Tenure status (government_revenue, private, tenure_unverified).")
     slope_mean: float = Field(default=0.0, description="Mean terrain slope in degrees.")
-    mhi_max: float = Field(ge=0.0, le=1.0, description="Maximum static multi-hazard index inside site.")
+    mhi_max: Optional[float] = Field(
+        default=None, ge=0.0, le=1.0, description="Maximum static multi-hazard index inside site (None if unmeasured)."
+    )
     suitability: Optional[int] = Field(
         default=None, ge=0, le=100, description="Composite suitability score (0-100, None if unassigned/provisional), separate from capacity."
     )
@@ -74,6 +87,26 @@ class CandidateSiteItem(BaseSchema):
         description="Capacity outcome if binding bottleneck is relieved.",
     )
     centroid: List[float] = Field(description="[longitude, latitude] coordinates.")
+    assessment_status: str = Field(
+        default="screening_only",
+        description="Assessment status: 'fully_assessed', 'partial', or 'screening_only'.",
+    )
+    eligibility_status: str = Field(
+        default="unknown",
+        description="Eligibility status: 'eligible', 'ineligible', or 'unknown'.",
+    )
+    allocatable: bool = Field(
+        default=False,
+        description="True only if site is fully eligible under canonical CandidateSitePolicy.",
+    )
+    rejection_reasons: List[str] = Field(
+        default_factory=list,
+        description="Reasons why site is not currently allocatable.",
+    )
+    source_site_id: Optional[str] = Field(
+        default=None,
+        description="External source record identifier if imported.",
+    )
     screening_grade: str = Field(
         default=SCREENING_GRADE_NOTICE,
         description="Persistent decision-support disclaimer notice.",

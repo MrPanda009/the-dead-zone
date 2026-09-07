@@ -118,6 +118,10 @@ def get_habitation_candidate_sites(
         le=100,
         description="Filter by minimum composite suitability score (0-100).",
     ),
+    include_screening: bool = Query(
+        False,
+        description="Whether to include unverified screening-grade candidate sites (default False).",
+    ),
     limit: int = Query(
         50,
         description="Number of records per page (max 200).",
@@ -137,6 +141,7 @@ def get_habitation_candidate_sites(
         habitation_id=id,
         radius_km=radius_km,
         min_suitability=min_suitability,
+        include_screening=include_screening,
         limit=limit,
         offset=offset,
     )

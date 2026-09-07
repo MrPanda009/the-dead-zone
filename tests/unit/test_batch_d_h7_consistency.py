@@ -183,7 +183,7 @@ class TestListingConsistency:
     """Proves that candidate-site listing enforces canonical eligibility."""
 
     def test_sites_repo_query_includes_eligibility_mask(self):
-        """SitesRepository SQL query must parameterize the H7 eligibility mask from CandidateSitePolicy."""
+        """SitesRepository retrieves candidates without duplicating H7 policy in SQL (Phase 5)."""
         mock_db = MagicMock()
         mock_db.execute.return_value.mappings.return_value.fetchall.return_value = []
 
@@ -204,21 +204,11 @@ class TestListingConsistency:
         assert mock_db.execute.called
         call_args = mock_db.execute.call_args
         sql_text = str(call_args[0][0])
-        params = call_args[0][1]
 
-        # Verify SQL WHERE contains the H7 coarse pre-filter on native schema columns
-        assert "cs.mhi_max < :max_static_mhi" in sql_text
-        assert "cs.slope_mean < :max_slope_deg" in sql_text
-        assert "cs.area_ha >= :min_area_ha" in sql_text
-        assert "cs.tenure IN ('government_revenue', 'private')" in sql_text
-        # SQL coarse filter does not duplicate policy evaluation on JSON metadata
-        assert "metadata->>'is_eligible'" not in sql_text
-        assert "metadata->>'is_forest'" not in sql_text
-
-        # Verify params match CandidateSitePolicy
-        assert params["max_static_mhi"] == 0.20
-        assert params["max_slope_deg"] == 12.0
-        assert params["min_area_ha"] == 3.5
+        # Repositories retrieve candidates spatially; CandidateSitePolicy is the sole authority
+        assert "ST_DWithin" in sql_text
+        assert "cs.mhi_max <" not in sql_text
+        assert "cs.slope_mean <" not in sql_text
 
     def test_sites_service_passes_canonical_policy_to_repo(self):
         """SitesService.get_candidate_sites_for_habitation propagates CandidateSitePolicy to repository."""

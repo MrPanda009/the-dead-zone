@@ -597,7 +597,7 @@ class TestSitesServiceZeroPreservation:
         )
         service = SitesService(db=MagicMock())
         service.repo = repo
-        resp = service.get_candidate_sites_for_habitation(habitation_id=1)
+        resp = service.get_candidate_sites_for_habitation(habitation_id=1, include_screening=True)
 
         item = resp.items[0]
         assert item.distance_km == 0.0

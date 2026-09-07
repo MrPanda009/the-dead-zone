@@ -61,6 +61,48 @@ class BindingConstraint(StrEnum):
     HEALTH = "health"
 
 
+class AssessmentStatus(StrEnum):
+    """Assessment completeness for candidate relocation sites."""
+    FULLY_ASSESSED = "fully_assessed"
+    PARTIAL = "partial"
+    SCREENING_ONLY = "screening_only"
+
+
+class EligibilityStatus(StrEnum):
+    """Eligibility status resulting from candidate site policy evaluation."""
+    ELIGIBLE = "eligible"
+    INELIGIBLE = "ineligible"
+    UNKNOWN = "unknown"
+
+
+class RiskStatus(StrEnum):
+    """Status of habitation risk assessment."""
+    SCORED = "scored"
+    PARTIAL = "partial"
+    PENDING = "pending"
+
+
+class ImportRunStatus(StrEnum):
+    """Lifecycle statuses for data import runs."""
+    STAGED = "STAGED"
+    VALIDATED = "VALIDATED"
+    PROMOTED = "PROMOTED"
+    SUPERSEDED = "SUPERSEDED"
+    FAILED = "FAILED"
+
+
+class OriginType(StrEnum):
+    """Source origin of relocation recommendations or plans."""
+    SETU = "setu"
+    EXTERNAL = "external"
+
+
+class DecisionStatus(StrEnum):
+    """Legal/authority status of relocation decisions."""
+    RECOMMENDATION = "recommendation"
+    AUTHORITATIVE = "authoritative"
+
+
 class SortMode(StrEnum):
     """Sort modes for prioritized habitation queues (PRD §6.6, FR-6.3)."""
     URGENCY = "urgency"
