@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
@@ -11,23 +11,23 @@ import { AtmosphericMistProps } from './types';
 /**
  * AtmosphericMist
  *
- * Richly applies the atmospheric mist artifact surrounding the website perimeter
- * in Light Mode (Daylight Sage theme), framing the hero typography and 3D globe.
+ * Spreads rich, darker atmospheric mist and clouds broadly across the landing page
+ * in Light Mode (Daylight Sage / White theme).
  *
- * Utilizes dual-depth atmospheric layering (Perimeter Horizon + Planetary Accent)
- * so clouds are distinctly visible against white backgrounds, matching reference aesthetics.
+ * Sits BEHIND the 3D Earth globe (z-0 vs z-[1]) so it never covers over the planet.
+ * Features full mouse parallax and scroll parallax interaction between the Earth and the mist.
  *
- * As the user scrolls down, GSAP smoothly disperses the mist outward into clear space.
- * Strictly inactive / hidden in Dark Mode (Night Forest theme).
+ * Disperses SLOWLY and gradually as the user scrolls down, lingering through initial narrative.
+ * Strictly inactive in Dark Mode (Night Forest theme).
  */
 export const AtmosphericMist: React.FC<AtmosphericMistProps> = ({
   scrollProgress = 0,
   imageUrl = '/atmospheric-mist-transparent.png',
-  baseOpacity = 0.95,
+  baseOpacity = 1.0,
   intensity,
-  dispersionThreshold = 0.22,
-  dispersionScale = 1.18,
-  dispersionY = -35,
+  dispersionThreshold = 0.52,
+  dispersionScale = 1.28,
+  dispersionY = -45,
   blendMode = 'normal',
   className = '',
   classNames,
@@ -42,17 +42,17 @@ export const AtmosphericMist: React.FC<AtmosphericMistProps> = ({
 
   const {
     enableFloatingDrift = true,
-    driftDuration = 14,
-    driftOffset = 8,
+    driftDuration = 15,
+    driftOffset = 10,
   } = animation;
 
-  // Responsive GSAP dispersion animation on scroll & ambient breathing
+  // Responsive GSAP slow-dispersion animation on scroll & organic drifting
   useGSAP(
     () => {
       if (!containerRef.current) return;
 
       if (!isLight) {
-        gsap.to('.mist-wrapper', {
+        gsap.to('.mist-layer', {
           opacity: 0,
           duration: 0.3,
           ease: 'power2.out',
@@ -61,40 +61,51 @@ export const AtmosphericMist: React.FC<AtmosphericMistProps> = ({
         return;
       }
 
-      // Smooth dispersion calculation: 0 = fully visible, 1 = fully dispersed
+      // Slower, lingering dispersion curve: stays prominent longer then gently dissolves
       const raw = Math.min(1.0, Math.max(0.0, scrollProgress / dispersionThreshold));
-      const dispersion = raw * raw * (3 - 2 * raw); // Smooth easeInOut curve
+      const dispersion = Math.pow(raw, 1.35); // Slow onset curve
 
       const targetOpacity = Math.max(0, (1.0 - dispersion) * effectiveOpacity);
-      const targetScaleOuter = prefersReducedMotion ? 1.0 : 1.0 + dispersion * (dispersionScale - 1.0);
-      const targetScaleAccent = prefersReducedMotion ? 1.25 : 1.25 + dispersion * 0.25;
+      const targetScaleHorizon = prefersReducedMotion ? 1.0 : 1.0 + dispersion * (dispersionScale - 1.0);
+      const targetScaleWest = prefersReducedMotion ? 1.2 : 1.2 + dispersion * 0.3;
+      const targetScaleSouth = prefersReducedMotion ? 1.3 : 1.3 + dispersion * 0.35;
       const targetY = prefersReducedMotion ? 0 : dispersion * dispersionY;
 
-      // Base framing layer dispersion
-      gsap.to('.mist-wrapper-outer', {
+      // 1. Horizon Framing Layer
+      gsap.to('.mist-layer-horizon', {
         opacity: targetOpacity,
-        scale: targetScaleOuter,
-        y: targetY,
-        duration: 0.4,
-        ease: 'power2.out',
+        scale: targetScaleHorizon,
+        y: targetY * 0.7,
+        duration: 0.45,
+        ease: 'power1.out',
         overwrite: 'auto',
       });
 
-      // Planetary accent layer dispersion
-      gsap.to('.mist-wrapper-accent', {
-        opacity: targetOpacity * 0.85,
-        scale: targetScaleAccent,
-        y: targetY * 1.3,
-        duration: 0.4,
-        ease: 'power2.out',
+      // 2. West Typography Cloud Veil (lingers behind text)
+      gsap.to('.mist-layer-west', {
+        opacity: targetOpacity * 0.9,
+        scale: targetScaleWest,
+        y: targetY * 0.9,
+        duration: 0.45,
+        ease: 'power1.out',
         overwrite: 'auto',
       });
 
-      // Subtle ambient floating / breathing microinteraction when near hero
-      if (enableFloatingDrift && !prefersReducedMotion && dispersion < 0.5) {
-        gsap.to('.mist-image-outer', {
+      // 3. South Planetary Cloud Bed (behind globe)
+      gsap.to('.mist-layer-south', {
+        opacity: targetOpacity * 0.95,
+        scale: targetScaleSouth,
+        y: targetY * 1.2,
+        duration: 0.45,
+        ease: 'power1.out',
+        overwrite: 'auto',
+      });
+
+      // Subtle ambient continuous drift when near hero
+      if (enableFloatingDrift && !prefersReducedMotion && dispersion < 0.6) {
+        gsap.to('.mist-img-horizon', {
           y: driftOffset,
-          x: -driftOffset * 0.6,
+          x: -driftOffset * 0.5,
           duration: driftDuration,
           repeat: -1,
           yoyo: true,
@@ -102,10 +113,20 @@ export const AtmosphericMist: React.FC<AtmosphericMistProps> = ({
           overwrite: false,
         });
 
-        gsap.to('.mist-image-accent', {
-          y: -driftOffset * 0.8,
-          x: driftOffset * 0.5,
+        gsap.to('.mist-img-west', {
+          y: -driftOffset * 0.7,
+          x: driftOffset * 0.6,
           duration: driftDuration * 1.2,
+          repeat: -1,
+          yoyo: true,
+          ease: 'sine.inOut',
+          overwrite: false,
+        });
+
+        gsap.to('.mist-img-south', {
+          y: driftOffset * 0.8,
+          x: -driftOffset * 0.4,
+          duration: driftDuration * 1.3,
           repeat: -1,
           yoyo: true,
           ease: 'sine.inOut',
@@ -130,6 +151,44 @@ export const AtmosphericMist: React.FC<AtmosphericMistProps> = ({
     }
   );
 
+  // Mouse Parallax Interaction: shifts background mist relative to foreground Earth
+  useEffect(() => {
+    if (prefersReducedMotion || !isLight) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const nx = (e.clientX / window.innerWidth - 0.5) * 2;
+      const ny = (e.clientY / window.innerHeight - 0.5) * 2;
+
+      // Inverse parallax: mist layers in background shift smoothly opposite cursor
+      gsap.to('.mist-layer-horizon', {
+        x: -nx * 18,
+        y: -ny * 12,
+        duration: 1.0,
+        ease: 'power1.out',
+        overwrite: 'auto',
+      });
+
+      gsap.to('.mist-layer-west', {
+        x: -nx * 28,
+        y: -ny * 18,
+        duration: 1.2,
+        ease: 'power1.out',
+        overwrite: 'auto',
+      });
+
+      gsap.to('.mist-layer-south', {
+        x: -nx * 22,
+        y: -ny * 16,
+        duration: 1.4,
+        ease: 'power1.out',
+        overwrite: 'auto',
+      });
+    };
+
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, [prefersReducedMotion, isLight]);
+
   // Hidden in dark mode
   if (!isLight) {
     return null;
@@ -139,11 +198,11 @@ export const AtmosphericMist: React.FC<AtmosphericMistProps> = ({
     <div
       ref={containerRef}
       aria-hidden="true"
-      className={`fixed inset-0 pointer-events-none z-[1] overflow-hidden select-none transition-opacity duration-300 ${className} ${classNames?.root ?? ''}`}
+      className={`fixed inset-0 pointer-events-none z-0 overflow-hidden select-none transition-opacity duration-300 ${className} ${classNames?.root ?? ''}`}
     >
-      {/* Primary Horizon Framing Mist Layer */}
+      {/* Layer 1: Full Viewport Horizon Perimeter Mist */}
       <div
-        className={`mist-wrapper mist-wrapper-outer absolute inset-0 w-full h-full will-change-transform will-change-opacity ${classNames?.wrapper ?? ''}`}
+        className={`mist-layer mist-layer-horizon absolute inset-0 w-full h-full will-change-transform will-change-opacity ${classNames?.wrapper ?? ''}`}
         style={{
           opacity: effectiveOpacity,
           transformOrigin: 'center 40%',
@@ -155,21 +214,21 @@ export const AtmosphericMist: React.FC<AtmosphericMistProps> = ({
           fill
           priority
           sizes="100vw"
-          className={`mist-image mist-image-outer object-cover object-center scale-105 pointer-events-none select-none ${classNames?.image ?? ''}`}
+          className="mist-img-horizon object-cover object-center scale-105 pointer-events-none select-none"
           style={{
             mixBlendMode: blendMode,
-            filter: 'contrast(1.08) brightness(0.98)',
+            filter: 'contrast(1.35) brightness(0.80)',
           }}
         />
       </div>
 
-      {/* Volumetric Globe & Typography Mist Accent (Brings clouds closer around globe & hero text) */}
+      {/* Layer 2: Western Atmosphere (Spreads darker clouds across left typography & hero heading) */}
       <div
-        className="mist-wrapper mist-wrapper-accent absolute inset-0 w-full h-full will-change-transform will-change-opacity pointer-events-none"
+        className="mist-layer mist-layer-west absolute -top-8 -left-16 w-[95vw] h-[105vh] will-change-transform will-change-opacity pointer-events-none"
         style={{
-          opacity: effectiveOpacity * 0.85,
-          transformOrigin: '68% 45%',
-          transform: 'scale(1.25)',
+          opacity: effectiveOpacity * 0.9,
+          transformOrigin: '25% 40%',
+          transform: 'scale(1.2)',
         }}
       >
         <Image
@@ -177,10 +236,32 @@ export const AtmosphericMist: React.FC<AtmosphericMistProps> = ({
           alt=""
           fill
           sizes="100vw"
-          className="mist-image mist-image-accent object-cover object-center pointer-events-none select-none"
+          className="mist-img-west object-cover object-left-top pointer-events-none select-none"
           style={{
             mixBlendMode: blendMode,
-            filter: 'contrast(1.10) brightness(0.96)',
+            filter: 'contrast(1.40) brightness(0.78)',
+          }}
+        />
+      </div>
+
+      {/* Layer 3: Southern Planetary Cloud Bed (Behind the 3D globe) */}
+      <div
+        className="mist-layer mist-layer-south absolute -bottom-16 -right-12 w-[105vw] h-[90vh] will-change-transform will-change-opacity pointer-events-none"
+        style={{
+          opacity: effectiveOpacity * 0.95,
+          transformOrigin: '75% 65%',
+          transform: 'scale(1.3)',
+        }}
+      >
+        <Image
+          src={imageUrl}
+          alt=""
+          fill
+          sizes="100vw"
+          className="mist-img-south object-cover object-center pointer-events-none select-none"
+          style={{
+            mixBlendMode: blendMode,
+            filter: 'contrast(1.42) brightness(0.75)',
           }}
         />
       </div>

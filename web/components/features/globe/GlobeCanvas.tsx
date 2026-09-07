@@ -585,13 +585,16 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     window.addEventListener('scroll', handleScrollSpin, { passive: true });
     window.addEventListener('wheel', handleWheelSpin, { passive: true });
 
-    // 13. Raycasting for hover tooltips
+    // 13. Raycasting for hover tooltips & mouse parallax
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
+    const mouseParallax = { x: 0, y: 0, targetX: 0, targetY: 0 };
 
     const handleMouseMove = (e: MouseEvent) => {
       mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
       mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+      mouseParallax.targetX = mouse.x;
+      mouseParallax.targetY = mouse.y;
 
       raycaster.setFromCamera(mouse, camera);
       const intersects = raycaster.intersectObjects(hotspotGroup.children);
@@ -650,6 +653,14 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
         earthMesh.rotation.y += 0.0016;
         hotspotGroup.rotation.y += 0.0016;
         primaryBeaconGroup.rotation.y += 0.0016;
+      }
+
+      // Mouse Parallax: Smooth planetary tilt responding to cursor movement
+      if (!prefersReducedMotion) {
+        mouseParallax.x += (mouseParallax.targetX - mouseParallax.x) * 0.04;
+        mouseParallax.y += (mouseParallax.targetY - mouseParallax.y) * 0.04;
+        earthGroup.rotation.x = mouseParallax.y * 0.05;
+        earthGroup.rotation.z = -mouseParallax.x * 0.035;
       }
 
       // Scroll-Driven Spin: lively planetary rotation with smooth inertia damping

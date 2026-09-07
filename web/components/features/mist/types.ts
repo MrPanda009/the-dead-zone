@@ -59,7 +59,8 @@ export interface AtmosphericMistProps {
 
   /**
    * Normalized scroll progress threshold at which mist is 100% dispersed and invisible.
-   * @default 0.22
+   * Increased to 0.52 so mist disperses slowly as the user scrolls down.
+   * @default 0.52
    */
   dispersionThreshold?: number;
 
