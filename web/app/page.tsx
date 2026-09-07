@@ -143,7 +143,7 @@ export default function HomePage() {
       />
 
       {/* Atmospheric Mist Background Artifact (Light Mode Only, Disperses on Scroll) */}
-      <AtmosphericMist scrollProgress={scrollProgress} intensity={0.7} />
+      <AtmosphericMist scrollProgress={scrollProgress} intensity={1.0} />
 
       {/* Top Floating Dark Dock Navigation */}
       <Header
