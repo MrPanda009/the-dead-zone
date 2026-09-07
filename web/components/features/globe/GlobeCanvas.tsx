@@ -532,7 +532,7 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
       domEl.style.cursor = 'grabbing';
       try {
         domEl.setPointerCapture(e.pointerId);
-      } catch {}
+      } catch { }
     };
 
     const handlePointerMoveDrag = (e: PointerEvent) => {
@@ -557,7 +557,7 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
         domEl.style.cursor = 'grab';
         try {
           domEl.releasePointerCapture(e.pointerId);
-        } catch {}
+        } catch { }
       }
     };
 
