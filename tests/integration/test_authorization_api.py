@@ -6,10 +6,10 @@ Verifies:
    - POST /scenario
    - POST /sites/{id}/capacity
    Each tested for:
-   - Anonymous request -> 401 UNAUTHENTICATED
-   - Authenticated CIVILIAN -> 403 FORBIDDEN
-   - Authenticated RESCUE_OFFICER -> 403 FORBIDDEN
-   - Authenticated GOVERNMENT_OFFICIAL -> 200 OK (permitted)
+    - Anonymous request -> 401 UNAUTHENTICATED
+    - Authenticated CIVILIAN -> 403 FORBIDDEN
+    - Authenticated rescue officer (consolidated as GOVERNMENT_OFFICIAL) -> 200 OK (permitted)
+    - Authenticated GOVERNMENT_OFFICIAL -> 200 OK (permitted)
 2. Public read endpoints remain completely accessible without any session or authentication.
 3. Civilian public navigation remains unrestricted across administrative boundaries.
 """
@@ -32,8 +32,7 @@ def login_as(client: TestClient, email: str, password: str) -> None:
     assert res.status_code == 200, f"Login failed for {email}: {res.text}"
 
 
-@pytest.mark.db
-class TestAuthorizationEndpoints:
+class TestAuthorizationApiIntegration:
     """Integration test suite for role-based permission enforcement."""
 
     # -------------------------------------------------------------------------
@@ -63,8 +62,8 @@ class TestAuthorizationEndpoints:
         assert res.status_code == 403
         assert res.json()["error"]["code"] == "FORBIDDEN"
 
-    def test_allocate_rescue_officer_forbidden_403(self, client):
-        """Authenticated RESCUE_OFFICER attempting /plan/allocate must receive 403 FORBIDDEN."""
+    def test_allocate_rescue_officer_authorized_as_government_official(self, client):
+        """Rescue officer is authorized as GOVERNMENT_OFFICIAL to execute /plan/allocate."""
         login_as(client, "rescue@setu.gov.in", settings.DEMO_RESCUE_PASSWORD)
         res = client.post("/plan/allocate", json={
             "max_search_radius_km": 25.0,
@@ -72,8 +71,10 @@ class TestAuthorizationEndpoints:
             "allow_group_splits": True,
             "distance_penalty_weight": 1.0,
         })
-        assert res.status_code == 403
-        assert res.json()["error"]["code"] == "FORBIDDEN"
+        assert res.status_code == 200
+        data = res.json()
+        assert "allocation_run_id" in data
+        assert data["status"] == "COMPLETED"
 
     def test_allocate_government_official_permitted_200(self, client):
         """Authenticated GOVERNMENT_OFFICIAL is authorized to execute /plan/allocate."""
@@ -106,12 +107,13 @@ class TestAuthorizationEndpoints:
         assert res.status_code == 403
         assert res.json()["error"]["code"] == "FORBIDDEN"
 
-    def test_scenario_rescue_officer_forbidden_403(self, client):
-        """Authenticated RESCUE_OFFICER attempting /scenario must receive 403 FORBIDDEN."""
+    def test_scenario_rescue_officer_authorized_as_government_official(self, client):
+        """Rescue officer is authorized as GOVERNMENT_OFFICIAL to execute /scenario."""
         login_as(client, "rescue@setu.gov.in", settings.DEMO_RESCUE_PASSWORD)
         res = client.post("/scenario", json={"hazard_weights": {"landslide": 0.5}})
-        assert res.status_code == 403
-        assert res.json()["error"]["code"] == "FORBIDDEN"
+        assert res.status_code == 200
+        assert "items" in res.json()
+        assert "total_habitations_evaluated" in res.json()
 
     def test_scenario_government_official_permitted_200(self, client):
         """Authenticated GOVERNMENT_OFFICIAL is authorized to execute /scenario."""
@@ -138,12 +140,19 @@ class TestAuthorizationEndpoints:
         assert res.status_code == 403
         assert res.json()["error"]["code"] == "FORBIDDEN"
 
-    def test_site_capacity_rescue_officer_forbidden_403(self, client):
-        """Authenticated RESCUE_OFFICER attempting /sites/{id}/capacity must receive 403 FORBIDDEN."""
+    def test_site_capacity_rescue_officer_authorized_as_government_official(self, client):
+        """Rescue officer is authorized as GOVERNMENT_OFFICIAL to execute /sites/{id}/capacity."""
+        hab_res = client.get("/habitations?limit=1")
+        assert hab_res.status_code == 200
+        hab_id = hab_res.json()["items"][0]["id"]
+        sites_res = client.get(f"/habitations/{hab_id}/sites?radius_km=50")
+        assert sites_res.status_code == 200
+        site_id = sites_res.json()["items"][0]["id"]
+
         login_as(client, "rescue@setu.gov.in", settings.DEMO_RESCUE_PASSWORD)
-        res = client.post("/sites/1/capacity", json={"plot_area_m2": 60.0})
-        assert res.status_code == 403
-        assert res.json()["error"]["code"] == "FORBIDDEN"
+        res = client.post(f"/sites/{site_id}/capacity", json={"plot_area_m2": 60.0})
+        assert res.status_code == 200
+        assert "scenario_capacity" in res.json()
 
     def test_site_capacity_government_official_permitted_200(self, client):
         """Authenticated GOVERNMENT_OFFICIAL is authorized to execute /sites/{id}/capacity."""

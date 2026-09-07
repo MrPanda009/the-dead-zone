@@ -8,6 +8,8 @@ import { MenuButton } from './MenuButton';
 import { NavSegmentTabs, NavTabItem, DEFAULT_NAV_TABS } from './NavSegmentTabs';
 import { PortalAccessButton } from './PortalAccessButton';
 
+import { useAuth } from '@/lib/hooks/useAuth';
+
 export interface HeaderProps {
   /** Tonal treatment. 'login' sits the dock a shade deeper against the globe. */
   viewMode?: 'landing' | 'login';
@@ -45,6 +47,7 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const containerRef = useRef<HTMLElement>(null);
   const prefersReducedMotion = usePrefersReducedMotion();
+  const { user, isAuthenticated, logout } = useAuth();
 
   const {
     disabled: animationDisabled = false,
@@ -76,6 +79,18 @@ export const Header: React.FC<HeaderProps> = ({
     { scope: containerRef, dependencies: [animate, duration, delay] }
   );
 
+  const authTargetHref = user
+    ? user.role === 'GOVERNMENT_OFFICIAL' || user.role === 'SYSTEM_ADMIN'
+      ? '/gov'
+      : '/stories'
+    : portalHref;
+
+  const authLabel = user
+    ? user.role === 'GOVERNMENT_OFFICIAL' || user.role === 'SYSTEM_ADMIN'
+      ? 'Gov Workspace'
+      : 'Citizen Portal'
+    : 'Portal Access';
+
   return (
     <header
       ref={containerRef}
@@ -104,15 +119,27 @@ export const Header: React.FC<HeaderProps> = ({
           />
         </div>
 
-        {/* Right Portal Access Button */}
-        <div className="header-slot flex items-center shrink-0">
+        {/* Right Portal Access / Auth Controls */}
+        <div className="header-slot flex items-center gap-2 shrink-0">
           <PortalAccessButton
-            href={portalHref}
-            label="Portal Access"
+            href={authTargetHref}
+            label={authLabel}
             disableAnimation={!animate}
           />
+          {isAuthenticated && (
+            <button
+              type="button"
+              onClick={() => logout()}
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-surface-1 hover:bg-surface-2 text-text-muted hover:text-red-500 border border-line text-xs font-mono transition-colors cursor-pointer"
+              title="Log out from SETU-DRR"
+            >
+              <span className="material-symbols-outlined text-sm">logout</span>
+              <span className="hidden sm:inline">Logout</span>
+            </button>
+          )}
         </div>
       </div>
     </header>
   );
 };
+

@@ -76,11 +76,30 @@ def test_session_token_generation_and_hashing():
 
 
 def test_role_enum_values():
-    """Verify exact role enumeration values."""
+    """Verify exact role enumeration values and absence of RESCUE_OFFICER."""
     assert Role.CIVILIAN == "CIVILIAN"
     assert Role.GOVERNMENT_OFFICIAL == "GOVERNMENT_OFFICIAL"
-    assert Role.RESCUE_OFFICER == "RESCUE_OFFICER"
-    assert set(r.value for r in Role) == {"CIVILIAN", "GOVERNMENT_OFFICIAL", "RESCUE_OFFICER"}
+    assert Role.SYSTEM_ADMIN == "SYSTEM_ADMIN"
+    assert set(r.value for r in Role) == {"CIVILIAN", "GOVERNMENT_OFFICIAL", "SYSTEM_ADMIN"}
+    assert not hasattr(Role, "RESCUE_OFFICER")
+
+
+def test_legacy_rescue_officer_representation():
+    """Verify that rescue officers are represented as GOVERNMENT_OFFICIAL in UserResponse."""
+    user_id = uuid.uuid4()
+    now = datetime.now(timezone.utc)
+    # A rescue officer user must be serialized with role=GOVERNMENT_OFFICIAL
+    rescue_dto = UserResponse(
+        id=user_id,
+        email="rescue@setu.gov.in",
+        full_name="NDRF Commander",
+        role=Role.GOVERNMENT_OFFICIAL,
+        is_active=True,
+        created_at=now,
+    )
+    assert rescue_dto.role == Role.GOVERNMENT_OFFICIAL
+    assert rescue_dto.role.value == "GOVERNMENT_OFFICIAL"
+    assert rescue_dto.model_dump()["role"] == "GOVERNMENT_OFFICIAL"
 
 
 def test_user_response_dto_never_exposes_secrets():

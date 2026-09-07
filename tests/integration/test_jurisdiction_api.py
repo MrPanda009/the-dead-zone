@@ -15,9 +15,9 @@ Verifies:
    - Request DTOs are never mutated by server-side authorization scoping.
 6. Civilian National Exploration:
    - Civilians retain unrestricted public reads across all districts.
-   - Civilians are rejected from privileged operations (403).
-7. Rescue Officer Role Boundaries:
-   - Rescue officers cannot perform government-only planning operations (403).
+7. Rescue Officer Role Consolidation:
+   - Rescue officers are consolidated as government officials with planning permissions in their assigned jurisdiction.
+   - Operations outside assigned jurisdiction are rejected with 403.
 8. Client Tampering Prevention:
    - Client cannot supply admin_id or role in public registration (422).
 9. /auth/me Frontend Contract Hardening:
@@ -291,16 +291,24 @@ class TestJurisdictionAccessControl:
         assert res_scen.status_code == 403
 
     # ------------------------------------------------------------------------
-    # 5. Rescue Officer Role Boundaries
+    # 5. Rescue Officer Role Consolidation
     # ------------------------------------------------------------------------
 
-    def test_rescue_officer_cannot_run_planning_operations(self, rescue_client):
-        """Rescue officers have jurisdiction but NOT planning permissions."""
-        res_alloc = rescue_client.post("/plan/allocate", json={"target_tiers": ["immediate"]})
-        assert res_alloc.status_code == 403
+    def test_rescue_officer_authorized_as_government_official_within_jurisdiction(self, rescue_client, district_context):
+        """Rescue officers are consolidated as GOVERNMENT_OFFICIAL with planning permissions in their jurisdiction."""
+        # Within assigned jurisdiction (Wayanad)
+        res_alloc = rescue_client.post("/plan/allocate", json={
+            "admin_id": district_context["wayanad_admin_id"],
+            "target_tiers": ["immediate"],
+        })
+        assert res_alloc.status_code == 200
 
-        res_scen = rescue_client.post("/scenario", json={})
-        assert res_scen.status_code == 403
+        # Outside assigned jurisdiction (Kodagu) -> 403 FORBIDDEN
+        res_alloc_cross = rescue_client.post("/plan/allocate", json={
+            "admin_id": district_context["kodagu_admin_id"],
+            "target_tiers": ["immediate"],
+        })
+        assert res_alloc_cross.status_code == 403
 
     def test_rescue_officer_can_explore_public_data(self, rescue_client):
         """Rescue officers retain full unconstrained public exploration."""

@@ -115,3 +115,14 @@ export interface ApiErrorEnvelope {
     details: Record<string, unknown>;
   };
 }
+
+/** Canonical authentication transfer types generated from backend OpenAPI contract. */
+import type { components } from '../api-types';
+
+export type UserResponse = components['schemas']['UserResponse'];
+export type LoginRequest = components['schemas']['LoginRequest'];
+export type Role = components['schemas']['Role'];
+export type JurisdictionDTO = components['schemas']['JurisdictionDTO'];
+export type LogoutResponse = components['schemas']['LogoutResponse'];
+export type RegisterRequest = components['schemas']['RegisterRequest'];
+
