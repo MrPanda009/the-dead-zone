@@ -11,6 +11,16 @@ export interface DistrictBBox {
   height: number;
 }
 
+export interface DistrictCalloutConfig {
+  /** Center position of the enlarged floating silhouette in SVG space */
+  center: { x: number; y: number };
+  /** Scale multiplier relative to 1:1 ground district footprint (~180-220px) */
+  scale: number;
+  /** Designated badge anchor point */
+  badge: { x: number; y: number };
+}
+
+
 export interface DistrictBoundary {
   /** Associated story zone */
   zone: ZoneId;
@@ -26,6 +36,7 @@ export interface DistrictBoundary {
   center: { x: number; y: number };
   /** Designated badge anchor point */
   badge: { x: number; y: number };
+  callout: DistrictCalloutConfig;
 }
 
 /**
@@ -47,6 +58,11 @@ export const DISTRICT_BOUNDARIES: Record<ZoneId, DistrictBoundary> = {
     bbox: { x: 312.9, y: 209.1, width: 25.0, height: 31.0 },
     center: { x: 326.6, y: 224.6 },
     badge: { x: 250, y: 220 },
+    callout: {
+      center: { x: 215, y: 190 },
+      scale: 5.5,
+      badge: { x: 125, y: 190 },
+    },
   },
   Central: {
     zone: 'Central',
@@ -56,6 +72,11 @@ export const DISTRICT_BOUNDARIES: Record<ZoneId, DistrictBoundary> = {
     bbox: { x: 270.6, y: 421.0, width: 34.7, height: 19.4 },
     center: { x: 287.4, y: 430.7 },
     badge: { x: 210, y: 428 },
+    callout: {
+      center: { x: 195, y: 475 },
+      scale: 5.5,
+      badge: { x: 95, y: 475 },
+    },
   },
   South: {
     zone: 'South',
@@ -65,6 +86,11 @@ export const DISTRICT_BOUNDARIES: Record<ZoneId, DistrictBoundary> = {
     bbox: { x: 237.3, y: 690.7, width: 15.4, height: 12.6 },
     center: { x: 245.4, y: 697.0 },
     badge: { x: 175, y: 695 },
+    callout: {
+      center: { x: 130, y: 690 },
+      scale: 11.5,
+      badge: { x: 45, y: 690 },
+    },
   },
   East: {
     zone: 'East',
@@ -74,6 +100,11 @@ export const DISTRICT_BOUNDARIES: Record<ZoneId, DistrictBoundary> = {
     bbox: { x: 584.1, y: 322.6, width: 15.1, height: 19.0 },
     center: { x: 592.9, y: 332.1 },
     badge: { x: 520, y: 330 },
+    callout: {
+      center: { x: 505, y: 420 },
+      scale: 9.0,
+      badge: { x: 415, y: 420 },
+    },
   },
   West: {
     zone: 'West',
@@ -83,6 +114,11 @@ export const DISTRICT_BOUNDARIES: Record<ZoneId, DistrictBoundary> = {
     bbox: { x: 67.6, y: 377.9, width: 75.4, height: 49.7 },
     center: { x: 98.3, y: 402.9 },
     badge: { x: 45, y: 465 },
+    callout: {
+      center: { x: 90, y: 485 },
+      scale: 2.6,
+      badge: { x: 30, y: 440 },
+    },
   },
 };
 

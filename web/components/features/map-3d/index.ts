@@ -4,3 +4,4 @@ export * from './Hex3DTooltip';
 export * from './HexRiskColumns';
 export * from './HexTargetBeacon';
 export * from './IndiaLandmassMesh';
+export * from './hexGridProjection';

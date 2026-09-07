@@ -221,6 +221,7 @@ export const GovWorkspace: React.FC<GovWorkspaceProps> = ({
           {viewMode === '3d' ? (
             <India3DCanvas
               cells={cells}
+              breaks={breaks}
               przThreshold={przThreshold}
               selectedH3={selectedH3}
               hoveredH3={hoveredH3}

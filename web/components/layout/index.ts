@@ -14,5 +14,6 @@ export { ThreePanelLayout } from './ThreePanelLayout';
 export type { ThreePanelLayoutProps } from './ThreePanelLayout';
 
 export * from './header';
+export * from './footer';
 export * from './nav-rail';
 export * from './transition';

@@ -92,11 +92,14 @@ export const RouteTransitionProvider: React.FC<RouteTransitionProviderProps> = (
         timeline.fromTo(
           stage,
           { opacity: 0, scale: 1.02, y: 8 },
-          { opacity: 1, scale: 1, y: 0, duration, ease: M3_EASE.decelerate },
+          // clearProps drops the inline transform once settled: a lingering
+          // `transform` on `.route-stage` makes it the containing block for
+          // `position: fixed` descendants, trapping them in the scroll page.
+          { opacity: 1, scale: 1, y: 0, duration, ease: M3_EASE.decelerate, clearProps: 'transform' },
           0
         );
       } else if (stage) {
-        gsap.set(stage, { opacity: 1, scale: 1, y: 0 });
+        gsap.set(stage, { opacity: 1, clearProps: 'transform' });
       }
     },
     [clearFailsafe, enterDuration, prefersReducedMotion, settle]

@@ -1408,6 +1408,24 @@ export function latLngTo3D(lng: number, lat: number, customScale?: number): { x:
   return { x, y };
 }
 
+/**
+ * Inverse of `latLngTo3D` — maps a world-space (x, y) back to [longitude, latitude].
+ * Used to resolve a pointer ray hit on the map plane directly to an H3 index,
+ * which avoids raycasting every hexagon in the grid.
+ */
+export function world3DToLatLng(
+  x: number,
+  y: number,
+  customScale?: number,
+): { lng: number; lat: number } {
+  const scale = customScale ?? PROJECTION_CENTER.scale;
+  const radLat = (PROJECTION_CENTER.lat * Math.PI) / 180;
+  const cosLat = Math.cos(radLat);
+  const lng = x / (cosLat * scale) + PROJECTION_CENTER.lng;
+  const lat = y / scale + PROJECTION_CENTER.lat;
+  return { lng, lat };
+}
+
 /** Camera Focus Regions for Instant Flight Navigation */
 export interface CameraRegionPreset {
   id: string;

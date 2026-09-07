@@ -405,14 +405,18 @@ html.light {
 
 html,
 body {
-  height: 100%;
+  min-height: 100%;
 }
 
 body {
   background-color: var(--color-bg-base);
   color: var(--color-text-primary);
   font-family: var(--font-sans);
-  overflow: hidden;
+  /* Only lock the horizontal axis. The landing page scrolls vertically to
+     drive the globe zig-zag animation (window.scrollY -> scrollProgress).
+     Full-screen app shells (/gov, /workspace) clip their own overflow via
+     `h-dvh overflow-hidden` on their layout roots, so they are unaffected. */
+  overflow-x: hidden;
   user-select: none;
   -webkit-font-smoothing: antialiased;
 }

@@ -88,7 +88,7 @@ export const IndiaHotspotMarkers: React.FC<IndiaHotspotMarkersProps> = ({
               cy={hotspot.cy}
               r={isDisplayed ? 6.5 : 4.5}
               fill={isSelected ? '#16a34a' : isDisplayed ? '#22c55e' : 'currentColor'}
-              className="text-[#2d6a4f] dark:text-[#fef08a] transition-all duration-200 shadow-md group-hover:scale-125"
+              className="text-[#2d6a4f] dark:text-[#fef08a] transition-all duration-200 shadow-md"
             />
           </g>
         );

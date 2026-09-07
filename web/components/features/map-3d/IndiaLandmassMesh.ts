@@ -5,6 +5,17 @@ import {
   latLngTo3D,
 } from '@/lib/geo/indiaBoundary';
 
+/** Extrusion depth of the subcontinent slab. */
+export const LANDMASS_DEPTH = 2.4;
+/** Bevel added above the extrusion by `ExtrudeGeometry`. */
+export const LANDMASS_BEVEL_THICKNESS = 0.45;
+/**
+ * World Z of the landmass top face. Anything seated on the terrain must use
+ * this rather than the raw depth — the bevel lifts the surface above it, and a
+ * correctly-sized hex column is far too short to survive being buried.
+ */
+export const LANDMASS_TOP_Z = LANDMASS_DEPTH + LANDMASS_BEVEL_THICKNESS;
+
 export interface IndiaLandmassController {
   group: THREE.Group;
   updateTheme: (isDark: boolean) => void;
@@ -17,7 +28,7 @@ export interface IndiaLandmassController {
  */
 export function createIndiaLandmass(
   isDark = true,
-  depth = 2.4,
+  depth = LANDMASS_DEPTH,
   contourColor = 0xd49a45,
 ): IndiaLandmassController {
   const group = new THREE.Group();
@@ -35,7 +46,7 @@ export function createIndiaLandmass(
     steps: 1,
     depth,
     bevelEnabled: true,
-    bevelThickness: 0.45,
+    bevelThickness: LANDMASS_BEVEL_THICKNESS,
     bevelSize: 0.35,
     bevelSegments: 3,
   };

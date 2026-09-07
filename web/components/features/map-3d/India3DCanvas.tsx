@@ -16,6 +16,7 @@ import {
   createIndiaLandmass,
   IndiaLandmassController,
 } from './IndiaLandmassMesh';
+import { HEX_BASE_Z } from './hexGridProjection';
 import {
   createHexRiskColumns,
   HexRiskColumnsController,
@@ -27,8 +28,13 @@ import {
 import { Hex3DTooltip } from './Hex3DTooltip';
 import { Map3DControlBar } from './Map3DControlBar';
 
+/** Stable identity so a default `breaks` prop cannot re-trigger effects each render. */
+const EMPTY_BREAKS: number[] = [];
+
 export interface India3DCanvasProps {
   cells: HazardCell[];
+  /** Ascending quantile breaks from the API legend; drives colour and height classing. */
+  breaks?: number[];
   przThreshold?: number;
   selectedH3?: string | null;
   hoveredH3?: string | null;
@@ -41,6 +47,7 @@ export interface India3DCanvasProps {
 
 export const India3DCanvas: React.FC<India3DCanvasProps> = ({
   cells,
+  breaks = EMPTY_BREAKS,
   przThreshold = 0.85,
   selectedH3 = null,
   hoveredH3 = null,
@@ -66,6 +73,14 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
   const hexColumnsRef = useRef<HexRiskColumnsController | null>(null);
   const beaconRef = useRef<HexTargetBeaconController | null>(null);
 
+  // Picking scratch state — allocated once, never per pointer event.
+  const raycasterRef = useRef(new THREE.Raycaster());
+  const pointerRef = useRef(new THREE.Vector2());
+  const pendingPointerRef = useRef<{ x: number; y: number } | null>(null);
+  const pickRafRef = useRef<number | null>(null);
+  /** Identity of the grid the camera has already been framed against. */
+  const framedGridRef = useRef<string | null>(null);
+
   // Floating HUD Tooltip State
   const [tooltipData, setTooltipData] = useState<{
     cell: HazardCell | null;
@@ -82,7 +97,7 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
     try {
       const [lat, lng] = cellToLatLng(selectedH3);
       const { x, y } = latLngTo3D(lng, lat);
-      return { x, y, z: 2.6 };
+      return { x, y, z: HEX_BASE_Z };
     } catch {
       return null;
     }
@@ -101,7 +116,7 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
     scene.fog = new THREE.FogExp2(bgColor, 0.006);
     sceneRef.current = scene;
 
-    const camera = new THREE.PerspectiveCamera(38, width / height, 1, 1000);
+    const camera = new THREE.PerspectiveCamera(38, width / height, 0.01, 1000);
     const initialPreset = REGIONAL_CAMERA_PRESETS.national;
     camera.position.set(
       initialPreset.cameraPos.x,
@@ -126,8 +141,10 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
     controls.enableDamping = true;
     controls.dampingFactor = 0.06;
     controls.maxPolarAngle = Math.PI / 2.15;
-    controls.minDistance = 15;
-    controls.maxDistance = 150;
+    // A single res-8 cell is ~0.02 world units across, so the near limit has to
+    // be small enough to actually inspect one column.
+    controls.minDistance = 0.05;
+    controls.maxDistance = 200;
     controls.target.set(
       initialPreset.target.x,
       initialPreset.target.y,
@@ -211,8 +228,10 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
       isDark,
       selectedH3,
       hoveredH3,
+      breaks,
     );
-  }, [cells, przThreshold, isDark, selectedH3, hoveredH3]);
+    beaconRef.current?.setScale(hexColumnsRef.current.getCellRadius());
+  }, [cells, breaks, przThreshold, isDark, selectedH3, hoveredH3]);
 
   // Update target beacon position
   useEffect(() => {
@@ -259,6 +278,61 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
     [],
   );
 
+  /** Default oblique viewing direction, matching the national preset. */
+  const OBLIQUE_DIR = useMemo(
+    () => new THREE.Vector3(0, -30, 65).normalize(),
+    [],
+  );
+
+  /**
+   * Frames an arbitrary world-space volume. Camera distances can no longer be
+   * hardcoded: a district grid spans ~1.5 world units where the subcontinent
+   * spans ~60, so every flight has to be derived from the target's extent.
+   */
+  const fitToBounds = useCallback(
+    (box: THREE.Box3, padding = 1.3) => {
+      const camera = cameraRef.current;
+      const controls = controlsRef.current;
+      if (!camera || !controls || box.isEmpty()) return;
+
+      const sphere = box.getBoundingSphere(new THREE.Sphere());
+      if (sphere.radius <= 0) return;
+
+      const fov = (camera.fov * Math.PI) / 180;
+      const distance = (sphere.radius / Math.sin(fov / 2)) * padding;
+
+      const dir = new THREE.Vector3()
+        .subVectors(camera.position, controls.target);
+      if (dir.lengthSq() < 1e-12) dir.copy(OBLIQUE_DIR);
+      else dir.normalize();
+
+      const center = sphere.center;
+      flyTo(
+        { x: center.x, y: center.y, z: center.z },
+        {
+          x: center.x + dir.x * distance,
+          y: center.y + dir.y * distance,
+          z: center.z + dir.z * distance,
+        },
+      );
+    },
+    [flyTo, OBLIQUE_DIR],
+  );
+
+  // Frame a newly loaded grid once, so correctly-sized cells are actually on
+  // screen rather than a few sub-pixel specks at national zoom.
+  useEffect(() => {
+    if (cells.length === 0) return;
+    const gridId = `${cells.length}:${cells[0].h3}:${cells[cells.length - 1].h3}`;
+    if (framedGridRef.current === gridId) return;
+
+    const bounds = hexColumnsRef.current?.getBounds();
+    if (!bounds) return;
+
+    framedGridRef.current = gridId;
+    fitToBounds(bounds);
+  }, [cells, fitToBounds]);
+
   // Regional Focus Presets
   const handleSelectPreset = useCallback(
     (preset: CameraRegionPreset) => {
@@ -268,14 +342,34 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
     [flyTo],
   );
 
-  // Auto-focus Camera when selectedH3 changes from triage list
+  // Auto-focus Camera when a cell is selected, framing its neighbourhood.
   useEffect(() => {
     if (!selectedBeaconPos) return;
-    flyTo(
-      { x: selectedBeaconPos.x, y: selectedBeaconPos.y, z: 2.0 },
-      { x: selectedBeaconPos.x, y: selectedBeaconPos.y - 18, z: 24 },
+    const radius = hexColumnsRef.current?.getCellRadius() ?? 0;
+    if (radius <= 0) return;
+
+    const span = radius * 12;
+    fitToBounds(
+      new THREE.Box3(
+        new THREE.Vector3(
+          selectedBeaconPos.x - span,
+          selectedBeaconPos.y - span,
+          selectedBeaconPos.z,
+        ),
+        new THREE.Vector3(
+          selectedBeaconPos.x + span,
+          selectedBeaconPos.y + span,
+          selectedBeaconPos.z + radius * 4,
+        ),
+      ),
     );
-  }, [selectedBeaconPos, flyTo]);
+  }, [selectedBeaconPos, fitToBounds]);
+
+  const handleResetCamera = useCallback(() => {
+    const bounds = hexColumnsRef.current?.getBounds();
+    if (bounds) fitToBounds(bounds);
+    else handleSelectPreset(REGIONAL_CAMERA_PRESETS.national);
+  }, [fitToBounds, handleSelectPreset]);
 
   // View Angle Toggle (2D Plan vs 3D Oblique)
   const handleToggleTopDown = useCallback(() => {
@@ -285,73 +379,83 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
 
     const target = controlsRef.current.target;
     if (next) {
-      flyTo({ x: target.x, y: target.y, z: target.z }, { x: target.x, y: target.y + 0.001, z: 70 });
+      // Preserve the current viewing distance — a fixed altitude would fly past
+      // a district-sized grid entirely.
+      const distance = cameraRef.current.position.distanceTo(target);
+      flyTo(
+        { x: target.x, y: target.y, z: target.z },
+        { x: target.x, y: target.y + distance * 1e-4, z: target.z + distance },
+      );
     } else {
       const preset = REGIONAL_CAMERA_PRESETS[activePreset] ?? REGIONAL_CAMERA_PRESETS.national;
       flyTo(preset.target, preset.cameraPos);
     }
   }, [isTopDown, activePreset, flyTo]);
 
-  // Pointer Click & Hover Raycasting
+  // Pointer Picking — resolved analytically by the grid controller.
+  const pickAtClient = useCallback((clientX: number, clientY: number) => {
+    const canvas = canvasRef.current;
+    const camera = cameraRef.current;
+    const columns = hexColumnsRef.current;
+    if (!canvas || !camera || !columns) return null;
+
+    const rect = canvas.getBoundingClientRect();
+    pointerRef.current.set(
+      ((clientX - rect.left) / rect.width) * 2 - 1,
+      -((clientY - rect.top) / rect.height) * 2 + 1,
+    );
+    raycasterRef.current.setFromCamera(pointerRef.current, camera);
+    return columns.pickCell(raycasterRef.current);
+  }, []);
+
+  // Hover is coalesced to one pick per frame; pointer events fire far more
+  // often than the scene can meaningfully respond to.
   const handlePointerMove = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
-      if (!canvasRef.current || !cameraRef.current || !sceneRef.current) return;
-      const rect = canvasRef.current.getBoundingClientRect();
-      const mouse = new THREE.Vector2(
-        ((e.clientX - rect.left) / rect.width) * 2 - 1,
-        -((e.clientY - rect.top) / rect.height) * 2 + 1,
-      );
+      pendingPointerRef.current = { x: e.clientX, y: e.clientY };
+      if (pickRafRef.current !== null) return;
 
-      const raycaster = new THREE.Raycaster();
-      raycaster.setFromCamera(mouse, cameraRef.current);
+      pickRafRef.current = requestAnimationFrame(() => {
+        pickRafRef.current = null;
+        const pending = pendingPointerRef.current;
+        if (!pending) return;
 
-      const hexGroup = sceneRef.current.getObjectByName('hex-risk-columns-group');
-      if (!hexGroup) return;
-
-      const intersects = raycaster.intersectObjects(hexGroup.children, false);
-      if (intersects.length > 0 && intersects[0].object.userData.hazardCell) {
-        const hitCell = intersects[0].object.userData.hazardCell as HazardCell;
-        setTooltipData({
-          cell: hitCell,
-          pos: { x: e.clientX, y: e.clientY },
-        });
-        onHoverCell?.(hitCell.h3);
-      } else {
-        setTooltipData({ cell: null, pos: null });
-        onHoverCell?.(null);
-      }
+        const hit = pickAtClient(pending.x, pending.y);
+        setTooltipData(
+          hit ? { cell: hit, pos: pending } : { cell: null, pos: null },
+        );
+        onHoverCell?.(hit?.h3 ?? null);
+      });
     },
-    [onHoverCell],
+    [pickAtClient, onHoverCell],
   );
+
+  const handlePointerLeave = useCallback(() => {
+    pendingPointerRef.current = null;
+    setTooltipData({ cell: null, pos: null });
+    onHoverCell?.(null);
+  }, [onHoverCell]);
 
   const handleClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
-      if (!canvasRef.current || !cameraRef.current || !sceneRef.current) return;
-      const rect = canvasRef.current.getBoundingClientRect();
-      const mouse = new THREE.Vector2(
-        ((e.clientX - rect.left) / rect.width) * 2 - 1,
-        -((e.clientY - rect.top) / rect.height) * 2 + 1,
-      );
-
-      const raycaster = new THREE.Raycaster();
-      raycaster.setFromCamera(mouse, cameraRef.current);
-
-      const hexGroup = sceneRef.current.getObjectByName('hex-risk-columns-group');
-      if (!hexGroup) return;
-
-      const intersects = raycaster.intersectObjects(hexGroup.children, false);
-      if (intersects.length > 0 && intersects[0].object.userData.hazardCell) {
-        const hitCell = intersects[0].object.userData.hazardCell as HazardCell;
-        onSelectCell?.(hitCell.h3);
-      }
+      const hit = pickAtClient(e.clientX, e.clientY);
+      if (hit) onSelectCell?.(hit.h3);
     },
-    [onSelectCell],
+    [pickAtClient, onSelectCell],
+  );
+
+  useEffect(
+    () => () => {
+      if (pickRafRef.current !== null) cancelAnimationFrame(pickRafRef.current);
+    },
+    [],
   );
 
   return (
     <div
       ref={containerRef}
       onMouseMove={handlePointerMove}
+      onMouseLeave={handlePointerLeave}
       onClick={handleClick}
       className={`relative w-full h-full overflow-hidden select-none cursor-grab active:cursor-grabbing ${className}`}
     >
@@ -364,7 +468,7 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
           onSelectPreset={handleSelectPreset}
           isTopDown={isTopDown}
           onToggleTopDown={handleToggleTopDown}
-          onResetCamera={() => handleSelectPreset(REGIONAL_CAMERA_PRESETS.national)}
+          onResetCamera={handleResetCamera}
           isLoading={isLoading}
           cellCount={cells.length}
         />

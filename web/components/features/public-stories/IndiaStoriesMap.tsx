@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { ZoneId, REGIONAL_STORIES } from './storyData';
@@ -42,6 +42,13 @@ export const IndiaStoriesMap: React.FC<IndiaStoriesMapProps> = ({
   className = '',
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const badgeGroupRef = useRef<SVGGElement>(null);
+  const leaderLineRef = useRef<SVGLineElement>(null);
+  const isInitializedRef = useRef(false);
+
+  const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const leaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   const [hoveredZone, setHoveredZone] = useState<ZoneId | null>(null);
 
   const displayedZone = hoveredZone ?? selectedZone;
@@ -58,26 +65,125 @@ export const IndiaStoriesMap: React.FC<IndiaStoriesMapProps> = ({
     [],
   );
 
-  const activeHotspot =
-    hotspots.find((h) => h.zone === displayedZone) ?? hotspots[0];
+  // Hover controller with 50ms intent delay and 250ms exit grace period
+  const handleHoverZone = (zone: ZoneId | null) => {
+    if (zone !== null) {
+      if (leaveTimerRef.current) {
+        clearTimeout(leaveTimerRef.current);
+        leaveTimerRef.current = null;
+      }
+      if (hoveredZone === zone) return;
 
-  useGSAP(() => {
-    if (!containerRef.current) return;
-    gsap.fromTo(
-      '.hotspot-pulse',
-      { scale: 0.8, opacity: 0.8 },
-      { scale: 1.8, opacity: 0, duration: 2, repeat: -1, ease: 'power1.out', stagger: 0.4 },
-    );
-  }, { scope: containerRef });
+      if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+      hoverTimerRef.current = setTimeout(() => {
+        setHoveredZone(zone);
+      }, 50);
+    } else {
+      if (hoverTimerRef.current) {
+        clearTimeout(hoverTimerRef.current);
+        hoverTimerRef.current = null;
+      }
+      if (leaveTimerRef.current) clearTimeout(leaveTimerRef.current);
+      leaveTimerRef.current = setTimeout(() => {
+        setHoveredZone(null);
+      }, 250);
+    }
+  };
 
   const handleSelectZone = (zone: ZoneId) => {
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    if (leaveTimerRef.current) clearTimeout(leaveTimerRef.current);
     onSelectZone(zone);
     setHoveredZone(null);
   };
 
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+      if (leaveTimerRef.current) clearTimeout(leaveTimerRef.current);
+    };
+  }, []);
+
+  // Hotspot pulse animation
+  useGSAP(() => {
+    if (!containerRef.current) return;
+    gsap.fromTo(
+      '.hotspot-pulse',
+      { scale: 0.8, opacity: 0.8, transformOrigin: '50% 50%' },
+      {
+        scale: 1.8,
+        opacity: 0,
+        transformOrigin: '50% 50%',
+        duration: 2,
+        repeat: -1,
+        ease: 'power1.out',
+        stagger: 0.4,
+      },
+    );
+  }, { scope: containerRef, dependencies: [displayedZone], revertOnUpdate: true });
+
+  // Smooth continuous GSAP glide motion for the "+ DISCOVER STORIES" badge and leader line
+  useGSAP(
+    () => {
+      if (!badgeGroupRef.current || !leaderLineRef.current || !activeDistrict) return;
+
+      const targetBadgeX = activeDistrict.callout.badge.x;
+      const targetBadgeY = activeDistrict.callout.badge.y;
+      const targetCenterX = activeDistrict.callout.center.x;
+      const targetCenterY = activeDistrict.callout.center.y;
+
+      // On first mount, position immediately without animation
+      if (!isInitializedRef.current) {
+        isInitializedRef.current = true;
+        gsap.set(badgeGroupRef.current, {
+          x: targetBadgeX,
+          y: targetBadgeY,
+          opacity: 1,
+        });
+        gsap.set(leaderLineRef.current, {
+          attr: {
+            x1: targetBadgeX,
+            y1: targetBadgeY,
+            x2: targetCenterX,
+            y2: targetCenterY,
+          },
+          opacity: 0.65,
+        });
+        return;
+      }
+
+      // Smoothly glide the badge to the target coordinates
+      gsap.to(badgeGroupRef.current, {
+        x: targetBadgeX,
+        y: targetBadgeY,
+        opacity: 1,
+        duration: 0.45,
+        ease: 'power3.out',
+        overwrite: 'auto',
+      });
+
+      // Smoothly tween the leader line coordinates
+      gsap.to(leaderLineRef.current, {
+        attr: {
+          x1: targetBadgeX,
+          y1: targetBadgeY,
+          x2: targetCenterX,
+          y2: targetCenterY,
+        },
+        opacity: 0.65,
+        duration: 0.45,
+        ease: 'power3.out',
+        overwrite: 'auto',
+      });
+    },
+    { dependencies: [displayedZone] },
+  );
+
   return (
     <div
       ref={containerRef}
+      onMouseLeave={() => handleHoverZone(null)}
       className={`relative w-full h-full flex items-center justify-center select-none ${className}`}
     >
       <svg
@@ -111,25 +217,20 @@ export const IndiaStoriesMap: React.FC<IndiaStoriesMapProps> = ({
         <IndiaDistrictOverlay
           selectedZone={selectedZone}
           hoveredZone={hoveredZone}
-          onHoverZone={setHoveredZone}
+          onHoverZone={handleHoverZone}
           onSelectZone={handleSelectZone}
           previewImage={activeStory.previewImage}
         />
 
-        {/* --- CARTOGRAPHIC LEADER LINE FROM BADGE TO ACTIVE DISTRICT --- */}
-        {activeDistrict && (
-          <line
-            key={`line-${displayedZone}`}
-            x1={activeDistrict.badge.x}
-            y1={activeDistrict.badge.y}
-            x2={activeHotspot.cx}
-            y2={activeHotspot.cy}
-            stroke="currentColor"
-            strokeWidth="1.2"
-            strokeDasharray="3 3"
-            className="text-[#16a34a]/60 dark:text-[#fef08a]/60 pointer-events-none transition-all duration-300"
-          />
-        )}
+        {/* --- CARTOGRAPHIC LEADER LINE FROM BADGE TO CALLOUT SILHOUETTE --- */}
+        <line
+          ref={leaderLineRef}
+          stroke="currentColor"
+          strokeWidth="1.2"
+          strokeDasharray="3 3"
+          style={{ opacity: 0 }}
+          className="text-[#16a34a] dark:text-[#fef08a] pointer-events-none transition-colors duration-300"
+        />
 
         {/* --- HOTSPOT MARKERS --- */}
         <IndiaHotspotMarkers
@@ -137,32 +238,32 @@ export const IndiaStoriesMap: React.FC<IndiaStoriesMapProps> = ({
           selectedZone={selectedZone}
           hoveredZone={hoveredZone}
           onSelectZone={handleSelectZone}
-          onHoverZone={setHoveredZone}
+          onHoverZone={handleHoverZone}
         />
 
         {/* --- FLOATING "+ DISCOVER STORIES" BADGE IN MAP COORDINATE SPACE --- */}
-        {activeDistrict && (
-          <g
-            key={`badge-group-${displayedZone}`}
-            transform={`translate(${activeDistrict.badge.x}, ${activeDistrict.badge.y})`}
-            className="transition-transform duration-300 ease-out"
+        <g
+          ref={badgeGroupRef}
+          style={{ opacity: 0 }}
+          className="pointer-events-auto"
+          onMouseEnter={() => handleHoverZone(displayedZone)}
+          onMouseLeave={() => handleHoverZone(null)}
+        >
+          <foreignObject
+            x="-45"
+            y="-45"
+            width="90"
+            height="90"
+            className="overflow-visible pointer-events-auto"
           >
-            <foreignObject
-              x="-45"
-              y="-45"
-              width="90"
-              height="90"
-              className="overflow-visible pointer-events-auto"
-            >
-              <div className="w-full h-full flex items-center justify-center">
-                <StoryDiscoverBadge
-                  onClick={() => onOpenSlideshow(displayedZone)}
-                  size={84}
-                />
-              </div>
-            </foreignObject>
-          </g>
-        )}
+            <div className="w-full h-full flex items-center justify-center">
+              <StoryDiscoverBadge
+                onClick={() => onOpenSlideshow(displayedZone)}
+                size={84}
+              />
+            </div>
+          </foreignObject>
+        </g>
       </svg>
     </div>
   );
