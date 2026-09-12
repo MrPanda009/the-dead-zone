@@ -37,6 +37,12 @@ class ReadinessResponse(BaseModel):
 
 
 @router.get(
+    "",
+    summary="Health check root alias",
+    status_code=status.HTTP_200_OK,
+    include_in_schema=False,
+)
+@router.get(
     "/live",
     summary="Process liveness check",
     status_code=status.HTTP_200_OK,
