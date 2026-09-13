@@ -3,7 +3,7 @@
 import type { ApiErrorEnvelope } from './types';
 
 export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, '') ?? 'http://localhost:8000';
+  process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, '') || 'https://the-dead-zone.onrender.com';
 
 /** Error carrying the machine-readable code and request id from the API envelope. */
 export class ApiError extends Error {
@@ -29,10 +29,11 @@ export class ApiError extends Error {
 }
 
 function buildUrl(path: string, params?: Record<string, string | number | undefined>): string {
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
   const base = API_BASE_URL.startsWith('http')
     ? API_BASE_URL
     : (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000') + API_BASE_URL;
-  const url = new URL(`${base}${path}`);
+  const url = new URL(`${base.replace(/\/$/, '')}${cleanPath}`);
   if (params) {
     for (const [key, value] of Object.entries(params)) {
       if (value !== undefined && value !== null && value !== '') {
@@ -109,7 +110,7 @@ export async function apiGet<T>(
   } catch (cause) {
     if (cause instanceof DOMException && cause.name === 'AbortError') throw cause;
     throw new ApiError(
-      `Cannot reach the T.E.R.R.A. API at ${API_BASE_URL}. Is \`uv run uvicorn api.main:app\` running?`,
+      `Cannot reach the SETU-DRR API at ${API_BASE_URL}. If the service was idle, Render may be waking up (cold start can take ~30-50s). Please wait a moment and retry.`,
       0,
       'NETWORK_ERROR',
     );
@@ -144,7 +145,7 @@ export async function apiPost<T>(
   } catch (cause) {
     if (cause instanceof DOMException && cause.name === 'AbortError') throw cause;
     throw new ApiError(
-      `Cannot reach the T.E.R.R.A. API at ${API_BASE_URL}. Is \`uv run uvicorn api.main:app\` running?`,
+      `Cannot reach the SETU-DRR API at ${API_BASE_URL}. If the service was idle, Render may be waking up (cold start can take ~30-50s). Please wait a moment and retry.`,
       0,
       'NETWORK_ERROR',
     );
