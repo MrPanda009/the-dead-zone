@@ -109,8 +109,11 @@ export const IndiaStoriesMap: React.FC<IndiaStoriesMapProps> = ({
   // Hotspot pulse animation
   useGSAP(() => {
     if (!containerRef.current) return;
+    const pulseTargets = containerRef.current.querySelectorAll('.hotspot-pulse');
+    if (!pulseTargets || pulseTargets.length === 0) return;
+
     gsap.fromTo(
-      '.hotspot-pulse',
+      pulseTargets,
       { scale: 0.8, opacity: 0.8, transformOrigin: '50% 50%' },
       {
         scale: 1.8,

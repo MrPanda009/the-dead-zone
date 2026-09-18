@@ -23,14 +23,22 @@ export const DistrictTelemetryGrid: React.FC<DistrictTelemetryGridProps> = ({
 
   useGSAP(() => {
     if (!gridRef.current) return;
-    gsap.from(gridRef.current.children, {
-      y: 12,
-      opacity: 0,
-      stagger: 0.05,
-      duration: 0.35,
-      ease: 'power2.out',
-    });
-  }, { scope: gridRef, dependencies: [spot.id] });
+    const items = gridRef.current.children;
+    if (!items || items.length === 0) return;
+
+    gsap.fromTo(
+      items,
+      { y: 14, opacity: 0 },
+      {
+        y: 0,
+        opacity: 1,
+        stagger: 0.07,
+        duration: 0.45,
+        ease: 'power2.out',
+        clearProps: 'opacity,transform',
+      }
+    );
+  }, { scope: gridRef, dependencies: [spot.id], revertOnUpdate: true });
 
   const priorityScore = spot.priorityScore !== undefined ? spot.priorityScore.toFixed(3) : '0.948';
   const przOverlap = spot.przOverlapPct !== undefined ? `${spot.przOverlapPct.toFixed(1)}%` : '91.0%';

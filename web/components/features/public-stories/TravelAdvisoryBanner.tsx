@@ -23,13 +23,18 @@ export const TravelAdvisoryBanner: React.FC<TravelAdvisoryBannerProps> = ({
 
   useGSAP(() => {
     if (!bannerRef.current) return;
-    gsap.from(bannerRef.current, {
-      opacity: 0,
-      y: 8,
-      duration: 0.3,
-      ease: 'power2.out',
-    });
-  }, { scope: bannerRef, dependencies: [spot.id] });
+    gsap.fromTo(
+      bannerRef.current,
+      { opacity: 0, y: 10 },
+      {
+        opacity: 1,
+        y: 0,
+        duration: 0.45,
+        ease: 'power2.out',
+        clearProps: 'opacity,transform',
+      }
+    );
+  }, { scope: bannerRef, dependencies: [spot.id], revertOnUpdate: true });
 
   const isHighDanger =
     spot.tier.toLowerCase().includes('tier 1') ||

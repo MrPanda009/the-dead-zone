@@ -45,12 +45,21 @@ export const DistrictRiskModal: React.FC<DistrictRiskModalProps> = ({
     initialProfile.habitations[0]
   );
 
-  // Re-fetch / load data when zone changes
-  useEffect(() => {
-    if (!isOpen) return;
+  const [prevZone, setPrevZone] = useState<ZoneId>(zone);
+
+  // Sync profile synchronously when zone changes to avoid stale render pass
+  if (prevZone !== zone) {
+    setPrevZone(zone);
     const base = getBackendProfileForZone(zone);
     setProfile(base);
     setSelectedSpot(base.habitations[0]);
+    setIsLive(false);
+  }
+
+  // Fetch live backend data when opened or zone changes
+  useEffect(() => {
+    if (!isOpen) return;
+    const base = getBackendProfileForZone(zone);
 
     const controller = new AbortController();
     loadDistrictData(base.key as BackendDistrictKey, controller.signal).then(
@@ -58,7 +67,10 @@ export const DistrictRiskModal: React.FC<DistrictRiskModalProps> = ({
         setProfile(loaded);
         setIsLive(live);
         if (loaded.habitations.length > 0) {
-          setSelectedSpot(loaded.habitations[0]);
+          setSelectedSpot((prev) => {
+            const found = loaded.habitations.find((h) => h.id === prev?.id);
+            return found || loaded.habitations[0];
+          });
         }
       }
     );
@@ -78,13 +90,22 @@ export const DistrictRiskModal: React.FC<DistrictRiskModalProps> = ({
 
   // GSAP Entrance
   useGSAP(() => {
-    if (!isOpen || !modalBoxRef.current) return;
-    gsap.fromTo(
-      modalBoxRef.current,
-      { scale: 0.93, opacity: 0, y: 16 },
-      { scale: 1, opacity: 1, y: 0, duration: 0.35, ease: 'power3.out' }
-    );
-  }, { dependencies: [isOpen, profile.districtName] });
+    if (!isOpen) return;
+    if (containerRef.current) {
+      gsap.fromTo(
+        containerRef.current,
+        { opacity: 0 },
+        { opacity: 1, duration: 0.4, ease: 'power2.out' }
+      );
+    }
+    if (modalBoxRef.current) {
+      gsap.fromTo(
+        modalBoxRef.current,
+        { scale: 0.95, opacity: 0, y: 20 },
+        { scale: 1, opacity: 1, y: 0, duration: 0.5, ease: 'power3.out', clearProps: 'transform' }
+      );
+    }
+  }, { scope: containerRef, dependencies: [isOpen, profile.districtName], revertOnUpdate: true });
 
   if (!isOpen) return null;
 
@@ -100,6 +121,12 @@ export const DistrictRiskModal: React.FC<DistrictRiskModalProps> = ({
     REGIONAL_STORIES[normalizedKey] ||
     REGIONAL_STORIES[zone] ||
     REGIONAL_STORIES.Wayanad;
+
+  const activeSpot =
+    profile.habitations.find((h) => h.id === selectedSpot.id) ||
+    selectedSpot ||
+    profile.habitations[0] ||
+    initialProfile.habitations[0];
 
   return (
     <div
@@ -127,12 +154,12 @@ export const DistrictRiskModal: React.FC<DistrictRiskModalProps> = ({
             <DistrictPhotoShowcase
               slides={regionalStory?.slides || []}
               fallbackImage={regionalStory?.previewImage || '/stories/south.jpg'}
-              spotName={selectedSpot.name}
+              spotName={activeSpot?.name}
             />
 
             <TravelAdvisoryBanner
               profile={profile}
-              spot={selectedSpot}
+              spot={activeSpot}
             />
           </div>
 
@@ -140,12 +167,12 @@ export const DistrictRiskModal: React.FC<DistrictRiskModalProps> = ({
           <div className="lg:col-span-7 flex flex-col gap-3.5">
             <DistrictSpotSelector
               spots={profile.habitations}
-              selectedSpotId={selectedSpot.id}
+              selectedSpotId={activeSpot?.id}
               onSelectSpot={(spot) => setSelectedSpot(spot)}
             />
 
             <DistrictTelemetryGrid
-              spot={selectedSpot}
+              spot={activeSpot}
               fallbackHazard={profile.primaryHazard}
             />
 

@@ -26,14 +26,24 @@ export const DistrictSpotSelector: React.FC<DistrictSpotSelectorProps> = ({
 
   useGSAP(() => {
     if (!scrollRef.current) return;
-    gsap.from(scrollRef.current.children, {
-      opacity: 0,
-      x: 12,
-      stagger: 0.03,
-      duration: 0.3,
-      ease: 'power2.out',
-    });
-  }, { scope: scrollRef, dependencies: [spots] });
+    const items = scrollRef.current.children;
+    if (!items || items.length === 0) return;
+
+    gsap.fromTo(
+      items,
+      { opacity: 0, x: 14 },
+      {
+        opacity: 1,
+        x: 0,
+        stagger: {
+          amount: Math.min(0.45, items.length * 0.04),
+        },
+        duration: 0.45,
+        ease: 'power2.out',
+        clearProps: 'opacity,transform',
+      }
+    );
+  }, { scope: scrollRef, dependencies: [spots], revertOnUpdate: true });
 
   return (
     <div className={`flex flex-col gap-1.5 ${className}`}>

@@ -20,14 +20,24 @@ export const DistrictDisasterHistory: React.FC<DistrictDisasterHistoryProps> = (
 
   useGSAP(() => {
     if (!containerRef.current) return;
-    gsap.from(containerRef.current.children, {
-      opacity: 0,
-      y: 10,
-      stagger: 0.05,
-      duration: 0.35,
-      ease: 'power2.out',
-    });
-  }, { scope: containerRef, dependencies: [disasters] });
+    const items = containerRef.current.children;
+    if (!items || items.length === 0) return;
+
+    gsap.fromTo(
+      items,
+      { opacity: 0, y: 14 },
+      {
+        opacity: 1,
+        y: 0,
+        stagger: {
+          amount: Math.min(0.35, items.length * 0.06),
+        },
+        duration: 0.45,
+        ease: 'power2.out',
+        clearProps: 'opacity,transform',
+      }
+    );
+  }, { scope: containerRef, dependencies: [disasters], revertOnUpdate: true });
 
   if (!disasters || disasters.length === 0) return null;
 

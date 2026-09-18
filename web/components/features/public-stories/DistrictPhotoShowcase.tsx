@@ -40,9 +40,9 @@ export const DistrictPhotoShowcase: React.FC<DistrictPhotoShowcaseProps> = ({
     gsap.fromTo(
       imageBoxRef.current,
       { opacity: 0.7, scale: 0.98 },
-      { opacity: 1, scale: 1, duration: 0.4, ease: 'power2.out' }
+      { opacity: 1, scale: 1, duration: 0.45, ease: 'power2.out', clearProps: 'transform' }
     );
-  }, { scope: containerRef, dependencies: [activeIndex, currentImage] });
+  }, { scope: containerRef, dependencies: [activeIndex, currentImage], revertOnUpdate: true });
 
   const handlePrev = (e: React.MouseEvent) => {
     e.stopPropagation();
