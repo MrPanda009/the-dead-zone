@@ -60,7 +60,7 @@ export const DEFAULT_NAV_TABS: NavTabItem[] = [
  */
 export const NavSegmentTabs: React.FC<NavSegmentTabsProps> = ({
   tabs = DEFAULT_NAV_TABS,
-  activeTabId = 'planetary',
+  activeTabId = '',
   size = 'md',
   onSelectTab,
   className = '',

@@ -1,4 +1,4 @@
-/** Minimal typed fetch wrapper that unwraps the T.E.R.R.A. error envelope. */
+/** Minimal typed fetch wrapper that unwraps the SETU-DRR error envelope. */
 
 import type { ApiErrorEnvelope } from './types';
 

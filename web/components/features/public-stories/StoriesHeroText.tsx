@@ -23,7 +23,7 @@ export interface StoriesHeroTextProps {
 }
 
 export const StoriesHeroText: React.FC<StoriesHeroTextProps> = ({
-  category = 'T.E.R.R.A. TOURIST HAZARD ADVISORY',
+  category = 'SETU-DRR TOURIST HAZARD ADVISORY',
   activeZoneLabel = 'Wayanad',
   summary = 'Real-time geotechnical landslide, flash flood, and terrain risk advisory for tourists, trekkers, and travelers across India\'s fragile corridors before planning journeys.',
   className = '',

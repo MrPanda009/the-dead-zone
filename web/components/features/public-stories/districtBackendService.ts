@@ -1,7 +1,7 @@
 /**
  * District Backend Data Service for Tourist Travel Risk Assessment.
  *
- * Integrates directly with T.E.R.R.A. backend endpoints (/habitations, /plan/external-recommendations)
+ * Integrates directly with SETU-DRR backend endpoints (/habitations, /plan/external-recommendations)
  * and provides verified authoritative baseline data for the 3 backend pilot districts:
  * - Wayanad (Kerala, LGD 555)
  * - Kodagu (Karnataka, LGD 540)

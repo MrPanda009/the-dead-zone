@@ -58,7 +58,7 @@ export const PublicStoriesPage: React.FC<PublicStoriesPageProps> = ({
         {/* Left Column: Headline & Region Context */}
         <div className="hidden md:flex md:col-span-4 lg:col-span-3 h-full flex-col justify-center pl-1 lg:pl-2">
           <StoriesHeroText
-            category="T.E.R.R.A. TOURIST HAZARD ADVISORY"
+            category="SETU-DRR TOURIST HAZARD ADVISORY"
             activeZoneLabel={activeStory.label}
             summary={activeStory.shortSummary}
           />

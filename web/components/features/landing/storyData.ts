@@ -15,57 +15,58 @@ export interface StorySectionData {
 
 export const LANDING_STORIES: StorySectionData[] = [
   {
-    id: 'triage-engine',
+    id: 'triage-workspace',
     index: '01',
     align: 'right', // Globe on left, text on right
-    badge: 'UBER H3 RESOLUTION-8 CLUSTERING',
+    badge: 'DECISION TRIAGE WORKSPACE',
     badgeTone: 'critical',
     title: 'Geospatial Hazard Triage',
-    subtitle: 'High-density climate exposure modeling & automated habitation escalation',
+    subtitle: 'Interactive 3-panel triage workspace for red-zone habitation classification',
     description:
-      'Continuous spatial indexing across Uttarakhand and Himalayan riverine corridors. T.E.R.R.A. aggregates precipitation thresholds, slope rupture gradients, and seismic fault proximity into real-time hexagonal triage clusters, classifying vulnerable villages into Urgent Relocation and Caseload Watch tiers.',
-    pills: ['Sub-100m Resolution', 'Dynamic Flash Flood Watch', 'Zero Blindspot Coverage'],
+      'Continuous spatial screening across Uttarakhand and high-risk Himalayan riverine valleys. Aggregates precipitation thresholds, slope failure gradients, and census social vulnerability into real-time Uber H3 hexagons. Instantly filters habitations into Urgent Relocation and Caseload Watch with full SHAP explainability and 72-hour forecast lead time.',
+    pills: ['Interactive 3-Panel Triage', 'Uber H3 Res-8 Hexagons', 'PRZ Red-Zone Filtering', 'Urgent vs Caseload Watch'],
     metrics: [
-      { value: '14', label: 'Tier-1 Critical Red Zones' },
-      { value: '4.2x', label: 'Lead-Time Advantage' },
+      { value: '3,602', label: 'H3 Grid Decision Cells' },
+      { value: '14', label: 'Urgent Red-Zone Habitations' },
     ],
-    actionLabel: 'Explore Triage Engine',
-    actionHref: '/login',
+    actionLabel: 'Launch Triage Workspace',
+    actionHref: '/workspace',
   },
   {
-    id: 'sovi-relocation',
+    id: 'relocation-solver',
     index: '02',
     align: 'left', // Globe on right, text on left
-    badge: 'HUMAN RESILIENCE & TOPOGRAPHY',
+    badge: 'CARRYING CAPACITY & RELOCATION',
     badgeTone: 'emerald',
-    title: 'Social Vulnerability & Relocation',
-    subtitle: 'Explainable AI scoring for safe habitation site selection',
+    title: 'Carrying Capacity & Relocation',
+    subtitle: 'Multi-criteria linear programming optimization for resettlement site selection',
     description:
-      'Moving habitations is not merely civil engineering—it is preserving social fabric. Our multi-criteria suitability engine pairs census-level SoVI indices with LiDAR elevation, road connectivity, and hydrological safety to match displaced families with sustainable, hazard-free resettlement corridors.',
-    pills: ['SoVI Demographic Weighting', 'LiDAR Slope Analysis', 'SHAP Model Explainability'],
+      'Moving endangered communities requires mathematically sound, humane planning. SETU - Disaster Risk Reduction runs linear programming optimization against municipal binding constraints—potable water supply, power grid substations, hospital beds, and school capacity—safely matching displaced habitations to sustainable host sites without overwhelming local infrastructure.',
+    pills: ['Linear Programming Solver', 'Municipal Binding Constraints', 'Candidate Host Sites', 'Suitability Ranking'],
     metrics: [
-      { value: '98.2%', label: 'Topological Safety Match' },
-      { value: '48h', label: 'Corridor Optimization' },
+      { value: '98.4%', label: 'Constraint Satisfaction' },
+      { value: '48h', label: 'Relocation Plan Generation' },
     ],
-    actionLabel: 'View Relocation Models',
-    actionHref: '/login',
+    actionLabel: 'Open Relocation Planner',
+    actionHref: '/relocation',
   },
   {
-    id: 'sar-radar',
+    id: 'tourist-stories',
     index: '03',
     align: 'right', // Globe on left, text on right
-    badge: 'ORBITAL SYNTHETIC APERTURE RADAR',
+    badge: 'NATIONAL HAZARD MAP & TOURIST ADVISORIES',
     badgeTone: 'citron',
-    title: 'Sentinel InSAR Telemetry',
-    subtitle: 'Millimeter-scale ground displacement radar feeds with automated alerts',
+    title: 'Tourist Hazard Advisories & Stories',
+    subtitle: 'Interactive Survey of India national map, pilgrimage corridors & NDRF alerts',
     description:
-      'Sub-surface moisture saturation and micro-fractures often precede catastrophic mass-wasting events. T.E.R.R.A. synchronizes with dual-frequency satellite radar sweeps, detecting ground creep before visible landslides occur and triggering immediate SMS and radio dispatch to district magistrate control rooms.',
-    pills: ['Sentinel-1 SAR Feeds', 'Millimeter Deformation', 'NDRF Auto-Dispatch'],
+      'Real-time ground-truth travel intelligence and hazard advisories for pilgrims, tourists, and state disaster authorities. Features an official Survey of India map covering all 28+ States and Union Territories (including complete Jammu & Kashmir and Ladakh), live monsoon landslide warnings, high-altitude road closures, and direct 24/7 NDRF emergency helpline dispatch.',
+    pills: ['Survey of India Map', 'Pilgrimage Corridor Alerts', 'Live Landslide Bulletins', 'NDRF 1078 Helpline'],
     metrics: [
-      { value: '2.4mm', label: 'Deformation Detection' },
-      { value: '24 / 7', label: 'Continuous Orbital Sweep' },
+      { value: '28+', label: 'States & UTs Monitored' },
+      { value: '24/7', label: 'NDRF Crisis Dispatch' },
     ],
-    actionLabel: 'Launch Radar Sweeps',
-    actionHref: '/login',
+    actionLabel: 'Explore Tourist Advisories',
+    actionHref: '/stories',
   },
 ];
+

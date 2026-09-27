@@ -137,13 +137,13 @@ export const LoginCard: React.FC<LoginCardProps> = ({
   return (
     <div
       ref={containerRef}
-      className={`w-full max-w-xl glass-card p-6 sm:p-8 rounded-[24px] border border-line dark:border-white/15 shadow-2xl relative z-20 backdrop-blur-2xl transition-colors duration-200 ${className}`}
+      className={`w-full max-w-xl p-6 sm:p-8 rounded-[24px] bg-surface-0/90 dark:bg-forest-surface/90 border border-line dark:border-white/15 shadow-2xl relative z-20 backdrop-blur-2xl transition-colors duration-200 ${className}`}
     >
       {/* Top Header Pill */}
       <div className="flex items-center justify-between mb-4 sm:mb-5">
-        <span className="pill-badge px-3 py-1 rounded-full text-[11px] font-mono font-medium text-citron border border-citron/30 bg-citron/10 flex items-center gap-2 shadow-sm">
-          <span className="w-2 h-2 rounded-full bg-citron animate-ping" />
-          <span>T.E.R.R.A. :: AUTHENTICATION</span>
+        <span className="pill-badge px-3 py-1 rounded-full text-[11px] font-mono font-semibold text-accent-emerald-bright border border-accent-emerald/30 bg-accent-emerald/10 flex items-center gap-2 shadow-xs">
+          <span className="w-2 h-2 rounded-full bg-accent-emerald-bright animate-ping" />
+          <span>SETU - Disaster Risk Reduction</span>
         </span>
         <Link
           href={overviewHref}
@@ -155,21 +155,26 @@ export const LoginCard: React.FC<LoginCardProps> = ({
       </div>
 
       {/* Title & Subtitle */}
-      <div className="mb-4 sm:mb-5">
-        <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-text-primary tracking-tight leading-tight">
-          Sign In to T.E.R.R.A.
+      <div className="mb-5 sm:mb-6">
+        <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-ink dark:text-text-primary tracking-tight leading-tight">
+          Sign In to Portal
         </h2>
         <p className="text-xs sm:text-sm text-text-secondary mt-1.5 leading-relaxed font-sans">
-          Terrain-based Environmental Risk and Relocation Analytics. Connect to disaster response intelligence. Official credentials unlock the high-resolution GIS hazard matrix.
+          SETU - Disaster Risk Reduction · Frontline Hazard Red Zone & Relocation Decision Support Platform. Official portal for disaster response officials, district administrators, and public safety teams.
         </p>
       </div>
 
       {/* Demo Quick-Fill Presets */}
-      <div className="mb-4 sm:mb-5">
-        <span className="block text-[10px] font-mono uppercase tracking-wider text-text-muted mb-2">
-          Demo Evaluation Presets (Click to Auto-Fill)
-        </span>
-        <div className="grid grid-cols-2 gap-2">
+      <div className="mb-5">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[10px] font-mono uppercase tracking-wider text-text-muted">
+            Fast Access Presets (Click to Fill)
+          </span>
+          <span className="text-[10px] font-mono text-accent-emerald-bright">
+            Pre-configured
+          </span>
+        </div>
+        <div className="grid grid-cols-2 gap-2.5">
           {DEMO_PRESETS.map((p) => {
             const isSelected = email === p.email;
             return (
@@ -177,19 +182,19 @@ export const LoginCard: React.FC<LoginCardProps> = ({
                 key={p.id}
                 type="button"
                 onClick={() => applyPreset(p)}
-                className={`text-left p-2.5 rounded-xl border transition-all cursor-pointer select-none ${
+                className={`text-left p-3 rounded-xl border transition-all duration-200 cursor-pointer select-none ${
                   isSelected
-                    ? 'bg-citron/15 border-citron text-text-primary shadow-sm'
-                    : 'bg-surface-1 hover:bg-surface-2 border-line text-text-secondary hover:text-text-primary'
+                    ? 'bg-citron/15 border-citron text-ink dark:text-text-primary shadow-xs ring-1 ring-citron/40'
+                    : 'bg-surface-1/80 dark:bg-forest-deep/60 hover:bg-surface-2 dark:hover:bg-forest-deep border-line dark:border-white/10 text-text-secondary hover:text-ink dark:hover:text-text-primary'
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <span className="font-display text-xs font-bold truncate">{p.label}</span>
-                  <span className="text-[9px] font-mono px-1 rounded bg-surface-2 dark:bg-white/10 text-text-muted">
+                  <span className="text-[9px] font-mono font-semibold px-1.5 py-0.5 rounded bg-surface-2 dark:bg-white/10 text-text-muted">
                     {p.roleBadge}
                   </span>
                 </div>
-                <span className="block text-[10px] text-text-muted truncate mt-0.5">
+                <span className="block text-[11px] text-text-muted truncate mt-1">
                   {p.sublabel}
                 </span>
               </button>
@@ -215,7 +220,7 @@ export const LoginCard: React.FC<LoginCardProps> = ({
             htmlFor="auth-email"
             className="block text-xs font-mono font-medium text-text-secondary mb-1.5"
           >
-            Email Address
+            Official Email Address
           </label>
           <div className="relative">
             <input
@@ -225,7 +230,7 @@ export const LoginCard: React.FC<LoginCardProps> = ({
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="officer@setu.gov.in"
-              className="auth-input w-full px-3.5 py-2.5 rounded-xl bg-surface-1 border border-line focus:border-citron focus:outline-none text-sm text-text-primary font-mono transition-colors"
+              className="auth-input w-full px-3.5 py-2.5 rounded-xl bg-surface-1 dark:bg-forest-deep/80 border border-line dark:border-white/10 focus:border-citron focus:ring-1 focus:ring-citron/30 focus:outline-none text-sm text-ink dark:text-text-primary font-mono transition-colors"
             />
             <span className="material-symbols-outlined absolute right-3 top-2.5 text-text-muted text-lg pointer-events-none">
               badge
@@ -248,7 +253,7 @@ export const LoginCard: React.FC<LoginCardProps> = ({
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••••••"
-              className="auth-input w-full px-3.5 py-2.5 rounded-xl bg-surface-1 border border-line focus:border-citron focus:outline-none text-sm text-text-primary font-mono transition-colors"
+              className="auth-input w-full px-3.5 py-2.5 rounded-xl bg-surface-1 dark:bg-forest-deep/80 border border-line dark:border-white/10 focus:border-citron focus:ring-1 focus:ring-citron/30 focus:outline-none text-sm text-ink dark:text-text-primary font-mono transition-colors"
             />
             <span className="material-symbols-outlined absolute right-3 top-2.5 text-text-muted text-lg pointer-events-none">
               lock
@@ -260,17 +265,17 @@ export const LoginCard: React.FC<LoginCardProps> = ({
           ref={submitBtnRef}
           type="submit"
           disabled={isSubmitting}
-          className="w-full mt-2 py-3 px-4 rounded-xl bg-citron text-[#06100c] font-display font-bold text-sm shadow-md hover:bg-citron/90 active:scale-[0.99] disabled:opacity-60 transition-all flex items-center justify-center gap-2 cursor-pointer"
+          className="w-full mt-2 py-3 px-4 rounded-xl bg-citron text-forest-dark font-display font-bold text-sm shadow-md hover:brightness-105 active:scale-[0.99] disabled:opacity-60 transition-all flex items-center justify-center gap-2 cursor-pointer"
         >
           {isSubmitting ? (
             <>
-              <span className="w-4 h-4 border-2 border-[#06100c] border-t-transparent rounded-full animate-spin" />
-              <span>Verifying Argon2id Hash…</span>
+              <span className="w-4 h-4 border-2 border-forest-dark border-t-transparent rounded-full animate-spin" />
+              <span>Authenticating…</span>
             </>
           ) : (
             <>
-              <span className="material-symbols-outlined text-lg">login</span>
-              <span>Authenticate & Enter Portal</span>
+              <span>Sign In to Portal</span>
+              <span className="material-symbols-outlined text-lg">arrow_forward</span>
             </>
           )}
         </button>
@@ -279,10 +284,10 @@ export const LoginCard: React.FC<LoginCardProps> = ({
       {/* Footer Security Notice */}
       <div className="mt-6 pt-4 border-t border-line dark:border-white/[0.08] flex items-center justify-between text-[11px] text-text-muted font-mono">
         <span className="flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-citron" />
-          <span>HTTP-only Session Cookie</span>
+          <span className="w-1.5 h-1.5 rounded-full bg-accent-emerald-bright" />
+          <span>GovCloud Secure Session</span>
         </span>
-        <span>Argon2id Timing-Safe</span>
+        <span>AES-256 / TLS 1.3</span>
       </div>
     </div>
   );

@@ -24,14 +24,13 @@ export const FooterBrand: React.FC<FooterBrandProps> = ({ className = '' }) => {
             SETU-DRR
           </span>
           <span className="text-[11px] font-mono text-ink-muted dark:text-text-muted">
-            v2.4
+            v1.0
           </span>
         </div>
       </Link>
 
       <p className="text-xs text-ink-muted dark:text-text-secondary max-w-md leading-relaxed">
-        Disaster Management Division · Ministry of Home Affairs · Government of India.
-        Frontline hazard intelligence and relocation decision support.
+        SETU - Disaster Risk Reduction · Disaster Management Division · Ministry of Home Affairs · Government of India.
       </p>
     </div>
   );

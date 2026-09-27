@@ -113,7 +113,7 @@ export const REGIONAL_STORIES: Record<ZoneId, ZoneStoryData> = {
         riskSeverity: 'High',
         image: '/stories/north.jpg',
         description:
-          'Generations of apple orchardists and pilgrimage trail keepers faced sudden evacuation orders. The T.E.R.R.A. platform triages high-risk clusters, matching families with stable bedrock plateaus.',
+          'Generations of apple orchardists and pilgrimage trail keepers faced sudden evacuation orders. The SETU-DRR platform triages high-risk clusters, matching families with stable bedrock plateaus.',
         telemetry: [
           { label: 'Evacuated Families', value: '296' },
           { label: 'Temporary Shelters', value: '18 Camps' },
@@ -204,7 +204,7 @@ export const REGIONAL_STORIES: Record<ZoneId, ZoneStoryData> = {
         riskSeverity: 'High',
         image: '/stories/south.jpg',
         description:
-          'Plantation line-houses (layams) historically constructed along low-gradient stream flats absorbed the blunt kinetic force. T.E.R.R.A. guarantees equitable relocation that maintains access to regional plantation employment.',
+          'Plantation line-houses (layams) historically constructed along low-gradient stream flats absorbed the blunt kinetic force. SETU-DRR guarantees equitable relocation that maintains access to regional plantation employment.',
         telemetry: [
           { label: 'Households Relocated', value: '520' },
           { label: 'Relocation Distance', value: '< 12 km' },
@@ -313,7 +313,7 @@ export const REGIONAL_STORIES: Record<ZoneId, ZoneStoryData> = {
         riskSeverity: 'Monitored',
         image: '/stories/east.jpg',
         description:
-          'T.E.R.R.A. prioritized the Barpeta High Ridge site, 14 km inland, protected by natural paleochannel levees with zero historical breach records over the last 70 years.',
+          'SETU-DRR prioritized the Barpeta High Ridge site, 14 km inland, protected by natural paleochannel levees with zero historical breach records over the last 70 years.',
         telemetry: [
           { label: 'Flood Free Margin', value: '+5.5 m AMSL' },
           { label: 'Distance from River', value: '14 km' },
@@ -441,7 +441,7 @@ export const REGIONAL_STORIES: Record<ZoneId, ZoneStoryData> = {
         riskSeverity: 'Monitored',
         image: '/stories/central.jpg',
         description:
-          'Unlike the Himalayan fold mountains or coastal deltas, the Central Indian shield features deep, ancient basalt bedrock with exceptional tectonic stability. It forms the benchmark control region in the T.E.R.R.A. model.',
+          'Unlike the Himalayan fold mountains or coastal deltas, the Central Indian shield features deep, ancient basalt bedrock with exceptional tectonic stability. It forms the benchmark control region in the SETU-DRR model.',
         telemetry: [
           { label: 'Seismic Zone', value: 'Zone II (Lowest)' },
           { label: 'Bedrock Thickness', value: '800+ m Basalt' },

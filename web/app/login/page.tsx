@@ -36,8 +36,8 @@ export default function LoginPage() {
       />
 
       {/* Centered Login Card */}
-      <div className="relative z-10 w-full h-full flex items-center px-6 sm:px-12 lg:px-20 pointer-events-none">
-        <div className="w-full max-w-3xl pointer-events-auto">
+      <div className="relative z-10 w-full h-full flex items-center justify-center lg:justify-start px-6 sm:px-12 lg:px-20 pointer-events-none">
+        <div className="w-full max-w-xl pointer-events-auto">
           <LoginCard
             overviewHref={APP_ROUTES.home}
             govHref={APP_ROUTES.gov}

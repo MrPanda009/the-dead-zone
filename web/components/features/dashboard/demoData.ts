@@ -1,5 +1,5 @@
 /**
- * T.E.R.R.A.: Terrain-based Environmental Risk and Relocation Analytics Platform for India
+ * SETU-DRR: Hazard Red Zone & Relocation Decision Support Platform
  * Prototype Demo Data for Geospatial Hazard Intelligence & Relocation Decision Support
  */
 
