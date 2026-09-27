@@ -595,3 +595,36 @@ class ExternalRelocationRecommendation(Base):
     import_run: Mapped[DataImportRun] = relationship("DataImportRun")
     habitation: Mapped[Habitation] = relationship("Habitation")
     candidate_site: Mapped[CandidateSite] = relationship("CandidateSite")
+
+
+class HealthFacility(Base):
+    __tablename__ = "health_facility"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    nin_n: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    admin_id: Mapped[Optional[int]] = mapped_column(
+        BigInteger, ForeignKey("admin_boundary.id", ondelete="SET NULL"), nullable=True
+    )
+    import_run_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        PG_UUID(as_uuid=True), ForeignKey("data_import_run.id", ondelete="SET NULL"), nullable=True
+    )
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    facility_type: Mapped[str] = mapped_column(String, nullable=False)
+    ownership_type: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    location_type: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    subdistrict: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    address: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    geom: Mapped[Any] = mapped_column(Geometry("POINT", srid=4326), nullable=False)
+    h3_res8: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    is_physical: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    norm_population: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    metadata_: Mapped[dict[str, Any]] = mapped_column(
+        "metadata", JSONB, default=dict, nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+    admin_boundary: Mapped[Optional[AdminBoundary]] = relationship("AdminBoundary")
+
