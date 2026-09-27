@@ -97,3 +97,25 @@ export function overrideSiteCapacity(
   return apiPost<SiteCapacityOverrideResponse>(`/sites/${siteId}/capacity`, overrides, signal);
 }
 
+export interface FetchHealthFacilitiesParams {
+  admin?: number;
+  facility_type?: 'sub_cen' | 'phc' | 'chc' | string;
+}
+
+/**
+ * Spatial GeoJSON endpoint for primary and secondary healthcare facilities.
+ * Supplementary layer indicating IPHS capacity and flood safety status.
+ */
+export function fetchHealthFacilities(
+  params: FetchHealthFacilitiesParams = {},
+  signal?: AbortSignal,
+): Promise<import('./types').HealthFacilitiesGeoJSON> {
+  const { admin, facility_type } = params;
+  return apiGet<import('./types').HealthFacilitiesGeoJSON>(
+    '/sites/facilities/health',
+    { admin, facility_type },
+    signal,
+  );
+}
+
+

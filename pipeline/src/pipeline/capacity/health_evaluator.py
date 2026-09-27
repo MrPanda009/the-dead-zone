@@ -292,7 +292,10 @@ class HealthCapacityEvaluator:
                 SET cc_health = :cc_health,
                     cc_final = :cc_final,
                     binding_constraint = :binding_constraint,
-                    assessment_status = :assessment_status
+                    assessment_status = :assessment_status,
+                    primary_health_facility_id = :primary_health_facility_id,
+                    health_travel_time_hours = :health_travel_time_hours,
+                    health_distance_km = :health_distance_km
                 WHERE id = :id;
             """)
             conn.execute(
@@ -304,6 +307,9 @@ class HealthCapacityEvaluator:
                         "cc_final": s.cc_final,
                         "binding_constraint": s.binding_constraint,
                         "assessment_status": s.assessment_status,
+                        "primary_health_facility_id": s.assigned_facility_id,
+                        "health_travel_time_hours": s.travel_time_hours,
+                        "health_distance_km": s.assigned_dist_km,
                     }
                     for s in site_results
                 ],

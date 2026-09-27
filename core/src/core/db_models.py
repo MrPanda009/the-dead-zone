@@ -403,8 +403,14 @@ class CandidateSite(Base):
     pipeline_run_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         PG_UUID(as_uuid=True), ForeignKey("pipeline_run.id", ondelete="SET NULL"), nullable=True
     )
+    primary_health_facility_id: Mapped[Optional[int]] = mapped_column(
+        BigInteger, ForeignKey("health_facility.id", ondelete="SET NULL"), nullable=True
+    )
+    health_travel_time_hours: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    health_distance_km: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
 
     admin_boundary: Mapped[Optional[AdminBoundary]] = relationship("AdminBoundary")
+    primary_health_facility: Mapped[Optional["HealthFacility"]] = relationship("HealthFacility")
     relocation_plans: Mapped[List[RelocationPlan]] = relationship(
         "RelocationPlan", back_populates="candidate_site"
     )

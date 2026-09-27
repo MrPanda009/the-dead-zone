@@ -962,6 +962,31 @@ export interface components {
              */
             cc_health?: number | null;
             /**
+             * Health Facility Id
+             * @description Database primary key of the physical health facility providing capacity.
+             */
+            health_facility_id?: number | null;
+            /**
+             * Health Facility Name
+             * @description Name of the physical health facility providing capacity.
+             */
+            health_facility_name?: string | null;
+            /**
+             * Health Facility Type
+             * @description Facility classification type (sub_cen, phc, chc).
+             */
+            health_facility_type?: string | null;
+            /**
+             * Health Distance Km
+             * @description Distance to primary health facility in kilometers.
+             */
+            health_distance_km?: number | null;
+            /**
+             * Health Travel Time Minutes
+             * @description Travel time to primary health facility in minutes.
+             */
+            health_travel_time_minutes?: number | null;
+            /**
              * Livelihood Multiplier
              * @description Multiplier for economic connectivity.
              */

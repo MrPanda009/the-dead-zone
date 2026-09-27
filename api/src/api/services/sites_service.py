@@ -160,12 +160,24 @@ class SitesService:
             cc_final_raw = r.get("cc_final")
             cc_land_raw = int(r.get("cc_land") if r.get("cc_land") is not None else 0)
 
+            h_fac_id = int(r["primary_health_facility_id"]) if r.get("primary_health_facility_id") is not None else None
+            h_fac_name = str(r["health_facility_name"]) if r.get("health_facility_name") is not None else None
+            h_fac_type = str(r["health_facility_type"]) if r.get("health_facility_type") is not None else None
+            h_dist = round(float(r["health_distance_km"]), 2) if r.get("health_distance_km") is not None else None
+            h_time_hrs = float(r["health_travel_time_hours"]) if r.get("health_travel_time_hours") is not None else None
+            h_time_mins = int(round(h_time_hrs * 60)) if h_time_hrs is not None else None
+
             capacity_dto = CapacityBreakdownDTO(
                 cc_land=cc_land_raw,
                 land_screening_capacity=cc_land_raw,
                 cc_water=int(cc_water_raw) if cc_water_raw is not None else None,
                 cc_school=int(cc_school_raw) if cc_school_raw is not None else None,
                 cc_health=int(cc_health_raw) if cc_health_raw is not None else None,
+                health_facility_id=h_fac_id,
+                health_facility_name=h_fac_name,
+                health_facility_type=h_fac_type,
+                health_distance_km=h_dist,
+                health_travel_time_minutes=h_time_mins,
                 livelihood_multiplier=float(meta.get("livelihood_multiplier") if meta.get("livelihood_multiplier") is not None else 1.0),
                 cc_final=int(cc_final_raw) if cc_final_raw is not None else None,
                 binding_constraint=binding_enum,
@@ -268,12 +280,24 @@ class SitesService:
             except ValueError:
                 binding_enum = None
 
+        h_fac_id = int(r["primary_health_facility_id"]) if r.get("primary_health_facility_id") is not None else None
+        h_fac_name = str(r["health_facility_name"]) if r.get("health_facility_name") is not None else None
+        h_fac_type = str(r["health_facility_type"]) if r.get("health_facility_type") is not None else None
+        h_dist = round(float(r["health_distance_km"]), 2) if r.get("health_distance_km") is not None else None
+        h_time_hrs = float(r["health_travel_time_hours"]) if r.get("health_travel_time_hours") is not None else None
+        h_time_mins = int(round(h_time_hrs * 60)) if h_time_hrs is not None else None
+
         capacity_dto = CapacityBreakdownDTO(
             cc_land=cc_land_raw,
             land_screening_capacity=cc_land_raw,
             cc_water=int(cc_water_raw) if cc_water_raw is not None else None,
             cc_school=int(cc_school_raw) if cc_school_raw is not None else None,
             cc_health=int(cc_health_raw) if cc_health_raw is not None else None,
+            health_facility_id=h_fac_id,
+            health_facility_name=h_fac_name,
+            health_facility_type=h_fac_type,
+            health_distance_km=h_dist,
+            health_travel_time_minutes=h_time_mins,
             livelihood_multiplier=float(meta.get("livelihood_multiplier") if meta.get("livelihood_multiplier") is not None else 1.0),
             cc_final=int(cc_final_raw) if cc_final_raw is not None else None,
             binding_constraint=binding_enum,

@@ -155,3 +155,32 @@ export type ActiveAlertItem = components['schemas']['ActiveAlertItem'];
 export type ActiveAlertsResponse = components['schemas']['ActiveAlertsResponse'];
 export type ForecastAlertItem = components['schemas']['ForecastAlertItem'];
 export type ForecastAlertsResponse = components['schemas']['ForecastAlertsResponse'];
+
+/* ---- Supplementary Healthcare Facilities (GeoJSON) ---- */
+
+export interface HealthFacilityProperties {
+  id: number;
+  nin?: string | null;
+  name: string;
+  type: string;
+  norm_population: number;
+  flood_safe: boolean;
+  inundation_freq: number;
+  hand_m: number;
+}
+
+export interface HealthFacilityFeature {
+  type: 'Feature';
+  id: number;
+  geometry: {
+    type: 'Point';
+    coordinates: [number, number];
+  };
+  properties: HealthFacilityProperties;
+}
+
+export interface HealthFacilitiesGeoJSON {
+  type: 'FeatureCollection';
+  features: HealthFacilityFeature[];
+}
+

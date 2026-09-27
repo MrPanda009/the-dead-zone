@@ -72,6 +72,11 @@ class SitesRepository:
                 cs.suitability,
                 cs.assessment_status,
                 cs.eligibility_status,
+                cs.primary_health_facility_id,
+                cs.health_distance_km,
+                cs.health_travel_time_hours,
+                hf.name as health_facility_name,
+                hf.facility_type as health_facility_type,
                 cs.metadata as metadata_info,
                 ST_X(cs.centroid::geometry) as lon,
                 ST_Y(cs.centroid::geometry) as lat,
@@ -79,6 +84,8 @@ class SitesRepository:
             FROM habitation h
             JOIN candidate_site cs
               ON ST_DWithin(h.geom_point::geography, cs.centroid::geography, :radius_m)
+            LEFT JOIN health_facility hf
+              ON cs.primary_health_facility_id = hf.id
             WHERE {where_sql}
             ORDER BY cs.suitability DESC NULLS LAST, cs.cc_final DESC NULLS LAST, distance_km ASC, cs.id ASC;
         """
@@ -106,11 +113,18 @@ class SitesRepository:
                 cs.suitability,
                 cs.assessment_status,
                 cs.eligibility_status,
+                cs.primary_health_facility_id,
+                cs.health_distance_km,
+                cs.health_travel_time_hours,
+                hf.name as health_facility_name,
+                hf.facility_type as health_facility_type,
                 cs.metadata as metadata_info,
                 ST_X(cs.centroid::geometry) as lon,
                 ST_Y(cs.centroid::geometry) as lat,
                 ST_AsGeoJSON(cs.geom) as geojson_geom
             FROM candidate_site cs
+            LEFT JOIN health_facility hf
+              ON cs.primary_health_facility_id = hf.id
             WHERE cs.id = :id
             LIMIT 1;
         """

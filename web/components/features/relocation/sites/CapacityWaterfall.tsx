@@ -127,6 +127,24 @@ export const CapacityWaterfall = ({
         </div>
       ) : null}
 
+      {showDimensions && capacity.health_facility_name ? (
+        <div className="flex items-center gap-1.5 text-[10px] text-ink-faint rounded-md bg-surface-1/60 dark:bg-forest-surface/60 px-2 py-1 border border-line/40">
+          <svg className="h-3 w-3 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
+          <span className="truncate">
+            <strong className="font-medium text-ink-muted">{capacity.health_facility_name}</strong>
+            {capacity.health_facility_type ? ` (${capacity.health_facility_type.replace('_', ' ')})` : ''}
+          </span>
+          {capacity.health_distance_km != null ? (
+            <span className="font-mono tabular-nums shrink-0">· {capacity.health_distance_km.toFixed(1)} km</span>
+          ) : null}
+          {capacity.health_travel_time_minutes != null ? (
+            <span className="font-mono tabular-nums shrink-0">· ~{Math.round(capacity.health_travel_time_minutes)} min</span>
+          ) : null}
+        </div>
+      ) : null}
+
       <p className={['text-[10px] leading-relaxed text-ink-faint', classNames.footnote ?? ''].join(' ')}>
         Capacity is the minimum across dimensions, scaled by a livelihood multiplier of{' '}
         <span className="font-mono tabular-nums">{capacity.livelihood_multiplier.toFixed(2)}</span>.
