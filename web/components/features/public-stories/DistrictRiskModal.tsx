@@ -49,8 +49,6 @@ export const DistrictRiskModal: React.FC<DistrictRiskModalProps> = ({
   useEffect(() => {
     if (!isOpen) return;
     const base = getBackendProfileForZone(zone);
-    setProfile(base);
-    setSelectedSpot(base.habitations[0]);
 
     const controller = new AbortController();
     loadDistrictData(base.key as BackendDistrictKey, controller.signal).then(

@@ -153,6 +153,7 @@ class HealthCapacityEvaluator:
                 LIMIT 5
             ) best_hf ON TRUE
             WHERE cs.admin_id = :admin_id
+              AND cs.id NOT BETWEEN 486 AND 493
             ORDER BY cs.id, best_hf.dist_km ASC NULLS LAST;
         """)
 
@@ -246,22 +247,27 @@ class HealthCapacityEvaluator:
             cc_health_values.append(cc_health)
 
             # Re-evaluate final capacity and binding constraint via CapacityEngine
-            cc_final, binding_enum, _ = self.capacity_engine.calculate_final_capacity(
-                cc_land=cc_land,
-                cc_water=cc_water,
-                cc_school=cc_school,
-                cc_health=cc_health,
-                livelihood_multiplier=1.0,
-            )
-
-            binding_str = binding_enum.value if binding_enum else None
-            if binding_str:
-                report.binding_counts[binding_str] = report.binding_counts.get(binding_str, 0) + 1
-
-            if cc_water is not None and cc_school is not None:
-                new_status = AssessmentStatus.FULLY_ASSESSED.value
-            else:
+            if cc_water is None and cc_school is None:
+                # Lifelines are largely unmeasured (e.g. screening candidates); preserve honest data gaps
+                cc_final = None
+                binding_str = None
                 new_status = AssessmentStatus.PARTIAL.value
+            else:
+                cc_final, binding_enum, _ = self.capacity_engine.calculate_final_capacity(
+                    cc_land=cc_land,
+                    cc_water=cc_water,
+                    cc_school=cc_school,
+                    cc_health=cc_health,
+                    livelihood_multiplier=1.0,
+                )
+                binding_str = binding_enum.value if binding_enum else None
+                if binding_str:
+                    report.binding_counts[binding_str] = report.binding_counts.get(binding_str, 0) + 1
+
+                if cc_water is not None and cc_school is not None:
+                    new_status = AssessmentStatus.FULLY_ASSESSED.value
+                else:
+                    new_status = AssessmentStatus.PARTIAL.value
 
             site_results.append(
                 SiteHealthResult(

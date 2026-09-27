@@ -30,7 +30,7 @@ class TestRepositoryMigrationIntegrity:
 
         sql_files = discover_and_validate_migrations(migrations_dir)
 
-        assert len(sql_files) == 15, f"Expected exactly 15 canonical migrations, found {len(sql_files)}"
+        assert len(sql_files) == 18, f"Expected exactly 18 canonical migrations, found {len(sql_files)}"
 
         expected_sequence = [
             (1, "001_extensions"),
@@ -48,6 +48,9 @@ class TestRepositoryMigrationIntegrity:
             (13, "013_barpeta_relocation_integration"),
             (14, "014_derived_settlement_habitations"),
             (15, "015_derived_candidate_sites"),
+            (16, "016_osm_infrastructure_screening"),
+            (17, "017_health_facilities"),
+            (18, "018_candidate_site_health_link"),
         ]
 
         for (exp_seq, exp_stem), p in zip(expected_sequence, sql_files):

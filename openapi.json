@@ -1131,6 +1131,98 @@
         }
       }
     },
+    "/sites/facilities/health": {
+      "get": {
+        "tags": [
+          "Candidate Sites & Capacity"
+        ],
+        "summary": "Get spatial healthcare facilities GeoJSON",
+        "description": "Returns GeoJSON FeatureCollection of primary and secondary healthcare facilities with IPHS norms and flood safety flags.",
+        "operationId": "get_health_facilities_geojson_sites_facilities_health_get",
+        "parameters": [
+          {
+            "name": "admin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Administrative boundary ID or LGD code to filter facilities.",
+              "title": "Admin"
+            },
+            "description": "Administrative boundary ID or LGD code to filter facilities."
+          },
+          {
+            "name": "facility_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by facility type ('sub_cen', 'phc', 'chc').",
+              "title": "Facility Type"
+            },
+            "description": "Filter by facility type ('sub_cen', 'phc', 'chc')."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Health Facilities Geojson Sites Facilities Health Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error - Request parameter or payload validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error - An unexpected system or database error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable - No valid serving version is active. Pipeline data is not ready.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/sites/{id}": {
       "get": {
         "tags": [
@@ -3008,6 +3100,68 @@
             ],
             "title": "Cc Health",
             "description": "Households supportable by spare primary health capacity (None if unmeasured)."
+          },
+          "health_facility_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Health Facility Id",
+            "description": "Assigned primary health facility ID (None if unassigned or unserved)."
+          },
+          "health_facility_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Health Facility Name",
+            "description": "Assigned primary health facility name."
+          },
+          "health_facility_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Health Facility Type",
+            "description": "Assigned health facility tier ('sub_cen', 'phc', 'chc')."
+          },
+          "health_distance_km": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Health Distance Km",
+            "description": "Physical distance to assigned healthcare facility in km."
+          },
+          "health_travel_time_minutes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Health Travel Time Minutes",
+            "description": "WHO-Tobler anisotropic walking/transit time in minutes."
           },
           "livelihood_multiplier": {
             "type": "number",

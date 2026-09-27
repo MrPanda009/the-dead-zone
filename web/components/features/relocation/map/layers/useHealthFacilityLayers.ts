@@ -27,10 +27,7 @@ export function useHealthFacilityLayers({
   const [facilities, setFacilities] = useState<HealthFacilityFeature[]>([]);
 
   useEffect(() => {
-    if (!enabled) {
-      setFacilities([]);
-      return;
-    }
+    if (!enabled) return;
 
     const controller = new AbortController();
     fetchHealthFacilities(
