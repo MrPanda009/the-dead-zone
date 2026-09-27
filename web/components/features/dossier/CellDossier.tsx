@@ -5,7 +5,7 @@ import { ErrorState } from '@/components/common/ErrorState';
 import { ScreeningGradeNotice } from '@/components/common/ScreeningGradeNotice';
 import { useHazardCellDetail } from '@/lib/hooks/useHazardCellDetail';
 import { useForecastAlerts } from '@/lib/hooks/useForecastAlerts';
-import type { HazardType, ForecastAlertItem } from '@/lib/api/types';
+import type { HazardType, ForecastAlertItem, HazardCell } from '@/lib/api/types';
 
 import { CoverageNotice } from './CoverageNotice';
 import { DossierEmptyState } from './DossierEmptyState';
@@ -24,6 +24,8 @@ export interface CellDossierProps {
   forecastAlert?: ForecastAlertItem | null;
   /** Optional complete list of forecast items */
   forecastItems?: ForecastAlertItem[];
+  /** Optional active cell data used as fallback when no individual row exists */
+  fallbackCell?: HazardCell | null;
   /** Optional callback to inspect Wayanad high risk cell from empty state */
   onInspectWayanad?: () => void;
   className?: string;
@@ -45,11 +47,12 @@ export const CellDossier: React.FC<CellDossierProps> = ({
   przThreshold = 0.85,
   forecastAlert,
   forecastItems,
+  fallbackCell,
   onInspectWayanad,
   className = '',
   classNames = {},
 }) => {
-  const { detail, isLoading, error } = useHazardCellDetail(h3, hazardType);
+  const { detail, isLoading, error } = useHazardCellDetail(h3, hazardType, fallbackCell);
 
   // Auto-fetch Wayanad forecast alerts if not provided by parent
   const internalForecast = useForecastAlerts({

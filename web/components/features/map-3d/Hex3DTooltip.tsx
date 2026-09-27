@@ -3,6 +3,7 @@
 import React, { useRef } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
+import { getResolution } from 'h3-js';
 import type { HazardCell, ForecastAlertItem } from '@/lib/api/types';
 
 export interface Hex3DTooltipProps {
@@ -53,7 +54,7 @@ export const Hex3DTooltip: React.FC<Hex3DTooltipProps> = ({
     >
       <div className="flex items-center justify-between gap-2 border-b border-line dark:border-white/10 pb-1.5 mb-2">
         <span className="font-mono text-[11px] font-semibold text-text-muted">
-          H3 :: {cell.h3.slice(0, 10)}...
+          H3 (R{getResolution(cell.h3)}) :: {cell.h3.slice(0, 10)}...
         </span>
         <div className="flex items-center gap-1">
           {hasLiveForecast && (

@@ -101,6 +101,7 @@ export const HazardWorkspace = ({
 
   const przThreshold = data?.legend.prz_susceptibility_threshold ?? 0.85;
   const breaks = useMemo(() => data?.legend.breaks ?? [], [data]);
+  const selectedCell = useMemo(() => cells.find((c) => c.h3 === selectedH3) ?? null, [cells, selectedH3]);
 
   return (
     <ThreePanelLayout
@@ -189,6 +190,7 @@ export const HazardWorkspace = ({
               hazardType={hazardType}
               przThreshold={przThreshold}
               forecastItems={forecast.items}
+              fallbackCell={selectedCell}
             />
           </div>
         </RightPanel>

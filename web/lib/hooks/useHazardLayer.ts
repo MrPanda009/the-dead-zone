@@ -53,32 +53,75 @@ export function useHazardLayer(options: UseHazardLayerOptions = {}): UseHazardLa
   const [reloadToken, setReloadToken] = useState(0);
 
   const bboxKey = bbox ? bbox.join(',') : '';
-  const requestKey = [hazardType, bboxKey, admin ?? '', minSusceptibility ?? '', limit, reloadToken].join(
-    '|',
-  );
+  const requestKey = [
+    hazardType,
+    resolution,
+    bboxKey,
+    admin ?? '',
+    minSusceptibility ?? '',
+    limit,
+    reloadToken,
+  ].join('|');
 
   useEffect(() => {
     if (!enabled) return;
 
     const controller = new AbortController();
 
-    fetchHazardLayer(
-      {
-        hazardType,
-        res: SOURCE_RESOLUTION,
-        bbox,
-        admin,
-        minSusceptibility,
-        limit,
-      },
-      controller.signal,
-    )
-      .then((data) => {
+    async function load() {
+      // 1. Try requesting the exact requested resolution from the backend
+      try {
+        const directData = await fetchHazardLayer(
+          {
+            hazardType,
+            res: resolution,
+            bbox,
+            admin,
+            minSusceptibility,
+            limit,
+          },
+          controller.signal,
+        );
         if (controller.signal.aborted) return;
-        setState({ key: requestKey, data, error: null });
-      })
-      .catch((cause: unknown) => {
+        setState({ key: requestKey, data: directData, error: null });
+      } catch (cause) {
         if (controller.signal.aborted) return;
+        // If the requested resolution was not 8 and backend returned DATA_UNAVAILABLE or 404,
+        // fall back to fetching SOURCE_RESOLUTION (8) and roll up in memory.
+        const isDataUnavailable =
+          cause instanceof ApiError &&
+          (cause.code === 'DATA_UNAVAILABLE' || cause.status === 404 || cause.status === 422);
+
+        if (resolution !== SOURCE_RESOLUTION && isDataUnavailable) {
+          try {
+            const fallbackData = await fetchHazardLayer(
+              {
+                hazardType,
+                res: SOURCE_RESOLUTION,
+                bbox,
+                admin,
+                minSusceptibility,
+                limit,
+              },
+              controller.signal,
+            );
+            if (controller.signal.aborted) return;
+            setState({ key: requestKey, data: fallbackData, error: null });
+            return;
+          } catch (fallbackCause) {
+            if (controller.signal.aborted) return;
+            setState({
+              key: requestKey,
+              data: null,
+              error:
+                fallbackCause instanceof ApiError
+                  ? fallbackCause
+                  : new ApiError('Unexpected error loading the hazard layer.', 0),
+            });
+            return;
+          }
+        }
+
         setState({
           key: requestKey,
           data: null,
@@ -87,26 +130,43 @@ export function useHazardLayer(options: UseHazardLayerOptions = {}): UseHazardLa
               ? cause
               : new ApiError('Unexpected error loading the hazard layer.', 0),
         });
-      });
+      }
+    }
+
+    load();
 
     return () => controller.abort();
     // `bbox` is an array literal at most call sites; `bboxKey` is its stable identity.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [requestKey, enabled, hazardType, bboxKey, admin, minSusceptibility, limit]);
+  }, [requestKey, enabled, hazardType, resolution, bboxKey, admin, minSusceptibility, limit]);
 
   const isCurrent = state?.key === requestKey;
-  const data = isCurrent ? state.data : null;
+  const rawData = isCurrent ? state.data : null;
   const error = isCurrent ? state.error : null;
 
   const cells = useMemo(() => {
-    if (!data) return [];
-    if (resolution >= SOURCE_RESOLUTION) return data.cells;
-    return rollupHazardCells(data.cells, {
-      targetResolution: resolution,
-      sourceResolution: data.res,
-      aggregation,
-    });
-  }, [data, resolution, aggregation]);
+    if (!rawData) return [];
+    if (rawData.res === resolution) return rawData.cells;
+    if (resolution < rawData.res) {
+      return rollupHazardCells(rawData.cells, {
+        targetResolution: resolution,
+        sourceResolution: rawData.res,
+        aggregation,
+      });
+    }
+    return rawData.cells;
+  }, [rawData, resolution, aggregation]);
+
+  const data = useMemo(() => {
+    if (!rawData) return null;
+    if (rawData.res === resolution) return rawData;
+    return {
+      ...rawData,
+      res: resolution,
+      count: cells.length,
+      cells,
+    };
+  }, [rawData, resolution, cells]);
 
   const refetch = useCallback(() => setReloadToken((token) => token + 1), []);
 

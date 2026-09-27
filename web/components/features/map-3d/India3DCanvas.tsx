@@ -40,6 +40,8 @@ export interface India3DCanvasProps {
   hoveredH3?: string | null;
   onSelectCell?: (h3: string | null) => void;
   onHoverCell?: (h3: string | null) => void;
+  resolution?: number;
+  onResolutionChange?: (resolution: number) => void;
   isLoading?: boolean;
   errorMessage?: string | null;
   forecastItems?: ForecastAlertItem[];
@@ -54,6 +56,8 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
   hoveredH3 = null,
   onSelectCell,
   onHoverCell,
+  resolution = 8,
+  onResolutionChange,
   isLoading = false,
   forecastItems,
   className = '',
@@ -477,6 +481,8 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
           isTopDown={isTopDown}
           onToggleTopDown={handleToggleTopDown}
           onResetCamera={handleResetCamera}
+          resolution={resolution}
+          onResolutionChange={onResolutionChange}
           isLoading={isLoading}
           cellCount={cells.length}
         />

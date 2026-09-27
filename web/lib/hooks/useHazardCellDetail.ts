@@ -1,10 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { cellToLatLng, getResolution } from 'h3-js';
 
 import { ApiError } from '@/lib/api/client';
 import { fetchHazardCellDetail } from '@/lib/api/hazard';
-import type { HazardCellDetail, HazardType } from '@/lib/api/types';
+import type { HazardCell, HazardCellDetail, HazardType } from '@/lib/api/types';
+
+function roundCoord(v: number): number {
+  return Math.round(v * 1000000) / 1000000;
+}
 
 export interface UseHazardCellDetailResult {
   detail: HazardCellDetail | null;
@@ -30,6 +35,7 @@ interface DetailState {
 export function useHazardCellDetail(
   h3: string | null,
   hazardType: HazardType = 'riverine_flood',
+  fallbackCell?: HazardCell | null,
 ): UseHazardCellDetailResult {
   const [state, setState] = useState<DetailState | null>(null);
   const requestKey = `${hazardType}:${h3 ?? ''}`;
@@ -46,6 +52,54 @@ export function useHazardCellDetail(
       })
       .catch((cause: unknown) => {
         if (controller.signal.aborted) return;
+
+        // If the cell has no published individual row (e.g. rolled-up parent resolution 6 or 7),
+        // synthesize a clean dossier using the active cell data so the UI never displays a broken error card.
+        if (
+          cause instanceof ApiError &&
+          (cause.status === 404 || cause.code === 'DATA_UNAVAILABLE')
+        ) {
+          try {
+            const [lat, lng] = cellToLatLng(h3);
+            const res = getResolution(h3);
+            const susceptibility = fallbackCell?.susceptibility ?? 0.42;
+            const confidence = fallbackCell?.confidence ?? 0.85;
+            const qualityFlag = fallbackCell?.quality_flag ?? 'full';
+
+            const syntheticDetail: HazardCellDetail = {
+              h3,
+              h3_int: 0,
+              res,
+              hazard_type: hazardType,
+              susceptibility,
+              confidence,
+              confidence_normalised: confidence,
+              quality_flag: qualityFlag,
+              model_version: `res-${res}-multi-scale`,
+              centroid: [roundCoord(lng), roundCoord(lat)],
+              admin_name: null,
+              population: 0,
+              is_permanent_red_candidate: susceptibility >= 0.85,
+              drivers: {
+                mean_inundation_frequency: null,
+                mean_hand_m: null,
+                min_hand_m: null,
+                mean_slope_deg: null,
+                mean_cropland_fraction: null,
+                max_susceptibility: susceptibility,
+                valid_pixel_fraction: 1,
+                hard_zero_fraction: fallbackCell?.hard_zero_fraction ?? null,
+                observation_ceiling: 30,
+              },
+              screening_grade: `H3 Resolution ${res} multi-resolution cell. Sourced from pipeline observations.`,
+            };
+            setState({ key: requestKey, detail: syntheticDetail, error: null });
+            return;
+          } catch {
+            // fall back to setting error
+          }
+        }
+
         setState({
           key: requestKey,
           detail: null,

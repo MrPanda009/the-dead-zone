@@ -101,6 +101,7 @@ export const GovWorkspace: React.FC<GovWorkspaceProps> = ({
 
   const przThreshold = data?.legend.prz_susceptibility_threshold ?? 0.85;
   const breaks = useMemo(() => data?.legend.breaks ?? [], [data]);
+  const selectedCell = useMemo(() => cells.find((c) => c.h3 === selectedH3) ?? null, [cells, selectedH3]);
 
   // 1. Initial auth loading skeleton
   if (authLoading) {
@@ -242,6 +243,8 @@ export const GovWorkspace: React.FC<GovWorkspaceProps> = ({
               hoveredH3={hoveredH3}
               onSelectCell={setSelectedH3}
               onHoverCell={setHoveredH3}
+              resolution={display.resolution}
+              onResolutionChange={(res) => handleDisplayChange({ resolution: res })}
               isLoading={isLoading}
               errorMessage={error?.message ?? null}
               forecastItems={forecast.items}
@@ -279,6 +282,7 @@ export const GovWorkspace: React.FC<GovWorkspaceProps> = ({
             hazardType={hazardType}
             przThreshold={przThreshold}
             forecastItems={forecast.items}
+            fallbackCell={selectedCell}
             onInspectWayanad={handleInspectWayanad}
           />
         </RightPanel>

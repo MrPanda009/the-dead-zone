@@ -9,6 +9,8 @@ export interface Map3DControlBarProps {
   isTopDown?: boolean;
   onToggleTopDown?: () => void;
   onResetCamera?: () => void;
+  resolution?: number;
+  onResolutionChange?: (resolution: number) => void;
   isLoading?: boolean;
   cellCount?: number;
   className?: string;
@@ -23,6 +25,8 @@ export const Map3DControlBar: React.FC<Map3DControlBarProps> = ({
   isTopDown = false,
   onToggleTopDown,
   onResetCamera,
+  resolution = 8,
+  onResolutionChange,
   isLoading = false,
   cellCount = 0,
   className = '',
@@ -73,6 +77,31 @@ export const Map3DControlBar: React.FC<Map3DControlBarProps> = ({
             </>
           )}
         </div>
+
+        {/* H3 Resolution Stepper (R6, R7, R8) */}
+        {onResolutionChange && (
+          <div className="flex items-center gap-1 p-0.5 rounded-xl bg-surface-1 dark:bg-white/5 border border-line dark:border-white/10">
+            <span className="text-[10px] font-mono text-text-muted px-1.5 font-bold">H3:</span>
+            {([6, 7, 8] as const).map((r) => {
+              const isSelected = resolution === r;
+              return (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => onResolutionChange(r)}
+                  className={`px-2 py-0.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
+                    isSelected
+                      ? 'bg-citron text-forest-dark shadow-sm ring-1 ring-citron/50'
+                      : 'text-text-secondary hover:text-text-primary hover:bg-surface-2 dark:hover:bg-white/5'
+                  }`}
+                  title={`H3 Resolution ${r} (${r === 8 ? 'Fine ~0.7 km²' : r === 7 ? 'Medium ~5 km²' : 'Regional ~36 km²'})`}
+                >
+                  R{r}
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {/* View Perspective Toggle */}
         {onToggleTopDown && (
