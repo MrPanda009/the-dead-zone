@@ -46,7 +46,7 @@ export const LayerStatsPanel = ({
     <div className={['flex flex-col gap-2', classNames.root ?? '', className].filter(Boolean).join(' ')}>
       <SectionHeader
         title={title}
-        description={`${layer.model_version} · resolution ${layer.res}`}
+        description={`H3 Resolution R${layer.res}`}
       />
       <div className={['grid grid-cols-2 gap-2', classNames.grid ?? ''].join(' ')}>
         <MetricCard

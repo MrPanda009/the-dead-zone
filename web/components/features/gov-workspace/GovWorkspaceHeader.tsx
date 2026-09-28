@@ -15,9 +15,7 @@ export interface GovWorkspaceHeaderProps {
   viewMode: '3d' | 'gis';
   onViewModeChange: (mode: '3d' | 'gis') => void;
   hazardType: HazardType;
-  modelVersion?: string;
   isLoading?: boolean;
-  cellCount?: number;
   homeHref?: string;
   storiesHref?: string;
   officerId?: string;
@@ -30,9 +28,7 @@ export const GovWorkspaceHeader: React.FC<GovWorkspaceHeaderProps> = ({
   viewMode,
   onViewModeChange,
   hazardType,
-  modelVersion,
   isLoading = false,
-  cellCount = 0,
   homeHref = '/',
   storiesHref = '/stories',
   officerId = 'NDRF-OFFICER-894',
@@ -90,7 +86,6 @@ export const GovWorkspaceHeader: React.FC<GovWorkspaceHeaderProps> = ({
           <Badge variant="info">
             {HAZARD_LABELS[hazardType] ?? hazardType}
           </Badge>
-          {modelVersion && <Badge variant="neutral">{modelVersion}</Badge>}
         </div>
 
         {/* Wayanad Live Forecast Action Pill */}
@@ -142,30 +137,35 @@ export const GovWorkspaceHeader: React.FC<GovWorkspaceHeaderProps> = ({
 
       {/* 3. Right Action Tools */}
       <div className="flex items-center gap-2.5" data-header-elem>
-        {/* Stream Status */}
-        <div className="hidden lg:flex items-center gap-1.5 text-[11px] font-mono text-text-muted px-2 py-1 rounded-lg bg-surface-1 border border-line">
-          {isLoading ? (
-            <>
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
-              <span className="text-amber-400">STREAMING…</span>
-            </>
-          ) : (
-            <>
-              <span className="w-1.5 h-1.5 rounded-full bg-citron" />
-              <span>{cellCount > 0 ? 'STREAM ACTIVE' : 'STANDBY'}</span>
-            </>
-          )}
-        </div>
+        {/* Portal Navigation Links */}
+        <nav className="flex items-center gap-1.5" aria-label="Portal Navigation">
+          <Link
+            href={homeHref}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono text-text-secondary hover:text-text-primary hover:bg-surface-1 border border-line transition-colors cursor-pointer"
+            title="Return to Home Overview"
+          >
+            <span className="material-symbols-outlined text-xs">home</span>
+            <span className="hidden sm:inline">Home</span>
+          </Link>
 
-        {/* Public Stories Link */}
-        <Link
-          href={storiesHref}
-          className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono text-text-secondary hover:text-text-primary hover:bg-surface-1 border border-line transition-colors"
-          title="Switch to Public Citizen Stories Portal"
-        >
-          <span className="material-symbols-outlined text-xs">auto_stories</span>
-          <span>Stories</span>
-        </Link>
+          <Link
+            href="/relocation"
+            className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono text-text-secondary hover:text-text-primary hover:bg-surface-1 border border-line transition-colors cursor-pointer"
+            title="Relocation Solver Grid"
+          >
+            <span className="material-symbols-outlined text-xs">moving</span>
+            <span>Relocation</span>
+          </Link>
+
+          <Link
+            href={storiesHref}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono text-text-secondary hover:text-text-primary hover:bg-surface-1 border border-line transition-colors cursor-pointer"
+            title="Tourist & Citizen Advisory Stories"
+          >
+            <span className="material-symbols-outlined text-xs">auto_stories</span>
+            <span>Stories</span>
+          </Link>
+        </nav>
 
         {/* Universal Theme Toggle */}
         <ThemeToggle />

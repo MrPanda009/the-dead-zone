@@ -357,6 +357,49 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
     else handleSelectPreset(REGIONAL_CAMERA_PRESETS.national);
   }, [fitToBounds, handleSelectPreset]);
 
+  // Dedicated 3D Zoom In and Out Controls
+  const handleZoomIn = useCallback(() => {
+    if (!cameraRef.current || !controlsRef.current) return;
+    const camera = cameraRef.current;
+    const target = controlsRef.current.target;
+    const offset = camera.position.clone().sub(target);
+    const newOffset = offset.clone().multiplyScalar(0.7);
+    if (newOffset.length() < 3) return;
+
+    const nextPos = target.clone().add(newOffset);
+    gsap.to(camera.position, {
+      x: nextPos.x,
+      y: nextPos.y,
+      z: nextPos.z,
+      duration: 0.35,
+      ease: 'power2.out',
+      onUpdate: () => {
+        controlsRef.current?.update();
+      },
+    });
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    if (!cameraRef.current || !controlsRef.current) return;
+    const camera = cameraRef.current;
+    const target = controlsRef.current.target;
+    const offset = camera.position.clone().sub(target);
+    const newOffset = offset.clone().multiplyScalar(1.4);
+    if (newOffset.length() > 350) return;
+
+    const nextPos = target.clone().add(newOffset);
+    gsap.to(camera.position, {
+      x: nextPos.x,
+      y: nextPos.y,
+      z: nextPos.z,
+      duration: 0.35,
+      ease: 'power2.out',
+      onUpdate: () => {
+        controlsRef.current?.update();
+      },
+    });
+  }, []);
+
 
   // Pointer Picking — resolved analytically by the grid controller.
   const pickAtClient = useCallback((clientX: number, clientY: number) => {
@@ -433,6 +476,8 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
           activePresetId={activePreset}
           onSelectPreset={handleSelectPreset}
           onResetCamera={handleResetCamera}
+          onZoomIn={handleZoomIn}
+          onZoomOut={handleZoomOut}
           resolution={resolution}
           onResolutionChange={onResolutionChange}
           isLoading={isLoading}

@@ -7,6 +7,8 @@ export interface Map3DControlBarProps {
   activePresetId?: string;
   onSelectPreset: (preset: CameraRegionPreset) => void;
   onResetCamera?: () => void;
+  onZoomIn?: () => void;
+  onZoomOut?: () => void;
   resolution?: number;
   onResolutionChange?: (resolution: number) => void;
   isLoading?: boolean;
@@ -21,6 +23,8 @@ export const Map3DControlBar: React.FC<Map3DControlBarProps> = ({
   activePresetId = 'national',
   onSelectPreset,
   onResetCamera,
+  onZoomIn,
+  onZoomOut,
   resolution = 8,
   onResolutionChange,
   isLoading = false,
@@ -98,6 +102,34 @@ export const Map3DControlBar: React.FC<Map3DControlBarProps> = ({
                 </button>
               );
             })}
+          </div>
+        )}
+
+        {/* Zoom In & Out Controls */}
+        {(onZoomIn || onZoomOut) && (
+          <div className="flex items-center gap-0.5 p-0.5 rounded-xl bg-surface-1 dark:bg-white/5 border border-line dark:border-white/10">
+            {onZoomIn && (
+              <button
+                type="button"
+                onClick={onZoomIn}
+                className="w-7 h-7 flex items-center justify-center rounded-lg text-text-secondary hover:text-text-primary hover:bg-surface-2 dark:hover:bg-white/10 transition-colors cursor-pointer"
+                title="Zoom In (+)"
+                aria-label="Zoom In"
+              >
+                <span className="material-symbols-outlined text-base">add</span>
+              </button>
+            )}
+            {onZoomOut && (
+              <button
+                type="button"
+                onClick={onZoomOut}
+                className="w-7 h-7 flex items-center justify-center rounded-lg text-text-secondary hover:text-text-primary hover:bg-surface-2 dark:hover:bg-white/10 transition-colors cursor-pointer"
+                title="Zoom Out (-)"
+                aria-label="Zoom Out"
+              >
+                <span className="material-symbols-outlined text-base">remove</span>
+              </button>
+            )}
           </div>
         )}
 

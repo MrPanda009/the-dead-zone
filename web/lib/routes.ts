@@ -24,10 +24,10 @@ export type AppRoute = (typeof APP_ROUTES)[AppRouteKey];
  * is the case for the SAR mesh sweep, which has no route of its own).
  */
 export const NAV_TABS: NavTabItem[] = [
-  { id: 'relocation', label: 'Relocation', icon: 'moving', href: APP_ROUTES.relocation },
-  { id: 'data', label: 'Data', icon: 'database', href: APP_ROUTES.gov },
-  { id: 'research', label: 'Research', icon: 'menu_book', href: APP_ROUTES.stories },
-  { id: 'about', label: 'About', icon: 'info', href: APP_ROUTES.about },
+  { id: 'gov', label: '3D & GIS Map', icon: 'view_in_ar', href: APP_ROUTES.gov },
+  { id: 'relocation', label: 'Relocation Solver', icon: 'moving', href: APP_ROUTES.relocation },
+  { id: 'stories', label: 'Tourist Stories', icon: 'auto_stories', href: APP_ROUTES.stories },
+  { id: 'about', label: 'About SETU', icon: 'info', href: APP_ROUTES.about },
 ];
 
 /** Maps a pathname back to the tab that should read as selected. */

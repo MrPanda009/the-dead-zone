@@ -45,7 +45,7 @@ export const QuantileLegend = ({
   breaks,
   domain,
   quantiles,
-  title = 'Flood susceptibility',
+  title = 'Susceptibility Range',
   description,
   ramp = SUSCEPTIBILITY_RAMP,
   classCounts,

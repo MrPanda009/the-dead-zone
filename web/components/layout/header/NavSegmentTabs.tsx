@@ -42,10 +42,10 @@ export interface NavSegmentTabsProps {
  * The canonical list (with routes) lives in `@/lib/routes`.
  */
 export const DEFAULT_NAV_TABS: NavTabItem[] = [
-  { id: 'relocation', label: 'Relocation', icon: 'moving', href: '/relocation' },
-  { id: 'data', label: 'Data', icon: 'database', href: '/gov' },
-  { id: 'research', label: 'Research', icon: 'menu_book', href: '/stories' },
-  { id: 'about', label: 'About', icon: 'info', href: '/about' },
+  { id: 'gov', label: '3D & GIS Map', icon: 'view_in_ar', href: '/gov' },
+  { id: 'relocation', label: 'Relocation Solver', icon: 'moving', href: '/relocation' },
+  { id: 'stories', label: 'Tourist Stories', icon: 'auto_stories', href: '/stories' },
+  { id: 'about', label: 'About SETU', icon: 'info', href: '/about' },
 ];
 
 /**

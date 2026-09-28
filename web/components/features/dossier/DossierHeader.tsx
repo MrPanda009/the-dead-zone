@@ -1,7 +1,6 @@
 'use client';
 
 import { Badge } from '@/components/ui/Badge';
-import { CoverageStatusPill } from '@/components/common/StatusPill';
 import type { HazardCellDetail } from '@/lib/api/types';
 import { HAZARD_LABELS } from '@/lib/map/constants';
 import { formatH3 } from '@/lib/map/format';
@@ -30,7 +29,6 @@ export const DossierHeader = ({ detail, className = '', classNames = {} }: Dossi
           {detail.centroid[0].toFixed(4)}
         </p>
       </div>
-      <CoverageStatusPill flag={detail.quality_flag} showDescription />
     </div>
 
     <div className={['flex flex-wrap gap-1.5', classNames.badges ?? ''].join(' ')}>
@@ -40,9 +38,6 @@ export const DossierHeader = ({ detail, className = '', classNames = {} }: Dossi
           PRZ candidate
         </Badge>
       ) : null}
-      <Badge variant="neutral" title={`Model version ${detail.model_version}`}>
-        {detail.model_version}
-      </Badge>
     </div>
   </div>
 );
