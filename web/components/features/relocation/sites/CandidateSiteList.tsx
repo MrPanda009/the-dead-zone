@@ -72,13 +72,18 @@ export const CandidateSiteList = ({
   useGSAP(
     () => {
       if (!animate || sites.length === 0) return;
-      gsap.from('[data-site-card]', {
-        y: 10,
-        opacity: 0,
-        duration,
-        stagger,
-        ease: 'power2.out',
-      });
+      gsap.fromTo(
+        '[data-site-card]',
+        { y: 10, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration,
+          stagger,
+          ease: 'power2.out',
+          clearProps: 'opacity,transform',
+        }
+      );
     },
     { scope: rootRef, dependencies: [sites, animate, duration, stagger] },
   );

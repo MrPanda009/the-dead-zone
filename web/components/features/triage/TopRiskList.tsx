@@ -73,13 +73,18 @@ export const TopRiskList = ({
   useGSAP(
     () => {
       if (!animate || ranked.length === 0) return;
-      gsap.from('[data-risk-row]', {
-        y: 6,
-        opacity: 0,
-        duration,
-        stagger,
-        ease: 'power2.out',
-      });
+      gsap.fromTo(
+        '[data-risk-row]',
+        { y: 6, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration,
+          stagger,
+          ease: 'power2.out',
+          clearProps: 'opacity,transform',
+        }
+      );
     },
     { scope: rootRef, dependencies: [ranked, animate, duration, stagger] },
   );

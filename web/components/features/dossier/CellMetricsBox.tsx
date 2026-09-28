@@ -51,13 +51,18 @@ export const CellMetricsBox: React.FC<CellMetricsBoxProps> = ({
   useGSAP(
     () => {
       if (!containerRef.current) return;
-      gsap.from('[data-metric-elem]', {
-        y: 8,
-        opacity: 0,
-        duration: 0.35,
-        stagger: 0.04,
-        ease: 'power2.out',
-      });
+      gsap.fromTo(
+        '[data-metric-elem]',
+        { y: 8, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration: 0.25,
+          stagger: 0.03,
+          ease: 'power2.out',
+          clearProps: 'opacity,transform',
+        }
+      );
     },
     { scope: containerRef, dependencies: [detail.h3, forecastAlert?.h3] },
   );

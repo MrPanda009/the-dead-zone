@@ -7,7 +7,7 @@ import { usePrefersReducedMotion } from '@/lib/hooks/usePrefersReducedMotion';
 import type { AboutHeroProps } from './types';
 
 export const AboutHero: React.FC<AboutHeroProps> = ({
-  eyebrow = 'ABOUT SETU-DRR',
+  eyebrow = 'ABOUT TERRA',
   headline = (
     <>
       Building safer decisions
@@ -15,7 +15,7 @@ export const AboutHero: React.FC<AboutHeroProps> = ({
       for a changing world.
     </>
   ),
-  description = 'SETU - Disaster Risk Reduction turns complex disaster data into clear, actionable decisions — helping communities prepare, adapt, and find safer places to call home.',
+  description = 'TERRA turns complex disaster data into clear, actionable decisions — helping communities prepare, adapt, and find safer places to call home.',
   className = '',
   classNames = {},
   animation = {},

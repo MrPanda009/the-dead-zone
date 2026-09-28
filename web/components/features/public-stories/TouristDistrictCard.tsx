@@ -29,20 +29,26 @@ export const TouristDistrictCard: React.FC<TouristDistrictCardProps> = ({
     if (!containerRef.current) return;
     gsap.fromTo(
       containerRef.current,
-      { opacity: 0.4, y: 10 },
-      { opacity: 1, y: 0, duration: 0.35, ease: 'power2.out' }
+      { opacity: 0.5, y: 8 },
+      { opacity: 1, y: 0, duration: 0.3, ease: 'power2.out', clearProps: 'opacity,transform' }
     );
   }, { dependencies: [zone] });
 
   const isCritical = profile.dangerLevel === 'Critical';
 
-  // Civilian road condition summary
+  // Civilian road condition summary for all 5 regions
   const roadSummary =
-    zone === 'Wayanad'
-      ? 'Thamarassery Ghat (NH 766) rockfall caution • Daytime speed <30 km/h'
+    zone === 'North' || profile.districtName.includes('Joshimath')
+      ? 'NH 7 (Badrinath Highway) open • Rockfall & fissure watch near Sunil ward'
+      : zone === 'West' || profile.districtName.includes('Kachchh')
+      ? 'NH 341 & Bhuj-Khavda road clear • Caution on tidal salt-flat creek crossings'
+      : zone === 'Central' || profile.districtName.includes('Satpura')
+      ? 'Pachmarhi Ghat & Pipariya road clear • Watch river causeways during rain'
+      : zone === 'East' || zone === 'Barpeta' || profile.districtName.includes('Barpeta')
+      ? 'NH 31 & SH 2 clear • Char river ferry crossings restricted during flood surges'
       : zone === 'Kodagu'
       ? 'Madikeri-Mangalore highway open • Avoid remote off-road trails in rain'
-      : 'NH 31 and SH 2 clear • Char river ferry crossings restricted during flood surges';
+      : 'Thamarassery Ghat (NH 766) rockfall caution • Daytime speed <30 km/h';
 
   return (
     <div
@@ -53,7 +59,7 @@ export const TouristDistrictCard: React.FC<TouristDistrictCardProps> = ({
       <div className="flex flex-col gap-1">
         <div className="flex items-center justify-between gap-2">
           <span className="text-[10px] font-mono tracking-[0.2em] text-ink-muted dark:text-cream/60 uppercase">
-            TOURIST HAZARD ADVISORY
+            TERRA TOURIST HAZARD ADVISORY
           </span>
           <span
             className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-mono uppercase font-bold border ${

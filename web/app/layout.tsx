@@ -22,8 +22,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SETU - Disaster Risk Reduction | Hazard Red Zone & Relocation Decision Support Platform",
-  description: "SETU - Disaster Risk Reduction — National Disaster Red Zone Decision Support & Autonomous Relocation Planning Platform",
+  title: "TERRA | Hazard Red Zone & Relocation Decision Support Platform",
+  description: "TERRA — National Disaster Red Zone Decision Support & Autonomous Relocation Planning Platform",
 };
 
 export default function RootLayout({

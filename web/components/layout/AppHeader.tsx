@@ -49,13 +49,18 @@ export const AppHeader = ({
   useGSAP(
     () => {
       if (!animate) return;
-      gsap.from('[data-header-item]', {
-        y: -8,
-        opacity: 0,
-        duration,
-        stagger: 0.05,
-        ease: 'power3.out',
-      });
+      gsap.fromTo(
+        '[data-header-item]',
+        { y: -8, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration,
+          stagger: 0.05,
+          ease: 'power3.out',
+          clearProps: 'opacity,transform',
+        }
+      );
     },
     { scope: rootRef, dependencies: [animate, duration] },
   );

@@ -45,7 +45,7 @@ export const DEFAULT_NAV_TABS: NavTabItem[] = [
   { id: 'gov', label: '3D & GIS Map', icon: 'view_in_ar', href: '/gov' },
   { id: 'relocation', label: 'Relocation Solver', icon: 'moving', href: '/relocation' },
   { id: 'stories', label: 'Tourist Stories', icon: 'auto_stories', href: '/stories' },
-  { id: 'about', label: 'About SETU', icon: 'info', href: '/about' },
+  { id: 'about', label: 'About TERRA', icon: 'info', href: '/about' },
 ];
 
 /**

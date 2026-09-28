@@ -42,12 +42,17 @@ export const MapControlBar = ({
   useGSAP(
     () => {
       if (!animate) return;
-      gsap.from(rootRef.current, {
-        y: -10,
-        opacity: 0,
-        duration,
-        ease: 'power3.out',
-      });
+      gsap.fromTo(
+        rootRef.current,
+        { y: -10, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration,
+          ease: 'power3.out',
+          clearProps: 'opacity,transform',
+        }
+      );
     },
     { scope: rootRef, dependencies: [animate, duration] },
   );

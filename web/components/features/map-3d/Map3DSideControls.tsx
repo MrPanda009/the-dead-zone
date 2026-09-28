@@ -39,12 +39,17 @@ export const Map3DSideControls: React.FC<Map3DSideControlsProps> = ({
   useGSAP(
     () => {
       if (prefersReducedMotion || !containerRef.current) return;
-      gsap.from(containerRef.current, {
-        x: 14,
-        opacity: 0,
-        duration: 0.4,
-        ease: 'power3.out',
-      });
+      gsap.fromTo(
+        containerRef.current,
+        { x: 14, opacity: 0 },
+        {
+          x: 0,
+          opacity: 1,
+          duration: 0.4,
+          ease: 'power3.out',
+          clearProps: 'opacity,transform',
+        }
+      );
     },
     { scope: containerRef },
   );

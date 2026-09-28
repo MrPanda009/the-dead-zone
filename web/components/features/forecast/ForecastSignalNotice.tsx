@@ -58,12 +58,17 @@ export const ForecastSignalNotice = ({
   useGSAP(
     () => {
       if (animation?.disabled || reduceMotion) return;
-      gsap.from(rootRef.current, {
-        y: 8,
-        opacity: 0,
-        duration: animation?.duration ?? 0.4,
-        ease: 'power2.out',
-      });
+      gsap.fromTo(
+        rootRef.current,
+        { y: 8, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration: animation?.duration ?? 0.4,
+          ease: 'power2.out',
+          clearProps: 'opacity,transform',
+        }
+      );
     },
     { scope: rootRef, dependencies: [state, reduceMotion] },
   );
