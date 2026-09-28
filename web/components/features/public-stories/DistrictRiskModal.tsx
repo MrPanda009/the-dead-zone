@@ -81,24 +81,30 @@ export const DistrictRiskModal: React.FC<DistrictRiskModalProps> = ({
     if (!isOpen || !modalBoxRef.current) return;
     gsap.fromTo(
       modalBoxRef.current,
-      { scale: 0.93, opacity: 0, y: 16 },
-      { scale: 1, opacity: 1, y: 0, duration: 0.35, ease: 'power3.out' }
+      { scale: 0.95, opacity: 0, y: 12 },
+      { scale: 1, opacity: 1, y: 0, duration: 0.3, ease: 'power3.out', clearProps: 'opacity,transform' }
     );
   }, { dependencies: [isOpen, profile.districtName] });
 
   if (!isOpen) return null;
 
-  const normalizedKey = (
-    profile.districtName === 'Wayanad' || zone === 'Wayanad' || zone === 'South'
-      ? 'Wayanad'
-      : profile.districtName === 'Kodagu' || zone === 'Kodagu' || zone === 'West'
+  const normalizedKey: ZoneId =
+    zone === 'North' || profile.districtName.includes('Joshimath') || profile.districtName.includes('Chamoli')
+      ? 'North'
+      : zone === 'Central' || profile.districtName.includes('Satpura') || profile.districtName.includes('Hoshangabad')
+      ? 'Central'
+      : zone === 'West' || profile.districtName.includes('Kachchh') || profile.districtName.includes('Kutch')
+      ? 'West'
+      : zone === 'Kodagu' || profile.districtName === 'Kodagu'
       ? 'Kodagu'
-      : 'Barpeta'
-  ) as ZoneId;
+      : zone === 'East' || zone === 'Barpeta' || profile.districtName === 'Barpeta'
+      ? 'East'
+      : 'South';
 
   const regionalStory =
     REGIONAL_STORIES[normalizedKey] ||
     REGIONAL_STORIES[zone] ||
+    REGIONAL_STORIES.South ||
     REGIONAL_STORIES.Wayanad;
 
   return (

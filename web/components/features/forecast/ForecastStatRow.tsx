@@ -34,13 +34,18 @@ export const ForecastStatRow = ({
   useGSAP(
     () => {
       if (animation?.disabled || reduceMotion) return;
-      gsap.from('.forecast-stat-tile', {
-        y: 8,
-        opacity: 0,
-        duration: animation?.duration ?? 0.35,
-        stagger: animation?.stagger ?? 0.04,
-        ease: 'power2.out',
-      });
+      gsap.fromTo(
+        '.forecast-stat-tile',
+        { y: 8, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration: animation?.duration ?? 0.35,
+          stagger: animation?.stagger ?? 0.04,
+          ease: 'power2.out',
+          clearProps: 'opacity,transform',
+        }
+      );
     },
     { scope: rootRef, dependencies: [stats.map((s) => s.key).join('|'), reduceMotion] },
   );

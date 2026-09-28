@@ -23,7 +23,7 @@ export interface StoriesHeroTextProps {
 }
 
 export const StoriesHeroText: React.FC<StoriesHeroTextProps> = ({
-  category = 'SETU-DRR TOURIST HAZARD ADVISORY',
+  category = 'TERRA TOURIST HAZARD ADVISORY',
   activeZoneLabel = 'Wayanad',
   summary = 'Real-time geotechnical landslide, flash flood, and terrain risk advisory for tourists, trekkers, and travelers across India\'s fragile corridors before planning journeys.',
   className = '',
@@ -37,7 +37,7 @@ export const StoriesHeroText: React.FC<StoriesHeroTextProps> = ({
     gsap.fromTo(
       containerRef.current.children,
       { y: 24, opacity: 0 },
-      { y: 0, opacity: 1, duration: 0.7, stagger: 0.1, ease: 'power3.out' }
+      { y: 0, opacity: 1, duration: 0.7, stagger: 0.1, ease: 'power3.out', clearProps: 'opacity,transform' }
     );
   }, { scope: containerRef });
 
@@ -46,7 +46,7 @@ export const StoriesHeroText: React.FC<StoriesHeroTextProps> = ({
     gsap.fromTo(
       textRef.current,
       { opacity: 0.3, y: 6 },
-      { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' }
+      { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out', clearProps: 'opacity,transform' }
     );
   }, { dependencies: [activeZoneLabel, summary] });
 

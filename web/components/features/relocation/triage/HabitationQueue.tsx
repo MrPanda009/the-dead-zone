@@ -79,14 +79,18 @@ export const HabitationQueue = ({
   useGSAP(
     () => {
       if (!animate || filteredHabitations.length === 0) return;
-      gsap.from('[data-habitation-row]', {
-        y: 10,
-        opacity: 0,
-        duration,
-        stagger,
-        ease: M3_EASE.decelerate,
-        clearProps: 'opacity',
-      });
+      gsap.fromTo(
+        '[data-habitation-row]',
+        { y: 10, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration,
+          stagger,
+          ease: M3_EASE.decelerate,
+          clearProps: 'transform,opacity',
+        }
+      );
     },
     { scope: rootRef, dependencies: [filteredHabitations, animate, duration, stagger] },
   );

@@ -23,13 +23,18 @@ export const DistrictTelemetryGrid: React.FC<DistrictTelemetryGridProps> = ({
 
   useGSAP(() => {
     if (!gridRef.current) return;
-    gsap.from(gridRef.current.children, {
-      y: 12,
-      opacity: 0,
-      stagger: 0.05,
-      duration: 0.35,
-      ease: 'power2.out',
-    });
+    gsap.fromTo(
+      gridRef.current.children,
+      { y: 10, opacity: 0 },
+      {
+        y: 0,
+        opacity: 1,
+        stagger: 0.04,
+        duration: 0.3,
+        ease: 'power2.out',
+        clearProps: 'opacity,transform',
+      }
+    );
   }, { scope: gridRef, dependencies: [spot.id] });
 
   const isHighDanger =
@@ -46,13 +51,19 @@ export const DistrictTelemetryGrid: React.FC<DistrictTelemetryGridProps> = ({
     : 'Local Estate Road • Drive <30 km/h';
 
   const safeBase =
-    spot.name === 'Chooralmala' || spot.name === 'Mundakkai' || spot.name === 'Meppadi'
+    spot.name === 'Sunil Ward' || spot.name === 'Manohar Bagh' || spot.name.includes('Joshimath')
+      ? 'Bhatoli Plateau Sanctuary'
+      : spot.name.includes('Dhordo') || spot.name.includes('Bhuj') || spot.name.includes('Habo')
+      ? 'Habo Hill & Bhuj High Ridge'
+      : spot.name.includes('Pachmarhi') || spot.name.includes('Pipariya')
+      ? 'Pachmarhi High Plateau'
+      : spot.name === 'Chooralmala' || spot.name === 'Mundakkai' || spot.name === 'Meppadi'
       ? 'Kalpetta East & Sulthan Bathery'
       : spot.name === 'Bhagamandala' || spot.name === 'Madikeri' || spot.name === 'Somwarpet'
       ? 'Kushalnagar Plain & Madikeri Hub'
       : spot.name === 'Mandia Char Cluster' || spot.name === 'Baghbar Riparian Reach'
       ? 'Barpeta Road & Howly Plateau'
-      : 'District Headquarter Safe Base';
+      : 'District Emergency Safe Base';
 
   return (
     <div

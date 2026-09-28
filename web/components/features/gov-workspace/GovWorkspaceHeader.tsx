@@ -41,13 +41,18 @@ export const GovWorkspaceHeader: React.FC<GovWorkspaceHeaderProps> = ({
 
   useGSAP(() => {
     if (!rootRef.current) return;
-    gsap.from('[data-header-elem]', {
-      y: -10,
-      opacity: 0,
-      duration: 0.45,
-      stagger: 0.04,
-      ease: 'power3.out',
-    });
+    gsap.fromTo(
+      '[data-header-elem]',
+      { y: -10, opacity: 0 },
+      {
+        y: 0,
+        opacity: 1,
+        duration: 0.35,
+        stagger: 0.04,
+        ease: 'power3.out',
+        clearProps: 'opacity,transform',
+      }
+    );
   }, []);
 
   return (
@@ -67,10 +72,10 @@ export const GovWorkspaceHeader: React.FC<GovWorkspaceHeaderProps> = ({
           </span>
           <div className="flex flex-col">
             <span className="text-xs font-mono font-bold tracking-wider text-citron">
-              SETU-DRR
+              TERRA
             </span>
-            <span className="text-[10px] font-mono text-text-muted">
-              RELOCATION DECISION SUPPORT
+            <span className="text-[9px] font-mono text-text-muted tracking-tight">
+              TERRAIN RISK & RELOCATION ANALYTICS
             </span>
           </div>
         </Link>

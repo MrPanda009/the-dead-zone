@@ -78,21 +78,26 @@ export const AllocationPanel = ({
       const tl = gsap.timeline();
 
       if (rootRef.current?.querySelector('[data-allocation-summary]')) {
-        tl.from('[data-allocation-summary]', {
-          y: 10,
-          opacity: 0,
-          duration: M3_DURATION.medium2,
-          ease: M3_EASE.decelerate,
-          clearProps: 'transform,opacity',
-        });
+        tl.fromTo(
+          '[data-allocation-summary]',
+          { y: 10, opacity: 0 },
+          {
+            y: 0,
+            opacity: 1,
+            duration: M3_DURATION.medium2,
+            ease: M3_EASE.decelerate,
+            clearProps: 'transform,opacity',
+          },
+        );
       }
 
       if (rootRef.current?.querySelector('[data-allocation-warnings]')) {
-        tl.from(
+        tl.fromTo(
           '[data-allocation-warnings]',
+          { y: -6, opacity: 0 },
           {
-            y: -6,
-            opacity: 0,
+            y: 0,
+            opacity: 1,
             duration: M3_DURATION.short4,
             ease: 'back.out(1.4)',
             clearProps: 'transform,opacity',
@@ -102,11 +107,12 @@ export const AllocationPanel = ({
       }
 
       if (assignments.length > 0 && rootRef.current?.querySelector('[data-assignment-row]')) {
-        tl.from(
+        tl.fromTo(
           '[data-assignment-row]',
+          { y: 8, opacity: 0 },
           {
-            y: 8,
-            opacity: 0,
+            y: 0,
+            opacity: 1,
             duration,
             stagger,
             ease: M3_EASE.decelerate,

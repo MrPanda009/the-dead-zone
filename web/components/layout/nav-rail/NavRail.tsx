@@ -66,7 +66,7 @@ export const NavRail: React.FC<NavRailProps> = ({
       {onHazardMapClick ? (
         <button
           onClick={onHazardMapClick}
-          title="SETU-DRR Workspace"
+          title="TERRA Workspace"
           className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:scale-105 cursor-pointer ${
             pathname === '/workspace'
                ? 'bg-citron/15 text-citron border border-citron/30'
@@ -78,7 +78,7 @@ export const NavRail: React.FC<NavRailProps> = ({
       ) : (
         <Link
           href="/workspace"
-          title="SETU-DRR Workspace"
+          title="TERRA Workspace"
           className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:scale-105 cursor-pointer ${
             pathname === '/workspace'
                ? 'bg-citron/15 text-citron border border-citron/30'

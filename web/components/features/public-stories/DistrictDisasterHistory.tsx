@@ -20,13 +20,18 @@ export const DistrictDisasterHistory: React.FC<DistrictDisasterHistoryProps> = (
 
   useGSAP(() => {
     if (!containerRef.current) return;
-    gsap.from(containerRef.current.children, {
-      opacity: 0,
-      y: 10,
-      stagger: 0.05,
-      duration: 0.35,
-      ease: 'power2.out',
-    });
+    gsap.fromTo(
+      containerRef.current.children,
+      { opacity: 0, y: 8 },
+      {
+        opacity: 1,
+        y: 0,
+        stagger: 0.04,
+        duration: 0.25,
+        ease: 'power2.out',
+        clearProps: 'opacity,transform',
+      }
+    );
   }, { scope: containerRef, dependencies: [disasters] });
 
   if (!disasters || disasters.length === 0) return null;

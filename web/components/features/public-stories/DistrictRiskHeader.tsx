@@ -26,13 +26,18 @@ export const DistrictRiskHeader: React.FC<DistrictRiskHeaderProps> = ({
 
   useGSAP(() => {
     if (!headerRef.current) return;
-    gsap.from(headerRef.current.children, {
-      y: -10,
-      opacity: 0,
-      stagger: 0.05,
-      duration: 0.35,
-      ease: 'power2.out',
-    });
+    gsap.fromTo(
+      headerRef.current.children,
+      { y: -8, opacity: 0 },
+      {
+        y: 0,
+        opacity: 1,
+        stagger: 0.04,
+        duration: 0.25,
+        ease: 'power2.out',
+        clearProps: 'opacity,transform',
+      }
+    );
   }, { scope: headerRef, dependencies: [profile.districtName] });
 
   const isCritical = profile.dangerLevel === 'Critical';

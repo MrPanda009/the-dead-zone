@@ -54,13 +54,18 @@ export const DriverBreakdown = ({
   useGSAP(
     () => {
       if (!animate) return;
-      gsap.from('[data-driver-row]', {
-        y: 8,
-        opacity: 0,
-        duration,
-        stagger,
-        ease: 'power2.out',
-      });
+      gsap.fromTo(
+        '[data-driver-row]',
+        { y: 8, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration,
+          stagger,
+          ease: 'power2.out',
+          clearProps: 'opacity,transform',
+        }
+      );
     },
     { scope: rootRef, dependencies: [drivers, animate, duration, stagger] },
   );

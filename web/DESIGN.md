@@ -1,6 +1,6 @@
 ---
-name: SETU-DRR
-description: Hazard Red Zone & Relocation Decision Support Platform
+name: TERRA
+description: Terrain-based Environmental Risk and Relocation Analytics
 colors:
   primary: "#d4f15d"
   primary-hover: "#c4e14d"
@@ -95,13 +95,13 @@ components:
     padding: "4px 12px"
 ---
 
-# Design System: SETU-DRR
+# Design System: TERRA
 
 ## Overview
 
 **Creative North Star: "The Cartographic Resilience Console"**
 
-SETU-DRR is an atmospheric, high-density disaster decision-support and geospatial intelligence environment. Built for mission-critical command rooms and frontline emergency planners, the interface merges geotechnical precision with the atmospheric depth of Western Ghats mountain mist and deep river valleys. The visual tone is authoritative, scientific, and un-sensationalized—eschewing frivolous decoration in favor of high-legibility telemetry, luminous hazard contrasts, and tactile microinteractions.
+TERRA (Terrain-based Environmental Risk and Relocation Analytics) is an atmospheric, high-density disaster decision-support and geospatial intelligence environment. Built for mission-critical command rooms and frontline emergency planners, the interface merges geotechnical precision with the atmospheric depth of Western Ghats mountain mist and deep river valleys. The visual tone is authoritative, scientific, and un-sensationalized—eschewing frivolous decoration in favor of high-legibility telemetry, luminous hazard contrasts, and tactile microinteractions.
 
 Surfaces inhabit a dual-mode universe: by default, deep evergreen-tinted carbons (`#101712`) allow neon telemetry accents (`#d4f15d`) and multi-tiered hazard signals to radiate without ocular fatigue during prolonged night deployments. In light mode, the system transforms into a sunlit field console, utilizing crisp sage-tinted neutral papers (`#eaf1e6`) with high-contrast dark forest ink (`#0d1a14`), ensuring total clarity under direct daylight in emergency field vehicles or district collectorate briefings.
 

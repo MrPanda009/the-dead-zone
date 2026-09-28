@@ -28,7 +28,7 @@ export const HOTSPOT_LONLAT = {
   Central: { lon: 77.761, lat: 22.505, label: 'Satpura Plateau' },
   South: { lon: 76.126, lat: 11.554, label: 'Wayanad (Meppadi)' },
   East: { lon: 91.01, lat: 26.32, label: 'Barpeta & Teesta' },
-  West: { lon: 75.738, lat: 12.424, label: 'Kodagu (Madikeri)' },
+  West: { lon: 69.821, lat: 23.342, label: 'Kachchh (Kutch)' },
 } as const;
 
 /** Mainland + island polygons (index 0 = mainland with complete J&K crown). */

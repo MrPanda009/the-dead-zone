@@ -83,19 +83,27 @@ export const PublicStoriesPage: React.FC<PublicStoriesPageProps> = ({
 
       {/* Mobile/Tablet Fallback: District Selector and Tourist District Card */}
       <div className="md:hidden relative z-20 flex flex-col gap-3 pt-3 border-t border-line dark:border-white/10">
-        <div className="flex items-center justify-center gap-2">
-          {(['Wayanad', 'Kodagu', 'Barpeta'] as ZoneId[]).map((zone) => (
+        <div className="flex flex-wrap items-center justify-center gap-1.5">
+          {(['North', 'West', 'Central', 'East', 'South'] as ZoneId[]).map((zone) => (
             <button
               key={zone}
               type="button"
               onClick={() => setSelectedZone(zone)}
-              className={`px-3 py-1.5 text-xs rounded-xl font-mono transition-colors ${
+              className={`px-2.5 py-1 text-xs rounded-xl font-mono transition-colors ${
                 selectedZone === zone
                   ? 'bg-citron text-[#06100c] font-bold shadow'
                   : 'bg-surface-1 dark:bg-white/10 text-ink-muted dark:text-cream/60'
               }`}
             >
-              {zone}
+              {zone === 'North'
+                ? 'Joshimath'
+                : zone === 'West'
+                ? 'Kachchh'
+                : zone === 'Central'
+                ? 'Satpura'
+                : zone === 'East'
+                ? 'Barpeta'
+                : 'Wayanad'}
             </button>
           ))}
         </div>
