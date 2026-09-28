@@ -105,11 +105,6 @@ export const GovWorkspace: React.FC<GovWorkspaceProps> = ({
     }
   }, [selectedH3]);
 
-  const handleInspectWayanad = useCallback(() => {
-    setHazardType('landslide');
-    setDisplay((prev) => ({ ...prev, resolution: 8 }));
-    setSelectedH3('8860064a15fffff');
-  }, []);
 
   const handleDisplayChange = useCallback((next: Partial<FloodHazardMapDisplayState>) => {
     if (next.resolution !== undefined && next.resolution !== display.resolution) {
@@ -265,8 +260,6 @@ export const GovWorkspace: React.FC<GovWorkspaceProps> = ({
           hazardType={hazardType}
           isLoading={isLoading}
           officerId={officerId}
-          onInspectWayanad={handleInspectWayanad}
-          wayanadAlertCount={forecast.items.length}
         />
       }
       left={
@@ -341,7 +334,6 @@ export const GovWorkspace: React.FC<GovWorkspaceProps> = ({
             przThreshold={przThreshold}
             forecastItems={forecast.items}
             fallbackCell={selectedCell}
-            onInspectWayanad={handleInspectWayanad}
           />
         </RightPanel>
       }

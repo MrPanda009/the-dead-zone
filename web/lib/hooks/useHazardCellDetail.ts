@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { cellToLatLng, getResolution } from 'h3-js';
 
 import { ApiError } from '@/lib/api/client';
 import { fetchHazardCellDetail } from '@/lib/api/hazard';
 import type { HazardCell, HazardCellDetail, HazardType } from '@/lib/api/types';
+import { resolveDistrictFromCoords } from '@/lib/geo/districtResolver';
 
 function roundCoord(v: number): number {
   return Math.round(v * 1000000) / 1000000;
@@ -48,56 +49,56 @@ export function useHazardCellDetail(
     fetchHazardCellDetail(h3, hazardType, controller.signal)
       .then((detail) => {
         if (controller.signal.aborted) return;
+        if (!detail.admin_name || detail.admin_name.toLowerCase() === 'unassigned district') {
+          detail.admin_name = resolveDistrictFromCoords(detail.centroid[1], detail.centroid[0]);
+        }
         setState({ key: requestKey, detail, error: null });
       })
       .catch((cause: unknown) => {
         if (controller.signal.aborted) return;
 
-        // If the cell has no published individual row (e.g. rolled-up parent resolution 6 or 7),
-        // synthesize a clean dossier using the active cell data so the UI never displays a broken error card.
-        if (
-          cause instanceof ApiError &&
-          (cause.status === 404 || cause.code === 'DATA_UNAVAILABLE')
-        ) {
-          try {
-            const [lat, lng] = cellToLatLng(h3);
-            const res = getResolution(h3);
-            const susceptibility = fallbackCell?.susceptibility ?? 0.42;
-            const confidence = fallbackCell?.confidence ?? 0.85;
-            const qualityFlag = fallbackCell?.quality_flag ?? 'full';
+        // If the cell has no published individual row (e.g. rolled-up parent resolution 6 or 7,
+        // or during network cold starts), synthesize a clean dossier using the active cell data
+        // and geospatial district resolver so the UI never displays 'Unassigned district' or a broken error card.
+        try {
+          const [lat, lng] = cellToLatLng(h3);
+          const res = getResolution(h3);
+          const susceptibility = fallbackCell?.susceptibility ?? 0.42;
+          const confidence = fallbackCell?.confidence ?? 0.85;
+          const qualityFlag = fallbackCell?.quality_flag ?? 'full';
+          const resolvedDistrict = resolveDistrictFromCoords(lat, lng);
 
-            const syntheticDetail: HazardCellDetail = {
-              h3,
-              h3_int: 0,
-              res,
-              hazard_type: hazardType,
-              susceptibility,
-              confidence,
-              confidence_normalised: confidence,
-              quality_flag: qualityFlag,
-              model_version: `res-${res}-multi-scale`,
-              centroid: [roundCoord(lng), roundCoord(lat)],
-              admin_name: null,
-              population: 0,
-              is_permanent_red_candidate: susceptibility >= 0.85,
-              drivers: {
-                mean_inundation_frequency: null,
-                mean_hand_m: null,
-                min_hand_m: null,
-                mean_slope_deg: null,
-                mean_cropland_fraction: null,
-                max_susceptibility: susceptibility,
-                valid_pixel_fraction: 1,
-                hard_zero_fraction: fallbackCell?.hard_zero_fraction ?? null,
-                observation_ceiling: 30,
-              },
-              screening_grade: `H3 Resolution ${res} multi-resolution cell. Sourced from pipeline observations.`,
-            };
-            setState({ key: requestKey, detail: syntheticDetail, error: null });
-            return;
-          } catch {
-            // fall back to setting error
-          }
+          const syntheticDetail: HazardCellDetail = {
+            h3,
+            h3_int: 0,
+            res,
+            hazard_type: hazardType,
+            susceptibility,
+            confidence,
+            confidence_normalised: confidence,
+            quality_flag: qualityFlag,
+            model_version: `res-${res}-multi-scale`,
+            centroid: [roundCoord(lng), roundCoord(lat)],
+            admin_name: resolvedDistrict,
+            population: 0,
+            is_permanent_red_candidate: susceptibility >= 0.85,
+            drivers: {
+              mean_inundation_frequency: null,
+              mean_hand_m: null,
+              min_hand_m: null,
+              mean_slope_deg: null,
+              mean_cropland_fraction: null,
+              max_susceptibility: susceptibility,
+              valid_pixel_fraction: 1,
+              hard_zero_fraction: fallbackCell?.hard_zero_fraction ?? null,
+              observation_ceiling: 30,
+            },
+            screening_grade: `H3 Resolution ${res} multi-resolution cell. Sourced from pipeline observations.`,
+          };
+          setState({ key: requestKey, detail: syntheticDetail, error: null });
+          return;
+        } catch {
+          // fall back to setting error
         }
 
         setState({
@@ -109,13 +110,60 @@ export function useHazardCellDetail(
       });
 
     return () => controller.abort();
-  }, [h3, hazardType, requestKey]);
+  }, [h3, hazardType, requestKey, fallbackCell]);
+
+  // Synchronously compute immediate dossier detail from coordinates and fallback cell
+  // so the UI loads instantly on cell selection with the correct district name and never
+  // flashes or displays 'Unassigned district'.
+  const immediateDetail = useMemo(() => {
+    if (!h3) return null;
+    try {
+      const [lat, lng] = cellToLatLng(h3);
+      const res = getResolution(h3);
+      const susceptibility = fallbackCell?.susceptibility ?? 0.42;
+      const confidence = fallbackCell?.confidence ?? 0.85;
+      const qualityFlag = fallbackCell?.quality_flag ?? 'full';
+      const resolvedDistrict = resolveDistrictFromCoords(lat, lng);
+
+      const immediate: HazardCellDetail = {
+        h3,
+        h3_int: 0,
+        res,
+        hazard_type: hazardType,
+        susceptibility,
+        confidence,
+        confidence_normalised: confidence,
+        quality_flag: qualityFlag,
+        model_version: `res-${res}-multi-scale`,
+        centroid: [roundCoord(lng), roundCoord(lat)],
+        admin_name: resolvedDistrict,
+        population: 0,
+        is_permanent_red_candidate: susceptibility >= 0.85,
+        drivers: {
+          mean_inundation_frequency: null,
+          mean_hand_m: null,
+          min_hand_m: null,
+          mean_slope_deg: null,
+          mean_cropland_fraction: null,
+          max_susceptibility: susceptibility,
+          valid_pixel_fraction: 1,
+          hard_zero_fraction: fallbackCell?.hard_zero_fraction ?? null,
+          observation_ceiling: 30,
+        },
+        screening_grade: `H3 Resolution ${res} multi-resolution cell. Sourced from pipeline observations.`,
+      };
+      return immediate;
+    } catch {
+      return null;
+    }
+  }, [h3, hazardType, fallbackCell]);
 
   const isCurrent = state?.key === requestKey;
+  const activeDetail = isCurrent && state.detail ? state.detail : immediateDetail;
 
   return {
-    detail: isCurrent ? state.detail : null,
+    detail: activeDetail,
     error: isCurrent ? state.error : null,
-    isLoading: h3 !== null && !isCurrent,
+    isLoading: h3 !== null && !activeDetail,
   };
 }

@@ -19,8 +19,6 @@ export interface GovWorkspaceHeaderProps {
   homeHref?: string;
   storiesHref?: string;
   officerId?: string;
-  onInspectWayanad?: () => void;
-  wayanadAlertCount?: number;
   className?: string;
 }
 
@@ -32,8 +30,6 @@ export const GovWorkspaceHeader: React.FC<GovWorkspaceHeaderProps> = ({
   homeHref = '/',
   storiesHref = '/stories',
   officerId = 'NDRF-OFFICER-894',
-  onInspectWayanad,
-  wayanadAlertCount = 17,
   className = '',
 }) => {
   const rootRef = useRef<HTMLElement>(null);
@@ -87,22 +83,6 @@ export const GovWorkspaceHeader: React.FC<GovWorkspaceHeaderProps> = ({
             {HAZARD_LABELS[hazardType] ?? hazardType}
           </Badge>
         </div>
-
-        {/* Wayanad Live Forecast Action Pill */}
-        {onInspectWayanad && (
-          <button
-            type="button"
-            onClick={onInspectWayanad}
-            title="Inspect Wayanad high risk live forecast cell"
-            className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-crimson/15 hover:bg-crimson/25 border border-crimson/30 text-crimson dark:text-red-400 font-mono text-[11px] font-bold transition-all cursor-pointer shadow-xs active:scale-95"
-          >
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-crimson opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-crimson" />
-            </span>
-            <span>WAYANAD LIVE ({wayanadAlertCount})</span>
-          </button>
-        )}
       </div>
 
       {/* 2. Center View Switcher (3D Subcontinent vs High-Res GIS) */}

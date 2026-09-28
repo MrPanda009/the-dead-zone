@@ -10,7 +10,6 @@ import { CoverageNotice } from './CoverageNotice';
 import { DossierEmptyState } from './DossierEmptyState';
 import { DossierHeader } from './DossierHeader';
 import { DossierSkeleton } from './DossierSkeleton';
-import { DriverBreakdown } from './DriverBreakdown';
 import { CellMetricsBox } from './CellMetricsBox';
 
 export interface CellDossierProps {
@@ -25,8 +24,6 @@ export interface CellDossierProps {
   forecastItems?: ForecastAlertItem[];
   /** Optional active cell data used as fallback when no individual row exists */
   fallbackCell?: HazardCell | null;
-  /** Optional callback to inspect Wayanad high risk cell from empty state */
-  onInspectWayanad?: () => void;
   className?: string;
   classNames?: {
     root?: string;
@@ -38,7 +35,7 @@ export interface CellDossierProps {
  * Right-panel dossier for the selected cell.
  *
  * Integrates static physical drivers and susceptibility/confidence with
- * real-time ECMWF / Open-Meteo live forecast data for Wayanad pilot cells.
+ * real-time meteorological live forecast alert telemetry.
  */
 export const CellDossier: React.FC<CellDossierProps> = ({
   h3,
@@ -47,13 +44,12 @@ export const CellDossier: React.FC<CellDossierProps> = ({
   forecastAlert,
   forecastItems,
   fallbackCell,
-  onInspectWayanad,
   className = '',
   classNames = {},
 }) => {
   const { detail, isLoading, error } = useHazardCellDetail(h3, hazardType, fallbackCell);
 
-  // Auto-fetch Wayanad forecast alerts if not provided by parent
+  // Auto-fetch forecast alerts if not provided by parent
   const internalForecast = useForecastAlerts({
     admin: 178,
     enabled: !forecastItems || forecastItems.length === 0,
@@ -71,14 +67,7 @@ export const CellDossier: React.FC<CellDossierProps> = ({
     detail?.admin_name?.toLowerCase().includes('wayanad') ?? false;
 
   if (!h3) {
-    return (
-      <DossierEmptyState
-        onInspectWayanad={onInspectWayanad}
-        hasWayanadForecast={effectiveForecastItems.length > 0}
-        wayanadForecastCount={effectiveForecastItems.length}
-        className={className}
-      />
-    );
+    return <DossierEmptyState className={className} />;
   }
 
   if (isLoading) return <DossierSkeleton className={className} />;
@@ -96,14 +85,7 @@ export const CellDossier: React.FC<CellDossierProps> = ({
   }
 
   if (!detail) {
-    return (
-      <DossierEmptyState
-        onInspectWayanad={onInspectWayanad}
-        hasWayanadForecast={effectiveForecastItems.length > 0}
-        wayanadForecastCount={effectiveForecastItems.length}
-        className={className}
-      />
-    );
+    return <DossierEmptyState className={className} />;
   }
 
   return (
@@ -116,7 +98,7 @@ export const CellDossier: React.FC<CellDossierProps> = ({
 
       <CoverageNotice flag={detail.quality_flag} />
 
-      {/* Information Box with Susceptibility, Confidence, and Wayanad Live Forecast */}
+      {/* Information Box with Susceptibility, Confidence, and Live Forecast */}
       <CellMetricsBox
         detail={detail}
         przThreshold={przThreshold}
@@ -130,8 +112,6 @@ export const CellDossier: React.FC<CellDossierProps> = ({
         }}
         classNames={{ root: classNames.metrics }}
       />
-
-      {detail.drivers ? <DriverBreakdown drivers={detail.drivers} /> : null}
     </div>
   );
 };
