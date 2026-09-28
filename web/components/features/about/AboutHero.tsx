@@ -7,7 +7,7 @@ import { usePrefersReducedMotion } from '@/lib/hooks/usePrefersReducedMotion';
 import type { AboutHeroProps } from './types';
 
 export const AboutHero: React.FC<AboutHeroProps> = ({
-  eyebrow = 'ABOUT TERRA',
+  eyebrow = 'TERRA · TERRAIN-BASED ENVIRONMENTAL RISK & RELOCATION ANALYTICS',
   headline = (
     <>
       Building safer decisions
@@ -15,7 +15,7 @@ export const AboutHero: React.FC<AboutHeroProps> = ({
       for a changing world.
     </>
   ),
-  description = 'TERRA turns complex disaster data into clear, actionable decisions — helping communities prepare, adapt, and find safer places to call home.',
+  description = 'TERRA (Terrain-based Environmental Risk and Relocation Analytics) turns complex geohazard telemetry into clear, actionable relocation and mitigation decisions — helping communities prepare, adapt, and find safer places to call home.',
   className = '',
   classNames = {},
   animation = {},

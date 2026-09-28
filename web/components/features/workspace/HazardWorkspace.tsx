@@ -67,7 +67,7 @@ export const HazardWorkspace = ({
   initialHazardType = 'riverine_flood',
   admin,
   title = 'TERRA',
-  subtitle = 'Hazard Red Zone & Relocation Decision Support Platform',
+  subtitle = 'Terrain-based Environmental Risk and Relocation Analytics',
   className = '',
 }: HazardWorkspaceProps) => {
   const [hazardType, setHazardType] = useState<HazardType>(initialHazardType);

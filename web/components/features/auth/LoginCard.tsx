@@ -143,7 +143,7 @@ export const LoginCard: React.FC<LoginCardProps> = ({
       <div className="flex items-center justify-between mb-4 sm:mb-5">
         <span className="pill-badge px-3 py-1 rounded-full text-[11px] font-mono font-semibold text-accent-emerald-bright border border-accent-emerald/30 bg-accent-emerald/10 flex items-center gap-2 shadow-xs">
           <span className="w-2 h-2 rounded-full bg-accent-emerald-bright animate-ping" />
-          <span>SETU - Disaster Risk Reduction</span>
+          <span>TERRA · Terrain-based Environmental Risk and Relocation Analytics</span>
         </span>
         <Link
           href={overviewHref}
@@ -160,7 +160,7 @@ export const LoginCard: React.FC<LoginCardProps> = ({
           Sign In to Portal
         </h2>
         <p className="text-xs sm:text-sm text-text-secondary mt-1.5 leading-relaxed font-sans">
-          SETU - Disaster Risk Reduction · Frontline Hazard Red Zone & Relocation Decision Support Platform. Official portal for disaster response officials, district administrators, and public safety teams.
+          TERRA (Terrain-based Environmental Risk and Relocation Analytics) · Official portal for disaster response officials, district administrators, and public safety teams.
         </p>
       </div>
 

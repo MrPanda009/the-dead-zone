@@ -30,7 +30,7 @@ export const FooterBrand: React.FC<FooterBrandProps> = ({ className = '' }) => {
       </Link>
 
       <p className="text-xs text-ink-muted dark:text-text-secondary max-w-md leading-relaxed">
-        TERRA · Disaster Risk Reduction · Disaster Management Division · Ministry of Home Affairs · Government of India.
+        TERRA · Terrain-based Environmental Risk and Relocation Analytics · Disaster Management Division · Ministry of Home Affairs · Government of India.
       </p>
     </div>
   );

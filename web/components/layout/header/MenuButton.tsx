@@ -76,7 +76,8 @@ export const MenuButton: React.FC<MenuButtonProps> = ({
       onClick={onClick}
       onPointerDown={handlePointerDown}
       className={`group m3-state-layer inline-flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-m3-dock-surface text-m3-dock-on-surface shadow-m3-1 hover:shadow-m3-2 transition-shadow duration-200 ease-m3-standard cursor-pointer select-none ${className}`}
-      aria-label={`${label} home`}
+      aria-label="TERRA — Terrain-based Environmental Risk and Relocation Analytics"
+      title="TERRA — Terrain-based Environmental Risk and Relocation Analytics"
     >
       <StateLayer ref={stateLayerRef} disabled={disableAnimation} />
       <span className="menu-icon-circle w-7 h-7 rounded-full bg-m3-dock-surface-variant text-m3-dock-on-surface flex items-center justify-center border border-m3-dock-outline group-hover:border-m3-primary transition-colors duration-200 ease-m3-standard">

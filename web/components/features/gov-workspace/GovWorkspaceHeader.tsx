@@ -74,8 +74,8 @@ export const GovWorkspaceHeader: React.FC<GovWorkspaceHeaderProps> = ({
             <span className="text-xs font-mono font-bold tracking-wider text-citron">
               TERRA
             </span>
-            <span className="text-[10px] font-mono text-text-muted">
-              RELOCATION DECISION SUPPORT
+            <span className="text-[9px] font-mono text-text-muted tracking-tight">
+              TERRAIN RISK & RELOCATION ANALYTICS
             </span>
           </div>
         </Link>
