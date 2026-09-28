@@ -549,7 +549,6 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
         onInteractionModeChange={setInteractionMode}
         onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}
-        onResetCamera={handleResetCamera}
         position="bottom-right"
       />
 

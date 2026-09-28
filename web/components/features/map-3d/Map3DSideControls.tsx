@@ -16,8 +16,6 @@ export interface Map3DSideControlsProps {
   onZoomIn: () => void;
   /** Zoom out callback */
   onZoomOut: () => void;
-  /** Optional reset camera view callback */
-  onResetCamera?: () => void;
   /** Corner docking position (default: 'bottom-right') */
   position?: 'bottom-right' | 'top-right';
   className?: string;
@@ -32,7 +30,6 @@ export const Map3DSideControls: React.FC<Map3DSideControlsProps> = ({
   onInteractionModeChange,
   onZoomIn,
   onZoomOut,
-  onResetCamera,
   position = 'bottom-right',
   className = '',
 }) => {
@@ -120,21 +117,7 @@ export const Map3DSideControls: React.FC<Map3DSideControlsProps> = ({
         </button>
       </div>
 
-      {/* 3. Recenter View Button */}
-      {onResetCamera && (
-        <>
-          <div className="w-5 h-px bg-line dark:bg-white/10 my-0.5" />
-          <button
-            type="button"
-            onClick={onResetCamera}
-            className="w-8 h-8 flex items-center justify-center rounded-xl text-text-secondary hover:text-text-primary hover:bg-surface-2 dark:hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
-            title="Recenter Map (Fit India)"
-            aria-label="Recenter Map"
-          >
-            <span className="material-symbols-outlined text-lg">crop_free</span>
-          </button>
-        </>
-      )}
+
     </div>
   );
 };
