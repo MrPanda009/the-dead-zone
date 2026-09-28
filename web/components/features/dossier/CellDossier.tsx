@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { ErrorState } from '@/components/common/ErrorState';
-import { ScreeningGradeNotice } from '@/components/common/ScreeningGradeNotice';
 import { useHazardCellDetail } from '@/lib/hooks/useHazardCellDetail';
 import { useForecastAlerts } from '@/lib/hooks/useForecastAlerts';
 import type { HazardType, ForecastAlertItem, HazardCell } from '@/lib/api/types';
@@ -133,8 +132,6 @@ export const CellDossier: React.FC<CellDossierProps> = ({
       />
 
       {detail.drivers ? <DriverBreakdown drivers={detail.drivers} /> : null}
-
-      <ScreeningGradeNotice notice={detail.screening_grade} className="rounded-xl border" />
     </div>
   );
 };

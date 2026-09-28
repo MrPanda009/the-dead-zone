@@ -95,7 +95,6 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
 
   // Control bar state
   const [activePreset, setActivePreset] = useState<string>('national');
-  const [isTopDown, setIsTopDown] = useState(false);
 
   // Memoized forecast map for fast tooltip resolution
   const forecastMap = useMemo(() => {
@@ -128,7 +127,7 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
     scene.fog = new THREE.FogExp2(bgColor, 0.006);
     sceneRef.current = scene;
 
-    const camera = new THREE.PerspectiveCamera(38, width / height, 0.01, 1000);
+    const camera = new THREE.PerspectiveCamera(38, width / height, 0.05, 500);
     const initialPreset = REGIONAL_CAMERA_PRESETS.national;
     camera.position.set(
       initialPreset.cameraPos.x,
@@ -331,17 +330,15 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
     [flyTo, OBLIQUE_DIR],
   );
 
-  // Frame a newly loaded grid once, so correctly-sized cells are actually on
-  // screen rather than a few sub-pixel specks at national zoom.
+  // Frame a newly loaded grid once on initial load, but NEVER reset the camera when toggling resolution
   useEffect(() => {
     if (cells.length === 0) return;
-    const gridId = `${cells.length}:${cells[0].h3}:${cells[cells.length - 1].h3}`;
-    if (framedGridRef.current === gridId) return;
+    if (framedGridRef.current) return;
 
     const bounds = hexColumnsRef.current?.getBounds();
     if (!bounds) return;
 
-    framedGridRef.current = gridId;
+    framedGridRef.current = 'framed';
     fitToBounds(bounds);
   }, [cells, fitToBounds]);
 
@@ -354,55 +351,12 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
     [flyTo],
   );
 
-  // Auto-focus Camera when a cell is selected, framing its neighbourhood.
-  useEffect(() => {
-    if (!selectedBeaconPos) return;
-    const radius = hexColumnsRef.current?.getCellRadius() ?? 0;
-    if (radius <= 0) return;
-
-    const span = radius * 12;
-    fitToBounds(
-      new THREE.Box3(
-        new THREE.Vector3(
-          selectedBeaconPos.x - span,
-          selectedBeaconPos.y - span,
-          selectedBeaconPos.z,
-        ),
-        new THREE.Vector3(
-          selectedBeaconPos.x + span,
-          selectedBeaconPos.y + span,
-          selectedBeaconPos.z + radius * 4,
-        ),
-      ),
-    );
-  }, [selectedBeaconPos, fitToBounds]);
-
   const handleResetCamera = useCallback(() => {
     const bounds = hexColumnsRef.current?.getBounds();
     if (bounds) fitToBounds(bounds);
     else handleSelectPreset(REGIONAL_CAMERA_PRESETS.national);
   }, [fitToBounds, handleSelectPreset]);
 
-  // View Angle Toggle (2D Plan vs 3D Oblique)
-  const handleToggleTopDown = useCallback(() => {
-    if (!cameraRef.current || !controlsRef.current) return;
-    const next = !isTopDown;
-    setIsTopDown(next);
-
-    const target = controlsRef.current.target;
-    if (next) {
-      // Preserve the current viewing distance — a fixed altitude would fly past
-      // a district-sized grid entirely.
-      const distance = cameraRef.current.position.distanceTo(target);
-      flyTo(
-        { x: target.x, y: target.y, z: target.z },
-        { x: target.x, y: target.y + distance * 1e-4, z: target.z + distance },
-      );
-    } else {
-      const preset = REGIONAL_CAMERA_PRESETS[activePreset] ?? REGIONAL_CAMERA_PRESETS.national;
-      flyTo(preset.target, preset.cameraPos);
-    }
-  }, [isTopDown, activePreset, flyTo]);
 
   // Pointer Picking — resolved analytically by the grid controller.
   const pickAtClient = useCallback((clientX: number, clientY: number) => {
@@ -478,8 +432,6 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
         <Map3DControlBar
           activePresetId={activePreset}
           onSelectPreset={handleSelectPreset}
-          isTopDown={isTopDown}
-          onToggleTopDown={handleToggleTopDown}
           onResetCamera={handleResetCamera}
           resolution={resolution}
           onResolutionChange={onResolutionChange}

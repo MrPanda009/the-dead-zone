@@ -6,8 +6,6 @@ import { REGIONAL_CAMERA_PRESETS, CameraRegionPreset } from '@/lib/geo/indiaBoun
 export interface Map3DControlBarProps {
   activePresetId?: string;
   onSelectPreset: (preset: CameraRegionPreset) => void;
-  isTopDown?: boolean;
-  onToggleTopDown?: () => void;
   onResetCamera?: () => void;
   resolution?: number;
   onResolutionChange?: (resolution: number) => void;
@@ -22,8 +20,6 @@ export interface Map3DControlBarProps {
 export const Map3DControlBar: React.FC<Map3DControlBarProps> = ({
   activePresetId = 'national',
   onSelectPreset,
-  isTopDown = false,
-  onToggleTopDown,
   onResetCamera,
   resolution = 8,
   onResolutionChange,
@@ -41,7 +37,9 @@ export const Map3DControlBar: React.FC<Map3DControlBarProps> = ({
           <span className="w-1.5 h-1.5 rounded-full bg-citron animate-pulse" />
           <span>REGION:</span>
         </span>
-        {Object.values(REGIONAL_CAMERA_PRESETS).map((preset) => {
+        {Object.values(REGIONAL_CAMERA_PRESETS)
+          .filter((preset) => ['national', 'northeast', 'western_ghats'].includes(preset.id))
+          .map((preset) => {
           const isActive = preset.id === activePresetId;
           return (
             <button
@@ -103,29 +101,15 @@ export const Map3DControlBar: React.FC<Map3DControlBarProps> = ({
           </div>
         )}
 
-        {/* View Perspective Toggle */}
-        {onToggleTopDown && (
-          <button
-            onClick={onToggleTopDown}
-            className={`px-2.5 py-1 rounded-lg text-xs font-mono font-medium transition-all border cursor-pointer ${
-              isTopDown
-                ? 'bg-surface-2 text-text-primary border-citron'
-                : 'text-text-secondary hover:text-text-primary border-line dark:border-white/10 hover:bg-surface-2'
-            }`}
-            title="Toggle Top-Down vs 3D Perspective View"
-          >
-            {isTopDown ? '2D PLAN' : '3D OBLIQUE'}
-          </button>
-        )}
-
         {/* Reset Camera Button */}
         {onResetCamera && (
           <button
             onClick={onResetCamera}
-            className="p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-2 dark:hover:bg-white/5 transition-colors cursor-pointer"
-            title="Reset Camera Position"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-1 dark:bg-white/5 hover:bg-surface-2 dark:hover:bg-white/10 text-xs font-mono text-text-secondary hover:text-text-primary border border-line dark:border-white/10 transition-colors cursor-pointer"
+            title="Reset Camera to Loaded Hazard Data"
           >
-            <span className="material-symbols-outlined text-base">restart_alt</span>
+            <span className="material-symbols-outlined text-sm">restart_alt</span>
+            <span>Reset View</span>
           </button>
         )}
       </div>

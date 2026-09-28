@@ -4,7 +4,6 @@ import { useCallback, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 
 import { Badge } from '@/components/ui/Badge';
-import { ScreeningGradeNotice } from '@/components/common/ScreeningGradeNotice';
 import {
   AppHeader,
   CenterPanel,
@@ -195,7 +194,6 @@ export const HazardWorkspace = ({
           </div>
         </RightPanel>
       }
-      footer={<ScreeningGradeNotice notice={data?.screening_grade} />}
     />
   );
 };

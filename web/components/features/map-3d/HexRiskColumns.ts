@@ -299,69 +299,73 @@ export function createHexRiskColumns(): HexRiskColumnsController {
   };
 
   /**
-   * Resolves the ray against the grid analytically instead of testing every
-   * column. The ray's hit on the base plane identifies a candidate cell in O(1)
-   * via `latLngToCell`; only the small neighbourhood whose columns could occlude
-   * that point is then tested, so cost is independent of grid size.
+   * Resolves the ray against 3D columns accurately by testing both the top cap
+   * and vertical extruded prism sides. Depth-sorted so the closest visible
+   * surface in front of the camera wins. Eliminates zooming glitches and side-clipping.
    */
   const pickCell = (raycaster: THREE.Raycaster): HazardCell | null => {
     if (!mesh || placements.length === 0 || cellRadius <= 0) return null;
 
     const { origin, direction } = raycaster.ray;
-    if (Math.abs(direction.z) < 1e-8) return null;
+    const ox = origin.x;
+    const oy = origin.y;
+    const oz = origin.z;
+    const dx = direction.x;
+    const dy = direction.y;
+    const dz = direction.z;
 
-    const tBase = (HEX_BASE_Z - origin.z) / direction.z;
-    if (tBase <= 0) return null;
-
-    const baseHit = new THREE.Vector3()
-      .copy(direction)
-      .multiplyScalar(tBase)
-      .add(origin);
-    const { lng, lat } = world3DToLatLng(baseHit.x, baseHit.y);
-
-    let candidate: string;
-    try {
-      candidate = latLngToCell(lat, lng, resolution);
-    } catch {
-      return null;
-    }
-
-    // How far a column of maximum height can shift its top away from its base
-    // under this viewing angle, expressed in cell radii.
-    const horizontal = Math.hypot(direction.x, direction.y);
-    const spread = (MAX_HEIGHT_RATIO * horizontal) / Math.abs(direction.z);
-    const k = Math.min(12, Math.max(1, Math.ceil(spread) + 1));
-
-    let best: HazardCell | null = null;
+    const A = dx * dx + dy * dy;
     let bestT = Infinity;
+    let bestCell: HazardCell | null = null;
 
-    for (const h3 of gridDisk(candidate, k)) {
-      const index = indexByH3.get(h3);
-      if (index === undefined) continue;
-      const cell = cellByH3.get(h3);
-      if (!cell) continue;
+    for (let i = 0; i < placements.length; i++) {
+      const p = placements[i];
+      const r = p.radius * HEX_FILL_RATIO;
+      const rSq = r * r;
+      const vx = p.x - ox;
+      const vy = p.y - oy;
 
-      // Intersect the ray with this column's top face.
-      const topZ = HEX_BASE_Z + heights[index];
-      const t = (topZ - origin.z) / direction.z;
-      if (t <= 0 || t >= bestT) continue;
+      // Quick 2D ray line proximity test to skip distant columns in 2 ops
+      const proj = vx * dx + vy * dy;
+      if (proj < -r) continue; // Behind camera
+      const perpSq = vx * vx + vy * vy - (proj > 0 ? (proj * proj) / (A || 1) : 0);
+      if (perpSq > rSq * 1.5) continue; // Ray passes too far from column
 
-      const hitX = origin.x + direction.x * t;
-      const hitY = origin.y + direction.y * t;
-      const hit = world3DToLatLng(hitX, hitY);
-      try {
-        if (latLngToCell(hit.lat, hit.lng, resolution) !== h3) continue;
-      } catch {
-        continue;
+      const z0 = HEX_BASE_Z;
+      const z1 = HEX_BASE_Z + heights[i];
+
+      // 1. Top cap intersection
+      if (Math.abs(dz) > 1e-7) {
+        const tTop = (z1 - oz) / dz;
+        if (tTop > 0 && tTop < bestT) {
+          const hx = ox + tTop * dx - p.x;
+          const hy = oy + tTop * dy - p.y;
+          if (hx * hx + hy * hy <= rSq) {
+            bestT = tTop;
+            bestCell = cellByH3.get(p.h3) ?? null;
+          }
+        }
       }
 
-      bestT = t;
-      best = cell;
+      // 2. Extruded cylinder / prism side wall intersection
+      if (A > 1e-7 && heights[i] > 1e-4) {
+        const B = -(vx * dx + vy * dy);
+        const C = vx * vx + vy * vy - rSq;
+        const disc = B * B - A * C;
+        if (disc >= 0) {
+          const tSide = (-B - Math.sqrt(disc)) / A;
+          if (tSide > 0 && tSide < bestT) {
+            const zHit = oz + tSide * dz;
+            if (zHit >= z0 && zHit <= z1) {
+              bestT = tSide;
+              bestCell = cellByH3.get(p.h3) ?? null;
+            }
+          }
+        }
+      }
     }
 
-    // Nothing stands above the base plane here — fall back to the flat hit.
-    if (!best) best = cellByH3.get(candidate) ?? null;
-    return best;
+    return bestCell;
   };
 
   const dispose = () => {

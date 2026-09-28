@@ -1,6 +1,9 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
+import { PathLayer } from '@deck.gl/layers';
+import { useTheme } from '@/components/providers';
+import { MAINLAND_INDIA_COORDS, ISLAND_GROUPS_COORDS } from '@/lib/geo/indiaBoundary';
 
 import type {
   ForecastAlertItem,
@@ -147,9 +150,32 @@ export const FloodHazardMap = ({
     onCellHover: onForecastCellHover,
   });
 
-  // Forecast sits above the susceptibility stack but below hover/selection outlines, which
-  // the hazard hook appends last within its own list.
-  const allLayers = useMemo(() => [...layers, ...forecastLayers], [layers, forecastLayers]);
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
+
+  const boundaryLayer = useMemo(
+    () =>
+      new PathLayer({
+        id: 'sovereign-india-boundary',
+        data: [
+          { path: MAINLAND_INDIA_COORDS },
+          ...ISLAND_GROUPS_COORDS.map((path) => ({ path })),
+        ],
+        getPath: (d: { path: [number, number][] }) => d.path,
+        getColor: isDark ? [212, 154, 69, 190] : [55, 78, 68, 220],
+        getWidth: 2.2,
+        widthUnits: 'pixels',
+        widthMinPixels: 1.5,
+        pickable: false,
+      }),
+    [isDark],
+  );
+
+  // Sovereign boundary sits at the base; forecast sits above susceptibility stack; hover/selection outlines top
+  const allLayers = useMemo(
+    () => [boundaryLayer, ...layers, ...forecastLayers],
+    [boundaryLayer, layers, forecastLayers],
+  );
 
   // Only the pointer position is stored; the cell itself is derived from `hoveredH3`
   // below, so a tooltip cannot outlive the cell it describes when the layer or resolution

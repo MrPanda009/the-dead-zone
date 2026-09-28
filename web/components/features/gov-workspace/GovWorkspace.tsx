@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import {
   ThreePanelLayout,
@@ -8,7 +8,7 @@ import {
   CenterPanel,
   RightPanel,
 } from '@/components/layout';
-import { ScreeningGradeNotice } from '@/components/common/ScreeningGradeNotice';
+import { cellToParent, cellToLatLng, latLngToCell, getResolution } from 'h3-js';
 import { TopRiskList } from '@/components/features/triage';
 import { CellDossier } from '@/components/features/dossier';
 import { HazardLayerSelect } from '@/components/features/map/controls';
@@ -84,14 +84,74 @@ export const GovWorkspace: React.FC<GovWorkspaceProps> = ({
     admin: effectiveAdmin ?? 178,
   });
 
+  const handleResolutionChange = useCallback((newRes: number) => {
+    setDisplay((current) => ({ ...current, resolution: newRes }));
+    if (selectedH3) {
+      try {
+        const curRes = getResolution(selectedH3);
+        if (curRes !== newRes) {
+          let nextH3: string;
+          if (newRes < curRes) {
+            nextH3 = cellToParent(selectedH3, newRes);
+          } else {
+            const [lat, lng] = cellToLatLng(selectedH3);
+            nextH3 = latLngToCell(lat, lng, newRes);
+          }
+          setSelectedH3(nextH3);
+        }
+      } catch (err) {
+        console.warn('Failed to translate selected cell to new resolution:', err);
+      }
+    }
+  }, [selectedH3]);
+
   const handleInspectWayanad = useCallback(() => {
     setHazardType('landslide');
+    setDisplay((prev) => ({ ...prev, resolution: 8 }));
     setSelectedH3('8860064a15fffff');
   }, []);
 
   const handleDisplayChange = useCallback((next: Partial<FloodHazardMapDisplayState>) => {
+    if (next.resolution !== undefined && next.resolution !== display.resolution) {
+      handleResolutionChange(next.resolution);
+      return;
+    }
     setDisplay((current) => ({ ...current, ...next }));
-  }, []);
+  }, [display.resolution, handleResolutionChange]);
+
+  // Retain and align selected node when resolution changes and new cells load
+  useEffect(() => {
+    if (!selectedH3 || cells.length === 0) return;
+    try {
+      const curRes = getResolution(selectedH3);
+      if (curRes !== display.resolution) {
+        let targetH3: string;
+        if (display.resolution < curRes) {
+          targetH3 = cellToParent(selectedH3, display.resolution);
+        } else {
+          const [lat, lng] = cellToLatLng(selectedH3);
+          targetH3 = latLngToCell(lat, lng, display.resolution);
+        }
+        if (cells.some((c) => c.h3 === targetH3)) {
+          setSelectedH3(targetH3);
+        } else {
+          const match = cells.find((c) => {
+            try {
+              return (
+                cellToParent(c.h3, Math.min(curRes, display.resolution)) ===
+                cellToParent(selectedH3, Math.min(curRes, display.resolution))
+              );
+            } catch {
+              return false;
+            }
+          });
+          if (match) setSelectedH3(match.h3);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, [cells, display.resolution, selectedH3]);
 
   const handleSelectLayer = useCallback((next: HazardType) => {
     setHazardType(next);
@@ -244,7 +304,7 @@ export const GovWorkspace: React.FC<GovWorkspaceProps> = ({
               onSelectCell={setSelectedH3}
               onHoverCell={setHoveredH3}
               resolution={display.resolution}
-              onResolutionChange={(res) => handleDisplayChange({ resolution: res })}
+              onResolutionChange={handleResolutionChange}
               isLoading={isLoading}
               errorMessage={error?.message ?? null}
               forecastItems={forecast.items}
@@ -287,7 +347,6 @@ export const GovWorkspace: React.FC<GovWorkspaceProps> = ({
           />
         </RightPanel>
       }
-      footer={<ScreeningGradeNotice notice={data?.screening_grade} />}
     />
   );
 };

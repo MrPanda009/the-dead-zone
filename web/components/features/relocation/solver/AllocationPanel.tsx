@@ -4,7 +4,7 @@ import { useRef } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 
-import { EmptyState, ErrorState, ScreeningGradeNotice, SectionHeader } from '@/components/common';
+import { EmptyState, ErrorState, SectionHeader } from '@/components/common';
 import { usePrefersReducedMotion } from '@/lib/hooks/usePrefersReducedMotion';
 import type { ApiError } from '@/lib/api/client';
 import type { AllocationAssignment, AllocationPlanResponse } from '@/lib/api/types';
@@ -153,8 +153,6 @@ export const AllocationPanel = ({
               ))}
             </div>
           )}
-
-          <ScreeningGradeNotice notice={plan.screening_grade} />
         </div>
       )}
     </div>

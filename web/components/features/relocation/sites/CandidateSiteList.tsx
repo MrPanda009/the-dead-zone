@@ -4,7 +4,7 @@ import { useRef } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 
-import { EmptyState, ErrorState, ScreeningGradeNotice, SectionHeader } from '@/components/common';
+import { EmptyState, ErrorState, SectionHeader } from '@/components/common';
 import { Button } from '@/components/ui';
 import { usePrefersReducedMotion } from '@/lib/hooks/usePrefersReducedMotion';
 import type { ApiError } from '@/lib/api/client';
@@ -137,9 +137,6 @@ export const CandidateSiteList = ({
               />
             ))}
           </div>
-          {screeningNotice ? (
-            <ScreeningGradeNotice notice={screeningNotice} className={classNames.notice} />
-          ) : null}
         </>
       )}
     </div>
