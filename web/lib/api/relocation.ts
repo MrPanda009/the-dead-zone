@@ -97,3 +97,15 @@ export function overrideSiteCapacity(
   return apiPost<SiteCapacityOverrideResponse>(`/sites/${siteId}/capacity`, overrides, signal);
 }
 
+/**
+ * Fetches nearby OSM public infrastructure facilities (schools, healthcare, water points)
+ * within proximity buffer of a candidate relocation site.
+ */
+export function fetchSiteInfrastructure(
+  siteId: number,
+  signal?: AbortSignal,
+): Promise<import('./types').OsmFacilityItem[]> {
+  return apiGet<import('./types').OsmFacilityItem[]>(`/sites/${siteId}/infrastructure`, undefined, signal);
+}
+
+

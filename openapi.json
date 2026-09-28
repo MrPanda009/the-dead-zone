@@ -1209,6 +1209,105 @@
         }
       }
     },
+    "/sites/{id}/infrastructure": {
+      "get": {
+        "tags": [
+          "Candidate Sites & Capacity"
+        ],
+        "summary": "Get nearby OSM infrastructure facilities for candidate site",
+        "description": "Retrieves public schools, healthcare clinics/hospitals, and water infrastructure points within proximity buffer of candidate site.",
+        "operationId": "get_site_infrastructure_sites__id__infrastructure_get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Candidate Site ID (integer primary key).",
+              "examples": [
+                1
+              ],
+              "title": "Id"
+            },
+            "description": "Candidate Site ID (integer primary key)."
+          },
+          {
+            "name": "radius_m",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "maximum": 25000.0,
+              "minimum": 100.0,
+              "description": "Search buffer radius around site centroid in meters.",
+              "examples": [
+                8000.0
+              ],
+              "default": 8000.0,
+              "title": "Radius M"
+            },
+            "description": "Search buffer radius around site centroid in meters."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OsmFacilityItemDTO"
+                  },
+                  "title": "Response Get Site Infrastructure Sites  Id  Infrastructure Get"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found - Requested resource, cell, or entity does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error - Request parameter or payload validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error - An unexpected system or database error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable - No valid serving version is active. Pipeline data is not ready.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/alerts/active": {
       "get": {
         "tags": [
@@ -3060,6 +3159,17 @@
             "description": "Data quality state: 'complete', 'partial', or 'unavailable'.",
             "default": "complete"
           },
+          "screening_infra": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScreeningInfrastructureDTO"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Screening-grade civic infrastructure summary from HOT/OSM."
+          },
           "policy_version": {
             "type": "string",
             "title": "Policy Version",
@@ -4585,6 +4695,76 @@
         ],
         "title": "LossEventDTO"
       },
+      "OsmFacilityItemDTO": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "osm_id": {
+            "type": "integer",
+            "title": "Osm Id"
+          },
+          "osm_type": {
+            "type": "string",
+            "title": "Osm Type"
+          },
+          "facility_type": {
+            "type": "string",
+            "title": "Facility Type"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "operator_type": {
+            "type": "string",
+            "title": "Operator Type",
+            "default": "unknown"
+          },
+          "distance_m": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Distance M"
+          },
+          "coordinates": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Coordinates",
+            "description": "[longitude, latitude]"
+          },
+          "tags": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Tags"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "osm_id",
+          "osm_type",
+          "facility_type",
+          "coordinates"
+        ],
+        "title": "OsmFacilityItemDTO",
+        "description": "Point infrastructure facility harvested from OpenStreetMap."
+      },
       "PaginatedResponse_CandidateSiteItem_": {
         "properties": {
           "items": {
@@ -5167,6 +5347,123 @@
         "title": "ScenarioWeightOverrideRequest",
         "description": "Request payload for scenario simulation with custom weights and parameters (POST /scenario)."
       },
+      "ScreeningInfrastructureDTO": {
+        "properties": {
+          "schools_count_3km": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Schools Count 3Km",
+            "description": "Schools identified within 3 km catchment.",
+            "default": 0
+          },
+          "nearest_school_dist_m": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nearest School Dist M",
+            "description": "Distance in meters to closest school."
+          },
+          "health_centres_count_8km": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Health Centres Count 8Km",
+            "description": "Health centres/clinics within 8 km catchment.",
+            "default": 0
+          },
+          "nearest_health_dist_m": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nearest Health Dist M",
+            "description": "Distance in meters to closest health centre."
+          },
+          "water_points_count_1km": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Water Points Count 1Km",
+            "description": "Potable water points within 1.5 km catchment.",
+            "default": 0
+          },
+          "nearest_water_dist_m": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nearest Water Dist M",
+            "description": "Distance in meters to closest water point."
+          },
+          "estimated_school_headroom_hh": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimated School Headroom Hh",
+            "description": "Indicative screening school capacity (households)."
+          },
+          "estimated_health_headroom_hh": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimated Health Headroom Hh",
+            "description": "Indicative screening healthcare capacity (households)."
+          },
+          "harvested_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Harvested At",
+            "description": "ISO timestamp of last OSM data harvest."
+          },
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "description": "Data provenance label.",
+            "default": "HOT / OpenStreetMap via Overpass API"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Infra screening status: unscreened, screened, survey_verified.",
+            "default": "unscreened"
+          }
+        },
+        "type": "object",
+        "title": "ScreeningInfrastructureDTO",
+        "description": "Screening-grade civic infrastructure summary from HOT / OpenStreetMap."
+      },
       "SiteCapacityOverrideRequest": {
         "properties": {
           "plot_area_m2": {
@@ -5249,6 +5546,12 @@
             ],
             "title": "Livelihood Multiplier",
             "description": "Override livelihood multiplier."
+          },
+          "use_osm_screening": {
+            "type": "boolean",
+            "title": "Use Osm Screening",
+            "description": "Apply HOT/OSM screening headroom estimates for unmeasured lifelines.",
+            "default": false
           }
         },
         "type": "object",

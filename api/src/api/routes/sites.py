@@ -6,7 +6,7 @@ Endpoints:
 """
 
 import uuid
-from fastapi import APIRouter, Depends, Path
+from fastapi import APIRouter, Depends, Path, Query
 from sqlalchemy.orm import Session
 
 from api.dependencies import (
@@ -22,8 +22,10 @@ from api.services.sites_service import SitesService
 from core.db_models import AppUser
 from core.domain.authorization import Permission, has_jurisdiction
 from core.errors import ForbiddenError, SiteNotFoundError
+from typing import List
 from core.schemas.sites import (
     CandidateSiteDetail,
+    OsmFacilityItemDTO,
     SiteCapacityOverrideRequest,
     SiteCapacityOverrideResponse,
 )
@@ -94,3 +96,31 @@ def get_site_detail(
 ) -> CandidateSiteDetail:
     service = SitesService(db)
     return service.get_candidate_site_detail(id)
+
+
+@router.get(
+    "/{id}/infrastructure",
+    response_model=List[OsmFacilityItemDTO],
+    responses=error_responses(404, 422, 500, 503),
+    summary="Get nearby OSM infrastructure facilities for candidate site",
+    description="Retrieves public schools, healthcare clinics/hospitals, and water infrastructure points within proximity buffer of candidate site.",
+)
+def get_site_infrastructure(
+    id: int = Path(
+        ...,
+        description="Candidate Site ID (integer primary key).",
+        examples=[1],
+    ),
+    radius_m: float = Query(
+        8000.0,
+        ge=100.0,
+        le=25000.0,
+        description="Search buffer radius around site centroid in meters.",
+        examples=[8000.0],
+    ),
+    db: Session = Depends(get_db),
+    _sv: uuid.UUID = Depends(require_serving_version),
+) -> List[OsmFacilityItemDTO]:
+    service = SitesService(db)
+    return service.get_site_infrastructure_facilities(id, radius_m=radius_m)
+

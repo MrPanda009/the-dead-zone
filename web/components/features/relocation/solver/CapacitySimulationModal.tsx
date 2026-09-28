@@ -49,8 +49,21 @@ const SimulationDialogContent = ({
   const [spareHealthPop, setSpareHealthPop] = useState<number>(() =>
     site.capacity.cc_health != null ? Math.round(site.capacity.cc_health * 4.5) : DEFAULT_NORMS.spareHealthPop,
   );
+  const [appliedOsm, setAppliedOsm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+
+  const handleApplyOsm = () => {
+    const infra = site.capacity.screening_infra;
+    if (!infra) return;
+    if (infra.estimated_school_headroom_hh != null) {
+      setSpareSchoolSeats(Math.round(infra.estimated_school_headroom_hh * 0.8));
+    }
+    if (infra.estimated_health_headroom_hh != null) {
+      setSpareHealthPop(Math.round(infra.estimated_health_headroom_hh * 4.5));
+    }
+    setAppliedOsm(true);
+  };
 
   // Real-time client-side calculation matching core.domain.capacity
   const scenario = useMemo(() => {
@@ -137,6 +150,7 @@ const SimulationDialogContent = ({
         water_lpcd: waterLpcd,
         spare_school_seats: spareSchoolSeats,
         spare_health_capacity_pop: spareHealthPop,
+        use_osm_screening: appliedOsm,
       });
 
       if (response && onApplyOverride) {
@@ -237,6 +251,29 @@ const SimulationDialogContent = ({
           </div>
         </div>
       </div>
+
+      {/* HOT / OSM Screening Evidence Banner */}
+      {site.capacity.screening_infra && site.capacity.screening_infra.status !== 'unscreened' && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-2.5 text-xs text-ink">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0 animate-pulse" />
+            <div>
+              <span className="font-semibold text-emerald-600 dark:text-emerald-400">HOT/OSM Evidence: </span>
+              <span className="text-ink-muted">
+                {site.capacity.screening_infra.schools_count_3km} schools nearby (~{site.capacity.screening_infra.estimated_school_headroom_hh ?? 0} HH headroom),{' '}
+                {site.capacity.screening_infra.health_centres_count_8km} health centres (~{site.capacity.screening_infra.estimated_health_headroom_hh ?? 0} HH headroom).
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleApplyOsm}
+            className="self-start sm:self-auto shrink-0 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-700 dark:text-emerald-300 font-semibold px-2.5 py-1 text-[11px] cursor-pointer transition-colors"
+          >
+            Apply OSM Headroom
+          </button>
+        </div>
+      )}
 
       {/* Sliders Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

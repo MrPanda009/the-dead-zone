@@ -72,6 +72,8 @@ class SitesRepository:
                 cs.suitability,
                 cs.assessment_status,
                 cs.eligibility_status,
+                cs.screening_infra,
+                cs.infra_screening_status,
                 cs.metadata as metadata_info,
                 ST_X(cs.centroid::geometry) as lon,
                 ST_Y(cs.centroid::geometry) as lat,
@@ -106,6 +108,8 @@ class SitesRepository:
                 cs.suitability,
                 cs.assessment_status,
                 cs.eligibility_status,
+                cs.screening_infra,
+                cs.infra_screening_status,
                 cs.metadata as metadata_info,
                 ST_X(cs.centroid::geometry) as lon,
                 ST_Y(cs.centroid::geometry) as lat,
@@ -119,7 +123,33 @@ class SitesRepository:
             return None
         return dict(row)
 
+    def get_site_infrastructure_facilities(
+        self, site_id: int, radius_m: float = 8000.0
+    ) -> list[dict[str, Any]]:
+        """Retrieves nearby OSM infrastructure facilities within radius of a candidate site."""
+        sql = """
+            SELECT
+                f.id,
+                f.osm_id,
+                f.osm_type,
+                f.facility_type,
+                f.name,
+                f.operator_type,
+                f.tags,
+                ST_X(f.geom) as lon,
+                ST_Y(f.geom) as lat,
+                ST_Distance(f.geom::geography, cs.centroid::geography) as distance_m
+            FROM candidate_site cs
+            JOIN osm_infrastructure_facility f
+              ON ST_DWithin(f.geom::geography, cs.centroid::geography, :radius_m)
+            WHERE cs.id = :site_id
+            ORDER BY distance_m ASC;
+        """
+        rows = self.db.execute(text(sql), {"site_id": site_id, "radius_m": radius_m}).mappings().fetchall()
+        return [dict(r) for r in rows]
+
     def count_sites(self) -> int:
         """Counts total candidate sites stored in the database."""
         stmt = text("SELECT count(*) FROM candidate_site;")
         return int(self.db.execute(stmt).scalar() or 0)
+

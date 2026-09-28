@@ -165,3 +165,19 @@ class Role(StrEnum):
     GOVERNMENT_OFFICIAL = "GOVERNMENT_OFFICIAL"
     SYSTEM_ADMIN = "SYSTEM_ADMIN"
 
+
+class FacilityType(StrEnum):
+    """Supported facility types from OpenStreetMap / Humanitarian OpenStreetMap."""
+    SCHOOL = "school"
+    HEALTH = "health"
+    WATER = "water"
+    ROAD = "road"
+
+
+class InfraScreeningStatus(StrEnum):
+    """Civic infrastructure screening status for candidate relocation parcels."""
+    UNSCREENED = "unscreened"
+    SCREENED = "screened"
+    SURVEY_VERIFIED = "survey_verified"
+
+

@@ -246,6 +246,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sites/{id}/infrastructure": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get nearby OSM infrastructure facilities for candidate site
+         * @description Retrieves public schools, healthcare clinics/hospitals, and water infrastructure points within proximity buffer of candidate site.
+         */
+        get: operations["get_site_infrastructure_sites__id__infrastructure_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/alerts/active": {
         parameters: {
             query?: never;
@@ -990,6 +1010,8 @@ export interface components {
              * @default complete
              */
             data_quality: string;
+            /** @description Screening-grade civic infrastructure summary from HOT/OSM. */
+            screening_infra?: components["schemas"]["ScreeningInfrastructureDTO"] | null;
             /**
              * Policy Version
              * @description Audit version of the capacity policy norms applied.
@@ -1818,6 +1840,38 @@ export interface components {
             /** Source Ref */
             source_ref?: string | null;
         };
+        /**
+         * OsmFacilityItemDTO
+         * @description Point infrastructure facility harvested from OpenStreetMap.
+         */
+        OsmFacilityItemDTO: {
+            /** Id */
+            id: number;
+            /** Osm Id */
+            osm_id: number;
+            /** Osm Type */
+            osm_type: string;
+            /** Facility Type */
+            facility_type: string;
+            /** Name */
+            name?: string | null;
+            /**
+             * Operator Type
+             * @default unknown
+             */
+            operator_type: string;
+            /** Distance M */
+            distance_m?: number | null;
+            /**
+             * Coordinates
+             * @description [longitude, latitude]
+             */
+            coordinates: number[];
+            /** Tags */
+            tags?: {
+                [key: string]: unknown;
+            };
+        };
         /** PaginatedResponse[CandidateSiteItem] */
         PaginatedResponse_CandidateSiteItem_: {
             /**
@@ -2144,6 +2198,72 @@ export interface components {
             allocation_params?: components["schemas"]["ScenarioAllocationParams"] | null;
         };
         /**
+         * ScreeningInfrastructureDTO
+         * @description Screening-grade civic infrastructure summary from HOT / OpenStreetMap.
+         */
+        ScreeningInfrastructureDTO: {
+            /**
+             * Schools Count 3Km
+             * @description Schools identified within 3 km catchment.
+             * @default 0
+             */
+            schools_count_3km: number;
+            /**
+             * Nearest School Dist M
+             * @description Distance in meters to closest school.
+             */
+            nearest_school_dist_m?: number | null;
+            /**
+             * Health Centres Count 8Km
+             * @description Health centres/clinics within 8 km catchment.
+             * @default 0
+             */
+            health_centres_count_8km: number;
+            /**
+             * Nearest Health Dist M
+             * @description Distance in meters to closest health centre.
+             */
+            nearest_health_dist_m?: number | null;
+            /**
+             * Water Points Count 1Km
+             * @description Potable water points within 1.5 km catchment.
+             * @default 0
+             */
+            water_points_count_1km: number;
+            /**
+             * Nearest Water Dist M
+             * @description Distance in meters to closest water point.
+             */
+            nearest_water_dist_m?: number | null;
+            /**
+             * Estimated School Headroom Hh
+             * @description Indicative screening school capacity (households).
+             */
+            estimated_school_headroom_hh?: number | null;
+            /**
+             * Estimated Health Headroom Hh
+             * @description Indicative screening healthcare capacity (households).
+             */
+            estimated_health_headroom_hh?: number | null;
+            /**
+             * Harvested At
+             * @description ISO timestamp of last OSM data harvest.
+             */
+            harvested_at?: string | null;
+            /**
+             * Source
+             * @description Data provenance label.
+             * @default HOT / OpenStreetMap via Overpass API
+             */
+            source: string;
+            /**
+             * Status
+             * @description Infra screening status: unscreened, screened, survey_verified.
+             * @default unscreened
+             */
+            status: string;
+        };
+        /**
          * SiteCapacityOverrideRequest
          * @description Request payload for capacity scenario simulation (POST /sites/{id}/capacity).
          */
@@ -2178,6 +2298,12 @@ export interface components {
              * @description Override livelihood multiplier.
              */
             livelihood_multiplier?: number | null;
+            /**
+             * Use Osm Screening
+             * @description Apply HOT/OSM screening headroom estimates for unmeasured lifelines.
+             * @default false
+             */
+            use_osm_screening: boolean;
         };
         /**
          * SiteCapacityOverrideResponse
@@ -3157,6 +3283,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CandidateSiteDetail"];
+                };
+            };
+            /** @description Not Found - Requested resource, cell, or entity does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Validation Error - Request parameter or payload validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error - An unexpected system or database error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Service Unavailable - No valid serving version is active. Pipeline data is not ready. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    get_site_infrastructure_sites__id__infrastructure_get: {
+        parameters: {
+            query?: {
+                /** @description Search buffer radius around site centroid in meters. */
+                radius_m?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Candidate Site ID (integer primary key). */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OsmFacilityItemDTO"][];
                 };
             };
             /** @description Not Found - Requested resource, cell, or entity does not exist. */

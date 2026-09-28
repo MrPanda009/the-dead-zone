@@ -70,3 +70,11 @@ SCREENING_GRADE_NOTICE: str = (
     "required before executing relocation orders."
 )
 
+# HOT / OpenStreetMap infrastructure screening norms
+OSM_SCHOOL_BUFFER_M: float = 3000.0  # 3 km primary/middle school catchment buffer
+OSM_HEALTH_BUFFER_M: float = 8000.0  # 8 km rural Primary Health Centre (PHC) catchment buffer
+OSM_WATER_BUFFER_M: float = 1500.0   # 1.5 km potable water point catchment buffer
+OSM_DEFAULT_SEATS_PER_SCHOOL: int = 120  # Conservative indicative screening capacity per rural school
+OSM_DEFAULT_SPARE_HEALTH_POP: int = 2500  # Conservative indicative spare population per rural sub-centre
+
+

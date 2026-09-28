@@ -141,6 +141,9 @@ export type CandidateSiteDetail = components['schemas']['CandidateSiteDetail'];
 export type CandidateSitePage = components['schemas']['PaginatedResponse_CandidateSiteItem_'];
 export type CapacityBreakdown = components['schemas']['CapacityBreakdownDTO'];
 export type AugmentedCapacity = components['schemas']['AugmentedCapacityDTO'];
+export type ScreeningInfrastructure = components['schemas']['ScreeningInfrastructureDTO'];
+export type OsmFacilityItem = components['schemas']['OsmFacilityItemDTO'];
+
 
 export type AllocationPlanRequest = components['schemas']['AllocationPlanRequest'];
 export type AllocationPlanResponse = components['schemas']['AllocationPlanResponse'];

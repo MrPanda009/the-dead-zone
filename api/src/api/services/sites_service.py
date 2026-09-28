@@ -28,6 +28,8 @@ from core.schemas.sites import (
     CandidateSiteDetail,
     CandidateSiteItem,
     CapacityBreakdownDTO,
+    OsmFacilityItemDTO,
+    ScreeningInfrastructureDTO,
     SiteCapacityOverrideRequest,
     SiteCapacityOverrideResponse,
 )
@@ -42,6 +44,37 @@ def _truncate(value: float, digits: int) -> float:
     """
     factor = 10 ** digits
     return math.trunc(value * factor) / factor
+
+
+def _parse_screening_infra(r: dict[str, Any]) -> Optional[ScreeningInfrastructureDTO]:
+    """Safely extracts and formats ScreeningInfrastructureDTO from row record."""
+    raw = r.get("screening_infra")
+    if not raw:
+        return None
+    if isinstance(raw, str):
+        try:
+            raw = json.loads(raw)
+        except Exception:
+            return None
+    if not isinstance(raw, dict) or not raw:
+        return None
+    try:
+        return ScreeningInfrastructureDTO(
+            schools_count_3km=int(raw.get("schools_count_3km") or 0),
+            nearest_school_dist_m=float(raw["nearest_school_dist_m"]) if raw.get("nearest_school_dist_m") is not None else None,
+            health_centres_count_8km=int(raw.get("health_centres_count_8km") or 0),
+            nearest_health_dist_m=float(raw["nearest_health_dist_m"]) if raw.get("nearest_health_dist_m") is not None else None,
+            water_points_count_1km=int(raw.get("water_points_count_1km") or 0),
+            nearest_water_dist_m=float(raw["nearest_water_dist_m"]) if raw.get("nearest_water_dist_m") is not None else None,
+            estimated_school_headroom_hh=int(raw["estimated_school_headroom_hh"]) if raw.get("estimated_school_headroom_hh") is not None else None,
+            estimated_health_headroom_hh=int(raw["estimated_health_headroom_hh"]) if raw.get("estimated_health_headroom_hh") is not None else None,
+            harvested_at=str(raw.get("harvested_at")) if raw.get("harvested_at") else None,
+            source=str(raw.get("source") or "HOT / OpenStreetMap via Overpass API"),
+            status=str(raw.get("status") or r.get("infra_screening_status") or "unscreened"),
+        )
+    except Exception:
+        return None
+
 
 
 class SitesService:
@@ -172,6 +205,7 @@ class SitesService:
                 tied_constraints=[binding_enum] if binding_enum else [],
                 assessment_status=str(r.get("assessment_status") or "screening_only"),
                 data_quality=str(meta.get("data_quality") or ("complete" if cc_final_raw is not None else "unavailable")),
+                screening_infra=_parse_screening_infra(r),
                 policy_version=str(meta.get("policy_version") or self.engine.norms.policy_version),
                 calculation_version=str(meta.get("calculation_version") or self.engine.norms.calculation_version),
             )
@@ -280,6 +314,7 @@ class SitesService:
             tied_constraints=[binding_enum] if binding_enum else [],
             assessment_status=str(r.get("assessment_status") or "screening_only"),
             data_quality=str(meta.get("data_quality") or ("complete" if cc_final_raw is not None else "unavailable")),
+            screening_infra=_parse_screening_infra(r),
             policy_version=str(meta.get("policy_version") or self.engine.norms.policy_version),
             calculation_version=str(meta.get("calculation_version") or self.engine.norms.calculation_version),
         )
@@ -338,6 +373,8 @@ class SitesService:
         base_cc_final = int(r.get("cc_final") if r.get("cc_final") is not None else 0)
         base_binding = BindingConstraint(r.get("binding_constraint") or "land")
 
+        screening_infra_dto = _parse_screening_infra(r)
+
         base_capacity = CapacityBreakdownDTO(
             cc_land=base_cc_land,
             cc_water=base_cc_water,
@@ -347,6 +384,7 @@ class SitesService:
             cc_final=base_cc_final,
             binding_constraint=base_binding,
             data_quality="complete",
+            screening_infra=screening_infra_dto,
             policy_version=self.engine.norms.policy_version,
             calculation_version=self.engine.norms.calculation_version,
         )
@@ -371,17 +409,27 @@ class SitesService:
         else:
             scen_cc_water = base_cc_water
 
-        scen_cc_school = (
-            self.engine.calculate_school_capacity(overrides.spare_school_seats)
-            if overrides.spare_school_seats is not None
-            else base_cc_school
-        )
+        # Check for OSM screening estimates when requested
+        if overrides.use_osm_screening and screening_infra_dto:
+            default_osm_school_headroom = screening_infra_dto.estimated_school_headroom_hh
+            default_osm_health_headroom = screening_infra_dto.estimated_health_headroom_hh
+        else:
+            default_osm_school_headroom = None
+            default_osm_health_headroom = None
 
-        scen_cc_health = (
-            self.engine.calculate_health_capacity(catchment_pop=0, phc_norm_pop=overrides.spare_health_capacity_pop)
-            if overrides.spare_health_capacity_pop is not None
-            else base_cc_health
-        )
+        if overrides.spare_school_seats is not None:
+            scen_cc_school = self.engine.calculate_school_capacity(overrides.spare_school_seats)
+        elif default_osm_school_headroom is not None:
+            scen_cc_school = default_osm_school_headroom
+        else:
+            scen_cc_school = base_cc_school
+
+        if overrides.spare_health_capacity_pop is not None:
+            scen_cc_health = self.engine.calculate_health_capacity(catchment_pop=0, phc_norm_pop=overrides.spare_health_capacity_pop)
+        elif default_osm_health_headroom is not None:
+            scen_cc_health = default_osm_health_headroom
+        else:
+            scen_cc_health = base_cc_health
 
         mu = overrides.livelihood_multiplier if overrides.livelihood_multiplier is not None else 1.0
         scen_final, scen_binding, scen_tied = self.engine.calculate_final_capacity(
@@ -398,6 +446,7 @@ class SitesService:
             binding_constraint=scen_binding,
             tied_constraints=scen_tied,
             data_quality="complete",
+            screening_infra=screening_infra_dto,
             policy_version="scenario-override-v1.0",
             calculation_version=self.engine.norms.calculation_version,
         )
@@ -425,3 +474,34 @@ class SitesService:
             delta_households=delta,
             augmented_options=[aug_dto] if aug_dto is not None else [],
         )
+
+    def get_site_infrastructure_facilities(
+        self, site_id: int, radius_m: float = 8000.0
+    ) -> list[OsmFacilityItemDTO]:
+        """Retrieves nearby OSM facilities for a candidate site."""
+        if not self.repo.get_candidate_site_by_id(site_id):
+            raise SiteNotFoundError(site_id)
+        raw_facilities = self.repo.get_site_infrastructure_facilities(site_id, radius_m=radius_m)
+        items: list[OsmFacilityItemDTO] = []
+        for f in raw_facilities:
+            tags = f.get("tags") or {}
+            if isinstance(tags, str):
+                try:
+                    tags = json.loads(tags)
+                except Exception:
+                    tags = {}
+            items.append(
+                OsmFacilityItemDTO(
+                    id=int(f["id"]),
+                    osm_id=int(f["osm_id"]),
+                    osm_type=str(f["osm_type"]),
+                    facility_type=str(f["facility_type"]),
+                    name=f.get("name"),
+                    operator_type=str(f.get("operator_type") or "unknown"),
+                    distance_m=round(float(f["distance_m"]), 1) if f.get("distance_m") is not None else None,
+                    coordinates=[float(f["lon"]), float(f["lat"])],
+                    tags=tags,
+                )
+            )
+        return items
+

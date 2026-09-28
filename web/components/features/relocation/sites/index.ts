@@ -30,3 +30,7 @@ export type { SiteAttributeRowProps } from './SiteAttributeRow';
 
 export { SiteRejectionNotice } from './SiteRejectionNotice';
 export type { SiteRejectionNoticeProps } from './SiteRejectionNotice';
+
+export { ScreeningInfraPills } from './ScreeningInfraPills';
+export type { ScreeningInfraPillsProps } from './ScreeningInfraPills';
+

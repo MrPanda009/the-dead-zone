@@ -9,6 +9,34 @@ from core.enums import BindingConstraint, TenureType
 from core.schemas.common import BaseSchema, SCREENING_GRADE_NOTICE
 
 
+class OsmFacilityItemDTO(BaseSchema):
+    """Point infrastructure facility harvested from OpenStreetMap."""
+    id: int
+    osm_id: int
+    osm_type: str
+    facility_type: str
+    name: Optional[str] = None
+    operator_type: str = "unknown"
+    distance_m: Optional[float] = None
+    coordinates: List[float] = Field(description="[longitude, latitude]")
+    tags: Dict[str, Any] = Field(default_factory=dict)
+
+
+class ScreeningInfrastructureDTO(BaseSchema):
+    """Screening-grade civic infrastructure summary from HOT / OpenStreetMap."""
+    schools_count_3km: int = Field(default=0, ge=0, description="Schools identified within 3 km catchment.")
+    nearest_school_dist_m: Optional[float] = Field(default=None, ge=0.0, description="Distance in meters to closest school.")
+    health_centres_count_8km: int = Field(default=0, ge=0, description="Health centres/clinics within 8 km catchment.")
+    nearest_health_dist_m: Optional[float] = Field(default=None, ge=0.0, description="Distance in meters to closest health centre.")
+    water_points_count_1km: int = Field(default=0, ge=0, description="Potable water points within 1.5 km catchment.")
+    nearest_water_dist_m: Optional[float] = Field(default=None, ge=0.0, description="Distance in meters to closest water point.")
+    estimated_school_headroom_hh: Optional[int] = Field(default=None, ge=0, description="Indicative screening school capacity (households).")
+    estimated_health_headroom_hh: Optional[int] = Field(default=None, ge=0, description="Indicative screening healthcare capacity (households).")
+    harvested_at: Optional[str] = Field(default=None, description="ISO timestamp of last OSM data harvest.")
+    source: str = Field(default="HOT / OpenStreetMap via Overpass API", description="Data provenance label.")
+    status: str = Field(default="unscreened", description="Infra screening status: unscreened, screened, survey_verified.")
+
+
 class CapacityBreakdownDTO(BaseSchema):
     """Structured breakdown of independent resource capacity dimensions."""
     cc_land: int = Field(ge=0, description="Households supportable by developable land area.")
@@ -43,6 +71,10 @@ class CapacityBreakdownDTO(BaseSchema):
         default="complete",
         description="Data quality state: 'complete', 'partial', or 'unavailable'.",
     )
+    screening_infra: Optional[ScreeningInfrastructureDTO] = Field(
+        default=None,
+        description="Screening-grade civic infrastructure summary from HOT/OSM.",
+    )
     policy_version: str = Field(
         default="capacity-norms-v1.0",
         description="Audit version of the capacity policy norms applied.",
@@ -51,6 +83,7 @@ class CapacityBreakdownDTO(BaseSchema):
         default="calc-v1.0",
         description="Audit version of the mathematical calculation implementation.",
     )
+
 
 
 class AugmentedCapacityDTO(BaseSchema):
@@ -129,6 +162,7 @@ class SiteCapacityOverrideRequest(BaseSchema):
     spare_school_seats: Optional[int] = Field(default=None, ge=0, description="Override spare school seats.")
     spare_health_capacity_pop: Optional[int] = Field(default=None, ge=0, description="Override spare PHC population.")
     livelihood_multiplier: Optional[float] = Field(default=None, ge=0.0, le=1.0, description="Override livelihood multiplier.")
+    use_osm_screening: bool = Field(default=False, description="Apply HOT/OSM screening headroom estimates for unmeasured lifelines.")
 
 
 class SiteCapacityOverrideResponse(BaseSchema):

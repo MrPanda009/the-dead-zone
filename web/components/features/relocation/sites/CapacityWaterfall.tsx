@@ -9,6 +9,7 @@ import type { BindingConstraint, CapacityBreakdown } from '@/lib/api/types';
 
 import { BindingConstraintBadge } from './BindingConstraintBadge';
 import { CapacityBar } from './CapacityBar';
+import { ScreeningInfraPills } from './ScreeningInfraPills';
 import { UNMEASURED_LABEL } from '../constants';
 
 const DIMENSIONS: BindingConstraint[] = ['land', 'water', 'school', 'health'];
@@ -126,6 +127,8 @@ export const CapacityWaterfall = ({
           ))}
         </div>
       ) : null}
+
+      <ScreeningInfraPills screeningInfra={capacity.screening_infra} />
 
       <p className={['text-[10px] leading-relaxed text-ink-faint', classNames.footnote ?? ''].join(' ')}>
         Capacity is the minimum across dimensions, scaled by a livelihood multiplier of{' '}

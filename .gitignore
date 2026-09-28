@@ -21,6 +21,7 @@ out/
 # data & model artifacts (PRD §9.8 — contents never committed,
 # folder skeleton kept via .gitkeep)
 data/*/*
+*.db
 models/*
 !.gitkeep
 

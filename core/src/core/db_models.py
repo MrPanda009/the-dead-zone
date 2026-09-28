@@ -397,6 +397,12 @@ class CandidateSite(Base):
     binding_constraint: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     augmented: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
     suitability: Mapped[Optional[int]] = mapped_column(SmallInteger, default=None, nullable=True)
+    screening_infra: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, default=dict, nullable=False
+    )
+    infra_screening_status: Mapped[str] = mapped_column(
+        String, default="unscreened", nullable=False
+    )
     metadata_: Mapped[dict[str, Any]] = mapped_column(
         "metadata", JSONB, default=dict, nullable=False
     )
@@ -408,6 +414,31 @@ class CandidateSite(Base):
     relocation_plans: Mapped[List[RelocationPlan]] = relationship(
         "RelocationPlan", back_populates="candidate_site"
     )
+
+
+class OsmInfrastructureFacility(Base):
+    __tablename__ = "osm_infrastructure_facility"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    osm_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    osm_type: Mapped[str] = mapped_column(String, nullable=False)  # node, way, relation
+    facility_type: Mapped[str] = mapped_column(String, nullable=False)  # school, health, water, road
+    name: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    operator_type: Mapped[str] = mapped_column(String, default="unknown", nullable=False)
+    geom: Mapped[Any] = mapped_column(Geometry("POINT", srid=4326), nullable=False)
+    tags: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    admin_id: Mapped[Optional[int]] = mapped_column(
+        BigInteger, ForeignKey("admin_boundary.id", ondelete="CASCADE"), nullable=True
+    )
+    source_snapshot_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        PG_UUID(as_uuid=True), ForeignKey("source_snapshot.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+    admin_boundary: Mapped[Optional[AdminBoundary]] = relationship("AdminBoundary")
+
 
 
 class AllocationRun(Base):
