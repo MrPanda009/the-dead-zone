@@ -27,6 +27,7 @@ import {
 } from './HexTargetBeacon';
 import { Hex3DTooltip } from './Hex3DTooltip';
 import { Map3DControlBar } from './Map3DControlBar';
+import { Map3DSideControls, Map3DInteractionMode } from './Map3DSideControls';
 
 /** Stable identity so a default `breaks` prop cannot re-trigger effects each render. */
 const EMPTY_BREAKS: number[] = [];
@@ -96,6 +97,10 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
   // Control bar state
   const [activePreset, setActivePreset] = useState<string>('national');
 
+  // Drag interaction mode: 'pan' (hold & drag like 2D) vs 'rotate' (3D orbit)
+  const [interactionMode, setInteractionMode] = useState<Map3DInteractionMode>('pan');
+  const pointerDownPosRef = useRef<{ x: number; y: number } | null>(null);
+
   // Memoized forecast map for fast tooltip resolution
   const forecastMap = useMemo(() => {
     if (!forecastItems || forecastItems.length === 0) return new Map<string, ForecastAlertItem>();
@@ -156,6 +161,17 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
     // be small enough to actually inspect one column.
     controls.minDistance = 0.05;
     controls.maxDistance = 200;
+    controls.enablePan = true;
+    controls.screenSpacePanning = true;
+    controls.mouseButtons = {
+      LEFT: THREE.MOUSE.PAN,
+      MIDDLE: THREE.MOUSE.DOLLY,
+      RIGHT: THREE.MOUSE.ROTATE,
+    };
+    controls.touches = {
+      ONE: THREE.TOUCH.PAN,
+      TWO: THREE.TOUCH.DOLLY_PAN,
+    };
     controls.target.set(
       initialPreset.target.x,
       initialPreset.target.y,
@@ -261,6 +277,33 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
     landmassRef.current?.updateTheme(isDark);
     beaconRef.current?.updateTheme(isDark);
   }, [isDark]);
+
+  // Synchronize OrbitControls interaction mode (Hold & Drag Pan vs 3D Orbit Rotate)
+  useEffect(() => {
+    if (!controlsRef.current) return;
+    const controls = controlsRef.current;
+    if (interactionMode === 'pan') {
+      controls.mouseButtons = {
+        LEFT: THREE.MOUSE.PAN,
+        MIDDLE: THREE.MOUSE.DOLLY,
+        RIGHT: THREE.MOUSE.ROTATE,
+      };
+      controls.touches = {
+        ONE: THREE.TOUCH.PAN,
+        TWO: THREE.TOUCH.DOLLY_PAN,
+      };
+    } else {
+      controls.mouseButtons = {
+        LEFT: THREE.MOUSE.ROTATE,
+        MIDDLE: THREE.MOUSE.DOLLY,
+        RIGHT: THREE.MOUSE.PAN,
+      };
+      controls.touches = {
+        ONE: THREE.TOUCH.ROTATE,
+        TWO: THREE.TOUCH.DOLLY_PAN,
+      };
+    }
+  }, [interactionMode]);
 
   // Smooth Camera Flight Navigation (GSAP)
   const flyTo = useCallback(
@@ -445,8 +488,19 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
     onHoverCell?.(null);
   }, [onHoverCell]);
 
+  const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    pointerDownPosRef.current = { x: e.clientX, y: e.clientY };
+  }, []);
+
   const handleClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
+      const down = pointerDownPosRef.current;
+      if (down) {
+        const dist = Math.hypot(e.clientX - down.x, e.clientY - down.y);
+        // If the pointer moved more than 5px during mouse-down, the user was dragging/panning!
+        // Never trigger cell selection on drag gestures.
+        if (dist > 5) return;
+      }
       const hit = pickAtClient(e.clientX, e.clientY);
       if (hit) onSelectCell?.(hit.h3);
     },
@@ -460,13 +514,19 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
     [],
   );
 
+  const cursorClass =
+    interactionMode === 'pan'
+      ? 'cursor-grab active:cursor-grabbing'
+      : 'cursor-move active:cursor-grabbing';
+
   return (
     <div
       ref={containerRef}
+      onPointerDown={handlePointerDown}
       onMouseMove={handlePointerMove}
       onMouseLeave={handlePointerLeave}
       onClick={handleClick}
-      className={`relative w-full h-full overflow-hidden select-none cursor-grab active:cursor-grabbing ${className}`}
+      className={`relative w-full h-full overflow-hidden select-none ${cursorClass} ${className}`}
     >
       <canvas ref={canvasRef} className="w-full h-full block" />
 
@@ -476,14 +536,22 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
           activePresetId={activePreset}
           onSelectPreset={handleSelectPreset}
           onResetCamera={handleResetCamera}
-          onZoomIn={handleZoomIn}
-          onZoomOut={handleZoomOut}
           resolution={resolution}
           onResolutionChange={onResolutionChange}
           isLoading={isLoading}
           cellCount={cells.length}
         />
       </div>
+
+      {/* Floating 3D Side Control Panel (Zoom & Hold-and-Drag Option, matching 2D page) */}
+      <Map3DSideControls
+        interactionMode={interactionMode}
+        onInteractionModeChange={setInteractionMode}
+        onZoomIn={handleZoomIn}
+        onZoomOut={handleZoomOut}
+        onResetCamera={handleResetCamera}
+        position="bottom-right"
+      />
 
       {/* Floating HUD Tooltip */}
       <Hex3DTooltip
