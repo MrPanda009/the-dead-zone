@@ -106,7 +106,7 @@ export const DistrictPhotoShowcase: React.FC<DistrictPhotoShowcaseProps> = ({
           <div className="flex items-center justify-between pt-2 mt-1 border-t border-white/15 text-[10px] font-mono text-cream/70">
             <span className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              InSAR Geodesy Verified Terrain
+              Verified Tourist Travel Corridor
             </span>
 
             {slides.length > 1 && (

@@ -38,8 +38,8 @@ export const DistrictSpotSelector: React.FC<DistrictSpotSelectorProps> = ({
   return (
     <div className={`flex flex-col gap-1.5 ${className}`}>
       <div className="flex items-center justify-between text-[11px] font-mono text-ink-muted dark:text-cream/60">
-        <span>EXPLORE SETTLEMENTS & CORRIDORS ({spots.length})</span>
-        <span className="text-[10px] text-ink-faint dark:text-white/40">Select destination to inspect telemetry</span>
+        <span>POPULAR DESTINATIONS & LOCALITIES ({spots.length})</span>
+        <span className="text-[10px] text-ink-faint dark:text-white/40">Select to view local safety advisory</span>
       </div>
 
       <div
@@ -63,15 +63,15 @@ export const DistrictSpotSelector: React.FC<DistrictSpotSelectorProps> = ({
             >
               <span
                 className={`w-1.5 h-1.5 rounded-full ${
-                  isTier1 ? 'bg-red-500' : 'bg-amber-400'
+                  isTier1 ? 'bg-red-500 animate-pulse' : 'bg-amber-400'
                 }`}
               />
               <span>{spot.name}</span>
-              {spot.przOverlapPct !== undefined && (
-                <span className="text-[10px] font-mono opacity-60">
-                  {spot.przOverlapPct.toFixed(0)}% PRZ
-                </span>
-              )}
+              <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded ${
+                isTier1 ? 'bg-red-500/10 text-red-500 font-semibold' : 'bg-surface-2 dark:bg-white/10 opacity-75'
+              }`}>
+                {isTier1 ? 'Active Alert' : spot.type === 'town' ? 'Town Base' : 'Monitored'}
+              </span>
             </button>
           );
         })}

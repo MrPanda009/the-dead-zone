@@ -48,7 +48,7 @@ export const DistrictRiskHeader: React.FC<DistrictRiskHeaderProps> = ({
             {profile.districtName}
           </h2>
           <span className="text-xs font-mono text-ink-muted dark:text-cream/60">
-            {profile.state} &bull; LGD {profile.lgdCode}
+            {profile.state} &bull; {profile.riverBasin}
           </span>
           <span
             className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase font-semibold border ${
@@ -67,16 +67,12 @@ export const DistrictRiskHeader: React.FC<DistrictRiskHeaderProps> = ({
         </div>
 
         <div className="flex items-center gap-3 text-xs font-mono text-ink-faint dark:text-cream/50">
-          <span>Basin: {profile.riverBasin}</span>
-          <span>&bull;</span>
-          <span className="flex items-center gap-1">
-            <span
-              className={`w-2 h-2 rounded-full ${
-                isLive ? 'bg-emerald-500' : 'bg-blue-400'
-              }`}
-            />
-            {isLive ? 'Live API Synced' : 'Authoritative Baseline Verified'}
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            National Disaster Advisory Active
           </span>
+          <span>&bull;</span>
+          <span>Emergency Helpline: 112 / 1070</span>
         </div>
       </div>
 

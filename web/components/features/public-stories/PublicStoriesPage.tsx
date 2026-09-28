@@ -2,11 +2,11 @@
 
 import React, { useState } from 'react';
 import { ZoneId, REGIONAL_STORIES } from './storyData';
-import { StoriesHeroText } from './StoriesHeroText';
 import { StoriesHeaderCoordinates } from './StoriesHeaderCoordinates';
 import { ZoneTickSelector } from './ZoneTickSelector';
 import { IndiaStoriesMap } from './IndiaStoriesMap';
 import { DistrictRiskModal } from './DistrictRiskModal';
+import { TouristDistrictCard } from './TouristDistrictCard';
 
 export interface PublicStoriesPageProps {
   /** Target link for returning to landing page / overview (default '/') */
@@ -53,19 +53,18 @@ export const PublicStoriesPage: React.FC<PublicStoriesPageProps> = ({
         />
       </div>
 
-      {/* 2. MAIN INTERACTION CANVAS: Left Text + Center Map + Right Zone Selector */}
-      <div className="relative z-10 flex-1 w-full grid grid-cols-1 md:grid-cols-12 items-center gap-3 lg:gap-4 min-h-0">
-        {/* Left Column: Headline & Region Context */}
-        <div className="hidden md:flex md:col-span-4 lg:col-span-3 h-full flex-col justify-center pl-1 lg:pl-2">
-          <StoriesHeroText
-            category="SETU-DRR TOURIST HAZARD ADVISORY"
-            activeZoneLabel={activeStory.label}
-            summary={activeStory.shortSummary}
+      {/* 2. MAIN INTERACTION CANVAS: Left Card + Center Map + Right Zone Selector */}
+      <div className="relative z-10 flex-1 w-full grid grid-cols-1 md:grid-cols-12 items-center gap-4 lg:gap-6 min-h-0">
+        {/* Left Column: Tourist District Card & Live Advisory */}
+        <div className="hidden md:flex md:col-span-5 lg:col-span-4 h-full flex-col justify-center pl-1 lg:pl-2">
+          <TouristDistrictCard
+            zone={selectedZone}
+            onOpenDetails={() => setIsRiskModalOpen(true)}
           />
         </div>
 
         {/* Center Column: Interactive India Map with Region Cutout */}
-        <div className="col-span-1 md:col-span-6 lg:col-span-7 h-full w-full flex items-center justify-center relative">
+        <div className="col-span-1 md:col-span-5 lg:col-span-6 h-full w-full flex items-center justify-center relative">
           <IndiaStoriesMap
             selectedZone={selectedZone}
             onSelectZone={(zone) => setSelectedZone(zone)}
@@ -74,7 +73,7 @@ export const PublicStoriesPage: React.FC<PublicStoriesPageProps> = ({
         </div>
 
         {/* Right Column: Zone Tick Ruler Selector */}
-        <div className="hidden md:flex md:col-span-2 h-full flex-col justify-center items-end pr-2 lg:pr-4">
+        <div className="hidden md:flex md:col-span-2 lg:col-span-2 h-full flex-col justify-center items-end pr-2 lg:pr-4">
           <ZoneTickSelector
             selectedZone={selectedZone}
             onSelectZone={(zone) => setSelectedZone(zone)}
@@ -82,22 +81,28 @@ export const PublicStoriesPage: React.FC<PublicStoriesPageProps> = ({
         </div>
       </div>
 
-      {/* Mobile/Tablet Fallback Footer District Selector */}
-      <div className="md:hidden relative z-20 flex items-center justify-center gap-2 pt-2 border-t border-line dark:border-white/10">
-        {(['Wayanad', 'Kodagu', 'Barpeta'] as ZoneId[]).map((zone) => (
-          <button
-            key={zone}
-            type="button"
-            onClick={() => setSelectedZone(zone)}
-            className={`px-3 py-1 text-xs rounded-md font-mono ${
-              selectedZone === zone
-                ? 'bg-m3-accent-foliage text-[#0e261d] font-bold'
-                : 'text-ink-muted dark:text-cream/60'
-            }`}
-          >
-            {zone}
-          </button>
-        ))}
+      {/* Mobile/Tablet Fallback: District Selector and Tourist District Card */}
+      <div className="md:hidden relative z-20 flex flex-col gap-3 pt-3 border-t border-line dark:border-white/10">
+        <div className="flex items-center justify-center gap-2">
+          {(['Wayanad', 'Kodagu', 'Barpeta'] as ZoneId[]).map((zone) => (
+            <button
+              key={zone}
+              type="button"
+              onClick={() => setSelectedZone(zone)}
+              className={`px-3 py-1.5 text-xs rounded-xl font-mono transition-colors ${
+                selectedZone === zone
+                  ? 'bg-citron text-[#06100c] font-bold shadow'
+                  : 'bg-surface-1 dark:bg-white/10 text-ink-muted dark:text-cream/60'
+              }`}
+            >
+              {zone}
+            </button>
+          ))}
+        </div>
+        <TouristDistrictCard
+          zone={selectedZone}
+          onOpenDetails={() => setIsRiskModalOpen(true)}
+        />
       </div>
 
       {/* 3. LIVE DISTRICT RISK ASSESSMENT MODAL */}

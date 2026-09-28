@@ -22,9 +22,9 @@ export interface DistrictItem {
 }
 
 const DISTRICT_ITEMS: DistrictItem[] = [
-  { id: 'Wayanad', name: 'Wayanad', state: 'Kerala', riskTag: 'L4 Red Zone' },
-  { id: 'Kodagu', name: 'Kodagu', state: 'Karnataka', riskTag: 'L3 Amber' },
-  { id: 'Barpeta', name: 'Barpeta', state: 'Assam', riskTag: 'L3 Flood' },
+  { id: 'Wayanad', name: 'Wayanad', state: 'Kerala', riskTag: 'High Hazard' },
+  { id: 'Kodagu', name: 'Kodagu', state: 'Karnataka', riskTag: 'Caution' },
+  { id: 'Barpeta', name: 'Barpeta', state: 'Assam', riskTag: 'Flood Alert' },
 ];
 
 export const ZoneTickSelector: React.FC<ZoneTickSelectorProps> = ({
