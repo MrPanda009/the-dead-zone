@@ -1,3 +1,12 @@
+'use client';
+
+import { useRef } from 'react';
+import { useGSAP } from '@gsap/react';
+import gsap from 'gsap';
+
+import { M3_DURATION } from '@/lib/motion/m3';
+import { usePrefersReducedMotion } from '@/lib/hooks/usePrefersReducedMotion';
+
 export interface AllocationWarningsProps {
   warnings: string[];
   title?: React.ReactNode;
@@ -9,17 +18,36 @@ export interface AllocationWarningsProps {
   };
 }
 
-/** Solver caveats — group splits and unsatisfiable demand — kept next to the result, not buried. */
+/** Solver caveats — group splits and unsatisfiable demand — with cautionary entrance slide. */
 export const AllocationWarnings = ({
   warnings,
   title = 'Solver notes',
   className = '',
   classNames = {},
 }: AllocationWarningsProps) => {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const prefersReducedMotion = usePrefersReducedMotion();
+
+  useGSAP(
+    () => {
+      if (prefersReducedMotion || !rootRef.current || warnings.length === 0) return;
+      gsap.from(rootRef.current, {
+        y: -8,
+        opacity: 0,
+        duration: M3_DURATION.medium2,
+        ease: 'back.out(1.4)',
+        clearProps: 'transform,opacity',
+      });
+    },
+    { scope: rootRef, dependencies: [warnings, prefersReducedMotion] },
+  );
+
   if (warnings.length === 0) return null;
 
   return (
     <div
+      ref={rootRef}
+      data-allocation-warnings
       className={[
         'flex flex-col gap-1 rounded-xl border border-warning/35 bg-warning/5 px-3 py-2',
         classNames.root ?? '',

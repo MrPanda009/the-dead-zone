@@ -4,6 +4,7 @@ import { useRef } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 
+import { M3_DURATION, M3_EASE } from '@/lib/motion/m3';
 import { usePrefersReducedMotion } from '@/lib/hooks/usePrefersReducedMotion';
 import type { HabitationListItem } from '@/lib/api/types';
 import { formatCount, formatPercent, formatScore } from '@/lib/map/format';
@@ -29,7 +30,7 @@ export interface HabitationQueueRowProps {
   };
 }
 
-/** One habitation in the triage queue. Extracted so the list never inlines JSX in `.map()`. */
+/** One habitation in the triage queue with tactile feedback and tier breathing. */
 export const HabitationQueueRow = ({
   habitation,
   rank,
@@ -42,24 +43,53 @@ export const HabitationQueueRow = ({
   const rootRef = useRef<HTMLButtonElement>(null);
   const prefersReducedMotion = usePrefersReducedMotion();
 
-  const { disabled: animationDisabled = false, duration = 0.18 } = animation;
+  const { disabled: animationDisabled = false, duration = M3_DURATION.short4 } = animation;
   const animate = !animationDisabled && !prefersReducedMotion;
+  const isImmediate = habitation.tier === 'immediate';
 
   useGSAP(
     () => {
       if (!animate || !rootRef.current) return;
       const element = rootRef.current;
-      const to = (y: number) => gsap.to(element, { y, duration, ease: 'power2.out', overwrite: 'auto' });
-      const onEnter = () => to(-2);
-      const onLeave = () => to(0);
+
+      const toHover = (y: number) =>
+        gsap.to(element, { y, duration, ease: M3_EASE.standard, overwrite: 'auto' });
+
+      const onEnter = () => toHover(-2);
+      const onLeave = () => {
+        toHover(0);
+        gsap.to(element, { scale: 1, duration: 0.1 });
+      };
+      const onDown = () => gsap.to(element, { scale: 0.985, duration: 0.08, ease: 'power1.out' });
+      const onUp = () => gsap.to(element, { scale: 1, duration: 0.12, ease: 'power1.out' });
+
       element.addEventListener('mouseenter', onEnter);
       element.addEventListener('mouseleave', onLeave);
+      element.addEventListener('pointerdown', onDown);
+      element.addEventListener('pointerup', onUp);
+      element.addEventListener('pointercancel', onUp);
+
+      // Low frequency breathing for critical / immediate urgency
+      if (isImmediate) {
+        gsap.to('[data-tier-breathing]', {
+          opacity: 0.8,
+          scale: 0.98,
+          duration: 1.5,
+          repeat: -1,
+          yoyo: true,
+          ease: 'sine.inOut',
+        });
+      }
+
       return () => {
         element.removeEventListener('mouseenter', onEnter);
         element.removeEventListener('mouseleave', onLeave);
+        element.removeEventListener('pointerdown', onDown);
+        element.removeEventListener('pointerup', onUp);
+        element.removeEventListener('pointercancel', onUp);
       };
     },
-    { scope: rootRef, dependencies: [animate, duration] },
+    { scope: rootRef, dependencies: [animate, duration, isImmediate] },
   );
 
   return (
@@ -67,13 +97,14 @@ export const HabitationQueueRow = ({
       ref={rootRef}
       type="button"
       data-habitation-row
+      data-habitation-id={habitation.id}
       onClick={() => onSelect?.(habitation)}
       aria-pressed={isSelected}
       className={[
         'flex w-full flex-col gap-1.5 rounded-xl border px-3 py-2.5 text-left will-change-transform',
         'transition-colors duration-150 cursor-pointer',
         isSelected
-          ? 'border-accent bg-accent/10 shadow-xs'
+          ? 'border-accent bg-accent/10 shadow-[0_0_12px_rgba(20,184,166,0.25)] dark:shadow-[0_0_12px_rgba(45,212,191,0.2)] ring-1 ring-accent/50'
           : 'border-line/60 bg-surface-1/40 hover:border-line-strong hover:bg-surface-2/40',
         classNames.root ?? '',
         className,
@@ -91,7 +122,9 @@ export const HabitationQueueRow = ({
         >
           {habitation.name}
         </span>
-        <TierBadge tier={habitation.tier} />
+        <div data-tier-breathing={isImmediate ? '' : undefined}>
+          <TierBadge tier={habitation.tier} />
+        </div>
       </div>
 
       <div className={['flex items-center gap-2 pl-6 text-[10px] text-ink-faint', classNames.meta ?? ''].join(' ')}>

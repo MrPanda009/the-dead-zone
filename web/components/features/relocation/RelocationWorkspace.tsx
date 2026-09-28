@@ -1,6 +1,8 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { useGSAP } from '@gsap/react';
+import gsap from 'gsap';
 
 import {
   AppHeader,
@@ -9,10 +11,12 @@ import {
   RightPanel,
   ThreePanelLayout,
 } from '@/components/layout';
+import { M3_EASE } from '@/lib/motion/m3';
 import { useAllocationPlan } from '@/lib/hooks/useAllocationPlan';
 import { useDistricts } from '@/lib/hooks/useDistricts';
 import { useCandidateSites } from '@/lib/hooks/useCandidateSites';
 import { useHabitationQueue } from '@/lib/hooks/useHabitationQueue';
+import { usePrefersReducedMotion } from '@/lib/hooks/usePrefersReducedMotion';
 import type {
   AllocationAssignment,
   CandidateSiteItem,
@@ -49,10 +53,7 @@ const DEFAULT_SETTINGS: AllocationSettings = {
 /**
  * Relocation planning workspace: triage demand, inspect GIS safe havens, and solve optimal distribution.
  *
- * Left panel: Demand triage queue (vulnerable settlements)
- * Center panel: 3D MapLibre & Deck.gl GIS corridors, radar beacon, and candidate parcel drawer
- * Right panel: Allocation optimization engine and solved plan
- *
+ * Orchestrated with GSAP 3 panel choreography and bi-directional focus pinging across panels.
  * All panels are fully collapsible for maximum GIS map focus.
  */
 export const RelocationWorkspace = ({
@@ -61,6 +62,9 @@ export const RelocationWorkspace = ({
   initialSettings,
   className = '',
 }: RelocationWorkspaceProps) => {
+  const workspaceRef = useRef<HTMLDivElement>(null);
+  const prefersReducedMotion = usePrefersReducedMotion();
+
   const [districtId, setDistrictId] = useState<number | null>(null);
   const [explicitSelectedHabitation, setExplicitSelectedHabitation] = useState<HabitationListItem | null>(null);
   const [selectedSiteId, setSelectedSiteId] = useState<number | null>(null);
@@ -112,6 +116,64 @@ export const RelocationWorkspace = ({
 
   const allocation = useAllocationPlan();
 
+  // Phase 1: Sequential Panel Reveal on Mount
+  useGSAP(
+    () => {
+      if (prefersReducedMotion || !workspaceRef.current) return;
+
+      const tl = gsap.timeline();
+
+      // Header: enters first
+      tl.from('[data-panel-header]', {
+        y: -8,
+        opacity: 0,
+        duration: 0.3,
+        ease: M3_EASE.decelerate,
+        clearProps: 'transform,opacity',
+      });
+
+      // Left Panel (Demand): x: -12px -> 0
+      tl.from(
+        '.panel-left-entrance',
+        {
+          x: -12,
+          opacity: 0,
+          duration: 0.35,
+          ease: M3_EASE.decelerate,
+          clearProps: 'transform,opacity',
+        },
+        0.05,
+      );
+
+      // Center Panel (Supply): y: 12px -> 0
+      tl.from(
+        '.panel-center-entrance',
+        {
+          y: 12,
+          opacity: 0,
+          duration: 0.4,
+          ease: M3_EASE.decelerate,
+          clearProps: 'transform,opacity',
+        },
+        0.12,
+      );
+
+      // Right Panel (Solver): x: 12px -> 0
+      tl.from(
+        '.panel-right-entrance',
+        {
+          x: 12,
+          opacity: 0,
+          duration: 0.35,
+          ease: M3_EASE.decelerate,
+          clearProps: 'transform,opacity',
+        },
+        0.18,
+      );
+    },
+    { scope: workspaceRef, dependencies: [prefersReducedMotion] },
+  );
+
   const handleSelectHabitation = useCallback((habitation: HabitationListItem) => {
     setExplicitSelectedHabitation(habitation);
     setSelectedSiteId(null);
@@ -139,9 +201,50 @@ export const RelocationWorkspace = ({
     [],
   );
 
+  // Phase 5: Bi-directional Spatial Focus Ping
   const handleSelectAssignment = useCallback(
     (assignment: AllocationAssignment) => {
       setSelectedSiteId(assignment.site_id);
+
+      if (!workspaceRef.current) return;
+
+      // 1. Highlight target Candidate Site card if visible in DOM
+      const siteCard = workspaceRef.current.querySelector(
+        `[data-site-card][data-site-id="${assignment.site_id}"]`,
+      ) as HTMLElement | null;
+      if (siteCard) {
+        siteCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        gsap.fromTo(
+          siteCard,
+          { scale: 0.98, boxShadow: '0 0 0 4px rgba(20, 184, 166, 0.6)' },
+          {
+            scale: 1,
+            boxShadow: '0 0 0 0px rgba(20, 184, 166, 0)',
+            duration: 0.65,
+            ease: 'power2.out',
+            clearProps: 'transform,boxShadow',
+          },
+        );
+      }
+
+      // 2. Flash corresponding habitation queue row
+      const habRow = workspaceRef.current.querySelector(
+        `[data-habitation-row][data-habitation-id="${assignment.habitation_id}"]`,
+      ) as HTMLElement | null;
+      if (habRow) {
+        habRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        gsap.fromTo(
+          habRow,
+          { scale: 0.98, backgroundColor: 'rgba(20, 184, 166, 0.25)' },
+          {
+            scale: 1,
+            backgroundColor: '',
+            duration: 0.6,
+            ease: 'power2.out',
+            clearProps: 'transform,backgroundColor',
+          },
+        );
+      }
     },
     [],
   );
@@ -157,27 +260,29 @@ export const RelocationWorkspace = ({
   );
 
   return (
-    <>
+    <div ref={workspaceRef} className="h-full w-full">
       <ThreePanelLayout
         className={className}
         header={
-          <AppHeader
-            title={title}
-            subtitle={subtitle}
-            metaSlot={
-              <RelocationHeaderMeta
-                totalHabitations={queue.total}
-                selectedHabitation={selectedHabitation}
-                plan={allocation.plan}
-              />
-            }
-          />
+          <div data-panel-header>
+            <AppHeader
+              title={title}
+              subtitle={subtitle}
+              metaSlot={
+                <RelocationHeaderMeta
+                  totalHabitations={queue.total}
+                  selectedHabitation={selectedHabitation}
+                  plan={allocation.plan}
+                />
+              }
+            />
+          </div>
         }
         left={
           <LeftPanel
             width={isLeftCollapsed ? 0 : 320}
             className={[
-              'transition-all duration-300 ease-in-out',
+              'panel-left-entrance transition-all duration-300 ease-in-out',
               isLeftCollapsed ? 'w-0 overflow-hidden border-r-0 !p-0 opacity-0 pointer-events-none' : 'opacity-100',
             ].join(' ')}
             classNames={{
@@ -206,7 +311,7 @@ export const RelocationWorkspace = ({
           </LeftPanel>
         }
         center={
-          <CenterPanel className="overflow-hidden">
+          <CenterPanel className="panel-center-entrance overflow-hidden">
             <RelocationCenterPanel
               habitation={selectedHabitation}
               sites={enhancedSites}
@@ -234,7 +339,7 @@ export const RelocationWorkspace = ({
           <RightPanel
             width={isRightCollapsed ? 0 : 360}
             className={[
-              'transition-all duration-300 ease-in-out',
+              'panel-right-entrance transition-all duration-300 ease-in-out',
               isRightCollapsed ? 'w-0 overflow-hidden border-l-0 !p-0 opacity-0 pointer-events-none' : 'opacity-100',
             ].join(' ')}
             classNames={{
@@ -273,6 +378,6 @@ export const RelocationWorkspace = ({
         onClose={() => setSimulationSite(null)}
         onApplyOverride={handleApplyOverride}
       />
-    </>
+    </div>
   );
 };

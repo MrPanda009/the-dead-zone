@@ -5,6 +5,7 @@ import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 
 import { Badge } from '@/components/ui';
+import { M3_DURATION, M3_EASE } from '@/lib/motion/m3';
 import { usePrefersReducedMotion } from '@/lib/hooks/usePrefersReducedMotion';
 import type { CandidateSiteItem } from '@/lib/api/types';
 
@@ -46,7 +47,7 @@ function truncateToPrecision(value: number, digits: number): string {
   return (Math.trunc(value * factor) / factor).toFixed(digits);
 }
 
-/** One candidate destination site with its full capacity reasoning. */
+/** One candidate destination site with tactile interactions and carrying capacity reasoning. */
 export const CandidateSiteCard = ({
   site,
   rank,
@@ -61,30 +62,56 @@ export const CandidateSiteCard = ({
   const rootRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = usePrefersReducedMotion();
 
-  const { disabled: animationDisabled = false, duration = 0.2 } = animation;
+  const { disabled: animationDisabled = false, duration = M3_DURATION.short4 } = animation;
   const animate = !animationDisabled && !prefersReducedMotion;
 
   useGSAP(
     () => {
       if (!animate || !rootRef.current) return;
       const element = rootRef.current;
-      const to = (y: number) => gsap.to(element, { y, duration, ease: 'power2.out', overwrite: 'auto' });
-      const onEnter = () => to(-3);
-      const onLeave = () => to(0);
+
+      const toHover = (y: number) =>
+        gsap.to(element, { y, duration, ease: M3_EASE.standard, overwrite: 'auto' });
+
+      const onEnter = () => toHover(-3);
+      const onLeave = () => {
+        toHover(0);
+        gsap.to(element, { scale: 1, duration: 0.1 });
+      };
+      const onDown = () => gsap.to(element, { scale: 0.985, duration: 0.08, ease: 'power1.out' });
+      const onUp = () => gsap.to(element, { scale: 1, duration: 0.12, ease: 'power1.out' });
+
       element.addEventListener('mouseenter', onEnter);
       element.addEventListener('mouseleave', onLeave);
+      element.addEventListener('pointerdown', onDown);
+      element.addEventListener('pointerup', onUp);
+      element.addEventListener('pointercancel', onUp);
+
+      // Subtle pulse flash on selection change
+      if (isSelected) {
+        gsap.fromTo(
+          element,
+          { scale: 0.99 },
+          { scale: 1, duration: 0.3, ease: 'back.out(2)' }
+        );
+      }
+
       return () => {
         element.removeEventListener('mouseenter', onEnter);
         element.removeEventListener('mouseleave', onLeave);
+        element.removeEventListener('pointerdown', onDown);
+        element.removeEventListener('pointerup', onUp);
+        element.removeEventListener('pointercancel', onUp);
       };
     },
-    { scope: rootRef, dependencies: [animate, duration] },
+    { scope: rootRef, dependencies: [animate, duration, isSelected] },
   );
 
   return (
     <div
       ref={rootRef}
       data-site-card
+      data-site-id={site.id}
       role={onSelect ? 'button' : undefined}
       tabIndex={onSelect ? 0 : undefined}
       onClick={() => onSelect?.(site)}
@@ -95,8 +122,10 @@ export const CandidateSiteCard = ({
         }
       }}
       className={[
-        'flex flex-col gap-3 rounded-2xl border p-4 will-change-transform transition-colors duration-150',
-        isSelected ? 'border-accent bg-accent/[0.06] shadow-xs' : 'border-line/60 bg-surface-1/40',
+        'flex flex-col gap-3 rounded-2xl border p-4 will-change-transform transition-all duration-150',
+        isSelected
+          ? 'border-accent bg-accent/[0.08] shadow-[0_0_14px_rgba(20,184,166,0.22)] dark:shadow-[0_0_14px_rgba(45,212,191,0.18)] ring-1 ring-accent/60'
+          : 'border-line/60 bg-surface-1/40',
         site.allocatable ? '' : 'opacity-90',
         onSelect ? 'cursor-pointer hover:border-line-strong hover:bg-surface-1/60' : '',
         classNames.root ?? '',
@@ -143,7 +172,6 @@ export const CandidateSiteCard = ({
           { label: 'Slope', value: `${site.slope_mean.toFixed(1)}°` },
           {
             label: 'MHI',
-            // Null means never measured — H7 rejects such a site rather than reading it as safe.
             value: site.mhi_max != null ? truncateToPrecision(site.mhi_max, 3) : UNMEASURED_LABEL,
             hint: 'Maximum static multi-hazard index inside the site',
           },

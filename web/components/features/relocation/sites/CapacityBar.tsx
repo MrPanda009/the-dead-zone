@@ -1,3 +1,11 @@
+'use client';
+
+import { useRef } from 'react';
+import { useGSAP } from '@gsap/react';
+import gsap from 'gsap';
+
+import { M3_DURATION, M3_EASE } from '@/lib/motion/m3';
+import { usePrefersReducedMotion } from '@/lib/hooks/usePrefersReducedMotion';
 import type { BindingConstraint } from '@/lib/api/types';
 
 import { CONSTRAINT_HINTS, CONSTRAINT_LABELS, UNMEASURED_LABEL } from '../constants';
@@ -18,13 +26,18 @@ export interface CapacityBarProps {
     track?: string;
     fill?: string;
   };
+  animation?: {
+    disabled?: boolean;
+    duration?: number;
+    delay?: number;
+  };
 }
 
 /**
  * One resource dimension of a site's carrying capacity.
  *
- * An unmeasured dimension renders as a hatched, valueless track rather than an empty bar —
- * "we never measured the water yield" and "this site supports nobody" must not look alike.
+ * Uses GSAP for smooth width tweens and bottleneck warning pulses.
+ * An unmeasured dimension renders as a hatched, valueless track rather than an empty bar.
  */
 export const CapacityBar = ({
   constraint,
@@ -33,12 +46,63 @@ export const CapacityBar = ({
   isBinding = false,
   className = '',
   classNames = {},
+  animation = {},
 }: CapacityBarProps) => {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const fillRef = useRef<HTMLDivElement>(null);
+  const prefersReducedMotion = usePrefersReducedMotion();
+
   const measured = value !== null && value !== undefined;
   const fraction = measured && max > 0 ? Math.min(1, value / max) : 0;
+  const targetPct = fraction * 100;
+
+  const {
+    disabled: animationDisabled = false,
+    duration = M3_DURATION.medium4,
+    delay = 0,
+  } = animation;
+  const animate = !animationDisabled && !prefersReducedMotion;
+
+  useGSAP(
+    () => {
+      if (!fillRef.current || !measured) return;
+
+      if (!animate) {
+        gsap.set(fillRef.current, { width: `${targetPct}%` });
+        return;
+      }
+
+      // Smooth fill tween
+      gsap.fromTo(
+        fillRef.current,
+        { width: '0%' },
+        {
+          width: `${targetPct}%`,
+          duration,
+          delay,
+          ease: M3_EASE.decelerate,
+          overwrite: 'auto',
+        },
+      );
+
+      // Warning amber bottleneck breathing pulse for binding constraints
+      if (isBinding) {
+        gsap.to(fillRef.current, {
+          opacity: 0.75,
+          duration: 1.2,
+          repeat: -1,
+          yoyo: true,
+          ease: 'sine.inOut',
+          delay: delay + duration * 0.5,
+        });
+      }
+    },
+    { scope: rootRef, dependencies: [targetPct, measured, isBinding, animate, duration, delay] },
+  );
 
   return (
     <div
+      ref={rootRef}
       title={CONSTRAINT_HINTS[constraint]}
       className={['flex flex-col gap-1', classNames.root ?? '', className].filter(Boolean).join(' ')}
     >
@@ -83,12 +147,13 @@ export const CapacityBar = ({
       >
         {measured ? (
           <div
+            ref={fillRef}
             className={[
-              'h-full rounded-full transition-[width] duration-300 ease-out',
-              isBinding ? 'bg-warning' : 'bg-accent',
+              'h-full rounded-full will-change-[width]',
+              isBinding ? 'bg-warning shadow-[0_0_8px_rgba(245,158,11,0.4)]' : 'bg-accent',
               classNames.fill ?? '',
             ].join(' ')}
-            style={{ width: `${fraction * 100}%` }}
+            style={{ width: animate ? '0%' : `${targetPct}%` }}
           />
         ) : null}
       </div>

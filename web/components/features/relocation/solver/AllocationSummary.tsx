@@ -21,6 +21,7 @@ export const AllocationSummary = ({
   classNames = {},
 }: AllocationSummaryProps) => (
   <div
+    data-allocation-summary
     className={['flex flex-col gap-3', classNames.root ?? '', className].filter(Boolean).join(' ')}
   >
     <div className={['grid grid-cols-2 gap-2', classNames.metrics ?? ''].join(' ')}>
