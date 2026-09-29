@@ -69,5 +69,12 @@ class ZoneCellDetail(BaseSchema):
 
     # Explanation & Model metadata
     explanation: List[FeatureContributionDTO] = Field(default_factory=list)
+    explanation_model_version: Optional[str] = Field(
+        default=None,
+        description=(
+            "Model that produced `explanation`; null when no attributions are published. "
+            "May differ from `model_version` (the score's model) if the layer was re-scored."
+        ),
+    )
     screening_grade: str = SCREENING_GRADE_NOTICE
 

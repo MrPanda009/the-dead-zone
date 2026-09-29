@@ -6093,6 +6093,18 @@
             "type": "array",
             "title": "Explanation"
           },
+          "explanation_model_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Explanation Model Version",
+            "description": "Model that produced `explanation`; null when no attributions are published. May differ from `model_version` (the score's model) if the layer was re-scored."
+          },
           "screening_grade": {
             "type": "string",
             "title": "Screening Grade",

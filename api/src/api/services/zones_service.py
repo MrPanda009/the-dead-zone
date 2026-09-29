@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from core.h3_utils import is_valid_h3, h3_to_int, h3_to_str
+from core.domain.provenance import classify_data_quality, pick_model_version, UNKNOWN_MODEL_VERSION
 from core.enums import ZoneClass
 from core.errors import (
     InvalidH3IndexError,
@@ -113,6 +114,9 @@ class ZonesService:
             mhi_live_val = round(float(raw_live), 4) if raw_live is not None else None
             mhi_fcst_val = round(float(raw_fcst), 4) if raw_fcst is not None else None
 
+            dataset_version = r.get("dataset_version") or "demo-day2-v1"
+            model_version = r.get("model_version") or UNKNOWN_MODEL_VERSION
+
             summaries.append(
                 ZoneCellSummary(
                     h3=h_str,
@@ -124,9 +128,9 @@ class ZonesService:
                     mhi_fcst=mhi_fcst_val,
                     dominant_hazard=r.get("dominant_hazard") or "landslide",
                     zone_class=zone_class_enum,
-                    dataset_version=r.get("dataset_version") or "demo-day2-v1",
-                    model_version="baseline-v1",
-                    data_quality="synthetic",
+                    dataset_version=dataset_version,
+                    model_version=model_version,
+                    data_quality=classify_data_quality(dataset_version, model_version).value,
                     population=round(float(r.get("population") if r.get("population") is not None else 0.0), 2),
                     built_area_m2=round(float(r.get("built_area_m2") if r.get("built_area_m2") is not None else 0.0), 2),
                     centroid=[r["lon"], r["lat"]],
@@ -186,13 +190,18 @@ class ZonesService:
                 )
             )
 
+        dominant_hazard = cell.get("dominant_hazard") or "landslide"
+        dataset_version = cell.get("dataset_version") or "demo-day2-v1"
+        model_version = pick_model_version(hazards, dominant_hazard)
+
         return ZoneCellDetail(
             h3=h3_to_str(h3_int),
             h3_int=h3_int,
             res=cell["res"],
-            dataset_version=cell.get("dataset_version") or "demo-day2-v1",
-            model_version=cell.get("model_version") or "baseline-v1",
-            data_quality="synthetic",
+            dataset_version=dataset_version,
+            model_version=model_version,
+            explanation_model_version=cell.get("model_version"),
+            data_quality=classify_data_quality(dataset_version, model_version).value,
             valid_at=cell.get("valid_at") or datetime.now(timezone.utc),
             admin_id=cell.get("admin_id"),
             admin_name=cell.get("admin_name"),
@@ -204,7 +213,7 @@ class ZonesService:
             mhi_static=round(float(cell.get("mhi_static") if cell.get("mhi_static") is not None else 0.0), 4),
             mhi_live=round(float(cell["mhi_live"]), 4) if cell.get("mhi_live") is not None else None,
             mhi_fcst=round(float(cell["mhi_fcst"]), 4) if cell.get("mhi_fcst") is not None else None,
-            dominant_hazard=cell.get("dominant_hazard") or "landslide",
+            dominant_hazard=dominant_hazard,
             zone_class=zone_class_enum,
             confidence=0.85,
             hazards=hazard_dtos,

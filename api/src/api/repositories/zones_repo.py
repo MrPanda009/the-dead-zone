@@ -94,7 +94,13 @@ class ZonesRepository:
                 m.mhi_live,
                 m.mhi_fcst,
                 m.dominant_hazard,
-                m.zone_class
+                m.zone_class,
+                (
+                    SELECT h.model_version FROM hazard_static h
+                    WHERE h.h3 = g.h3
+                    ORDER BY (h.hazard_type = m.dominant_hazard) DESC, h.hazard_type
+                    LIMIT 1
+                ) AS model_version
             FROM grid_cell g
             {admin_join}
             LEFT JOIN LATERAL (
