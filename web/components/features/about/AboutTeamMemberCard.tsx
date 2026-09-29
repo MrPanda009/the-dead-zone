@@ -65,25 +65,14 @@ export const AboutTeamMemberCard: React.FC<AboutTeamMemberCardProps> = ({
   return (
     <div
       ref={cardRef}
-      className={`team-member-card group relative rounded-2xl bg-surface-0/80 dark:bg-forest-surface/85 border border-line/80 dark:border-white/10 backdrop-blur-xl p-5 sm:p-6 flex items-center justify-between shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_6px_24px_rgba(0,0,0,0.35)] transition-all duration-300 hover:border-citron/50 dark:hover:border-citron/50 hover:shadow-[0_10px_32px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_12px_40px_rgba(0,0,0,0.5)] ${className} ${
+      className={`team-member-card group relative px-6 py-4 sm:py-5 rounded-2xl flex items-center justify-between backdrop-blur-xl bg-surface-0/65 dark:bg-white/[0.06] border border-line/70 dark:border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.25)] transition-all duration-300 hover:bg-surface-0/85 dark:hover:bg-white/[0.11] hover:border-citron/60 dark:hover:border-citron/60 hover:shadow-md will-change-transform ${className} ${
         classNames.root ?? ''
       }`}
     >
-      <div className="flex items-center gap-4">
-        {/* Subtle Index Identifier */}
-        {member.index && (
-          <span
-            className={`text-xs font-mono text-text-muted dark:text-neutral-400 font-semibold tracking-wider ${
-              classNames.index ?? ''
-            }`}
-          >
-            {member.index}
-          </span>
-        )}
-
-        {/* Member Name (Clean and prominent, no extra clutter) */}
+      <div className="flex items-center">
+        {/* Member Name (Translucent Frosted Card Container) */}
         <h3
-          className={`text-lg sm:text-xl font-bold tracking-tight text-ink dark:text-text-primary group-hover:text-ink dark:group-hover:text-citron transition-colors font-sans ${
+          className={`text-base sm:text-lg font-medium tracking-tight text-ink dark:text-text-primary group-hover:text-citron transition-colors font-sans ${
             classNames.name ?? ''
           }`}
         >
@@ -91,10 +80,10 @@ export const AboutTeamMemberCard: React.FC<AboutTeamMemberCardProps> = ({
         </h3>
       </div>
 
-      {/* Minimal directional micro-arrow */}
+      {/* Minimal directional micro-arrow inside subtle frosted badge */}
       <span
         ref={arrowRef}
-        className="text-text-muted dark:text-neutral-400 group-hover:text-ink dark:group-hover:text-citron transition-colors text-sm font-mono inline-block"
+        className="w-7 h-7 rounded-full bg-surface-1/70 dark:bg-white/5 border border-line/50 dark:border-white/10 flex items-center justify-center text-text-muted dark:text-neutral-400 group-hover:text-citron group-hover:border-citron/40 group-hover:bg-citron/10 transition-all text-xs font-mono will-change-transform"
         aria-hidden="true"
       >
         →

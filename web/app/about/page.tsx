@@ -72,8 +72,12 @@ export default function AboutPage() {
         {/* 6. Team Triple T Section */}
         <AboutTeamSection />
 
-        {/* 7. Editorial Mission Statement / Testimonial Banner */}
-        <AboutQuoteBanner />
+        {/* 7. Editorial Mission Statement / Testimonial Banner (Retains enclosing card box) */}
+        <AboutQuoteBanner
+          quote="Whoever saves one life saves the world entire."
+          author="SETU-DRR Humanitarian Principle"
+          affiliation="Core Ethos & Operational Mandate"
+        />
       </main>
 
       {/* Frosted Footnote & Telemetry */}

@@ -6,12 +6,12 @@ import { ScrollReveal } from './ScrollReveal';
 import type { AboutTeamSectionProps, TeamMemberData } from './types';
 
 export const TRIPLE_T_MEMBERS: TeamMemberData[] = [
-  { id: 'shaza-rizvi', name: 'Shaza Rizvi', index: '01' },
-  { id: 'aryan-chettri', name: 'Aryan Chettri', index: '02' },
-  { id: 'shrey-singh', name: 'Shrey Singh', index: '03' },
-  { id: 'aarushi-singh', name: 'Aarushi Singh', index: '04' },
-  { id: 'monishka-kanodia', name: 'Monishka Kanodia', index: '05' },
-  { id: 'suyasha-tripathy', name: 'Suyasha Tripathy', index: '06' },
+  { id: 'shaza-rizvi', name: 'Shaza Rizvi' },
+  { id: 'aryan-chettri', name: 'Aryan Chettri' },
+  { id: 'shrey-singh', name: 'Shrey Singh' },
+  { id: 'aarushi-singh', name: 'Aarushi Singh' },
+  { id: 'monishka-kanodia', name: 'Monishka Kanodia' },
+  { id: 'suyasha-tripathy', name: 'Suyasha Tripathy' },
 ];
 
 export const AboutTeamSection: React.FC<AboutTeamSectionProps> = ({

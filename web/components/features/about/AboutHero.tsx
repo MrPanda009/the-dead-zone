@@ -4,11 +4,11 @@ import React, { useRef, useEffect } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { GlobeCanvas } from '@/components/features/globe';
+import { useTheme } from '@/components/providers';
 import { usePrefersReducedMotion } from '@/lib/hooks/usePrefersReducedMotion';
 import type { AboutHeroProps } from './types';
 
 export const AboutHero: React.FC<AboutHeroProps> = ({
-  eyebrow = 'TERRA · PLANETARY HAZARD & RELOCATION ENGINE • TEAM TRIPLE T',
   headline = (
     <>
       Precision Intelligence.
@@ -17,7 +17,6 @@ export const AboutHero: React.FC<AboutHeroProps> = ({
     </>
   ),
   isGlobeRotating = true,
-  description = 'TERRA (Terrain-based Environmental Risk and Relocation Analytics) turns complex geohazard telemetry into clear, actionable relocation and mitigation decisions — helping communities prepare, adapt, and find safer places to call home.',
   className = '',
   classNames = {},
   animation = {},
@@ -25,6 +24,10 @@ export const AboutHero: React.FC<AboutHeroProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
   const globeContainerRef = useRef<HTMLDivElement>(null);
+  const ombreRef = useRef<HTMLDivElement>(null);
+  const shadowVignetteRef = useRef<HTMLDivElement>(null);
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
   const prefersReducedMotion = usePrefersReducedMotion();
 
   const {
@@ -34,7 +37,7 @@ export const AboutHero: React.FC<AboutHeroProps> = ({
   } = animation;
   const shouldAnimate = !animationDisabled && !prefersReducedMotion;
 
-  // Dynamic scroll interaction for the hero text box and background globe
+  // Dynamic subtle scroll parallax for the hero headline, globe, and ombre gradient
   useEffect(() => {
     if (prefersReducedMotion) return;
     let rafId: number;
@@ -42,22 +45,38 @@ export const AboutHero: React.FC<AboutHeroProps> = ({
     const onScroll = () => {
       rafId = requestAnimationFrame(() => {
         const scrollY = window.scrollY || window.pageYOffset || 0;
+
+        // 1. Hero headline translates upward and fades
         if (textRef.current) {
-          const translateY = Math.min(scrollY * 0.25, 90);
-          const opacity = Math.max(0, 1 - scrollY / 460);
-          const scale = Math.max(0.94, 1 - scrollY * 0.00025);
+          const translateY = Math.min(scrollY * 0.35, 120);
+          const opacity = Math.max(0, 1 - scrollY / 320);
+          const scale = Math.max(0.92, 1 - scrollY * 0.0003);
           textRef.current.style.transform = `translate3d(0, ${-translateY}px, 0) scale(${scale})`;
           textRef.current.style.opacity = `${opacity}`;
         }
+
+        // 2. 3D Globe subtle parallax drift (never goes full black, stays integrated)
         if (globeContainerRef.current) {
-          const globeOpacity = Math.max(0, 1 - scrollY / 560);
-          globeContainerRef.current.style.opacity = `${globeOpacity}`;
-          globeContainerRef.current.style.pointerEvents = globeOpacity > 0.1 ? 'auto' : 'none';
+          const translateY = Math.min(scrollY * 0.22, 110);
+          const opacity = Math.max(0.12, 1 - scrollY / 620);
+          const scale = Math.max(0.88, 1 - (scrollY / 1000) * 0.12);
+          globeContainerRef.current.style.transform = `translate3d(0, ${translateY}px, 0) scale(${scale})`;
+          globeContainerRef.current.style.opacity = `${opacity}`;
+          globeContainerRef.current.style.pointerEvents = opacity > 0.1 ? 'auto' : 'none';
+        }
+
+        // 3. Ombre gradient subtle parallax glide into the picture below
+        if (ombreRef.current) {
+          const translateY = Math.min(scrollY * 0.14, 80);
+          const opacity = Math.max(0.2, 1 - scrollY / 850);
+          ombreRef.current.style.transform = `translate3d(0, ${translateY}px, 0)`;
+          ombreRef.current.style.opacity = `${opacity}`;
         }
       });
     };
 
     window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
     return () => {
       window.removeEventListener('scroll', onScroll);
       cancelAnimationFrame(rafId);
@@ -71,14 +90,9 @@ export const AboutHero: React.FC<AboutHeroProps> = ({
       const tl = gsap.timeline({ delay });
 
       tl.fromTo(
-        '.about-hero-pill',
-        { y: 16, opacity: 0, scale: 0.95 },
-        { y: 0, opacity: 1, scale: 1, duration: 0.6, ease: 'back.out(1.5)' }
-      ).fromTo(
         '.about-hero-headline',
-        { y: 24, opacity: 0 },
-        { y: 0, opacity: 1, duration, ease: 'power3.out' },
-        '-=0.3'
+        { y: 28, opacity: 0 },
+        { y: 0, opacity: 1, duration, ease: 'power3.out' }
       );
     },
     { scope: textRef, dependencies: [shouldAnimate, delay, duration] }
@@ -88,61 +102,61 @@ export const AboutHero: React.FC<AboutHeroProps> = ({
     <section
       ref={containerRef}
       aria-label="About SETU-DRR Hero"
-      className={`relative w-full min-h-[440px] sm:min-h-[500px] md:min-h-[560px] flex flex-col items-center justify-center text-center overflow-hidden pt-28 sm:pt-32 pb-16 sm:pb-20 select-none ${className} ${
+      className={`relative w-full h-[88vh] min-h-[620px] max-h-[860px] flex flex-col items-center justify-center text-center overflow-visible select-none bg-transparent ${className} ${
         classNames.root ?? ''
       }`}
     >
-      {/* 3D WebGL Earth Globe Canvas (Fixed mode, matching landing page scale & true aspect ratio without stretching) */}
+      {/* 3D WebGL Earth Globe Canvas (Integrated directly into background with smooth feather mask) */}
       <div
         ref={globeContainerRef}
-        className={`fixed inset-0 z-0 pointer-events-auto cursor-grab active:cursor-grabbing will-change-transform ${
+        className={`absolute inset-0 z-0 pointer-events-auto cursor-grab active:cursor-grabbing will-change-transform [mask-image:linear-gradient(to_bottom,black_0%,black_52%,rgba(0,0,0,0.85)_66%,rgba(0,0,0,0.45)_80%,rgba(0,0,0,0.1)_92%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_bottom,black_0%,black_52%,rgba(0,0,0,0.85)_66%,rgba(0,0,0,0.45)_80%,rgba(0,0,0,0.1)_92%,transparent_100%)] ${
           classNames.globeContainer ?? ''
         }`}
       >
         <GlobeCanvas
           viewMode="about"
-          positionMode="fixed"
+          positionMode="absolute"
           isAutoRotating={isGlobeRotating}
           enableScrollSpin={false}
           isRadarActive={true}
           primaryFocusId="himalayan-arc"
           className="w-full h-full"
         />
-
-        {/* Atmospheric Contrast Masking Gradient (Ensures High Text Legibility) */}
-        <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-bg-base/75 via-transparent to-bg-base dark:from-[#06100c]/80 dark:via-transparent dark:to-bg-base" />
-        <div className="absolute inset-0 pointer-events-none bg-radial from-transparent via-bg-base/35 to-bg-base/90 dark:via-[#06100c]/35 dark:to-[#06100c]/90" />
       </div>
 
-      {/* Hero Text Content (Interacts dynamically with scrolling) */}
+      {/* Bottom of Globe Slightly Hidden in Shadow (Fully resolves to transparent within globe boundaries) */}
+      <div
+        ref={shadowVignetteRef}
+        className="absolute inset-0 pointer-events-none z-[1] bg-[radial-gradient(ellipse_64%_26%_at_50%_68%,rgba(0,0,0,0.65)_0%,rgba(0,0,0,0.38)_32%,rgba(0,0,0,0.12)_62%,transparent_85%)]"
+        aria-hidden="true"
+      />
+
+      {/* Hero Headline Content */}
       <div
         ref={textRef}
-        className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6 flex flex-col items-center pointer-events-none will-change-transform"
+        className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 flex flex-col items-center pointer-events-none will-change-transform -mt-6 sm:-mt-8"
       >
-        {/* Tracked Pill Badge */}
-        <div
-          className={`about-hero-pill inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-surface-0/85 dark:bg-forest-surface/90 border border-line/80 dark:border-white/15 backdrop-blur-xl mb-4 sm:mb-6 shadow-[0_4px_20px_rgba(0,0,0,0.06)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] pointer-events-auto ${
-            classNames.eyebrow ?? ''
-          }`}
-        >
-          <span className="relative flex h-1.5 w-1.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-citron opacity-75" />
-            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-citron" />
-          </span>
-          <span className="text-[10px] sm:text-[11px] font-mono tracking-[0.2em] text-text-secondary dark:text-neutral-200 font-medium uppercase">
-            {eyebrow}
-          </span>
-        </div>
-
-        {/* Display Serif Editorial Headline (Reduced font size, sleek and elegant) */}
+        {/* Display Serif Editorial Headline */}
         <h1
-          className={`about-hero-headline text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight text-ink dark:text-text-primary leading-[1.14] drop-shadow-md font-editorial ${
+          className={`about-hero-headline text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight text-white leading-[1.12] drop-shadow-[0_4px_28px_rgba(0,0,0,0.9)] font-editorial ${
             classNames.headline ?? ''
           }`}
         >
           {headline}
         </h1>
       </div>
+
+      {/* Multi-Stage Eased Ombre Gradient Transition into the 2D Picture */}
+      <div
+        ref={ombreRef}
+        className="absolute -bottom-20 sm:-bottom-28 inset-x-0 h-80 sm:h-[420px] pointer-events-none z-[2] will-change-transform"
+        style={{
+          background: isDark
+            ? 'linear-gradient(to bottom, transparent 0%, rgba(7,19,14,0.10) 15%, rgba(7,19,14,0.40) 35%, rgba(7,19,14,0.65) 50%, rgba(7,19,14,0.40) 65%, rgba(7,19,14,0.10) 85%, transparent 100%)'
+            : 'linear-gradient(to bottom, transparent 0%, rgba(244,246,244,0.10) 15%, rgba(244,246,244,0.40) 35%, rgba(244,246,244,0.65) 50%, rgba(244,246,244,0.40) 65%, rgba(244,246,244,0.10) 85%, transparent 100%)',
+        }}
+        aria-hidden="true"
+      />
     </section>
   );
 };

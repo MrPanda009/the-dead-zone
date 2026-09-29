@@ -24,31 +24,27 @@ export const AboutLogosStrip: React.FC<AboutLogosStripProps> = ({
   return (
     <section
       aria-label="Institutional Partners and Data Collaborators"
-      className={`relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 ${className}`}
+      className={`relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 ${className}`}
     >
       <ScrollReveal distance={32} duration={0.85} threshold={0.15}>
-        {/* Prominent Foreground Card Container behind Data Collaborators */}
-        <div className="rounded-[32px] sm:rounded-[40px] bg-surface-0/95 dark:bg-forest-surface/95 border border-line/90 dark:border-white/10 backdrop-blur-2xl p-8 sm:p-12 lg:p-14 shadow-[0_20px_50px_rgba(0,0,0,0.06)] dark:shadow-[0_24px_56px_rgba(0,0,0,0.5)]">
-          {/* Header block inside the foreground container */}
-          <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-10">
+        <div className="w-full">
+          {/* Header block */}
+          <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-14">
             {label && (
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-1 dark:bg-white/5 border border-line/60 dark:border-white/10 mb-3">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[10.5px] font-mono tracking-[0.22em] text-text-muted dark:text-neutral-300 uppercase font-semibold">
-                  {label}
-                </span>
-              </div>
+              <span className="text-[11px] font-mono tracking-[0.22em] text-text-muted dark:text-neutral-400 uppercase font-semibold block mb-3">
+                {label}
+              </span>
             )}
-            <h3 className="text-2xl sm:text-3xl font-bold tracking-tight text-ink dark:text-text-primary font-editorial mt-1">
+            <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-ink dark:text-text-primary font-editorial">
               National Institutional Telemetry
             </h3>
-            <p className="text-sm sm:text-base text-text-secondary dark:text-neutral-300 mt-2 font-normal">
+            <p className="text-sm sm:text-base text-text-secondary dark:text-neutral-300 mt-3 font-normal max-w-xl mx-auto">
               Synthesizing observation feeds, elevation basemaps, and ground displacement telemetry directly with India’s disaster management institutions.
             </p>
           </div>
 
-          {/* Elevated Foreground Tiles Grid */}
-          <div className="flex flex-wrap items-center justify-center gap-3.5 sm:gap-4 lg:gap-5">
+          {/* Partner Logos Row (Clean layout without card boxes) */}
+          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 lg:gap-8">
             {partners.map((partner) => (
               <AboutLogoItem key={partner.id} data={partner} />
             ))}

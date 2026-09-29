@@ -23,9 +23,9 @@ export const AboutAtmosphere: React.FC<AboutAtmosphereProps> = ({
       {/* Background Mountain Backdrop Image */}
       <div
         className={`absolute inset-0 transition-opacity duration-700 ${
-          isDark ? 'opacity-25 mix-blend-luminosity' : 'opacity-85'
+          isDark ? 'opacity-65' : 'opacity-85'
         }`}
-        style={{ opacity: isDark ? 0.3 : backdropOpacity }}
+        style={{ opacity: isDark ? 0.65 : backdropOpacity }}
       >
         <Image
           src={backdropUrl}
@@ -37,17 +37,24 @@ export const AboutAtmosphere: React.FC<AboutAtmosphereProps> = ({
         />
       </div>
 
-      {/* Subtle Central Contrast Radial Vignette (Keeps Headline & Cards Pristine) */}
+      {/* Subtle Central Contrast Vignette (Keeps Content Pristine & Legible) */}
       <div
         className={`absolute inset-0 transition-opacity duration-500 ${
           isDark
-            ? 'bg-radial from-[#0b1c15]/60 via-[#0b1c15]/85 to-[#0b1c15]'
-            : 'bg-radial from-white/70 via-[#edf3ef]/60 to-transparent'
+            ? 'bg-gradient-to-b from-black/50 via-transparent to-black/75'
+            : 'bg-gradient-to-b from-white/30 via-transparent to-white/70'
         }`}
       />
 
-      {/* Top & Bottom Bleed Gradients */}
-      <div className="absolute top-0 inset-x-0 h-40 bg-gradient-to-b from-bg-base via-bg-base/80 to-transparent" />
+      {/* Top Atmosphere Gradient (Subtle depth under header, theme-harmonized) */}
+      <div
+        className={`absolute top-0 inset-x-0 h-48 bg-gradient-to-b ${
+          isDark
+            ? 'from-[#06100c]/80 via-[#06100c]/40 to-transparent'
+            : 'from-surface-0/60 via-surface-0/20 to-transparent'
+        }`}
+      />
+      {/* Bottom Bleed Gradient */}
       <div className="absolute bottom-0 inset-x-0 h-56 bg-gradient-to-t from-bg-base via-bg-base/90 to-transparent" />
 
       {/* Atmospheric Mist Fog (Only active in Light Mode to preserve Daylight Sage aesthetic) */}

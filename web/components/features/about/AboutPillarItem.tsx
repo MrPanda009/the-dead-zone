@@ -51,14 +51,14 @@ export const AboutPillarItem: React.FC<AboutPillarItemProps> = ({
   return (
     <div
       ref={itemRef}
-      className={`group flex flex-col items-center text-center px-4 py-6 sm:py-8 rounded-2xl transition-colors duration-200 hover:bg-surface-1/40 dark:hover:bg-white/[0.03] ${className} ${
+      className={`group flex flex-col items-center text-center p-4 sm:p-6 transition-all duration-300 ${className} ${
         classNames.root ?? ''
       }`}
       onClick={() => onClick?.(data)}
     >
       {/* Minimal Icon Glyph Container */}
       <div
-        className={`w-12 h-12 rounded-full bg-surface-1 dark:bg-white/10 flex items-center justify-center text-ink dark:text-neutral-100 mb-5 shadow-sm border border-line/60 dark:border-white/10 group-hover:border-citron/60 group-hover:scale-105 transition-all duration-300 ${
+        className={`w-14 h-14 rounded-full bg-surface-1/80 dark:bg-white/10 flex items-center justify-center text-ink dark:text-neutral-100 mb-6 shadow-sm border border-line/60 dark:border-white/10 group-hover:border-citron/60 group-hover:scale-105 transition-all duration-300 backdrop-blur-sm ${
           classNames.iconWrapper ?? ''
         }`}
       >
@@ -67,7 +67,7 @@ export const AboutPillarItem: React.FC<AboutPillarItemProps> = ({
 
       {/* Column Title */}
       <h3
-        className={`text-lg sm:text-xl font-bold tracking-tight text-ink dark:text-text-primary mb-3 ${
+        className={`text-xl sm:text-2xl font-bold tracking-tight text-ink dark:text-text-primary mb-3.5 font-editorial ${
           classNames.title ?? ''
         }`}
       >
@@ -76,7 +76,7 @@ export const AboutPillarItem: React.FC<AboutPillarItemProps> = ({
 
       {/* Description */}
       <p
-        className={`text-sm sm:text-[14.5px] leading-relaxed text-text-secondary dark:text-neutral-300 mb-5 flex-1 max-w-xs ${
+        className={`text-sm sm:text-base leading-relaxed text-text-secondary dark:text-neutral-200 mb-6 flex-1 max-w-sm font-normal ${
           classNames.description ?? ''
         }`}
       >
@@ -86,7 +86,7 @@ export const AboutPillarItem: React.FC<AboutPillarItemProps> = ({
       {/* Minimal Editorial Link with Arrow */}
       <Link
         href={data.actionHref}
-        className={`inline-flex items-center gap-1.5 text-xs font-semibold font-mono tracking-wider text-ink/80 dark:text-text-primary group-hover:text-ink dark:group-hover:text-citron transition-colors duration-200 focus:outline-none focus-visible:underline ${
+        className={`inline-flex items-center gap-1.5 text-xs font-semibold font-mono tracking-wider text-ink dark:text-text-primary group-hover:text-citron transition-colors duration-200 focus:outline-none focus-visible:underline ${
           classNames.link ?? ''
         }`}
       >

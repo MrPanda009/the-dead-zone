@@ -124,17 +124,17 @@ export const AboutSplitSection: React.FC<AboutSplitSectionProps> = ({
         {description}
       </p>
 
-      {/* Dark Pill CTA Button */}
+      {/* High-Contrast Pill CTA Button */}
       <div>
         <Link
           ref={buttonRef}
           href={actionHref}
-          className={`inline-flex items-center gap-2 px-6 py-3 rounded-full bg-ink dark:bg-white text-surface-0 dark:text-ink font-mono text-xs font-bold tracking-wider shadow-md hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-citron transition-shadow ${
+          className={`inline-flex items-center gap-2 px-6 py-3 rounded-full bg-ink dark:bg-white text-surface-0 dark:text-[#0b1c15] hover:bg-ink/90 dark:hover:bg-neutral-100 font-mono text-xs font-bold tracking-wider shadow-md hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-citron transition-all ${
             classNames.button ?? ''
           }`}
         >
           <span>{actionLabel}</span>
-          <span className="text-sm">→</span>
+          <span className="text-sm font-bold">→</span>
         </Link>
       </div>
     </div>

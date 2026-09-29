@@ -87,8 +87,8 @@ export const getSectionConfig = (
     const isTablet = w >= 640 && w < 1024;
     return {
       x: 0,
-      y: isDesktop ? 0.12 : 0.08,
-      scale: isDesktop ? 0.74 : isTablet ? 0.70 : 0.60,
+      y: isDesktop ? 0.04 : 0.02,
+      scale: isDesktop ? 0.90 : isTablet ? 0.82 : 0.72,
     };
   }
 
@@ -199,27 +199,14 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     const h = typeof window !== 'undefined' ? window.innerHeight : 1080;
     const target = getSectionConfig(activeSection, w, h, viewMode);
 
-    if (activeSection === 4) {
-      // Bottom horizon: smooth glide down into bottom center, 50% above frosted footer
-      gsap.to(earthGroup.position, {
-        x: target.x,
-        y: target.y,
-        duration: 1.15,
-        ease: 'power3.out',
-        overwrite: 'auto',
-      });
-    } else {
-      // Lateral section transitions: slide X, subtle diagonal dip down and recovery to target Y
-      gsap.to(earthGroup.position, {
-        x: target.x,
-        duration: 1.1,
-        ease: 'power3.out',
-        overwrite: 'auto',
-      });
-      gsap.timeline({ overwrite: 'auto' })
-        .to(earthGroup.position, { y: -0.28, duration: 0.45, ease: 'power2.in' })
-        .to(earthGroup.position, { y: target.y, duration: 0.65, ease: 'power3.out' });
-    }
+    // Smooth, direct glide to target position and scale without any vertical dip or bounce
+    gsap.to(earthGroup.position, {
+      x: target.x,
+      y: target.y,
+      duration: activeSection === 4 ? 1.15 : 1.1,
+      ease: 'power3.out',
+      overwrite: 'auto',
+    });
 
     gsap.to(earthGroup.scale, {
       x: target.scale,
@@ -388,16 +375,20 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     container.appendChild(renderer.domElement);
 
     // 3. Directional & Atmospheric Lighting
-    const sunLight = new THREE.DirectionalLight(0xfff8ee, isLight ? 2.2 : 1.9);
-    sunLight.position.set(6, 4, 4.5);
+    const isAbout = viewMode === 'about';
+    const sunLight = new THREE.DirectionalLight(0xfff8ee, isAbout ? (isLight ? 2.3 : 2.1) : (isLight ? 2.2 : 1.9));
+    sunLight.position.set(isAbout ? 5 : 6, isAbout ? 5.8 : 4, 4.5);
     sunLightRef.current = sunLight;
     scene.add(sunLight);
 
-    const atmosphereLight = new THREE.DirectionalLight(0x5eead4, 0.6);
-    atmosphereLight.position.set(-5, -2, -4);
+    const atmosphereLight = new THREE.DirectionalLight(0x5eead4, isAbout ? 0.15 : 0.6);
+    atmosphereLight.position.set(-5, isAbout ? -0.5 : -2, -4);
     scene.add(atmosphereLight);
 
-    const ambientLight = new THREE.AmbientLight(isLight ? 0xc4d4c5 : 0x0e1b14, isLight ? 2.5 : 1.3);
+    const ambientLight = new THREE.AmbientLight(
+      isLight ? 0xc4d4c5 : 0x0e1b14,
+      isAbout ? (isLight ? 1.7 : 0.85) : (isLight ? 2.5 : 1.3)
+    );
     ambientLightRef.current = ambientLight;
     scene.add(ambientLight);
 

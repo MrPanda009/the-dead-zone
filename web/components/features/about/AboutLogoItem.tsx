@@ -9,12 +9,12 @@ export const AboutLogoItem: React.FC<AboutLogoItemProps> = ({
 }) => {
   return (
     <div
-      className={`group rounded-2xl bg-surface-1/80 dark:bg-white/[0.04] border border-line/70 dark:border-white/10 px-6 py-4 flex flex-col items-center justify-center text-center shadow-sm hover:border-citron/60 dark:hover:border-citron/50 hover:bg-surface-2/60 dark:hover:bg-white/[0.08] hover:-translate-y-1 transition-all duration-300 cursor-default min-w-[130px] sm:min-w-[150px] ${className}`}
+      className={`group px-5 py-3 flex flex-col items-center justify-center text-center transition-all duration-300 hover:-translate-y-1 cursor-default min-w-[120px] sm:min-w-[140px] ${className}`}
     >
-      <span className="font-mono text-sm sm:text-base font-extrabold tracking-widest text-ink dark:text-neutral-100 group-hover:text-citron transition-colors uppercase">
+      <span className="font-mono text-base sm:text-lg font-bold tracking-widest text-ink/80 dark:text-neutral-200 group-hover:text-citron transition-colors uppercase">
         {data.name}
       </span>
-      <span className="text-[10px] sm:text-[11px] font-sans text-text-muted dark:text-neutral-400 max-w-[140px] truncate mt-0.5 group-hover:text-text-secondary transition-colors font-medium">
+      <span className="text-[11px] font-sans text-text-muted dark:text-neutral-400 max-w-[140px] truncate mt-0.5 group-hover:text-ink dark:group-hover:text-neutral-200 transition-colors font-medium">
         {data.fullName}
       </span>
     </div>

@@ -6,9 +6,9 @@ import { usePrefersReducedMotion } from '@/lib/hooks/usePrefersReducedMotion';
 import type { AboutQuoteBannerProps } from './types';
 
 export const AboutQuoteBanner: React.FC<AboutQuoteBannerProps> = ({
-  quote = 'SETU-DRR transforms overwhelming satellite observation streams into clear, rapid, life-saving decisions — enabling preemptive evacuation and resilient resettlement before disaster strikes.',
-  author = 'Disaster Risk Reduction Advisory Board',
-  affiliation = 'National Resilience & Climate Adaptation Framework',
+  quote = 'Whoever saves one life saves the world entire.',
+  author = 'SETU-DRR Humanitarian Principle',
+  affiliation = 'Disaster Risk Reduction & Preemptive Relocation',
   className = '',
 }) => {
   const quoteRef = useRef<HTMLDivElement>(null);
@@ -62,7 +62,7 @@ export const AboutQuoteBanner: React.FC<AboutQuoteBannerProps> = ({
             </p>
           </blockquote>
 
-          {/* Author & Telemetry Footer */}
+          {/* Author Footer */}
           <div className="relative z-10 flex items-center justify-between gap-4 pt-6 border-t border-line/60 dark:border-white/10">
             <div>
               <p className="font-bold text-sm sm:text-base text-ink dark:text-text-primary">
@@ -73,13 +73,6 @@ export const AboutQuoteBanner: React.FC<AboutQuoteBannerProps> = ({
                   {affiliation}
                 </p>
               )}
-            </div>
-
-            {/* Circular Telemetry Seal */}
-            <div className="w-11 h-11 rounded-full bg-surface-1 dark:bg-white/10 border border-line/80 dark:border-white/15 flex items-center justify-center text-ink dark:text-neutral-100 shadow-sm">
-              <svg className="w-5 h-5 text-citron" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
             </div>
           </div>
         </div>

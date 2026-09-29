@@ -77,6 +77,7 @@ export interface AboutHeroProps {
     headline?: string;
     description?: string;
     globeContainer?: string;
+    card?: string;
   };
   /** Animation control overrides */
   animation?: {

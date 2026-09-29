@@ -87,19 +87,17 @@ export const AboutPillarsCard: React.FC<AboutPillarsCardProps> = ({
     <section
       id="pillars"
       aria-label="Core Pillars of SETU-DRR"
-      className={`relative z-20 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 sm:-mt-28 md:-mt-36 ${className}`}
+      className={`relative z-20 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 sm:pt-24 pb-12 sm:pb-20 ${className}`}
     >
       <ScrollReveal distance={40} duration={0.9} threshold={0.1}>
         <div
           ref={cardRef}
-          className={`rounded-[32px] sm:rounded-[40px] bg-surface-0/95 dark:bg-forest-surface/95 border border-line/90 dark:border-white/10 backdrop-blur-2xl p-6 sm:p-10 lg:p-14 shadow-[0_24px_64px_rgba(0,0,0,0.06)] dark:shadow-[0_28px_72px_rgba(0,0,0,0.55)] transition-shadow duration-300 will-change-transform ${
-            classNames.root ?? ''
-          }`}
+          className={`w-full will-change-transform ${classNames.root ?? ''}`}
         >
           {/* Centered Editorial Headline */}
-          <div className="max-w-2xl mx-auto text-center mb-8 sm:mb-12">
+          <div className="max-w-3xl mx-auto text-center mb-12 sm:mb-16">
             <h2
-              className={`text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-ink dark:text-text-primary leading-tight font-editorial ${
+              className={`text-2xl sm:text-3xl md:text-4xl lg:text-[40px] font-bold tracking-tight text-ink dark:text-text-primary leading-tight font-editorial ${
                 classNames.headline ?? ''
               }`}
             >
@@ -107,9 +105,9 @@ export const AboutPillarsCard: React.FC<AboutPillarsCardProps> = ({
             </h2>
           </div>
 
-          {/* 3 Pillar Columns Grid */}
+          {/* 3 Pillar Columns Grid (Clean side-by-side presentation, no card box) */}
           <div
-            className={`grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 items-stretch divide-y md:divide-y-0 md:divide-x divide-line/60 dark:divide-white/10 ${
+            className={`grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-10 lg:gap-12 items-stretch ${
               classNames.grid ?? ''
             }`}
           >
