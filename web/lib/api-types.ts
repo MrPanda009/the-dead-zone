@@ -2541,6 +2541,11 @@ export interface components {
             /** Explanation */
             explanation?: components["schemas"]["FeatureContributionDTO"][];
             /**
+             * Explanation Model Version
+             * @description Model that produced `explanation`; null when no attributions are published. May differ from `model_version` (the score's model) if the layer was re-scored.
+             */
+            explanation_model_version?: string | null;
+            /**
              * Screening Grade
              * @default Screening Grade: Cell-level screening and prioritisation tool. Geotechnical investigation, hydraulic study, and community consultation required before executing relocation orders.
              */

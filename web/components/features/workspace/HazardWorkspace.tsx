@@ -21,6 +21,7 @@ import type { FloodHazardMapDisplayState } from '@/components/features/map/Flood
 import { useHazardLayer } from '@/lib/hooks/useHazardLayer';
 import { useHazardLayerList } from '@/lib/hooks/useHazardLayerList';
 import { useForecastAlerts } from '@/lib/hooks/useForecastAlerts';
+import { useDistrictHazardType } from '@/lib/hooks/useDistrictHazardType';
 import type { HazardType } from '@/lib/api/types';
 import {
   DEFAULT_CONFIDENCE_HATCH_THRESHOLD,
@@ -37,7 +38,7 @@ const FloodHazardMap = dynamic(
 );
 
 export interface HazardWorkspaceProps {
-  /** Layer shown on first load. */
+  /** Forces the layer shown on load. Omit to follow the district's primary hazard. */
   initialHazardType?: HazardType;
   /** Restricts the query to one district by admin id or LGD code. */
   admin?: number;
@@ -65,13 +66,13 @@ const DEFAULT_FORECAST_HORIZON_HOURS = 72;
  * and passes it down. Nothing below this component fetches the layer itself.
  */
 export const HazardWorkspace = ({
-  initialHazardType = 'riverine_flood',
+  initialHazardType,
   admin,
   title = 'T.E.R.R.A.',
   subtitle = 'Terrain-based Environmental Risk & Relocation Analytics',
   className = '',
 }: HazardWorkspaceProps) => {
-  const [hazardType, setHazardType] = useState<HazardType>(initialHazardType);
+  const { hazardType, selectHazardType } = useDistrictHazardType({ admin, initialHazardType });
   const [selectedH3, setSelectedH3] = useState<string | null>(null);
   const [hoveredH3, setHoveredH3] = useState<string | null>(null);
   const [display, setDisplay] = useState<FloodHazardMapDisplayState>(DEFAULT_DISPLAY);
@@ -94,10 +95,10 @@ export const HazardWorkspace = ({
   }, []);
 
   const handleSelectLayer = useCallback((next: HazardType) => {
-    setHazardType(next);
+    selectHazardType(next);
     setSelectedH3(null);
     setHoveredH3(null);
-  }, []);
+  }, [selectHazardType]);
 
   const przThreshold = data?.legend.prz_susceptibility_threshold ?? 0.85;
   const breaks = useMemo(() => data?.legend.breaks ?? [], [data]);

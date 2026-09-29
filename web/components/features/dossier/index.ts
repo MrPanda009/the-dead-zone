@@ -21,3 +21,18 @@ export type { DriverBreakdownProps } from './DriverBreakdown';
 
 export { DriverMetricRow } from './DriverMetricRow';
 export type { DriverMetricRowProps } from './DriverMetricRow';
+
+export { TerrainDriverRow } from './TerrainDriverRow';
+export type { TerrainDriverRowProps } from './TerrainDriverRow';
+
+export { TerrainDriverBreakdown } from './TerrainDriverBreakdown';
+export type { TerrainDriverBreakdownProps } from './TerrainDriverBreakdown';
+
+export { TerrainDriversSection } from './TerrainDriversSection';
+export type { TerrainDriversSectionProps } from './TerrainDriversSection';
+
+export { AttributionModelNotice } from './AttributionModelNotice';
+export type { AttributionModelNoticeProps } from './AttributionModelNotice';
+
+export { DriverBreakdownSkeleton } from './DriverBreakdownSkeleton';
+export type { DriverBreakdownSkeletonProps } from './DriverBreakdownSkeleton';

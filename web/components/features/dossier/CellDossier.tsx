@@ -6,12 +6,14 @@ import { ScreeningGradeNotice } from '@/components/common/ScreeningGradeNotice';
 import { useHazardCellDetail } from '@/lib/hooks/useHazardCellDetail';
 import { useForecastAlerts } from '@/lib/hooks/useForecastAlerts';
 import type { HazardType, ForecastAlertItem } from '@/lib/api/types';
+import { hasFloodDriverData } from '@/lib/map/drivers';
 
 import { CoverageNotice } from './CoverageNotice';
 import { DossierEmptyState } from './DossierEmptyState';
 import { DossierHeader } from './DossierHeader';
 import { DossierSkeleton } from './DossierSkeleton';
 import { DriverBreakdown } from './DriverBreakdown';
+import { TerrainDriversSection } from './TerrainDriversSection';
 import { CellMetricsBox } from './CellMetricsBox';
 
 export interface CellDossierProps {
@@ -36,7 +38,7 @@ export interface CellDossierProps {
 /**
  * Right-panel dossier for the selected cell.
  *
- * Integrates static physical drivers and susceptibility/confidence with
+ * Integrates physical drivers (flood rasters, or terrain attributions for other layers) and susceptibility/confidence with
  * real-time ECMWF / Open-Meteo live forecast data for Wayanad pilot cells.
  */
 export const CellDossier: React.FC<CellDossierProps> = ({
@@ -129,7 +131,15 @@ export const CellDossier: React.FC<CellDossierProps> = ({
         classNames={{ root: classNames.metrics }}
       />
 
-      {detail.drivers ? <DriverBreakdown drivers={detail.drivers} /> : null}
+      {detail.drivers && hasFloodDriverData(detail.drivers) ? (
+        <DriverBreakdown drivers={detail.drivers} />
+      ) : (
+        <TerrainDriversSection
+          h3={detail.h3}
+          hazardType={hazardType}
+          scoreModelVersion={detail.model_version}
+        />
+      )}
 
       <ScreeningGradeNotice notice={detail.screening_grade} className="rounded-xl border" />
     </div>

@@ -18,6 +18,7 @@ import { India3DCanvas } from '@/components/features/map-3d';
 import { useHazardLayer } from '@/lib/hooks/useHazardLayer';
 import { useHazardLayerList } from '@/lib/hooks/useHazardLayerList';
 import { useForecastAlerts } from '@/lib/hooks/useForecastAlerts';
+import { useDistrictHazardType } from '@/lib/hooks/useDistrictHazardType';
 import type { HazardType } from '@/lib/api/types';
 import type { FloodHazardMapDisplayState } from '@/components/features/map/FloodHazardMap';
 import {
@@ -52,7 +53,7 @@ const DEFAULT_DISPLAY: FloodHazardMapDisplayState = {
 };
 
 export const GovWorkspace: React.FC<GovWorkspaceProps> = ({
-  initialHazardType = 'riverine_flood',
+  initialHazardType,
   admin,
   initialViewMode = '3d',
   officerId = 'NDRF-OFFICER-894',
@@ -60,7 +61,6 @@ export const GovWorkspace: React.FC<GovWorkspaceProps> = ({
 }) => {
   const { user, isLoading: authLoading, isAuthenticated, logout } = useAuth();
   const [viewMode, setViewMode] = useState<'3d' | 'gis'>(initialViewMode);
-  const [hazardType, setHazardType] = useState<HazardType>(initialHazardType);
   const [selectedH3, setSelectedH3] = useState<string | null>(null);
   const [hoveredH3, setHoveredH3] = useState<string | null>(null);
   const [display, setDisplay] = useState<FloodHazardMapDisplayState>(DEFAULT_DISPLAY);
@@ -72,6 +72,12 @@ export const GovWorkspace: React.FC<GovWorkspaceProps> = ({
   // layer returns every district and the map frames the whole loaded grid.
   const effectiveAdmin =
     user?.jurisdiction?.lgd_code ?? user?.jurisdiction?.admin_id ?? admin;
+
+  // The layer follows the jurisdiction (Wayanad opens on landslide) until the officer picks one.
+  const { hazardType, selectHazardType } = useDistrictHazardType({
+    admin: effectiveAdmin,
+    initialHazardType,
+  });
 
   const { data, cells, isLoading, error, refetch } = useHazardLayer({
     hazardType,
@@ -85,19 +91,19 @@ export const GovWorkspace: React.FC<GovWorkspaceProps> = ({
   });
 
   const handleInspectWayanad = useCallback(() => {
-    setHazardType('landslide');
+    selectHazardType('landslide');
     setSelectedH3('8860064a15fffff');
-  }, []);
+  }, [selectHazardType]);
 
   const handleDisplayChange = useCallback((next: Partial<FloodHazardMapDisplayState>) => {
     setDisplay((current) => ({ ...current, ...next }));
   }, []);
 
   const handleSelectLayer = useCallback((next: HazardType) => {
-    setHazardType(next);
+    selectHazardType(next);
     setSelectedH3(null);
     setHoveredH3(null);
-  }, []);
+  }, [selectHazardType]);
 
   const przThreshold = data?.legend.prz_susceptibility_threshold ?? 0.85;
   const breaks = useMemo(() => data?.legend.breaks ?? [], [data]);

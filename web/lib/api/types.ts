@@ -126,6 +126,11 @@ export type JurisdictionDTO = components['schemas']['JurisdictionDTO'];
 export type LogoutResponse = components['schemas']['LogoutResponse'];
 export type RegisterRequest = components['schemas']['RegisterRequest'];
 
+/* ---- Zone dossier (per-cell feature attributions) ---- */
+
+export type ZoneCellDetail = components['schemas']['ZoneCellDetail'];
+export type FeatureContribution = components['schemas']['FeatureContributionDTO'];
+
 /* ---- Relocation planning (habitations, candidate sites, allocation) ---- */
 
 export type Tier = components['schemas']['Tier'];
