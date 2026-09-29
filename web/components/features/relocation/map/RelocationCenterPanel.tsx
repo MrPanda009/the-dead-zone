@@ -70,6 +70,7 @@ export const RelocationCenterPanel = ({
   const [confidenceThreshold, setConfidenceThreshold] = useState(0.5);
   const [showHardZero, setShowHardZero] = useState(true);
   const [showNoCoverage, setShowNoCoverage] = useState(true);
+  const [showHealthFacilities, setShowHealthFacilities] = useState(false);
 
   return (
     <div className={['relative flex h-full w-full min-w-0 flex-1 flex-col overflow-hidden', className].filter(Boolean).join(' ')}>
@@ -88,6 +89,7 @@ export const RelocationCenterPanel = ({
         confidenceThreshold={confidenceThreshold}
         showHardZero={showHardZero}
         showNoCoverage={showNoCoverage}
+        showHealthFacilities={showHealthFacilities}
       />
 
       {/* Top Status & Mode HUD */}
@@ -113,6 +115,8 @@ export const RelocationCenterPanel = ({
         onShowHardZeroChange={setShowHardZero}
         showNoCoverage={showNoCoverage}
         onShowNoCoverageChange={setShowNoCoverage}
+        showHealthFacilities={showHealthFacilities}
+        onShowHealthFacilitiesChange={setShowHealthFacilities}
       />
 
       {/* Floating Expand Button for Left Panel when Collapsed */}

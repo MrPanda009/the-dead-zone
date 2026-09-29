@@ -16,6 +16,7 @@ import type {
 
 import { useRelocationArcLayers } from './layers/useRelocationArcLayers';
 import { useRelocationFlowLayers } from './layers/useRelocationFlowLayers';
+import { useHealthFacilityLayers } from './layers/useHealthFacilityLayers';
 
 export interface RelocationCenterMapProps {
   habitation: HabitationListItem | null;
@@ -31,6 +32,7 @@ export interface RelocationCenterMapProps {
   confidenceThreshold: number;
   showHardZero: boolean;
   showNoCoverage: boolean;
+  showHealthFacilities?: boolean;
   className?: string;
 }
 
@@ -57,6 +59,7 @@ export const RelocationCenterMap = ({
   confidenceThreshold,
   showHardZero,
   showNoCoverage,
+  showHealthFacilities = false,
   className = '',
 }: RelocationCenterMapProps) => {
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -98,9 +101,14 @@ export const RelocationCenterMap = ({
     onSelectAssignment,
   });
 
+  // 5. Supplementary Healthcare Facilities (Default Off)
+  const healthLayers = useHealthFacilityLayers({
+    enabled: showHealthFacilities,
+  });
+
   const allLayers = useMemo(() => {
-    return [...hexLayers, ...arcLayers, ...flowLayers];
-  }, [hexLayers, arcLayers, flowLayers]);
+    return [...hexLayers, ...arcLayers, ...flowLayers, ...healthLayers];
+  }, [hexLayers, arcLayers, flowLayers, healthLayers]);
 
   // Handle map instance capture
   const handleMapLoad = useCallback((map: MapLibreMap) => {

@@ -226,6 +226,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sites/facilities/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get spatial healthcare facilities GeoJSON
+         * @description Returns GeoJSON FeatureCollection of primary and secondary healthcare facilities with IPHS norms and flood safety flags.
+         */
+        get: operations["get_health_facilities_geojson_sites_facilities_health_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sites/{id}": {
         parameters: {
             query?: never;
@@ -981,6 +1001,31 @@ export interface components {
              * @description Households supportable by spare primary health capacity (None if unmeasured).
              */
             cc_health?: number | null;
+            /**
+             * Health Facility Id
+             * @description Assigned primary health facility ID (None if unassigned or unserved).
+             */
+            health_facility_id?: number | null;
+            /**
+             * Health Facility Name
+             * @description Assigned primary health facility name.
+             */
+            health_facility_name?: string | null;
+            /**
+             * Health Facility Type
+             * @description Assigned health facility tier ('sub_cen', 'phc', 'chc').
+             */
+            health_facility_type?: string | null;
+            /**
+             * Health Distance Km
+             * @description Physical distance to assigned healthcare facility in km.
+             */
+            health_distance_km?: number | null;
+            /**
+             * Health Travel Time Minutes
+             * @description WHO-Tobler anisotropic walking/transit time in minutes.
+             */
+            health_travel_time_minutes?: number | null;
             /**
              * Livelihood Multiplier
              * @description Multiplier for economic connectivity.
@@ -3233,6 +3278,60 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Validation Error - Request parameter or payload validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error - An unexpected system or database error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Service Unavailable - No valid serving version is active. Pipeline data is not ready. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    get_health_facilities_geojson_sites_facilities_health_get: {
+        parameters: {
+            query?: {
+                /** @description Administrative boundary ID or LGD code to filter facilities. */
+                admin?: number | null;
+                /** @description Filter by facility type ('sub_cen', 'phc', 'chc'). */
+                facility_type?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Validation Error - Request parameter or payload validation failed. */

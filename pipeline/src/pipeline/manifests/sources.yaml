@@ -59,3 +59,11 @@ sources:
     attribution: "ECMWF Open Data 0.25deg IFS"
     fallback: null
     quota: { limit: null, window: null, calls_needed: 4 }
+
+  - id: geocoded_health_centres
+    tier: B
+    role: primary healthcare carrying capacity evaluation
+    licence: Open Government Data (OGD) India / MoHFW NIN
+    attribution: "National Health Centre Directory, MoHFW / National Health Portal"
+    fallback: null
+    quota: { limit: null, window: null, calls_needed: null }

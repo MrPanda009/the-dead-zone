@@ -188,3 +188,37 @@ class TestCandidateSitesAPI:
         data = res.json()
         assert "error" in data
         assert data["error"]["code"] == "VALIDATION_ERROR"
+
+    def test_get_health_facilities_geojson(self, client):
+        """Verifies spatial GeoJSON endpoint returns valid FeatureCollection with IPHS metadata."""
+        res = client.get("/sites/facilities/health")
+        assert res.status_code == 200
+        data = res.json()
+        assert data["type"] == "FeatureCollection"
+        assert "features" in data
+        assert isinstance(data["features"], list)
+        if len(data["features"]) > 0:
+            feat = data["features"][0]
+            assert feat["type"] == "Feature"
+            assert "geometry" in feat
+            assert feat["geometry"]["type"] == "Point"
+            props = feat["properties"]
+            assert "name" in props
+            assert "type" in props
+            assert "norm_population" in props
+            assert "flood_safe" in props
+            assert isinstance(props["flood_safe"], bool)
+
+    def test_candidate_site_tethered_health_facility(self, client):
+        """Verifies candidate site detail includes tethered clinic capacity breakdown."""
+        # Query site 1752 or first available site
+        res = client.get("/sites/1752")
+        if res.status_code == 200:
+            data = res.json()
+            cap = data["capacity"]
+            if cap["health_facility_name"] is not None:
+                assert cap["health_facility_id"] is not None
+                assert cap["health_distance_km"] is not None
+                assert cap["health_travel_time_minutes"] is not None
+                assert cap["health_travel_time_minutes"] > 0
+

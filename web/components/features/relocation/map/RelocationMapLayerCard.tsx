@@ -14,6 +14,8 @@ export interface RelocationMapLayerCardProps {
   onShowHardZeroChange: (val: boolean) => void;
   showNoCoverage: boolean;
   onShowNoCoverageChange: (val: boolean) => void;
+  showHealthFacilities?: boolean;
+  onShowHealthFacilitiesChange?: (val: boolean) => void;
   className?: string;
 }
 
@@ -28,6 +30,8 @@ export const RelocationMapLayerCard = ({
   onShowHardZeroChange,
   showNoCoverage,
   onShowNoCoverageChange,
+  showHealthFacilities = false,
+  onShowHealthFacilitiesChange,
   className = '',
 }: RelocationMapLayerCardProps) => {
   const [isMinimized, setIsMinimized] = useState(false);
@@ -129,6 +133,14 @@ export const RelocationMapLayerCard = ({
         description="Outlined, never filled"
         checked={showNoCoverage}
         onCheckedChange={onShowNoCoverageChange}
+      />
+
+      {/* Supplementary Healthcare Facilities Toggle (Default off) */}
+      <Toggle
+        label="Health facilities"
+        description="Physical clinics & IPHS norms (supplementary)"
+        checked={showHealthFacilities}
+        onCheckedChange={onShowHealthFacilitiesChange ?? (() => {})}
       />
     </div>
   );

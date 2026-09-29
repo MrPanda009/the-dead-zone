@@ -52,6 +52,21 @@ class CapacityBreakdownDTO(BaseSchema):
     cc_health: Optional[int] = Field(
         default=None, ge=0, description="Households supportable by spare primary health capacity (None if unmeasured)."
     )
+    health_facility_id: Optional[int] = Field(
+        default=None, description="Assigned primary health facility ID (None if unassigned or unserved)."
+    )
+    health_facility_name: Optional[str] = Field(
+        default=None, description="Assigned primary health facility name."
+    )
+    health_facility_type: Optional[str] = Field(
+        default=None, description="Assigned health facility tier ('sub_cen', 'phc', 'chc')."
+    )
+    health_distance_km: Optional[float] = Field(
+        default=None, ge=0.0, description="Physical distance to assigned healthcare facility in km."
+    )
+    health_travel_time_minutes: Optional[int] = Field(
+        default=None, ge=0, description="WHO-Tobler anisotropic walking/transit time in minutes."
+    )
     livelihood_multiplier: float = Field(ge=0.0, le=1.0, description="Multiplier for economic connectivity.")
     cc_final: Optional[int] = Field(
         default=None, ge=0, description="Binding minimum carrying capacity in households (None if lifelines unassessed)."

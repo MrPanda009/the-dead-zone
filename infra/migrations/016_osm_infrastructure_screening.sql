@@ -42,4 +42,4 @@ COMMENT ON COLUMN candidate_site.screening_infra IS
     'Precomputed spatial summary of nearby civic facilities (counts within buffers, minimum distances, and heuristic screening capacity headroom).';
 
 COMMENT ON COLUMN candidate_site.infra_screening_status IS
-    'Screening status of civic infrastructure: unscreened, screened (via HOT/OSM), or survey_verified (official department ground survey).';
+    'Screening status of civic infrastructure: unscreened, screened (via HOT/OSM), or survey_verified (official ground survey).';
