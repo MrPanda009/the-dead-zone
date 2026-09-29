@@ -94,11 +94,14 @@ export const TopRiskList = ({
       ref={rootRef}
       className={['flex flex-col gap-2', classNames.root ?? '', className].filter(Boolean).join(' ')}
     >
-      <SectionHeader
-        title={title}
-        description={description ?? `Top ${ranked.length} of ${cells.length.toLocaleString()} cells`}
-        className={classNames.header}
-      />
+      <div className={['flex flex-col', classNames.header ?? ''].join(' ')}>
+        <span className="text-[11px] font-mono font-bold tracking-wider uppercase text-text-secondary">
+          {title}
+        </span>
+        <span className="text-[10px] font-mono text-text-muted">
+          {description ?? `Top ${ranked.length} of ${cells.length.toLocaleString()} cells`}
+        </span>
+      </div>
       {ranked.length === 0 ? (
         <EmptyState title="No ranked cells" description="No measured cells in the current layer." />
       ) : (

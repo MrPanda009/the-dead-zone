@@ -229,7 +229,7 @@ export const LoginCard: React.FC<LoginCardProps> = ({
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="officer@setu.gov.in"
+              placeholder="officer@terra.gov.in"
               className="auth-input w-full px-3.5 py-2.5 rounded-xl bg-surface-1 dark:bg-forest-deep/80 border border-line dark:border-white/10 focus:border-citron focus:ring-1 focus:ring-citron/30 focus:outline-none text-sm text-ink dark:text-text-primary font-mono transition-colors"
             />
             <span className="material-symbols-outlined absolute right-3 top-2.5 text-text-muted text-lg pointer-events-none">

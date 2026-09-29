@@ -15,3 +15,6 @@ export type { MapControlBarProps } from './MapControlBar';
 
 export { ResolutionStepper } from './ResolutionStepper';
 export type { ResolutionStepperProps } from './ResolutionStepper';
+
+export { MapTopControlBar } from './MapTopControlBar';
+export type { MapTopControlBarProps } from './MapTopControlBar';

@@ -28,6 +28,7 @@ import {
 import { Hex3DTooltip } from './Hex3DTooltip';
 import { Map3DControlBar } from './Map3DControlBar';
 import { Map3DSideControls, Map3DInteractionMode } from './Map3DSideControls';
+import { useLayoutContext } from '@/components/layout/ThreePanelLayout';
 
 /** Stable identity so a default `breaks` prop cannot re-trigger effects each render. */
 const EMPTY_BREAKS: number[] = [];
@@ -65,6 +66,8 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
 }) => {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
+
+  const { isTopCollapsed } = useLayoutContext();
 
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -230,14 +233,36 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
       if (!containerRef.current || !rendererRef.current || !cameraRef.current) return;
       const w = containerRef.current.clientWidth;
       const h = containerRef.current.clientHeight;
-      cameraRef.current.aspect = w / h;
-      cameraRef.current.updateProjectionMatrix();
-      rendererRef.current.setSize(w, h);
+      if (w > 0 && h > 0) {
+        cameraRef.current.aspect = w / h;
+        cameraRef.current.updateProjectionMatrix();
+        rendererRef.current.setSize(w, h);
+      }
     };
     window.addEventListener('resize', handleResize);
 
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width: w, height: h } = entry.contentRect;
+        if (w > 0 && h > 0 && cameraRef.current && rendererRef.current) {
+          cameraRef.current.aspect = w / h;
+          cameraRef.current.updateProjectionMatrix();
+          rendererRef.current.setSize(w, h);
+        }
+      }
+    });
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
+    // Force initial frame layout synchronization
+    requestAnimationFrame(() => {
+      handleResize();
+    });
+
     return () => {
       window.removeEventListener('resize', handleResize);
+      resizeObserver.disconnect();
       cancelAnimationFrame(animId);
       landmass.dispose();
       hexColumns.dispose();
@@ -531,7 +556,7 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
       <canvas ref={canvasRef} className="w-full h-full block" />
 
       {/* Floating 3D Control Bar (Top) */}
-      <div className="absolute top-4 left-4 right-4 z-20 pointer-events-none">
+      <div className="absolute top-3 left-4 right-4 z-20 pointer-events-none">
         <Map3DControlBar
           activePresetId={activePreset}
           onSelectPreset={handleSelectPreset}

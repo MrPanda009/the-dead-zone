@@ -41,7 +41,7 @@ export const LANDING_STORIES: StorySectionData[] = [
     title: 'Carrying Capacity & Relocation',
     subtitle: 'Multi-criteria linear programming optimization for resettlement site selection',
     description:
-      'Moving endangered communities requires mathematically sound, humane planning. SETU - Disaster Risk Reduction runs linear programming optimization against municipal binding constraints—potable water supply, power grid substations, hospital beds, and school capacity—safely matching displaced habitations to sustainable host sites without overwhelming local infrastructure.',
+      'Moving endangered communities requires mathematically sound, humane planning. TERRA (Terrain-based Environmental Risk and Relocation Analytics) runs linear programming optimization against municipal binding constraints—potable water supply, power grid substations, hospital beds, and school capacity—safely matching displaced habitations to sustainable host sites without overwhelming local infrastructure.',
     pills: ['Linear Programming Solver', 'Municipal Binding Constraints', 'Candidate Host Sites', 'Suitability Ranking'],
     metrics: [
       { value: '98.4%', label: 'Constraint Satisfaction' },

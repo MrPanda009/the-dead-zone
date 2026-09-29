@@ -1,6 +1,7 @@
 'use client';
 
 import type { HabitationListItem } from '@/lib/api/types';
+import { useLayoutContext } from '@/components/layout/ThreePanelLayout';
 
 export interface RelocationMapTopHudProps {
   habitation: HabitationListItem | null;
@@ -23,10 +24,12 @@ export const RelocationMapTopHud = ({
   onToggle3D,
   className = '',
 }: RelocationMapTopHudProps) => {
+  const { isTopCollapsed } = useLayoutContext();
+
   return (
     <div
       className={[
-        'absolute left-4 right-4 top-4 z-20 flex flex-wrap items-center justify-between gap-3',
+        'absolute top-3 left-4 right-4 z-20 flex flex-wrap items-center justify-between gap-3',
         'rounded-2xl border border-line/80 bg-surface-0/90 dark:bg-forest-surface/90 px-4 py-2.5 shadow-lg backdrop-blur-md transition-colors',
         className,
       ]

@@ -84,7 +84,7 @@ export const PublicStoriesPage: React.FC<PublicStoriesPageProps> = ({
       {/* Mobile/Tablet Fallback: District Selector and Tourist District Card */}
       <div className="md:hidden relative z-20 flex flex-col gap-3 pt-3 border-t border-line dark:border-white/10">
         <div className="flex flex-wrap items-center justify-center gap-1.5">
-          {(['North', 'West', 'Central', 'East', 'South'] as ZoneId[]).map((zone) => (
+          {(['North', 'West', 'Central', 'East', 'Kodagu', 'South'] as ZoneId[]).map((zone) => (
             <button
               key={zone}
               type="button"
@@ -103,6 +103,8 @@ export const PublicStoriesPage: React.FC<PublicStoriesPageProps> = ({
                 ? 'Satpura'
                 : zone === 'East'
                 ? 'Barpeta'
+                : zone === 'Kodagu'
+                ? 'Kodagu'
                 : 'Wayanad'}
             </button>
           ))}

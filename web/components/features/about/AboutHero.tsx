@@ -101,7 +101,7 @@ export const AboutHero: React.FC<AboutHeroProps> = ({
   return (
     <section
       ref={containerRef}
-      aria-label="About SETU-DRR Hero"
+      aria-label="About TERRA Hero"
       className={`relative w-full h-[88vh] min-h-[620px] max-h-[860px] flex flex-col items-center justify-center text-center overflow-visible select-none bg-transparent ${className} ${
         classNames.root ?? ''
       }`}

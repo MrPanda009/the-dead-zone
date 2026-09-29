@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import type { Map as MapLibreMap } from 'maplibre-gl';
 import { PathLayer } from '@deck.gl/layers';
 import { useTheme } from '@/components/providers';
 import { MAINLAND_INDIA_COORDS, ISLAND_GROUPS_COORDS } from '@/lib/geo/indiaBoundary';
@@ -21,11 +22,8 @@ import { MapSkeleton } from './MapSkeleton';
 import { HexTooltip } from './HexTooltip';
 import { useHazardHexLayers } from './layers/useHazardHexLayers';
 import { useForecastHexLayers } from './layers/useForecastHexLayers';
-import { MapControlBar } from './controls/MapControlBar';
-import { LayerOpacitySlider } from './controls/LayerOpacitySlider';
-import { ConfidenceHatchControl } from './controls/ConfidenceHatchControl';
-import { ResolutionStepper } from './controls/ResolutionStepper';
-import { CellClassToggles } from './controls/CellClassToggles';
+import { MapTopControlBar } from './controls/MapTopControlBar';
+import { useLayoutContext } from '@/components/layout/ThreePanelLayout';
 import { MapLegendPanel } from './legend/MapLegendPanel';
 
 export interface FloodHazardMapDisplayState {
@@ -104,6 +102,7 @@ export const FloodHazardMap = ({
   classNames = {},
 }: FloodHazardMapProps) => {
   const [pointer, setPointer] = useState<{ x: number; y: number } | null>(null);
+  const mapInstanceRef = useRef<MapLibreMap | null>(null);
 
   const breaks = useMemo(() => legend?.breaks ?? [], [legend]);
   const confidenceCeiling = legend?.confidence_ceiling ?? 1;
@@ -152,6 +151,7 @@ export const FloodHazardMap = ({
 
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
+  const { isTopCollapsed } = useLayoutContext();
 
   const boundaryLayer = useMemo(
     () =>
@@ -216,37 +216,47 @@ export const FloodHazardMap = ({
         layers={allLayers}
         initialViewState={initialViewState}
         styleUrl={styleUrl}
+        onMapLoad={(map) => {
+          mapInstanceRef.current = map;
+        }}
         onBackgroundClick={() => onSelectCell?.(null)}
       >
-        <MapControlBar className={classNames.controls}>
-          <div className="flex flex-col gap-3.5">
-            <ResolutionStepper
-              value={display.resolution}
-              onValueChange={(resolution) => onDisplayChange?.({ resolution })}
-            />
-            <LayerOpacitySlider
-              value={display.opacity}
-              onValueChange={(opacity) => onDisplayChange?.({ opacity })}
-            />
-            <ConfidenceHatchControl
-              enabled={display.showConfidenceHatch}
-              threshold={display.confidenceThreshold}
-              onEnabledChange={(showConfidenceHatch) => onDisplayChange?.({ showConfidenceHatch })}
-              onThresholdChange={(confidenceThreshold) => onDisplayChange?.({ confidenceThreshold })}
-            />
-            <CellClassToggles
-              showHardZero={display.showHardZero}
-              showNoCoverage={display.showNoCoverage}
-              onShowHardZeroChange={(showHardZero) => onDisplayChange?.({ showHardZero })}
-              onShowNoCoverageChange={(showNoCoverage) => onDisplayChange?.({ showNoCoverage })}
-            />
-            {display.showConfidenceHatch && hatchedCount > 0 ? (
-              <p className="text-[10px] leading-snug text-ink-faint">
-                {hatchedCount.toLocaleString()} cells hatched.
-              </p>
-            ) : null}
-          </div>
-        </MapControlBar>
+        {/* Floating Top Control Bar at Map Center */}
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
+          <MapTopControlBar
+            resolution={display.resolution}
+            onResolutionChange={(resolution) => onDisplayChange?.({ resolution })}
+            opacity={display.opacity}
+            onOpacityChange={(opacity) => onDisplayChange?.({ opacity })}
+            showConfidenceHatch={display.showConfidenceHatch}
+            onConfidenceHatchChange={(showConfidenceHatch) =>
+              onDisplayChange?.({ showConfidenceHatch })
+            }
+          />
+        </div>
+
+        {/* Floating Zoom Controls at Bottom-Right */}
+        <div className="absolute bottom-4 right-4 z-20 pointer-events-auto flex flex-col rounded-xl border border-line dark:border-[#1e2d45] bg-surface-0/95 dark:bg-[#0c1524]/92 text-ink dark:text-text-primary backdrop-blur-xl shadow-2xl overflow-hidden select-none">
+          <button
+            type="button"
+            onClick={() => mapInstanceRef.current?.zoomIn()}
+            className="p-2 text-text-secondary hover:text-ink dark:hover:text-white hover:bg-surface-2 dark:hover:bg-white/10 transition-colors flex items-center justify-center cursor-pointer"
+            title="Zoom In"
+            aria-label="Zoom In"
+          >
+            <span className="material-symbols-outlined text-lg">add</span>
+          </button>
+          <div className="h-px w-full bg-line dark:bg-white/10" />
+          <button
+            type="button"
+            onClick={() => mapInstanceRef.current?.zoomOut()}
+            className="p-2 text-text-secondary hover:text-ink dark:hover:text-white hover:bg-surface-2 dark:hover:bg-white/10 transition-colors flex items-center justify-center cursor-pointer"
+            title="Zoom Out"
+            aria-label="Zoom Out"
+          >
+            <span className="material-symbols-outlined text-lg">remove</span>
+          </button>
+        </div>
 
         {legend && coverage ? (
           <MapLegendPanel
@@ -254,6 +264,7 @@ export const FloodHazardMap = ({
             coverage={coverage}
             hatchedCount={hatchedCount}
             confidenceThreshold={display.confidenceThreshold}
+            defaultCollapsed={true}
           />
         ) : null}
 

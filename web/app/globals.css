@@ -93,18 +93,18 @@ html.dark {
 html.light {
   color-scheme: light;
 
-  /* SETU-DRR operations console palette (Light - crisp daylight readability) */
+  /* TERRA operations console palette (Light - crisp daylight readability & high contrast) */
   --surface-0: #ffffff;
-  --surface-1: #f4f8f1;
-  --surface-2: #e7eee2;
+  --surface-1: #f1f5f9;
+  --surface-2: #e2e8f0;
   --panel: #ffffff;
 
-  --line: #c3d2c8;
-  --line-strong: #9db0a3;
+  --line: #94a3b8;
+  --line-strong: #475569;
 
-  --ink: #0d1a14;
-  --ink-muted: #3d5449;
-  --ink-faint: #6a8274;
+  --ink: #0f172a;
+  --ink-muted: #334155;
+  --ink-faint: #64748b;
 
   --accent: #0284c7;
   --accent-strong: #0369a1;
@@ -114,27 +114,27 @@ html.light {
   --safe: #16a34a;
 
   /* Surface / Atmosphere tokens */
-  --color-bg-base: #eaf1e6;
-  --color-forest-deep: #e2ebdd;
-  --color-forest-mid: #d5e2d0;
-  --color-forest-light: #c7d8c2;
+  --color-bg-base: #e2e8f0;
+  --color-forest-deep: #f1f5f9;
+  --color-forest-mid: #e2e8f0;
+  --color-forest-light: #cbd5e1;
   --color-forest-surface: #ffffff;
-  --color-forest-surface-hover: #f1f6ee;
-  --color-forest-dark: #f2f7ef;
+  --color-forest-surface-hover: #f8fafc;
+  --color-forest-dark: #f1f5f9;
 
-  /* Citron & Brand Accents (Adapted for contrast on light mode) */
-  --color-citron: #d2f83f;
-  --color-citron-hover: #c0e62d;
+  /* Citron & Brand Accents (Deep forest emerald for readable text in light mode, high contrast) */
+  --color-citron: #166534;
+  --color-citron-hover: #14532d;
   --color-accent-emerald: #059669;
   --color-accent-emerald-bright: #10b981;
   --color-accent-emerald-light: #047857;
 
   /* Editorial & Text */
-  --color-cream: #121f1a;
-  --color-text-primary: #0f1c16;
-  --color-text-secondary: #334b3e;
-  --color-text-muted: #5e776a;
-  --color-text-dim: #8b9f93;
+  --color-cream: #0f172a;
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #334155;
+  --color-text-muted: #64748b;
+  --color-text-dim: #94a3b8;
 
   /* Hazard & Alert Severities */
   --color-hazard-red: #dc2626;
@@ -143,18 +143,18 @@ html.light {
   --color-hazard-green: #16a34a;
 
   /* Gov Resilience Command Center Palette */
-  --color-gov-bg: #f7f5f0;
+  --color-gov-bg: #e2e8f0;
   --color-gov-bg-light: #ffffff;
   --color-gov-surface: #ffffff;
-  --color-gov-surface-hover: #edeae2;
+  --color-gov-surface-hover: #f1f5f9;
   --color-gov-surface-light: #ffffff;
-  --color-gov-border: #c2d1c6;
-  --color-gov-sage: #507153;
-  --color-gov-sage-light: #6f8f72;
-  --color-gov-red: #b9433f;
-  --color-gov-orange: #c96b3b;
-  --color-gov-amber: #d49a45;
-  --color-gov-green: #3d6040;
+  --color-gov-border: #94a3b8;
+  --color-gov-sage: #334155;
+  --color-gov-sage-light: #475569;
+  --color-gov-red: #dc2626;
+  --color-gov-orange: #ea580c;
+  --color-gov-amber: #d97706;
+  --color-gov-green: #16a34a;
 }
 
 /*
@@ -478,9 +478,9 @@ html.light .forest-atmosphere {
 }
 
 html.light .glass-card {
-  background: rgba(255, 255, 255, 0.88);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 20px 45px rgba(20, 40, 30, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
 }
 
 /* Capsule Pill Header (Matching Reference Image 2) */
@@ -493,9 +493,9 @@ html.light .glass-card {
 }
 
 html.light .capsule-pill {
-  background: rgba(255, 255, 255, 0.85);
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  box-shadow: 0 10px 25px rgba(20, 40, 30, 0.07);
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
 }
 
 /* Pill badge */
@@ -507,8 +507,18 @@ html.light .capsule-pill {
 }
 
 html.light .pill-badge {
-  background: rgba(235, 244, 238, 0.92);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+}
+
+/* High contrast citron brand utilities for light mode */
+html.light .bg-citron {
+  background-color: #d4f15d;
+  color: #0f172a;
+}
+
+html.light .text-citron {
+  color: #166534;
 }
 
 /* Minimalist Citron Solid Button (Image 1 Style - Zero Gradients) */

@@ -21,3 +21,6 @@ export type { DriverBreakdownProps } from './DriverBreakdown';
 
 export { DriverMetricRow } from './DriverMetricRow';
 export type { DriverMetricRowProps } from './DriverMetricRow';
+
+export { FiltersAndRulesBox } from './FiltersAndRulesBox';
+export type { FiltersAndRulesBoxProps } from './FiltersAndRulesBox';

@@ -7,7 +7,7 @@ import type { AboutQuoteBannerProps } from './types';
 
 export const AboutQuoteBanner: React.FC<AboutQuoteBannerProps> = ({
   quote = 'Whoever saves one life saves the world entire.',
-  author = 'SETU-DRR Humanitarian Principle',
+  author = 'TERRA Humanitarian Principle',
   affiliation = 'Disaster Risk Reduction & Preemptive Relocation',
   className = '',
 }) => {

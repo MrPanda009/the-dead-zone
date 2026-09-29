@@ -78,7 +78,7 @@ export const TopRiskRow = ({
       className={[
         'flex w-full items-center gap-2 rounded-xl border px-2 py-1.5 text-left will-change-transform',
         'transition-colors duration-150',
-        isSelected ? 'border-accent bg-accent/10' : 'border-transparent hover:border-line',
+        isSelected ? 'border-accent bg-accent/15 text-ink font-semibold' : 'border-transparent hover:border-line hover:bg-surface-2 dark:hover:bg-white/5',
         classNames.root ?? '',
         className,
       ]
@@ -101,7 +101,7 @@ export const TopRiskRow = ({
         {formatH3(cell.h3)}
       </span>
       {isPrzCandidate ? (
-        <span className="shrink-0 rounded-full border border-critical/45 px-1.5 text-[9px] font-semibold uppercase text-critical">
+        <span className="shrink-0 rounded-md border border-red-500/60 bg-red-500/10 px-1.5 py-0.2 text-[9px] font-mono font-bold tracking-wider uppercase text-red-600 dark:text-red-400">
           PRZ
         </span>
       ) : null}

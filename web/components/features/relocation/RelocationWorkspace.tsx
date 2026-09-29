@@ -263,6 +263,10 @@ export const RelocationWorkspace = ({
     <div ref={workspaceRef} className="h-full w-full">
       <ThreePanelLayout
         className={className}
+        isLeftCollapsed={isLeftCollapsed}
+        onToggleLeftCollapse={() => setIsLeftCollapsed((c) => !c)}
+        isRightCollapsed={isRightCollapsed}
+        onToggleRightCollapse={() => setIsRightCollapsed((c) => !c)}
         header={
           <div data-panel-header>
             <AppHeader
@@ -280,14 +284,9 @@ export const RelocationWorkspace = ({
         }
         left={
           <LeftPanel
-            width={isLeftCollapsed ? 0 : 320}
-            className={[
-              'panel-left-entrance transition-all duration-300 ease-in-out',
-              isLeftCollapsed ? 'w-0 overflow-hidden border-r-0 !p-0 opacity-0 pointer-events-none' : 'opacity-100',
-            ].join(' ')}
-            classNames={{
-              scroll: isLeftCollapsed ? '!p-0' : 'p-3',
-            }}
+            title="Triage & Queue"
+            onToggleCollapse={() => setIsLeftCollapsed(true)}
+            className="panel-left-entrance"
           >
             <HabitationQueue
               habitations={queue.habitations}
@@ -337,14 +336,9 @@ export const RelocationWorkspace = ({
         }
         right={
           <RightPanel
-            width={isRightCollapsed ? 0 : 360}
-            className={[
-              'panel-right-entrance transition-all duration-300 ease-in-out',
-              isRightCollapsed ? 'w-0 overflow-hidden border-l-0 !p-0 opacity-0 pointer-events-none' : 'opacity-100',
-            ].join(' ')}
-            classNames={{
-              scroll: isRightCollapsed ? '!p-0' : 'p-3',
-            }}
+            title="Allocation & Solver"
+            onToggleCollapse={() => setIsRightCollapsed(true)}
+            className="panel-right-entrance"
           >
             <AllocationPanel
               plan={allocation.plan}

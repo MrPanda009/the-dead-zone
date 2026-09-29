@@ -102,6 +102,16 @@ export const HazardWorkspace = ({
   const breaks = useMemo(() => data?.legend.breaks ?? [], [data]);
   const selectedCell = useMemo(() => cells.find((c) => c.h3 === selectedH3) ?? null, [cells, selectedH3]);
 
+  const hatchedCount = useMemo(() => {
+    if (!display.showConfidenceHatch || !data?.legend) return 0;
+    const ceiling = data.legend.confidence_ceiling ?? 1;
+    return cells.filter(
+      (cell) =>
+        cell.quality_flag !== 'no_coverage' &&
+        cell.confidence / ceiling < display.confidenceThreshold,
+    ).length;
+  }, [cells, data?.legend, display.confidenceThreshold, display.showConfidenceHatch]);
+
   return (
     <ThreePanelLayout
       className={className}
@@ -190,6 +200,9 @@ export const HazardWorkspace = ({
               przThreshold={przThreshold}
               forecastItems={forecast.items}
               fallbackCell={selectedCell}
+              display={display}
+              onDisplayChange={handleDisplayChange}
+              hatchedCount={hatchedCount}
             />
           </div>
         </RightPanel>

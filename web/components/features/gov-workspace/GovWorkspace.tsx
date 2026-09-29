@@ -11,7 +11,7 @@ import {
 import { cellToParent, cellToLatLng, latLngToCell, getResolution } from 'h3-js';
 import { TopRiskList } from '@/components/features/triage';
 import { CellDossier } from '@/components/features/dossier';
-import { HazardLayerSelect } from '@/components/features/map/controls';
+import { HazardLayerSelect, MapTopControlBar } from '@/components/features/map/controls';
 import { MapSkeleton } from '@/components/features/map/MapSkeleton';
 import { LayerStatsPanel } from '@/components/features/workspace/LayerStatsPanel';
 import { India3DCanvas } from '@/components/features/map-3d';
@@ -28,10 +28,10 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { GovWorkspaceHeader } from './GovWorkspaceHeader';
 
-// MapLibre is dynamically loaded for the High-Res GIS view
+// MapLibre is dynamically loaded for the 2D View
 const FloodHazardMap = dynamic(
   () => import('@/components/features/map/FloodHazardMap').then((m) => m.FloodHazardMap),
-  { ssr: false, loading: () => <MapSkeleton label="Loading High-Res GIS Map…" /> },
+  { ssr: false, loading: () => <MapSkeleton label="Loading 2D Map…" /> },
 );
 
 export interface GovWorkspaceProps {
@@ -158,6 +158,16 @@ export const GovWorkspace: React.FC<GovWorkspaceProps> = ({
   const breaks = useMemo(() => data?.legend.breaks ?? [], [data]);
   const selectedCell = useMemo(() => cells.find((c) => c.h3 === selectedH3) ?? null, [cells, selectedH3]);
 
+  const hatchedCount = useMemo(() => {
+    if (!display.showConfidenceHatch || !data?.legend) return 0;
+    const ceiling = data.legend.confidence_ceiling ?? 1;
+    return cells.filter(
+      (cell) =>
+        cell.quality_flag !== 'no_coverage' &&
+        cell.confidence / ceiling < display.confidenceThreshold,
+    ).length;
+  }, [cells, data?.legend, display.confidenceThreshold, display.showConfidenceHatch]);
+
   // 1. Initial auth loading skeleton
   if (authLoading) {
     return (
@@ -222,7 +232,7 @@ export const GovWorkspace: React.FC<GovWorkspaceProps> = ({
               Official Clearance Required
             </h2>
             <p className="text-xs text-text-secondary mt-1.5 leading-relaxed font-sans">
-              Logged in as <span className="font-mono text-text-primary">{user.email}</span>. Civilian accounts do not possess operational clearance for the high-resolution GIS response matrix.
+              Logged in as <span className="font-mono text-text-primary">{user.email}</span>. Civilian accounts do not possess operational clearance for the 2D view response matrix.
             </p>
           </div>
           <div className="pt-2 flex flex-col gap-2.5">
@@ -334,6 +344,9 @@ export const GovWorkspace: React.FC<GovWorkspaceProps> = ({
             przThreshold={przThreshold}
             forecastItems={forecast.items}
             fallbackCell={selectedCell}
+            display={display}
+            onDisplayChange={handleDisplayChange}
+            hatchedCount={hatchedCount}
           />
         </RightPanel>
       }

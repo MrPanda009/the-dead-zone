@@ -121,14 +121,17 @@ export const TouristDistrictCard: React.FC<TouristDistrictCardProps> = ({
           POPULAR VISITOR SPOTS & CORRIDORS
         </span>
         <div className="flex flex-wrap gap-1.5">
-          {profile.habitations.slice(0, 4).map((h) => (
-            <span
-              key={h.id}
-              className="px-2 py-0.5 rounded-lg text-[11px] font-sans bg-surface-2 dark:bg-white/10 border border-line dark:border-white/10 text-ink dark:text-cream"
-            >
-              {h.name}
-            </span>
-          ))}
+          {profile.habitations
+            .filter((h) => !/^settlement\s*\d+/i.test(h.name.trim()))
+            .slice(0, 4)
+            .map((h) => (
+              <span
+                key={h.id}
+                className="px-2 py-0.5 rounded-lg text-[11px] font-sans bg-surface-2 dark:bg-white/10 border border-line dark:border-white/10 text-ink dark:text-cream"
+              >
+                {h.name}
+              </span>
+            ))}
         </div>
       </div>
 

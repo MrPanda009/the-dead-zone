@@ -42,9 +42,9 @@ export default function AboutPage() {
 
         {/* 3. Alternating Split Section 1: Text on Left, Arched Image on Right */}
         <AboutSplitSection
-          eyebrow="ABOUT SETU-DRR"
+          eyebrow="ABOUT TERRA"
           headline="Scientific Decision Support, built for India’s high-risk frontline."
-          description="From fragile Himalayan slopes in Joshimath and Wayanad to cyclonic coastal deltas, SETU-DRR provides scientific clarity when every hour counts. We bridge the gap between academic remote sensing and immediate field operations, turning raw satellite data into targeted humanitarian protection."
+          description="From fragile Himalayan slopes in Joshimath and Wayanad to cyclonic coastal deltas, TERRA provides scientific clarity when every hour counts. We bridge the gap between academic remote sensing and immediate field operations, turning raw satellite data into targeted humanitarian protection."
           imageSrc="/stories/north.jpg"
           imageAlt="Himalayan mountain settlement perched on active slope with monitoring vectors"
           imagePosition="right"
@@ -60,7 +60,7 @@ export default function AboutPage() {
         <AboutSplitSection
           eyebrow="OUR APPROACH"
           headline="Our unique approach is what sets us apart."
-          description="Disaster relocation is not merely moving structures; it is safeguarding human dignity, kinship ties, and ecological equilibrium. SETU-DRR combines objective physics-based slope hazard calculations with nuanced Social Vulnerability Indices (SoVI) to ensure no vulnerable community is left invisible or displaced into despair."
+          description="Disaster relocation is not merely moving structures; it is safeguarding human dignity, kinship ties, and ecological equilibrium. TERRA combines objective physics-based slope hazard calculations with nuanced Social Vulnerability Indices (SoVI) to ensure no vulnerable community is left invisible or displaced into despair."
           imageSrc="/stories/central.jpg"
           imageAlt="High altitude Himalayan community amidst lush protective ecological buffers"
           imagePosition="left"

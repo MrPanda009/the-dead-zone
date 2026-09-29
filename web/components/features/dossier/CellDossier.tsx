@@ -11,6 +11,8 @@ import { DossierEmptyState } from './DossierEmptyState';
 import { DossierHeader } from './DossierHeader';
 import { DossierSkeleton } from './DossierSkeleton';
 import { CellMetricsBox } from './CellMetricsBox';
+import { FiltersAndRulesBox } from './FiltersAndRulesBox';
+import type { FloodHazardMapDisplayState } from '@/components/features/map/FloodHazardMap';
 
 export interface CellDossierProps {
   /** Selected H3 index, or null for the empty state. */
@@ -24,6 +26,10 @@ export interface CellDossierProps {
   forecastItems?: ForecastAlertItem[];
   /** Optional active cell data used as fallback when no individual row exists */
   fallbackCell?: HazardCell | null;
+  /** Display state for map filters and rules */
+  display?: FloodHazardMapDisplayState;
+  onDisplayChange?: (next: Partial<FloodHazardMapDisplayState>) => void;
+  hatchedCount?: number;
   className?: string;
   classNames?: {
     root?: string;
@@ -44,6 +50,9 @@ export const CellDossier: React.FC<CellDossierProps> = ({
   forecastAlert,
   forecastItems,
   fallbackCell,
+  display,
+  onDisplayChange,
+  hatchedCount,
   className = '',
   classNames = {},
 }) => {
@@ -67,25 +76,73 @@ export const CellDossier: React.FC<CellDossierProps> = ({
     detail?.admin_name?.toLowerCase().includes('wayanad') ?? false;
 
   if (!h3) {
-    return <DossierEmptyState className={className} />;
+    return (
+      <div className={['flex flex-col gap-3.5', className].filter(Boolean).join(' ')}>
+        <DossierEmptyState />
+        {display && onDisplayChange && (
+          <FiltersAndRulesBox
+            confidenceThreshold={display.confidenceThreshold}
+            onConfidenceThresholdChange={(confidenceThreshold) =>
+              onDisplayChange({ confidenceThreshold })
+            }
+            showHardZero={display.showHardZero}
+            onShowHardZeroChange={(showHardZero) => onDisplayChange({ showHardZero })}
+            showNoCoverage={display.showNoCoverage}
+            onShowNoCoverageChange={(showNoCoverage) => onDisplayChange({ showNoCoverage })}
+            hatchedCount={hatchedCount}
+          />
+        )}
+      </div>
+    );
   }
 
   if (isLoading) return <DossierSkeleton className={className} />;
 
   if (error) {
     return (
-      <ErrorState
-        title="Cell unavailable"
-        message={error.message}
-        code={error.code}
-        requestId={error.requestId}
-        className={className}
-      />
+      <div className={['flex flex-col gap-3.5', className].filter(Boolean).join(' ')}>
+        <ErrorState
+          title="Cell unavailable"
+          message={error.message}
+          code={error.code}
+          requestId={error.requestId}
+        />
+        {display && onDisplayChange && (
+          <FiltersAndRulesBox
+            confidenceThreshold={display.confidenceThreshold}
+            onConfidenceThresholdChange={(confidenceThreshold) =>
+              onDisplayChange({ confidenceThreshold })
+            }
+            showHardZero={display.showHardZero}
+            onShowHardZeroChange={(showHardZero) => onDisplayChange({ showHardZero })}
+            showNoCoverage={display.showNoCoverage}
+            onShowNoCoverageChange={(showNoCoverage) => onDisplayChange({ showNoCoverage })}
+            hatchedCount={hatchedCount}
+          />
+        )}
+      </div>
     );
   }
 
   if (!detail) {
-    return <DossierEmptyState className={className} />;
+    return (
+      <div className={['flex flex-col gap-3.5', className].filter(Boolean).join(' ')}>
+        <DossierEmptyState />
+        {display && onDisplayChange && (
+          <FiltersAndRulesBox
+            confidenceThreshold={display.confidenceThreshold}
+            onConfidenceThresholdChange={(confidenceThreshold) =>
+              onDisplayChange({ confidenceThreshold })
+            }
+            showHardZero={display.showHardZero}
+            onShowHardZeroChange={(showHardZero) => onDisplayChange({ showHardZero })}
+            showNoCoverage={display.showNoCoverage}
+            onShowNoCoverageChange={(showNoCoverage) => onDisplayChange({ showNoCoverage })}
+            hatchedCount={hatchedCount}
+          />
+        )}
+      </div>
+    );
   }
 
   return (
@@ -112,6 +169,21 @@ export const CellDossier: React.FC<CellDossierProps> = ({
         }}
         classNames={{ root: classNames.metrics }}
       />
+
+      {/* Map Filters & Rules */}
+      {display && onDisplayChange && (
+        <FiltersAndRulesBox
+          confidenceThreshold={display.confidenceThreshold}
+          onConfidenceThresholdChange={(confidenceThreshold) =>
+            onDisplayChange({ confidenceThreshold })
+          }
+          showHardZero={display.showHardZero}
+          onShowHardZeroChange={(showHardZero) => onDisplayChange({ showHardZero })}
+          showNoCoverage={display.showNoCoverage}
+          onShowNoCoverageChange={(showNoCoverage) => onDisplayChange({ showNoCoverage })}
+          hatchedCount={hatchedCount}
+        />
+      )}
     </div>
   );
 };

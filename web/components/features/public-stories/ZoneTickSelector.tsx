@@ -26,6 +26,7 @@ const DISTRICT_ITEMS: DistrictItem[] = [
   { id: 'West', name: 'Kachchh', state: 'Gujarat', riskTag: 'Seismic' },
   { id: 'Central', name: 'Satpura', state: 'Madhya Pradesh', riskTag: 'Monitored' },
   { id: 'East', name: 'Barpeta', state: 'Assam', riskTag: 'Flood Alert' },
+  { id: 'Kodagu', name: 'Kodagu', state: 'Karnataka', riskTag: 'Slope Warning' },
   { id: 'South', name: 'Wayanad', state: 'Kerala', riskTag: 'High Hazard' },
 ];
 
@@ -37,14 +38,12 @@ export const ZoneTickSelector: React.FC<ZoneTickSelectorProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const activeTickRef = useRef<HTMLDivElement>(null);
 
-  // Normalize selectedZone to match 5 primary story regions
+  // Normalize selectedZone to match primary story regions
   const normalizedZone: ZoneId =
     selectedZone === 'Wayanad'
       ? 'South'
       : selectedZone === 'Barpeta'
       ? 'East'
-      : selectedZone === 'Kodagu'
-      ? 'West'
       : selectedZone;
 
   const selectedIndex = Math.max(
