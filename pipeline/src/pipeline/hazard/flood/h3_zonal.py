@@ -18,9 +18,9 @@ import exactextract
 import rasterio
 
 try:
-    from .aoi import BARPETA_BBOX_WGS84
+    from .aoi import require_bbox
 except (ImportError, ValueError):
-    from aoi import BARPETA_BBOX_WGS84
+    from aoi import require_bbox
 
 # Default parameters
 DEFAULT_H3_RESOLUTION = 8
@@ -30,22 +30,19 @@ DEFAULT_HAZARD_TYPE = "riverine_flood"
 
 
 def polyfill_reporting_aoi(
-    bbox_wgs84: Optional[Sequence[float]] = None,
+    bbox_wgs84: Sequence[float],
     resolution: int = DEFAULT_H3_RESOLUTION,
 ) -> list[str]:
     """Polyfills the reporting AOI at the given H3 resolution.
 
     Args:
-        bbox_wgs84: Bounding box [min_lon, min_lat, max_lon, max_lat]. Defaults to Barpeta AOI.
+        bbox_wgs84: District bounding box [min_lon, min_lat, max_lon, max_lat].
         resolution: H3 resolution level (default 8).
 
     Returns:
         Sorted list of unique H3 hexadecimal cell strings.
     """
-    if bbox_wgs84 is None:
-        bbox_wgs84 = BARPETA_BBOX_WGS84
-
-    min_lon, min_lat, max_lon, max_lat = bbox_wgs84
+    min_lon, min_lat, max_lon, max_lat = require_bbox(bbox_wgs84)
     ring = [
         (min_lat, min_lon),
         (max_lat, min_lon),
@@ -103,8 +100,8 @@ def h3_cells_to_geodataframe(cells: Sequence[str]) -> gpd.GeoDataFrame:
 def compute_zonal_statistics(
     cells_gdf: gpd.GeoDataFrame,
     raster_paths: dict[str, Path | str],
-    target_crs: str = "EPSG:32645",
-    pixel_res_m: float = 10.0,
+    target_crs: Optional[str] = None,
+    pixel_res_m: Optional[float] = None,
 ) -> gpd.GeoDataFrame:
     """Computes exact fractional-coverage zonal statistics for all input rasters.
 
@@ -118,12 +115,19 @@ def compute_zonal_statistics(
           - 'slope': Path to slope GeoTIFF
           - 'cropland': Path to cropland fraction GeoTIFF (optional)
           - 'hard_zero': Path to hard-zero mask GeoTIFF (optional)
-        target_crs: Projected CRS matching the rasters (default EPSG:32645).
-        pixel_res_m: Raster pixel resolution in meters (default 10.0).
+        target_crs: Projected CRS matching the rasters. Defaults to the
+          susceptibility raster's own CRS.
+        pixel_res_m: Raster pixel resolution in meters. Defaults to the
+          susceptibility raster's pixel width.
 
     Returns:
         GeoDataFrame with original EPSG:4326 geometry and aggregated metric columns.
     """
+    if target_crs is None or pixel_res_m is None:
+        with rasterio.open(raster_paths["susceptibility"]) as src:
+            target_crs = target_crs or str(src.crs)
+            pixel_res_m = pixel_res_m or float(abs(src.transform.a))
+
     # Reproject cells to raster projected CRS for exact planar overlap
     cells_proj = cells_gdf.to_crs(target_crs)
     pixel_area_m2 = pixel_res_m * pixel_res_m

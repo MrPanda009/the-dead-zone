@@ -5,7 +5,7 @@ import psycopg
 import pytest
 
 from core.config import settings
-from pipeline.hazard.flood.aoi import BARPETA_BBOX_WGS84
+from pipeline.hazard.flood.districts import get_district
 from pipeline.hazard.flood.h3_zonal import (
     polyfill_reporting_aoi,
     h3_cells_to_geodataframe,
@@ -16,9 +16,12 @@ from pipeline.hazard.flood.h3_zonal import (
 )
 
 
+BARPETA = get_district("barpeta")
+
+
 def test_polyfill_reporting_aoi_count():
     """Verify Barpeta AOI polyfills to exactly 7,497 cells at H3 resolution 8."""
-    cells = polyfill_reporting_aoi(BARPETA_BBOX_WGS84, resolution=DEFAULT_H3_RESOLUTION)
+    cells = polyfill_reporting_aoi(BARPETA.bbox_wgs84, resolution=DEFAULT_H3_RESOLUTION)
     assert len(cells) == 7497
     assert len(set(cells)) == 7497  # uniqueness
     assert all(c.startswith("88") for c in cells)  # resolution 8 format
@@ -123,7 +126,7 @@ def test_database_hazard_static_records():
                 parquet_path = Path("data/processed/flood/barpeta/flood_susceptibility_h3_res8.parquet")
                 if parquet_path.exists():
                     stats_gdf = gpd.read_parquet(parquet_path)
-                    load_database(stats_gdf)
+                    load_database(BARPETA, stats_gdf)
 
             cur.execute("""
                 SELECT COUNT(*), MIN(susceptibility), MAX(susceptibility), AVG(susceptibility)

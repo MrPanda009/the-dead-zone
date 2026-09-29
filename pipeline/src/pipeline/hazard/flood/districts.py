@@ -1,14 +1,16 @@
 """Pilot district registry for the flood-susceptibility pipeline.
 
-The Milestone A–E runners (`run_milestone_*.py`) are hardcoded to Barpeta. This
-registry parameterises the same workflow for additional districts so
-`run_district_flood.py` can execute Steps 5–10 end-to-end for any entry here.
+Both the step-by-step Milestone A–E runners (`run_milestone_*.py <district>`) and
+the end-to-end `run_district_flood.py` resolve every district-specific value from
+an entry here: bounding box, processing CRS, LGD code, admin name, Census 2011
+population anchor and the Sentinel-1 observation window. Adding a district means
+adding one `DistrictConfig`; no runner or library module carries a district
+literal.
 
-Every field that the Barpeta runners baked in as a literal (bounding box,
-processing CRS, LGD code, admin name, Census 2011 population anchor) is declared
-here instead. Bounding boxes are the Census-2011 district polygon envelopes from
-`data/raw/boundaries/2011_Dist.shp`; the geometry itself is loaded at runtime to
-clip the H3 grid to the real district shape.
+Bounding boxes are the Census-2011 district polygon envelopes from
+`data/raw/boundaries/2011_Dist.shp` (Barpeta keeps its original pilot AOI so the
+existing 7,497-cell artifacts stay reproducible); the geometry itself is loaded at
+runtime to clip the H3 grid to the real district shape.
 """
 
 from __future__ import annotations
@@ -67,6 +69,23 @@ class DistrictConfig:
 # (EPSG:32643, central meridian 75° E) is the closest single metric zone.
 
 DISTRICTS: dict[str, DistrictConfig] = {
+    # Original Brahmaputra pilot. The bbox, CRS and S1 window reproduce the
+    # artifacts the milestone runners produced when they were Barpeta-only.
+    # Barpeta (~91° E) formally sits in UTM 46N; 45N is retained so reruns stay
+    # pixel-aligned with the existing rasters.
+    "barpeta": DistrictConfig(
+        key="barpeta",
+        name="Barpeta",
+        state="Assam",
+        lgd_code=277,
+        census_code_2011=303,
+        bbox_wgs84=[90.70, 26.05, 91.45, 26.75],
+        processing_crs="EPSG:32645",  # WGS 84 / UTM Zone 45N
+        census_2011_population=1693622,
+        river_basin="Brahmaputra",
+        s1_datetime_range="2020-06-01/2020-12-31",
+        s1_scene_target=10,
+    ),
     "dholpur": DistrictConfig(
         key="dholpur",
         name="Dholpur",
@@ -89,6 +108,17 @@ DISTRICTS: dict[str, DistrictConfig] = {
         processing_crs="EPSG:32643",  # WGS 84 / UTM Zone 43N
         census_2011_population=1965970,
         river_basin="Chambal (Yamuna)",
+    ),
+    "wayanad": DistrictConfig(
+        key="wayanad",
+        name="Wayanad",
+        state="Kerala",
+        lgd_code=555,
+        census_code_2011=590,
+        bbox_wgs84=[75.7772, 11.4492, 76.4436, 11.9769],
+        processing_crs="EPSG:32643",  # WGS 84 / UTM Zone 43N (76 deg E is inside 72-78 deg E)
+        census_2011_population=817420,
+        river_basin="Kabini (Cauvery)",
     ),
 }
 

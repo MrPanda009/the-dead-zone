@@ -378,8 +378,10 @@ def run_open_meteo_wayanad_pipeline(
             );
         """)
 
-        for chunk in _chunker(dynamic_rows, size=1000):
+        for i, chunk in enumerate(_chunker(dynamic_rows, size=1000)):
             session.execute(insert_sql, chunk)
+            if (i + 1) % 25 == 0:
+                session.commit()
 
         session.commit()
         logger.info(f"Successfully persisted {len(dynamic_rows)} triggers into hazard_dynamic.")
@@ -401,7 +403,7 @@ def run_open_meteo_wayanad_pipeline(
         if dynamic_res.snapshots_persisted == 0:
             raise RuntimeError("Dynamic hazard snapshot computation persisted 0 snapshots")
 
-        # 10. Mark PipelineRun as READY
+        # 10. Mark PipelineRun as READY and Promote ServingVersion
         completed_at = datetime.now(timezone.utc)
         session.execute(
             text("""
@@ -411,10 +413,21 @@ def run_open_meteo_wayanad_pipeline(
             """),
             {"run_id": pipeline_run_id, "completed_at": completed_at},
         )
+        session.execute(
+            text("""
+                INSERT INTO serving_version (dataset_name, pipeline_run_id, updated_at)
+                VALUES ('default', :run_id, :completed_at)
+                ON CONFLICT (dataset_name)
+                DO UPDATE SET
+                    pipeline_run_id = EXCLUDED.pipeline_run_id,
+                    updated_at = EXCLUDED.updated_at;
+            """),
+            {"run_id": pipeline_run_id, "completed_at": completed_at},
+        )
         session.commit()
 
         logger.info(
-            f"Successfully completed Phase B6 forecast pipeline run {pipeline_run_id}: "
+            f"Successfully completed Phase B6 forecast pipeline run {pipeline_run_id} and promoted to serving_version: "
             f"{len(dynamic_rows)} triggers persisted, {dynamic_res.snapshots_persisted} snapshots evaluated."
         )
 

@@ -6,10 +6,11 @@ SAR scenes over specified bounding boxes and date intervals.
 
 from typing import Any
 import os
+import numpy as np
 from dotenv import load_dotenv
 from pystac_client import Client
 import planetary_computer
-from .aoi import get_barpeta_bbox_wgs84
+from .aoi import require_bbox
 
 load_dotenv()
 
@@ -34,15 +35,14 @@ def query_sentinel1_rtc(
 
     Args:
         bbox: Bounding box in [min_lon, min_lat, max_lon, max_lat] format.
-              Defaults to Barpeta bounding box.
+              Required; resolve from a DistrictConfig.
         datetime_range: ISO8601 interval string (e.g. '2023-06-01/2023-09-30').
         limit: Optional maximum number of items to return.
 
     Returns:
         List of signed pystac.Item instances.
     """
-    if bbox is None:
-        bbox = get_barpeta_bbox_wgs84()
+    bbox = require_bbox(bbox)
 
     catalog = get_stac_client()
     search = catalog.search(
@@ -56,6 +56,17 @@ def query_sentinel1_rtc(
     if limit is not None:
         items = items[:limit]
     return items
+
+
+def subsample_scenes_evenly(scenes: list[Any], target: int) -> list[Any]:
+    """Sort scenes by acquisition time and keep `target` of them spread evenly
+    across the window, so the frequency stack is not biased toward one part of
+    the season."""
+    ordered = sorted(scenes, key=lambda s: s.datetime)
+    if len(ordered) <= target:
+        return ordered
+    idx = np.linspace(0, len(ordered) - 1, target).round().astype(int)
+    return [ordered[i] for i in sorted(set(idx.tolist()))]
 
 
 def extract_scene_metadata(item: Any) -> dict[str, Any]:

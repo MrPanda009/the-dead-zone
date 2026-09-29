@@ -11,7 +11,6 @@ import rasterio
 from rasterio.windows import from_bounds, transform as window_transform
 from rasterio.enums import Resampling
 from pyproj import Transformer
-from .aoi import get_barpeta_bbox_wgs84, get_barpeta_bounds_projected, BARPETA_CRS_PROJECTED
 
 # Default threshold in decibels (dB) for VV polarization open water detection
 DEFAULT_VV_WATER_THRESHOLD_DB = -16.0
@@ -63,7 +62,7 @@ def stream_and_clip_raster(
         Tuple of (data_2d, transform, crs, nodata).
     """
     if bbox_wgs84 is None and projected_bounds is None:
-        bbox_wgs84 = get_barpeta_bbox_wgs84()
+        raise ValueError("stream_and_clip_raster needs either bbox_wgs84 or projected_bounds.")
 
     k = max(1, int(decimation))
 

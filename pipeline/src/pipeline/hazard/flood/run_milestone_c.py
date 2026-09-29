@@ -1,92 +1,85 @@
-"""Milestone C Runner: End-to-End Step 8 (HAND & Slope) for Barpeta, Assam.
+"""Milestone C Runner: End-to-End Step 8 (HAND & Slope) for any registered district.
 
 Executes Step 8 of the SETU-DRR Flood Susceptibility Pipeline:
   - Ingests pre-computed ASF GLO-30 HAND (derived from Copernicus GLO-30 across continental basins).
   - Streams Copernicus DEM GLO-30 elevation surface.
-  - Reprojects both onto the standard 10m UTM Zone 45N Master Grid.
+  - Reprojects both onto the district's master grid (its `processing_crs`).
   - Computes terrain slope in degrees.
   - Generates the FR-3.17 hard-zero exclusion mask (HAND > 30m OR slope > 15°).
   - Exports GeoTIFFs and verification 4-panel preview to data/interim/hand/.
+
+Usage:
+    uv run python -m pipeline.hazard.flood.run_milestone_c <district> [--resolution 10]
 """
 
-import sys
 from pathlib import Path
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import numpy as np
-import rasterio
 
-# Ensure workspace root and package folder are in sys.path
-WORKSPACE_ROOT = Path(__file__).resolve().parents[5]
-PACKAGE_DIR = Path(__file__).resolve().parent
-if str(WORKSPACE_ROOT) not in sys.path:
-    sys.path.insert(0, str(WORKSPACE_ROOT))
-if str(PACKAGE_DIR) not in sys.path:
-    sys.path.insert(0, str(PACKAGE_DIR))
+from pipeline.hazard.flood.districts import DistrictConfig
+from pipeline.hazard.flood.milestone_common import (
+    MilestonePaths,
+    build_parser,
+    print_banner,
+    resolve_district,
+)
+from pipeline.hazard.flood.frequency_stack import create_master_grid
+from pipeline.hazard.flood.water_mask import save_raster_geotiff
+from pipeline.hazard.flood.hand_terrain import (
+    stream_and_reproject_hand,
+    stream_and_reproject_dem,
+    compute_slope_degrees,
+    compute_hard_zero_mask,
+    DEFAULT_HARD_ZERO_HAND_THRESHOLD_M,
+    DEFAULT_HARD_ZERO_SLOPE_THRESHOLD_DEG,
+)
 
-try:
-    from .aoi import get_barpeta_bbox_wgs84
-    from .frequency_stack import create_master_grid
-    from .water_mask import save_raster_geotiff
-    from .hand_terrain import (
-        stream_and_reproject_hand,
-        stream_and_reproject_dem,
-        compute_slope_degrees,
-        compute_hard_zero_mask,
-        DEFAULT_HARD_ZERO_HAND_THRESHOLD_M,
-        DEFAULT_HARD_ZERO_SLOPE_THRESHOLD_DEG,
-    )
-except (ImportError, ValueError):
-    from aoi import get_barpeta_bbox_wgs84
-    from frequency_stack import create_master_grid
-    from water_mask import save_raster_geotiff
-    from hand_terrain import (
-        stream_and_reproject_hand,
-        stream_and_reproject_dem,
-        compute_slope_degrees,
-        compute_hard_zero_mask,
-        DEFAULT_HARD_ZERO_HAND_THRESHOLD_M,
-        DEFAULT_HARD_ZERO_SLOPE_THRESHOLD_DEG,
+
+def main(argv: list[str] | None = None):
+    parser = build_parser("Milestone C (Step 8): HAND, slope and FR-3.17 hard-zero mask")
+    parser.add_argument("--resolution", type=float, default=10.0,
+                        help="Master grid resolution in metres (must match Milestone B)")
+    args = parser.parse_args(argv)
+    cfg = resolve_district(args)
+    paths = MilestonePaths(cfg)
+
+    print_banner(
+        "Milestone C (Step 8)", cfg,
+        task="Height Above Nearest Drainage (HAND) & Slope Terrain Derivatives",
     )
 
-
-def main():
-    print("=" * 75)
-    print("SETU-DRR: Flood Susceptibility Pipeline - Milestone C (Step 8)")
-    print("Pilot: Barpeta (Brahmaputra Floodplain, Assam)")
-    print("Task: Height Above Nearest Drainage (HAND) & Slope Terrain Derivatives")
-    print("=" * 75)
-
-    bbox_wgs84 = get_barpeta_bbox_wgs84()
-    master_crs = "EPSG:32645"  # UTM Zone 45N
+    bbox_wgs84 = cfg.bbox_wgs84
+    master_crs = cfg.processing_crs
+    resolution_m = args.resolution
+    pixel_area_km2 = resolution_m * resolution_m / 1e6
 
     # Output directory
-    out_dir = WORKSPACE_ROOT / "data" / "interim" / "hand"
+    out_dir = paths.hand_dir
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # -------------------------------------------------------------
-    # 1. Master Grid Definition (10m UTM 45N)
+    # 1. Master Grid Definition
     # -------------------------------------------------------------
-    print("\n[1/5] Initializing Master Grid (10m UTM Zone 45N)...")
+    print(f"\n[1/5] Initializing Master Grid ({resolution_m}m, {master_crs})...")
     master_transform, master_shape, bounds_proj = create_master_grid(
         bbox_wgs84=bbox_wgs84,
         target_crs=master_crs,
-        resolution_m=10.0,
+        resolution_m=resolution_m,
     )
     print(f"  [+] Master Grid Shape: {master_shape[0]:,} rows x {master_shape[1]:,} cols ({master_shape[0]*master_shape[1]:,} pixels)")
-    print(f"  [+] Master CRS: {master_crs} | Pixel Resolution: 10.0m x 10.0m")
+    print(f"  [+] Master CRS: {master_crs} | Pixel Resolution: {resolution_m}m x {resolution_m}m")
 
     # -------------------------------------------------------------
     # 2. Ingest & Reproject ASF GLO-30 HAND
     # -------------------------------------------------------------
     print("\n[2/5] Ingesting ASF GLO-30 HAND (AWS Open Data)...")
-    hand_cache = out_dir / "barpeta_hand.tif"
     hand_m = stream_and_reproject_hand(
         master_shape=master_shape,
         master_transform=master_transform,
         master_crs=master_crs,
         bbox_wgs84=bbox_wgs84,
-        cache_path=hand_cache,
+        cache_path=paths.hand("hand"),
     )
 
     valid_hand = np.isfinite(hand_m)
@@ -97,13 +90,12 @@ def main():
     # 3. Ingest & Reproject Copernicus DEM GLO-30 Elevation
     # -------------------------------------------------------------
     print("\n[3/5] Ingesting Copernicus DEM GLO-30 Elevation...")
-    dem_cache = out_dir / "barpeta_dem_elevation.tif"
     dem_elevation_m = stream_and_reproject_dem(
         master_shape=master_shape,
         master_transform=master_transform,
         master_crs=master_crs,
         bbox_wgs84=bbox_wgs84,
-        cache_path=dem_cache,
+        cache_path=paths.hand("dem_elevation"),
     )
 
     valid_dem = np.isfinite(dem_elevation_m)
@@ -114,8 +106,8 @@ def main():
     # 4. Compute Terrain Slope & FR-3.17 Hard-Zero Mask
     # -------------------------------------------------------------
     print("\n[4/5] Computing Terrain Slope (degrees) and FR-3.17 Screening Mask...")
-    slope_deg = compute_slope_degrees(dem_elevation_m, resolution_m=10.0)
-    slope_tif_path = out_dir / "barpeta_slope.tif"
+    slope_deg = compute_slope_degrees(dem_elevation_m, resolution_m=resolution_m)
+    slope_tif_path = paths.hand("slope")
     save_raster_geotiff(slope_tif_path, slope_deg, master_transform, master_crs, nodata=np.nan, dtype="float32")
     print(f"  [+] Exported Slope GeoTIFF to: {slope_tif_path}")
     print(f"  [+] Slope range: min = {np.nanmin(slope_deg):.2f}°, max = {np.nanmax(slope_deg):.2f}°, mean = {np.nanmean(slope_deg):.2f}°, median = {np.nanmedian(slope_deg):.2f}°")
@@ -132,11 +124,11 @@ def main():
     valid_terrain = np.isfinite(hand_m) & np.isfinite(slope_deg)
     mask_raster[valid_terrain & flood_eligible_mask] = 0
     mask_raster[valid_terrain & hard_zero_mask] = 1
-    mask_tif_path = out_dir / "barpeta_hard_zero_mask.tif"
+    mask_tif_path = paths.hand("hard_zero_mask")
     save_raster_geotiff(mask_tif_path, mask_raster, master_transform, master_crs, nodata=255, dtype="uint8")
     print(f"  [+] Exported Hard-Zero Mask GeoTIFF to: {mask_tif_path}")
 
-    total_valid = np.sum(valid_terrain)
+    total_valid = max(int(np.sum(valid_terrain)), 1)
     hard_zero_count = np.sum(hard_zero_mask & valid_terrain)
     eligible_count = np.sum(flood_eligible_mask)
 
@@ -144,29 +136,30 @@ def main():
     slope_excl = np.sum((slope_deg > DEFAULT_HARD_ZERO_SLOPE_THRESHOLD_DEG) & valid_terrain)
 
     print("\n  --- FR-3.17 Screening Summary ---")
-    print(f"  Total Valid Terrain Pixels:    {total_valid:,} ({(total_valid*100.0)/1e6:.2f} km2)")
-    print(f"  Excluded by HAND > 30m:        {hand_excl:,} ({hand_excl/total_valid*100:.2f}%)")
-    print(f"  Excluded by Slope > 15°:       {slope_excl:,} ({slope_excl/total_valid*100:.2f}%)")
+    print(f"  Total Valid Terrain Pixels:    {total_valid:,} ({total_valid*pixel_area_km2:.2f} km2)")
+    print(f"  Excluded by HAND > {DEFAULT_HARD_ZERO_HAND_THRESHOLD_M:g}m:        {hand_excl:,} ({hand_excl/total_valid*100:.2f}%)")
+    print(f"  Excluded by Slope > {DEFAULT_HARD_ZERO_SLOPE_THRESHOLD_DEG:g}°:       {slope_excl:,} ({slope_excl/total_valid*100:.2f}%)")
     print(f"  Total Hard-Zero Excluded:      {hard_zero_count:,} ({hard_zero_count/total_valid*100:.2f}%)")
-    print(f"  Flood-Eligible Domain:         {eligible_count:,} ({eligible_count/total_valid*100:.2f}%) [{(eligible_count*100.0)/1e6:.2f} km2]")
+    print(f"  Flood-Eligible Domain:         {eligible_count:,} ({eligible_count/total_valid*100:.2f}%) [{eligible_count*pixel_area_km2:.2f} km2]")
 
     # -------------------------------------------------------------
     # 5. Generate Multi-Panel Preview Visualization
     # -------------------------------------------------------------
     print("\n[5/5] Generating Milestone C Verification Preview PNG...")
-    preview_path = out_dir / "barpeta_milestone_c_preview.png"
+    preview_path = paths.hand("milestone_c_preview", ".png")
     generate_milestone_c_preview(
         dem_elevation=dem_elevation_m,
         slope=slope_deg,
         hand=hand_m,
         hard_zero_mask=hard_zero_mask,
         flood_eligible=flood_eligible_mask,
+        cfg=cfg,
         out_path=preview_path,
     )
     print(f"  [+] Exported Milestone C Verification Preview to: {preview_path}")
 
     print("\n" + "=" * 75)
-    print("Milestone C (Step 8: HAND & Slope) completed successfully!")
+    print(f"Milestone C (Step 8: HAND & Slope) completed successfully for {cfg.name}!")
     print("=" * 75)
 
 
@@ -176,6 +169,7 @@ def generate_milestone_c_preview(
     hand: np.ndarray,
     hard_zero_mask: np.ndarray,
     flood_eligible: np.ndarray,
+    cfg: DistrictConfig,
     out_path: Path,
 ):
     """Render a 4-panel visual validation summary of Milestone C outputs."""
@@ -183,8 +177,10 @@ def generate_milestone_c_preview(
 
     # Panel 1: Copernicus DEM GLO-30 Elevation
     dem_display = np.ma.masked_invalid(dem_elevation)
-    im1 = axes[0, 0].imshow(dem_display, cmap="terrain", vmin=20, vmax=150)
-    axes[0, 0].set_title("1. Copernicus DEM GLO-30 Elevation (m ASL)\n(Brahmaputra Floodplain & Valley Floor)", fontsize=11, fontweight="bold")
+    # Stretch to the district's own relief: a fixed range suits one valley floor only.
+    dem_lo, dem_hi = np.nanpercentile(dem_elevation, [2, 98])
+    im1 = axes[0, 0].imshow(dem_display, cmap="terrain", vmin=dem_lo, vmax=dem_hi)
+    axes[0, 0].set_title(f"1. Copernicus DEM GLO-30 Elevation (m ASL)\n({cfg.name} — {cfg.river_basin} basin)", fontsize=11, fontweight="bold")
     axes[0, 0].axis("off")
     cbar1 = plt.colorbar(im1, ax=axes[0, 0], fraction=0.046, pad=0.04)
     cbar1.set_label("Elevation (m ASL)", fontsize=10)
@@ -223,7 +219,7 @@ def generate_milestone_c_preview(
     cbar4 = plt.colorbar(im4, ax=axes[1, 1], fraction=0.046, pad=0.04, ticks=[0, 1])
     cbar4.ax.set_yticklabels(["Eligible (HAND≤30m & Slope≤15°)", "Hard Zero (HAND>30m | Slope>15°)"], fontsize=9)
 
-    plt.suptitle("SETU-DRR Flood Susceptibility Pipeline — Milestone C (Step 8: HAND & Slope)", fontsize=15, fontweight="bold", y=0.99)
+    plt.suptitle(f"SETU-DRR Flood Susceptibility Pipeline — Milestone C (Step 8: HAND & Slope) — {cfg.name}", fontsize=15, fontweight="bold", y=0.99)
     plt.tight_layout()
     plt.savefig(out_path, bbox_inches="tight")
     plt.close()

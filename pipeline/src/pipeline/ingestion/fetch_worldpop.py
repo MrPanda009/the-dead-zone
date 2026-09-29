@@ -1,8 +1,11 @@
 """Automated ingestion and clipping for WorldPop India 100m Constrained population raster.
 
 Fetches the national 100m constrained population GeoTIFF from Southampton WorldPop repository,
-verifies integrity, and crops to the pilot district (Barpeta, Assam) boundary for downstream
+verifies integrity, and crops to a registered pilot district's boundary for downstream
 H3 zonal statistics.
+
+Usage:
+    uv run python -m pipeline.ingestion.fetch_worldpop --district <district>
 """
 
 from __future__ import annotations
@@ -18,7 +21,7 @@ import requests
 from tqdm import tqdm
 
 from core.config import REPO_ROOT
-from pipeline.hazard.flood.aoi import BARPETA_BBOX_WGS84
+from pipeline.hazard.flood.districts import DISTRICTS, get_district
 
 # Canonical WorldPop India 100m Constrained (BSGM 2020) URL
 DEFAULT_WORLDPOP_URL = (
@@ -30,7 +33,6 @@ EXPECTED_SIZE_BYTES = 531062384  # 506.4 MB
 RAW_WORLDPOP_DIR = REPO_ROOT / "data" / "raw" / "worldpop"
 DEFAULT_RAW_FILE = RAW_WORLDPOP_DIR / "ind_ppp_2020_constrained.tif"
 INTERIM_EXPOSURE_DIR = REPO_ROOT / "data" / "interim" / "exposure"
-DEFAULT_OUTPUT_FILE = INTERIM_EXPOSURE_DIR / "barpeta_worldpop_100m.tif"
 BOUNDARIES_DIR = REPO_ROOT / "data" / "raw" / "boundaries"
 DEFAULT_DISTRICTS_SHP = BOUNDARIES_DIR / "2011_Dist.shp"
 FALLBACK_DISTRICTS_SHP = REPO_ROOT / "2011_Dist.shp"
@@ -87,7 +89,8 @@ def crop_population_raster(
     source_raster: Path,
     output_raster: Path,
     districts_shp: Path = DEFAULT_DISTRICTS_SHP,
-    district_name: str = "Barpeta",
+    *,
+    district_name: str,
     bbox: list[float] | None = None,
 ) -> Path:
     """Crops population raster to district boundary polygon or bounding box.
@@ -96,8 +99,8 @@ def crop_population_raster(
         source_raster: Path to the input population GeoTIFF (WorldPop or LandScan).
         output_raster: Destination path for cropped GeoTIFF.
         districts_shp: Path to Census 2011 district shapefile.
-        district_name: Name of the district to crop (e.g., 'Barpeta').
-        bbox: Optional [min_lon, min_lat, max_lon, max_lat] bounding box fallback.
+        district_name: `DISTRICT` value in the Census 2011 shapefile (DistrictConfig.shapefile_district_name).
+        bbox: [min_lon, min_lat, max_lon, max_lat] fallback when the shapefile has no match.
 
     Returns:
         Path to the cropped GeoTIFF.
@@ -129,7 +132,11 @@ def crop_population_raster(
             out_image, out_transform = mask(src, shapes, crop=True, nodata=nodata_val)
         else:
             from shapely.geometry import box
-            crop_bbox = bbox or BARPETA_BBOX_WGS84
+            if bbox is None:
+                raise ValueError(
+                    f"District '{district_name}' has no shapefile polygon and no bbox fallback was given."
+                )
+            crop_bbox = bbox
             geom_box = [box(*crop_bbox)]
             print(f"  [+] Masking to bounding box: {crop_bbox}")
             out_image, out_transform = mask(src, geom_box, crop=True, nodata=nodata_val)
@@ -177,14 +184,16 @@ def main() -> None:
     )
     parser.add_argument(
         "--district",
-        default="Barpeta",
-        help="District name to crop (default: Barpeta).",
+        required=True,
+        type=str.lower,
+        choices=sorted(DISTRICTS),
+        help="Registered district key to crop to (see pipeline/hazard/flood/districts.py).",
     )
     parser.add_argument(
         "--output",
         type=Path,
-        default=DEFAULT_OUTPUT_FILE,
-        help=f"Target output cropped raster path (default: {DEFAULT_OUTPUT_FILE}).",
+        default=None,
+        help="Target output cropped raster path (default: data/interim/exposure/<district>_worldpop_100m.tif).",
     )
     parser.add_argument(
         "--url",
@@ -212,10 +221,12 @@ def main() -> None:
             print("  [*] Mode: Download & Crop WorldPop India 100m Constrained")
             source_raster = download_worldpop(url=args.url, dest_path=DEFAULT_RAW_FILE)
 
+    district = get_district(args.district)
     crop_population_raster(
         source_raster=source_raster,
-        output_raster=args.output,
-        district_name=args.district,
+        output_raster=args.output or INTERIM_EXPOSURE_DIR / f"{district.key}_worldpop_100m.tif",
+        district_name=district.shapefile_district_name,
+        bbox=district.bbox_wgs84,
     )
     print("\n[✓] Population ingestion completed successfully.\n")
 

@@ -1,36 +1,53 @@
-"""Pilot Area of Interest (AOI) definitions for flood susceptibility modeling.
+"""Area of Interest (AOI) helpers for flood susceptibility modeling.
 
-Defines spatial boundaries, bounding boxes, and CRS reprojection helpers for the
-Barpeta (Brahmaputra Floodplain, Assam) pilot district.
+Derives bounding boxes, projected bounds and GeoJSON AOI footprints from a
+registered `DistrictConfig` (see `districts.py`). Library functions that accept a
+`bbox_wgs84` never fall back to a pilot district: callers must resolve the bbox
+from a district config, so a missing argument fails loudly instead of silently
+processing the wrong place.
 """
 
-from typing import Any
+from typing import Any, Sequence
 import json
 from pathlib import Path
 from pyproj import Transformer
 
-# Default Barpeta Bounding Box [min_lon, min_lat, max_lon, max_lat] in WGS84
-BARPETA_BBOX_WGS84 = [90.70, 26.05, 91.45, 26.75]
-BARPETA_CRS_PROJECTED = "EPSG:32646"  # WGS 84 / UTM Zone 46N
+from .districts import DistrictConfig
 
 
-def get_barpeta_bbox_wgs84() -> list[float]:
-    """Return Barpeta bounding box in WGS84 [min_lon, min_lat, max_lon, max_lat]."""
-    return list(BARPETA_BBOX_WGS84)
+def require_bbox(bbox_wgs84: Sequence[float] | None) -> list[float]:
+    """Return `bbox_wgs84` as a list, raising if the caller did not supply one."""
+    if bbox_wgs84 is None:
+        raise ValueError(
+            "bbox_wgs84 is required; resolve it from a DistrictConfig "
+            "(pipeline.hazard.flood.districts.get_district(<key>).bbox_wgs84)."
+        )
+    return list(bbox_wgs84)
 
 
-def get_barpeta_bounds_projected(target_crs: str = BARPETA_CRS_PROJECTED) -> tuple[float, float, float, float]:
-    """Convert Barpeta WGS84 bbox to projected coordinates (minx, miny, maxx, maxy)."""
-    transformer = Transformer.from_crs("EPSG:4326", target_crs, always_xy=True)
-    min_lon, min_lat, max_lon, max_lat = BARPETA_BBOX_WGS84
+def get_bbox_wgs84(district: DistrictConfig) -> list[float]:
+    """Return the district bounding box in WGS84 [min_lon, min_lat, max_lon, max_lat]."""
+    return list(district.bbox_wgs84)
+
+
+def get_bounds_projected(
+    district: DistrictConfig,
+    target_crs: str | None = None,
+) -> tuple[float, float, float, float]:
+    """Convert the district WGS84 bbox to projected (minx, miny, maxx, maxy).
+
+    `target_crs` defaults to the district's processing CRS.
+    """
+    transformer = Transformer.from_crs("EPSG:4326", target_crs or district.processing_crs, always_xy=True)
+    min_lon, min_lat, max_lon, max_lat = district.bbox_wgs84
     minx, miny = transformer.transform(min_lon, min_lat)
     maxx, maxy = transformer.transform(max_lon, max_lat)
     return (minx, miny, maxx, maxy)
 
 
-def get_barpeta_geojson_polygon() -> dict[str, Any]:
-    """Return GeoJSON polygon dictionary for Barpeta bounding box."""
-    min_lon, min_lat, max_lon, max_lat = BARPETA_BBOX_WGS84
+def get_geojson_polygon(district: DistrictConfig) -> dict[str, Any]:
+    """Return a GeoJSON FeatureCollection holding the district bbox polygon."""
+    min_lon, min_lat, max_lon, max_lat = district.bbox_wgs84
     coordinates = [
         [
             [min_lon, min_lat],
@@ -46,10 +63,11 @@ def get_barpeta_geojson_polygon() -> dict[str, Any]:
             {
                 "type": "Feature",
                 "properties": {
-                    "name": "Barpeta Pilot AOI",
-                    "district": "Barpeta",
-                    "state": "Assam",
-                    "basin": "Brahmaputra",
+                    "name": f"{district.name} Pilot AOI",
+                    "district": district.name,
+                    "state": district.state,
+                    "lgd_code": district.lgd_code,
+                    "basin": district.river_basin,
                 },
                 "geometry": {
                     "type": "Polygon",
@@ -60,11 +78,10 @@ def get_barpeta_geojson_polygon() -> dict[str, Any]:
     }
 
 
-def save_barpeta_boundary(filepath: str | Path) -> Path:
-    """Save Barpeta boundary to a GeoJSON file."""
+def save_boundary(district: DistrictConfig, filepath: str | Path) -> Path:
+    """Save the district AOI polygon to a GeoJSON file."""
     path = Path(filepath)
     path.parent.mkdir(parents=True, exist_ok=True)
-    geojson_data = get_barpeta_geojson_polygon()
     with open(path, "w", encoding="utf-8") as f:
-        json.dump(geojson_data, f, indent=2)
+        json.dump(get_geojson_polygon(district), f, indent=2)
     return path

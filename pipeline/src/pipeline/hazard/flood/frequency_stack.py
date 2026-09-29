@@ -11,7 +11,7 @@ import rasterio
 from rasterio.warp import reproject, Resampling
 from pyproj import Transformer
 
-from .aoi import get_barpeta_bbox_wgs84
+from .aoi import require_bbox
 from .water_mask import stream_and_clip_raster, linear_to_db, detect_water, DEFAULT_VV_WATER_THRESHOLD_DB
 from .permanent_water import generate_permanent_water_mask, filter_permanent_water
 from .stac import extract_scene_metadata
@@ -20,22 +20,21 @@ NODATA_VALUE_UINT8 = 255
 
 
 def create_master_grid(
-    bbox_wgs84: list[float] | None = None,
-    target_crs: str = "EPSG:32645",
+    bbox_wgs84: list[float],
+    target_crs: str,
     resolution_m: float = 10.0,
 ) -> Tuple[rasterio.Affine, tuple[int, int], tuple[float, float, float, float]]:
     """Define a standard reference raster grid covering the AOI at the specified resolution.
 
     Args:
         bbox_wgs84: [min_lon, min_lat, max_lon, max_lat] in EPSG:4326.
-        target_crs: Master CRS (default EPSG:32645, UTM Zone 45N).
+        target_crs: Projected master CRS (the district's `processing_crs`).
         resolution_m: Spatial resolution in meters (default 10.0m).
 
     Returns:
         Tuple of (master_transform, (height, width), (minx, miny, maxx, maxy)).
     """
-    if bbox_wgs84 is None:
-        bbox_wgs84 = get_barpeta_bbox_wgs84()
+    bbox_wgs84 = require_bbox(bbox_wgs84)
 
     min_lon, min_lat, max_lon, max_lat = bbox_wgs84
     transformer = Transformer.from_crs("EPSG:4326", target_crs, always_xy=True)
@@ -68,8 +67,7 @@ def process_scene_inundation(
             - valid_mask_master: bool array on master grid (True where satellite observed).
             - scene_meta: metadata dictionary.
     """
-    if bbox_wgs84 is None:
-        bbox_wgs84 = get_barpeta_bbox_wgs84()
+    bbox_wgs84 = require_bbox(bbox_wgs84)
 
     meta = extract_scene_metadata(scene_item)
     raw_vv, scene_transform, scene_crs, nodata_val = stream_and_clip_raster(

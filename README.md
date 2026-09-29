@@ -375,6 +375,132 @@ Open your browser at: [http://localhost:3000](http://localhost:3000)
 
 ---
 
+## 🔁 Running Pipelines by District
+
+Every pipeline writes to whatever `DATABASE_URL` / `DIRECT_DATABASE_URL` in `.env` points at, and the API reads that same database. There is nothing to deploy after a run; the new data is served as soon as the run's `pipeline_run` is `READY` and promoted in `serving_version`. Run all commands from the repo root.
+
+### What exists for each pilot district
+
+| Layer | Wayanad (LGD 555) | Kodagu (LGD 540) | Barpeta (LGD 277) |
+|---|---|---|---|
+| Boundary, grid, static hazard, habitations, sites | `seed_pilot_data`, then `clip_district_to_boundary` (real polygon, WorldPop population) | `seed_pilot_data` (synthetic baseline, rectangular boundary) | Flood pipeline + `load_barpeta_relocation` |
+| Static hazard from real data | Not scripted in this repo (see the note below) | none | Flood milestones A–E |
+| Live 72h forecast | `scheduler` / `run_open_meteo_wayanad` | none | none |
+| OSM infrastructure | `harvest_osm_infrastructure` | `harvest_osm_infrastructure` | `harvest_osm_infrastructure` |
+| Default map layer in the UI | `landslide` | `landslide` | `riverine_flood` |
+
+The default layer per district lives in `web/lib/map/districtHazardDefaults.ts`. Add new districts there.
+
+### Wayanad
+
+```bash
+# 1. Baseline: boundary, H3 grid, synthetic hazard/MHI, habitations, candidate sites
+uv run python pipeline/src/pipeline/jobs/seed_pilot_data.py
+
+# 2. Live ECMWF forecast: one cycle, then exit (writes hazard_dynamic + mhi_snapshot.mhi_fcst)
+uv run python -m pipeline.jobs.scheduler --run-once
+#    add --dry-run to skip retention pruning
+
+# 3. Or keep it running on FORECAST_SCHEDULE_CRON (default every 6h)
+uv run python -m pipeline.jobs.scheduler --daemon        # or set FORECAST_SCHEDULER_ENABLED=true
+
+# 4. Real flood susceptibility + measured confidence (Sentinel-1 x HAND), ~4 min, needs network.
+#    Replaces only the riverine_flood layer; landslide and flash_flood have no real pipeline.
+uv run python -m pipeline.hazard.flood.run_district_flood wayanad --no-db --no-population
+TARGET_DB_URL=... uv run python -m pipeline.hazard.flood.sync_flood_to_db wayanad
+#    The sync inserts the whole polygon fill and zeroes grid_cell.population. Afterwards delete the
+#    border cells that have no landslide row, re-run clip_district_to_boundary (population) and
+#    refresh_district_hazard (MHI), as described below.
+
+# 5. Real OSM facilities (schools, health, water) for candidate-site screening
+uv run python -m pipeline.jobs.harvest_osm_infrastructure --district Wayanad   # or --lgd 555
+```
+
+The forecast run only writes forecast rows. It never touches `hazard_static`, `grid_cell` or `explanation`. If every `trigger_value` in a cycle is 0, the forecast is dry (the trigger needs at least 10 mm/h averaged over 3 h) and `mhi_fcst` will equal `mhi_static`.
+
+> **After replacing a district's static layer, refresh its derived tables.** `mhi_snapshot` (zone classes, MHI, dominant hazard; what `/zones` and the alerts serve) and `explanation` (dossier attributions) are computed from `hazard_static` and nothing regenerates them on ingest.
+>
+> ```bash
+> uv run python -m pipeline.jobs.refresh_district_hazard --lgd 555 --dry-run                          # report only
+> uv run python -m pipeline.jobs.refresh_district_hazard --lgd 555 --clear-stale-explanations         # apply
+> ```
+>
+> The job re-scores every snapshot row from the current `hazard_static` plus persisted triggers, and overwrites all derived columns. It first writes CSV backups of the affected rows to `data/backups/district_hazard_refresh/`, so it can be rolled back. `--clear-stale-explanations` deletes explanation rows whose `model_version` no longer matches the cell's `hazard_static`. Nothing regenerates them, so the dossier shows no attributions until the layer's own model provides them. Do not use `seed_pilot_data` for this: it reseeds synthetic pilot data over the real layer.
+>
+> The real-terrain Wayanad layer (`terrain-copernicus-v1.0`, `copernicus-census2011`) is still not produced by a script committed here.
+
+> **Clip a district's grid to its real boundary.** `seed_pilot_data` builds Wayanad and Kodagu from a hand-typed bounding box, so their stored boundary is a rectangle and about 30% of cells sit outside the district. `clip_district_to_boundary` replaces the boundary with the Census 2011 polygon (`data/raw/boundaries/2011_Dist.shp`), deletes cells whose centroid is outside it (with their hazard and MHI rows), and re-allocates the census total over the remaining cells weighted by a WorldPop constrained raster.
+>
+> ```bash
+> uv run python -m pipeline.jobs.clip_district_to_boundary --lgd 555 --shapefile-name Wayanad \
+>     --worldpop /path/to/ind_ppp_2020_constrained.tif --dry-run     # drop --dry-run to apply
+> ```
+>
+> The WorldPop raster is not in this repo (India-wide, about 530 MB). It runs in a single transaction with assertions after CSV backups to `data/backups/district_boundary_clip/`. It does not create the real edge cells the rectangle never covered, because it cannot score them. Applied to Wayanad only so far; Kodagu still has its rectangle. A constrained raster puts people only in settlement pixels, so most cells get 0 population, which also means high-hazard forest cells show 0 exposed people.
+
+### Kodagu
+
+```bash
+uv run python pipeline/src/pipeline/jobs/seed_pilot_data.py                       # seeds Wayanad and Kodagu together
+uv run python -m pipeline.jobs.harvest_osm_infrastructure --district Kodagu       # or --lgd 540
+```
+
+### Barpeta
+
+```bash
+# Flood susceptibility (Steps 1-10), run in order. Every milestone takes a
+# registered district key (barpeta, dholpur, morena, wayanad, ...)
+uv run python -m pipeline.hazard.flood.run_milestone_a barpeta    # Sentinel-1 STAC discovery
+uv run python -m pipeline.hazard.flood.run_milestone_b barpeta    # SAR water mask
+uv run python -m pipeline.hazard.flood.run_milestone_c barpeta    # permanent water + frequency stack
+uv run python -m pipeline.hazard.flood.run_milestone_d barpeta    # HAND + cropland exclusion
+uv run python -m pipeline.ingestion.fetch_worldpop --district barpeta   # optional population raster for E
+uv run python -m pipeline.hazard.flood.run_milestone_e barpeta    # H3 aggregation + database load
+#   B and C take --resolution (must match); E takes --clip-to-boundary
+
+# Relocation artifacts: validate, rehearse, then load
+uv run python pipeline/scripts/load_barpeta_relocation.py --check
+uv run python pipeline/scripts/load_barpeta_relocation.py --dry-run
+uv run python pipeline/scripts/load_barpeta_relocation.py --load
+
+uv run python -m pipeline.jobs.harvest_osm_infrastructure --district Barpeta      # or --lgd 277
+```
+
+### Any other district (flood registry: `barpeta`, `dholpur`, `morena`, `wayanad`)
+
+`pipeline/src/pipeline/hazard/flood/districts.py` holds the district registry. Add a `DistrictConfig` there to onboard a new district. After that, both the step-by-step milestone runners above (`run_milestone_a … e <district>`) and the one-shot runner below will accept its key.
+
+```bash
+uv run python -m pipeline.hazard.flood.run_district_flood dholpur morena          # Steps 5-10 + local DB load
+#   --no-db skips the database load, --no-population skips WorldPop,
+#   --s1-decimation N downsamples Sentinel-1 reads (default 4)
+
+# Push already-computed results to another database (e.g. Neon) without recomputing
+TARGET_DB_URL=postgresql://... uv run python -m pipeline.hazard.flood.sync_flood_to_db dholpur morena
+
+# Then derive people and sites from the loaded hazard layer
+uv run python -m pipeline.jobs.derive_habitations --district Dholpur --dry-run    # drop --dry-run to write
+uv run python -m pipeline.jobs.derive_candidate_sites --district dholpur --dry-run
+```
+
+`derive_habitations` takes the district name as stored in `admin_boundary`. `derive_candidate_sites` takes the registry slug. Both accept `--dry-run` to report without writing.
+
+### Accounts and generic ingest
+
+```bash
+uv run python -m pipeline.jobs.seed_national_account                              # national operations login
+uv run python -m pipeline.jobs.ingest_flood_data path/to/sentinel1.csv            # validate + activate a Sentinel-1 artifact
+```
+
+### Checking a run
+
+```bash
+curl https://the-dead-zone.onrender.com/health/ready            # active serving_version run id
+uv run python scripts/verify_b8_full_certification.py            # forecast pipeline certification
+```
+
+---
+
 ## 🔑 Pre-Seeded Demo Accounts
 
 The database is seeded with official role accounts covering all administrative tiers:

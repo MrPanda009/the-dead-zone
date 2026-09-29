@@ -17,11 +17,11 @@ import pystac_client
 import planetary_computer
 
 try:
-    from .aoi import get_barpeta_bbox_wgs84
+    from .aoi import require_bbox
     from .stac import get_stac_client
     from .water_mask import save_raster_geotiff
 except (ImportError, ValueError):
-    from aoi import get_barpeta_bbox_wgs84
+    from aoi import require_bbox
     from stac import get_stac_client
     from water_mask import save_raster_geotiff
 
@@ -58,13 +58,12 @@ def get_hand_tile_urls(bbox_wgs84: list[float] | None = None) -> list[str]:
 
     Args:
         bbox_wgs84: [min_lon, min_lat, max_lon, max_lat] in EPSG:4326.
-                    Defaults to Barpeta bounding box.
+                    Required; resolve from a DistrictConfig.
 
     Returns:
         List of public S3 COG URLs.
     """
-    if bbox_wgs84 is None:
-        bbox_wgs84 = get_barpeta_bbox_wgs84()
+    bbox_wgs84 = require_bbox(bbox_wgs84)
 
     min_lon, min_lat, max_lon, max_lat = bbox_wgs84
     lat_start = int(math.floor(min_lat))
@@ -89,8 +88,7 @@ def get_dem_tile_urls_stac(bbox_wgs84: list[float] | None = None) -> list[dict[s
     Returns:
         List of dicts with 'id', 'href', and 'bbox'.
     """
-    if bbox_wgs84 is None:
-        bbox_wgs84 = get_barpeta_bbox_wgs84()
+    bbox_wgs84 = require_bbox(bbox_wgs84)
 
     catalog = get_stac_client()
     search = catalog.search(
@@ -121,7 +119,7 @@ def stream_and_reproject_hand(
     Args:
         master_shape: (height, width) of master grid.
         master_transform: Affine transform of master grid.
-        master_crs: CRS of master grid (e.g. 'EPSG:32645').
+        master_crs: CRS of master grid (e.g. DistrictConfig.processing_crs).
         bbox_wgs84: [min_lon, min_lat, max_lon, max_lat] in EPSG:4326.
         cache_path: Optional path to load/save cached GeoTIFF.
 
@@ -134,8 +132,7 @@ def stream_and_reproject_hand(
                 print(f"  [+] Loading cached HAND from: {cache_path}")
                 return src.read(1)
 
-    if bbox_wgs84 is None:
-        bbox_wgs84 = get_barpeta_bbox_wgs84()
+    bbox_wgs84 = require_bbox(bbox_wgs84)
 
     min_lon, min_lat, max_lon, max_lat = bbox_wgs84
     tile_urls = get_hand_tile_urls(bbox_wgs84)
@@ -218,8 +215,7 @@ def stream_and_reproject_dem(
                 print(f"  [+] Loading cached DEM from: {cache_path}")
                 return src.read(1)
 
-    if bbox_wgs84 is None:
-        bbox_wgs84 = get_barpeta_bbox_wgs84()
+    bbox_wgs84 = require_bbox(bbox_wgs84)
 
     min_lon, min_lat, max_lon, max_lat = bbox_wgs84
     master_dem = np.full(master_shape, np.nan, dtype=np.float32)

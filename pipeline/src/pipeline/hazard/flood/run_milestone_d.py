@@ -1,4 +1,4 @@
-"""Milestone D Runner: End-to-End Step 9 (Flood Susceptibility) for Barpeta, Assam.
+"""Milestone D Runner: End-to-End Step 9 (Flood Susceptibility) for any registered district.
 
 Combines empirical inundation frequency (Step 7) and terrain HAND (Step 8) into the
 final flood-susceptibility raster and confidence layer:
@@ -7,9 +7,13 @@ final flood-susceptibility raster and confidence layer:
   - Computes S_f = 0.5 * F + 0.5 * H_hand.
   - Computes confidence = min(1, n_valid / 30).
   - Exports GeoTIFFs, metadata.yaml, and 6-panel verification preview.
+
+Reads the district's Milestone B and C outputs; no network I/O.
+
+Usage:
+    uv run python -m pipeline.hazard.flood.run_milestone_d <district>
 """
 
-import sys
 from pathlib import Path
 from datetime import datetime, timezone
 import matplotlib.pyplot as plt
@@ -18,53 +22,28 @@ import numpy as np
 import rasterio
 import yaml
 
-# Ensure workspace root and package folder are in sys.path
-WORKSPACE_ROOT = Path(__file__).resolve().parents[5]
-PACKAGE_DIR = Path(__file__).resolve().parent
-if str(WORKSPACE_ROOT) not in sys.path:
-    sys.path.insert(0, str(WORKSPACE_ROOT))
-if str(PACKAGE_DIR) not in sys.path:
-    sys.path.insert(0, str(PACKAGE_DIR))
-
-try:
-    from .water_mask import save_raster_geotiff
-    from .susceptibility import (
-        normalize_hand_percentile,
-        combine_susceptibility,
-        compute_confidence,
-        DEFAULT_W_FREQ,
-        DEFAULT_W_HAND,
-        DEFAULT_HAND_CLIP_PERCENTILE,
-        DEFAULT_OBSERVATION_CEILING,
-    )
-    from .hand_terrain import (
-        DEFAULT_HARD_ZERO_HAND_THRESHOLD_M,
-        DEFAULT_HARD_ZERO_SLOPE_THRESHOLD_DEG,
-    )
-except (ImportError, ValueError):
-    from water_mask import save_raster_geotiff
-    from susceptibility import (
-        normalize_hand_percentile,
-        combine_susceptibility,
-        compute_confidence,
-        DEFAULT_W_FREQ,
-        DEFAULT_W_HAND,
-        DEFAULT_HAND_CLIP_PERCENTILE,
-        DEFAULT_OBSERVATION_CEILING,
-    )
-    from hand_terrain import (
-        DEFAULT_HARD_ZERO_HAND_THRESHOLD_M,
-        DEFAULT_HARD_ZERO_SLOPE_THRESHOLD_DEG,
-    )
-
-
-# Input paths (cached from Steps 5-8)
-FREQUENCY_TIF = WORKSPACE_ROOT / "data" / "interim" / "frequency" / "barpeta_inundation_frequency.tif"
-VALID_OBS_TIF = WORKSPACE_ROOT / "data" / "interim" / "frequency" / "barpeta_valid_observation_count.tif"
-CROPLAND_TIF = WORKSPACE_ROOT / "data" / "interim" / "frequency" / "barpeta_cropland_fraction.tif"
-HAND_TIF = WORKSPACE_ROOT / "data" / "interim" / "hand" / "barpeta_hand.tif"
-SLOPE_TIF = WORKSPACE_ROOT / "data" / "interim" / "hand" / "barpeta_slope.tif"
-HARD_ZERO_TIF = WORKSPACE_ROOT / "data" / "interim" / "hand" / "barpeta_hard_zero_mask.tif"
+from pipeline.hazard.flood.districts import DistrictConfig
+from pipeline.hazard.flood.milestone_common import (
+    MilestonePaths,
+    build_parser,
+    print_banner,
+    require_inputs,
+    resolve_district,
+)
+from pipeline.hazard.flood.water_mask import save_raster_geotiff
+from pipeline.hazard.flood.susceptibility import (
+    normalize_hand_percentile,
+    combine_susceptibility,
+    compute_confidence,
+    DEFAULT_W_FREQ,
+    DEFAULT_W_HAND,
+    DEFAULT_HAND_CLIP_PERCENTILE,
+    DEFAULT_OBSERVATION_CEILING,
+)
+from pipeline.hazard.flood.hand_terrain import (
+    DEFAULT_HARD_ZERO_HAND_THRESHOLD_M,
+    DEFAULT_HARD_ZERO_SLOPE_THRESHOLD_DEG,
+)
 
 
 def load_raster(path: Path) -> tuple[np.ndarray, rasterio.Affine, str]:
@@ -73,44 +52,63 @@ def load_raster(path: Path) -> tuple[np.ndarray, rasterio.Affine, str]:
         return src.read(1), src.transform, str(src.crs)
 
 
-def main():
-    print("=" * 75)
-    print("SETU-DRR: Flood Susceptibility Pipeline - Milestone D (Step 9)")
-    print("Pilot: Barpeta (Brahmaputra Floodplain, Assam)")
-    print("Task: Combine Inundation Frequency + HAND → Flood Susceptibility")
-    print("=" * 75)
+def main(argv: list[str] | None = None):
+    parser = build_parser("Milestone D (Step 9): combine inundation frequency and HAND into susceptibility")
+    args = parser.parse_args(argv)
+    cfg = resolve_district(args)
+    paths = MilestonePaths(cfg)
 
-    out_dir = WORKSPACE_ROOT / "data" / "interim" / "susceptibility"
+    print_banner("Milestone D (Step 9)", cfg, task="Combine Inundation Frequency + HAND → Flood Susceptibility")
+
+    frequency_tif = paths.frequency("inundation_frequency")
+    valid_obs_tif = paths.frequency("valid_observation_count")
+    cropland_tif = paths.frequency("cropland_fraction")
+    hand_tif = paths.hand("hand")
+    hard_zero_tif = paths.hand("hard_zero_mask")
+    require_inputs(frequency_tif, valid_obs_tif, produced_by="run_milestone_b", district=cfg)
+    require_inputs(hand_tif, hard_zero_tif, produced_by="run_milestone_c", district=cfg)
+
+    out_dir = paths.susceptibility_dir
     out_dir.mkdir(parents=True, exist_ok=True)
+    s1_record = paths.read_frequency_meta()
 
     # -----------------------------------------------------------------
     # 1. Load all input rasters
     # -----------------------------------------------------------------
     print("\n[1/6] Loading cached input rasters (no network I/O)...")
 
-    frequency, master_transform, master_crs = load_raster(FREQUENCY_TIF)
+    frequency, master_transform, master_crs = load_raster(frequency_tif)
     print(f"  [+] Inundation Frequency: {frequency.shape}, valid={np.sum(np.isfinite(frequency)):,}")
 
-    valid_obs, _, _ = load_raster(VALID_OBS_TIF)
+    valid_obs, _, _ = load_raster(valid_obs_tif)
     print(f"  [+] Valid Observation Count: range [{valid_obs.min()}, {valid_obs.max()}]")
 
     cropland_fraction = None
-    if CROPLAND_TIF.exists():
-        cropland_fraction, _, _ = load_raster(CROPLAND_TIF)
+    if cropland_tif.exists():
+        cropland_fraction, _, _ = load_raster(cropland_tif)
         print(f"  [+] Cropland Fraction (ESA WorldCover v200): mean={np.nanmean(cropland_fraction):.3f}, >50% crop={np.sum(cropland_fraction > 0.5):,} px")
         # Save a copy in susceptibility directory for downstream bundling
-        save_raster_geotiff(out_dir / "barpeta_cropland_fraction.tif", cropland_fraction, master_transform, master_crs, nodata=np.nan, dtype="float32")
+        save_raster_geotiff(paths.susceptibility("cropland_fraction"), cropland_fraction, master_transform, master_crs, nodata=np.nan, dtype="float32")
 
-    hand_m, _, _ = load_raster(HAND_TIF)
+    hand_m, hand_transform, _ = load_raster(hand_tif)
     print(f"  [+] HAND: valid={np.sum(np.isfinite(hand_m)):,}, range [{np.nanmin(hand_m):.2f}m, {np.nanmax(hand_m):.2f}m]")
 
-    hard_zero_raw, _, _ = load_raster(HARD_ZERO_TIF)
+    # B and C each build their own master grid; a different --resolution between
+    # them would silently misalign every pixel.
+    if hand_m.shape != frequency.shape or not hand_transform.almost_equals(master_transform):
+        raise ValueError(
+            f"Milestone B grid {frequency.shape} and Milestone C grid {hand_m.shape} for {cfg.name} "
+            "do not align; re-run both with the same --resolution."
+        )
+
+    hard_zero_raw, _, _ = load_raster(hard_zero_tif)
     # Hard-zero mask: 0 = eligible, 1 = excluded, 255 = nodata
     eligible_mask = (hard_zero_raw == 0)
     hard_zero_count = np.sum(hard_zero_raw == 1)
     print(f"  [+] Hard-Zero Mask: eligible={np.sum(eligible_mask):,}, excluded={hard_zero_count:,}")
 
     master_shape = frequency.shape
+    resolution_m = float(abs(master_transform.a))
 
     # -----------------------------------------------------------------
     # 2. Normalize HAND (Percentile-based, P99)
@@ -154,7 +152,7 @@ def main():
     print(f"  [+] S_f mean: {np.nanmean(susceptibility):.4f}, median: {np.nanmedian(susceptibility):.4f}")
 
     # Export susceptibility GeoTIFF
-    susc_path = out_dir / "barpeta_flood_susceptibility.tif"
+    susc_path = paths.susceptibility("flood_susceptibility")
     save_raster_geotiff(susc_path, susceptibility, master_transform, master_crs, nodata=np.nan, dtype="float32")
     print(f"  [+] Exported: {susc_path}")
 
@@ -174,7 +172,7 @@ def main():
     print(f"  [+] Confidence mean: {np.nanmean(confidence[eligible_mask]):.4f}")
     print(f"  [+] Pixels with max confidence (n≥30): {np.sum(confidence >= 1.0):,}")
 
-    conf_path = out_dir / "barpeta_confidence.tif"
+    conf_path = paths.susceptibility("confidence")
     save_raster_geotiff(conf_path, confidence, master_transform, master_crs, nodata=np.nan, dtype="float32")
     print(f"  [+] Exported: {conf_path}")
 
@@ -186,26 +184,29 @@ def main():
     metadata = {
         "model_version": "flood-susceptibility-v0.1",
         "generated_at": datetime.now(timezone.utc).isoformat(),
-        "pilot_aoi": "Barpeta, Assam",
-        "pilot_aoi_bbox_wgs84": [90.70, 26.05, 91.45, 26.75],
+        "pilot_aoi": f"{cfg.name}, {cfg.state}",
+        "district_key": cfg.key,
+        "lgd_code": cfg.lgd_code,
+        "river_basin": cfg.river_basin,
+        "pilot_aoi_bbox_wgs84": list(cfg.bbox_wgs84),
         "master_grid": {
             "crs": master_crs,
-            "resolution_m": 10.0,
+            "resolution_m": resolution_m,
             "shape": list(master_shape),
         },
         "sentinel1": {
             "collection": "sentinel-1-rtc (Microsoft Planetary Computer)",
-            "observation_period": "2020-06-01 / 2020-12-31",
-            "num_scenes": 10,
+            "observation_period": s1_record.get("observation_period"),
+            "num_scenes": s1_record.get("num_scenes"),
             "polarization": "VV",
         },
         "water_detection": {
             "method": "VV dB threshold",
-            "threshold_db": -16.0,
+            "threshold_db": s1_record.get("threshold_db"),
         },
         "permanent_water": {
             "source": "JRC Global Surface Water v1.5 (1984-2024)",
-            "occurrence_threshold_pct": 80.0,
+            "occurrence_threshold_pct": s1_record.get("occurrence_threshold_pct"),
         },
         "cropland": {
             "source": "ESA WorldCover 10m 2021 (v200)",
@@ -233,7 +234,7 @@ def main():
             "formula": "S_f = w_F * F + w_H * H_hand",
             "w_F": w_f,
             "w_H": w_h,
-            "rationale": "Equal weighting baseline; Barpeta 10-scene stack carries real flood signal",
+            "rationale": "Equal weighting baseline",
         },
         "confidence": {
             "formula": "min(1, n_valid / 30)",
@@ -258,7 +259,7 @@ def main():
         ],
     }
 
-    meta_path = out_dir / "barpeta_metadata.yaml"
+    meta_path = paths.susceptibility("metadata", ".yaml")
     with open(meta_path, "w", encoding="utf-8") as f:
         yaml.dump(metadata, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
     print(f"  [+] Exported: {meta_path}")
@@ -268,7 +269,7 @@ def main():
     # -----------------------------------------------------------------
     print("\n[6/6] Generating Milestone D Verification Preview PNG...")
 
-    preview_path = out_dir / "barpeta_milestone_d_preview.png"
+    preview_path = paths.susceptibility("milestone_d_preview", ".png")
     generate_milestone_d_preview(
         frequency=frequency,
         hand_m=hand_m,
@@ -279,6 +280,7 @@ def main():
         p99_value=p99_value,
         w_f=w_f,
         w_h=w_h,
+        cfg=cfg,
         out_path=preview_path,
     )
     print(f"  [+] Exported: {preview_path}")
@@ -297,7 +299,7 @@ def main():
         print("  No pixels exceed S_f > 0.5")
 
     print("\n" + "=" * 75)
-    print("Milestone D (Step 9: Flood Susceptibility Combination) completed!")
+    print(f"Milestone D (Step 9: Flood Susceptibility Combination) completed for {cfg.name}!")
     print("=" * 75)
 
 
@@ -311,6 +313,7 @@ def generate_milestone_d_preview(
     p99_value: float,
     w_f: float,
     w_h: float,
+    cfg: DistrictConfig,
     out_path: Path,
 ):
     """Render a 6-panel visual validation summary of Milestone D outputs."""
@@ -365,7 +368,7 @@ def generate_milestone_d_preview(
     axes[1, 2].set_xlim(0, 1)
 
     plt.suptitle(
-        "SETU-DRR Flood Susceptibility Pipeline — Milestone D (Step 9: Combination)",
+        f"SETU-DRR Flood Susceptibility Pipeline — Milestone D (Step 9: Combination) — {cfg.name}",
         fontsize=15, fontweight="bold", y=0.99,
     )
     plt.tight_layout()

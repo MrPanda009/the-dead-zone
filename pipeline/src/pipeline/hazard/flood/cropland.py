@@ -17,9 +17,9 @@ import pystac_client
 import planetary_computer
 
 try:
-    from .aoi import get_barpeta_bbox_wgs84
+    from .aoi import require_bbox
 except (ImportError, ValueError):
-    from aoi import get_barpeta_bbox_wgs84
+    from aoi import require_bbox
 
 PLANETARY_COMPUTER_STAC_URL = "https://planetarycomputer.microsoft.com/api/stac/v1"
 COLLECTION_ESA_WORLDCOVER = "esa-worldcover"
@@ -47,8 +47,7 @@ def query_worldcover_item(
     Returns:
         Signed asset URL for the Cloud-Optimized GeoTIFF 'map'.
     """
-    if bbox_wgs84 is None:
-        bbox_wgs84 = get_barpeta_bbox_wgs84()
+    bbox_wgs84 = require_bbox(bbox_wgs84)
 
     catalog = get_stac_client()
     datetime_range = f"{year}-01-01/{year}-12-31"
@@ -85,8 +84,7 @@ def stream_worldcover_cropland(
         Tuple of (cropland_binary, win_transform, crs, nodata).
         cropland_binary is float32 array: 1.0 for Class 40 (Cropland), 0.0 otherwise.
     """
-    if bbox_wgs84 is None:
-        bbox_wgs84 = get_barpeta_bbox_wgs84()
+    bbox_wgs84 = require_bbox(bbox_wgs84)
 
     map_url = query_worldcover_item(bbox_wgs84=bbox_wgs84, year=year)
 
@@ -118,15 +116,14 @@ def generate_cropland_fraction(
     Args:
         reference_shape: (height, width) of target SAR master grid.
         reference_transform: Affine transform of target SAR master grid.
-        reference_crs: Target CRS (e.g. 'EPSG:32645').
+        reference_crs: Target CRS (e.g. DistrictConfig.processing_crs).
         bbox_wgs84: AOI bounding box in EPSG:4326.
         year: WorldCover version year (2021).
 
     Returns:
         cropland_fraction: float32 array of shape reference_shape with values in [0.0, 1.0].
     """
-    if bbox_wgs84 is None:
-        bbox_wgs84 = get_barpeta_bbox_wgs84()
+    bbox_wgs84 = require_bbox(bbox_wgs84)
 
     cropland_binary, src_transform, src_crs, _ = stream_worldcover_cropland(
         bbox_wgs84=bbox_wgs84,
@@ -157,11 +154,17 @@ if __name__ == "__main__":
     except (ImportError, ValueError):
         from pipeline.hazard.flood.frequency_stack import create_master_grid
 
-    print("Testing ESA WorldCover cropland extraction for Barpeta...")
-    bbox = get_barpeta_bbox_wgs84()
-    transform, shape, _ = create_master_grid(bbox, target_crs="EPSG:32645", resolution_m=10.0)
+    import sys
+    from pipeline.hazard.flood.districts import get_district
+
+    if len(sys.argv) != 2:
+        raise SystemExit("usage: python -m pipeline.hazard.flood.cropland <district>")
+    district = get_district(sys.argv[1])
+    print(f"Testing ESA WorldCover cropland extraction for {district.name}...")
+    bbox = district.bbox_wgs84
+    transform, shape, _ = create_master_grid(bbox, target_crs=district.processing_crs, resolution_m=10.0)
     print(f"Master Grid Shape: {shape}")
-    crop_frac = generate_cropland_fraction(shape, transform, "EPSG:32645", bbox)
+    crop_frac = generate_cropland_fraction(shape, transform, district.processing_crs, bbox)
     print("Cropland fraction stats:")
     print(f"  Shape: {crop_frac.shape}")
     print(f"  Min: {np.nanmin(crop_frac):.3f}, Max: {np.nanmax(crop_frac):.3f}, Mean: {np.nanmean(crop_frac):.3f}")

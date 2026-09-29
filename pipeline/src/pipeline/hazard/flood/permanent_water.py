@@ -14,7 +14,7 @@ from rasterio.windows import from_bounds, transform as window_transform
 from rasterio.warp import reproject, Resampling
 from pyproj import Transformer
 
-from .aoi import get_barpeta_bbox_wgs84
+from .aoi import require_bbox
 
 # Default Google Cloud Storage bucket URL for JRC GSW v1.5 (1984–2024)
 JRC_BASE_URL = "https://storage.googleapis.com/water-world/download2024/VER1-5"
@@ -54,14 +54,13 @@ def stream_jrc_occurrence(
 
     Args:
         bbox_wgs84: Bounding box [min_lon, min_lat, max_lon, max_lat] in EPSG:4326.
-                    Defaults to Barpeta bounding box.
+                    Required; resolve from a DistrictConfig.
 
     Returns:
         Tuple of (occurrence_data, win_transform, crs, nodata).
         occurrence_data has values in [0, 100] representing historical detection %.
     """
-    if bbox_wgs84 is None:
-        bbox_wgs84 = get_barpeta_bbox_wgs84()
+    bbox_wgs84 = require_bbox(bbox_wgs84)
 
     min_lon, min_lat, max_lon, max_lat = bbox_wgs84
     # Use center coordinate to determine the covering tile
@@ -91,7 +90,7 @@ def generate_permanent_water_mask(
     Args:
         reference_shape: (height, width) of target SAR grid.
         reference_transform: Affine transform of target SAR grid.
-        reference_crs: CRS of target SAR grid (e.g. 'EPSG:32645').
+        reference_crs: CRS of target SAR grid (e.g. DistrictConfig.processing_crs).
         bbox_wgs84: Bounding box in EPSG:4326.
         occurrence_threshold_pct: Minimum water occurrence % to classify as permanent water.
 

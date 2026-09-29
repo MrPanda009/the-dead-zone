@@ -1,7 +1,7 @@
 """Parameterised flood-susceptibility runner (Steps 5–10) for registered districts.
 
-This is the district-generic counterpart of `run_milestone_b/c/d/e.py`, which are
-pinned to Barpeta. It drives the exact same library functions
+This is the single-command counterpart of the step-by-step
+`run_milestone_b/c/d/e.py <district>` runners. It drives the exact same library functions
 (`frequency_stack`, `permanent_water`, `cropland`, `hand_terrain`,
 `susceptibility`, `h3_zonal`) from a `DistrictConfig` and finishes by upserting
 `grid_cell`, `hazard_static` (hazard_type='riverine_flood') and
@@ -42,7 +42,7 @@ try:
     )
     from .permanent_water import generate_permanent_water_mask
     from .cropland import generate_cropland_fraction
-    from .stac import query_sentinel1_rtc
+    from .stac import query_sentinel1_rtc, subsample_scenes_evenly
     from .water_mask import save_raster_geotiff, DEFAULT_VV_WATER_THRESHOLD_DB
     from .hand_terrain import (
         compute_hard_zero_mask,
@@ -82,7 +82,7 @@ except ImportError:  # pragma: no cover - script executed as a file
     )
     from permanent_water import generate_permanent_water_mask  # type: ignore
     from cropland import generate_cropland_fraction  # type: ignore
-    from stac import query_sentinel1_rtc  # type: ignore
+    from stac import query_sentinel1_rtc, subsample_scenes_evenly  # type: ignore
     from water_mask import save_raster_geotiff, DEFAULT_VV_WATER_THRESHOLD_DB  # type: ignore
     from hand_terrain import (  # type: ignore
         compute_hard_zero_mask,
@@ -199,13 +199,7 @@ def build_frequency_layers(
     )
     if not all_scenes:
         raise RuntimeError(f"No Sentinel-1 RTC scenes for {cfg.name} in {cfg.s1_datetime_range}")
-    all_scenes = sorted(all_scenes, key=lambda s: s.datetime)
-    target = cfg.s1_scene_target
-    if len(all_scenes) > target:
-        idx = np.linspace(0, len(all_scenes) - 1, target).round().astype(int)
-        scenes = [all_scenes[i] for i in sorted(set(idx.tolist()))]
-    else:
-        scenes = all_scenes
+    scenes = subsample_scenes_evenly(all_scenes, cfg.s1_scene_target)
     print(f"  [+] {len(all_scenes)} scenes available; using {len(scenes)} evenly across the window "
           f"({scenes[0].datetime:%Y-%m-%d} .. {scenes[-1].datetime:%Y-%m-%d})")
 
@@ -380,6 +374,7 @@ def ensure_population_raster(cfg: DistrictConfig) -> Path | None:
             source_raster=source,
             output_raster=out_path,
             district_name=cfg.shapefile_district_name,
+            bbox=cfg.bbox_wgs84,
         )
         return out_path if out_path.exists() else None
     except Exception as exc:  # pragma: no cover

@@ -1,23 +1,29 @@
-"""Milestone B Runner: End-to-End Steps 5–7 for Barpeta, Assam.
+"""Milestone B Runner: End-to-End Steps 5–7 for any registered district.
 
 Executes:
   - Step 5: Ingest JRC Global Surface Water & generate permanent water mask.
-  - Step 6: Query 10 Sentinel-1 RTC scenes and build aligned inundation stack.
+  - Step 6: Query the district's Sentinel-1 RTC window and build an aligned inundation stack.
   - Step 7: Compute empirical Inundation Frequency F(x, y) = sum(W) / sum(V), export GeoTIFFs & preview plots.
+
+Usage:
+    uv run python -m pipeline.hazard.flood.run_milestone_b <district> [--resolution 10]
 """
 
-import sys
+import json
 from pathlib import Path
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import numpy as np
-import rasterio
 
-WORKSPACE_ROOT = Path(__file__).resolve().parents[5]
-
-from pipeline.hazard.flood.aoi import get_barpeta_bbox_wgs84
-from pipeline.hazard.flood.stac import query_sentinel1_rtc
-from pipeline.hazard.flood.water_mask import save_raster_geotiff
+from pipeline.hazard.flood.districts import DistrictConfig
+from pipeline.hazard.flood.milestone_common import (
+    MilestonePaths,
+    build_parser,
+    print_banner,
+    resolve_district,
+)
+from pipeline.hazard.flood.stac import query_sentinel1_rtc, subsample_scenes_evenly
+from pipeline.hazard.flood.water_mask import save_raster_geotiff, DEFAULT_VV_WATER_THRESHOLD_DB
 from pipeline.hazard.flood.permanent_water import generate_permanent_water_mask
 from pipeline.hazard.flood.cropland import generate_cropland_fraction
 from pipeline.hazard.flood.frequency_stack import (
@@ -26,15 +32,27 @@ from pipeline.hazard.flood.frequency_stack import (
     calculate_inundation_frequency,
 )
 
+OCCURRENCE_THRESHOLD_PCT = 80.0
 
-def main():
-    print("=" * 70)
-    print("SETU-DRR: Flood Susceptibility Pipeline - Milestone B (Steps 5-7)")
-    print("Pilot: Barpeta (Brahmaputra Floodplain, Assam)")
-    print("=" * 70)
 
-    bbox_wgs84 = get_barpeta_bbox_wgs84()
-    master_crs = "EPSG:32645"  # UTM Zone 45N
+def main(argv: list[str] | None = None):
+    parser = build_parser("Milestone B (Steps 5-7): permanent water, cropland and inundation frequency")
+    parser.add_argument("--resolution", type=float, default=10.0,
+                        help="Master grid resolution in metres (Milestone C must use the same value)")
+    parser.add_argument("--threshold-db", type=float, default=DEFAULT_VV_WATER_THRESHOLD_DB,
+                        help="VV backscatter water threshold in dB")
+    parser.add_argument("--s1-decimation", type=int, default=1,
+                        help="Integer downsampling factor for Sentinel-1 COG reads (1 = native 10 m)")
+    args = parser.parse_args(argv)
+    cfg = resolve_district(args)
+    paths = MilestonePaths(cfg)
+
+    print_banner("Milestone B (Steps 5-7)", cfg, width=70)
+
+    bbox_wgs84 = cfg.bbox_wgs84
+    master_crs = cfg.processing_crs
+    resolution_m = args.resolution
+    pixel_area_m2 = resolution_m * resolution_m
 
     # -------------------------------------------------------------
     # Step 5: Master Grid & JRC Permanent Water Removal
@@ -43,10 +61,10 @@ def main():
     master_transform, master_shape, bounds_proj = create_master_grid(
         bbox_wgs84=bbox_wgs84,
         target_crs=master_crs,
-        resolution_m=10.0,
+        resolution_m=resolution_m,
     )
     print(f"  [+] Master Grid Shape: {master_shape[0]} rows x {master_shape[1]} cols ({master_shape[0]*master_shape[1]:,} pixels)")
-    print(f"  [+] Master CRS: {master_crs} | Pixel Resolution: 10.0m x 10.0m")
+    print(f"  [+] Master CRS: {master_crs} | Pixel Resolution: {resolution_m}m x {resolution_m}m")
 
     print("  [+] Streaming JRC GSW v1.5 (1984-2024) occurrence layer from cloud...")
     permanent_water_mask, jrc_occurrence = generate_permanent_water_mask(
@@ -54,16 +72,16 @@ def main():
         reference_transform=master_transform,
         reference_crs=master_crs,
         bbox_wgs84=bbox_wgs84,
-        occurrence_threshold_pct=80.0,
+        occurrence_threshold_pct=OCCURRENCE_THRESHOLD_PCT,
     )
     perm_pixels = np.sum(permanent_water_mask)
-    perm_area_km2 = (perm_pixels * 100.0) / 1e6
+    perm_area_km2 = (perm_pixels * pixel_area_m2) / 1e6
     print(f"  [+] Identified Permanent Water: {perm_pixels:,} pixels ({perm_area_km2:.2f} km2)")
 
-    out_dir = WORKSPACE_ROOT / "data" / "interim" / "frequency"
+    out_dir = paths.frequency_dir
     out_dir.mkdir(parents=True, exist_ok=True)
     save_raster_geotiff(
-        out_dir / "barpeta_jrc_permanent_water.tif",
+        paths.frequency("jrc_permanent_water"),
         permanent_water_mask.astype(np.uint8),
         master_transform,
         master_crs,
@@ -84,10 +102,10 @@ def main():
     )
     mean_crop = float(np.nanmean(cropland_fraction))
     heavy_crop_pixels = int(np.sum(cropland_fraction > 0.5))
-    heavy_crop_area_km2 = (heavy_crop_pixels * 100.0) / 1e6
+    heavy_crop_area_km2 = (heavy_crop_pixels * pixel_area_m2) / 1e6
     print(f"  [+] Cropland Fraction: mean = {mean_crop:.3f}, >50% cropland area = {heavy_crop_area_km2:.2f} km2 ({heavy_crop_pixels:,} pixels)")
 
-    crop_tif_path = out_dir / "barpeta_cropland_fraction.tif"
+    crop_tif_path = paths.frequency("cropland_fraction")
     save_raster_geotiff(
         crop_tif_path,
         cropland_fraction,
@@ -98,11 +116,9 @@ def main():
     )
     print(f"  [+] Exported Cropland Fraction GeoTIFF to: {crop_tif_path}")
 
-    # Also save to canonical interim path data/interim/flood/barpeta/cropland_fraction.tif
-    flood_dir = WORKSPACE_ROOT / "data" / "interim" / "flood" / "barpeta"
-    flood_dir.mkdir(parents=True, exist_ok=True)
+    # Also save to canonical interim path data/interim/flood/<district>/cropland_fraction.tif
     save_raster_geotiff(
-        flood_dir / "cropland_fraction.tif",
+        paths.flood_interim_dir / "cropland_fraction.tif",
         cropland_fraction,
         master_transform,
         master_crs,
@@ -113,14 +129,16 @@ def main():
     # -------------------------------------------------------------
     # Step 6: Multi-Date Sentinel-1 Query & Inundation Stacking
     # -------------------------------------------------------------
-    print("\n[Step 6] Querying Sentinel-1 RTC STAC catalog for multi-date time series...")
-    # Query scenes covering 2020 monsoon (June-Oct) & post-monsoon/winter
-    scenes = query_sentinel1_rtc(
+    print(f"\n[Step 6] Querying Sentinel-1 RTC STAC catalog ({cfg.s1_datetime_range})...")
+    all_scenes = query_sentinel1_rtc(
         bbox=bbox_wgs84,
-        datetime_range="2020-06-01/2020-12-31",
-        limit=10,
+        datetime_range=cfg.s1_datetime_range,
     )
-    print(f"  [+] Retrieved {len(scenes)} Sentinel-1 RTC scenes for stacking.")
+    if not all_scenes:
+        raise RuntimeError(f"No Sentinel-1 RTC scenes for {cfg.name} in {cfg.s1_datetime_range}")
+    scenes = subsample_scenes_evenly(all_scenes, cfg.s1_scene_target)
+    print(f"  [+] {len(all_scenes)} scenes available; stacking {len(scenes)} spread across the window "
+          f"({scenes[0].datetime:%Y-%m-%d} .. {scenes[-1].datetime:%Y-%m-%d}).")
 
     print("\n  [+] Accumulating temporal inundation stack...")
     water_counts, valid_counts, processed_metas = accumulate_inundation_stack(
@@ -130,8 +148,9 @@ def main():
         master_crs=master_crs,
         permanent_water_mask=permanent_water_mask,
         bbox_wgs84=bbox_wgs84,
-        threshold_db=-16.0,
+        threshold_db=args.threshold_db,
         verbose=True,
+        decimation=args.s1_decimation,
     )
 
     # -------------------------------------------------------------
@@ -150,25 +169,42 @@ def main():
     max_freq = np.nanmax(frequency)
 
     print(f"  [+] Valid observed cells: {valid_cells:,} / {frequency.size:,} ({valid_cells/frequency.size*100:.1f}%)")
-    print(f"  [+] Flood-affected cells (F > 0): {flooded_cells:,} ({(flooded_cells*100.0)/1e6:.2f} km2)")
+    print(f"  [+] Flood-affected cells (F > 0): {flooded_cells:,} ({(flooded_cells*pixel_area_m2)/1e6:.2f} km2)")
     print(f"  [+] Mean Inundation Frequency: {mean_freq:.4f}")
     print(f"  [+] Max Inundation Frequency:  {max_freq:.4f}")
 
     # Export GeoTIFFs
-    freq_tif_path = out_dir / "barpeta_inundation_frequency.tif"
+    freq_tif_path = paths.frequency("inundation_frequency")
     save_raster_geotiff(freq_tif_path, frequency, master_transform, master_crs, nodata=np.nan, dtype="float32")
     print(f"  [+] Exported Inundation Frequency GeoTIFF to: {freq_tif_path}")
 
-    obs_tif_path = out_dir / "barpeta_valid_observation_count.tif"
+    obs_tif_path = paths.frequency("valid_observation_count")
     save_raster_geotiff(obs_tif_path, valid_counts, master_transform, master_crs, nodata=0, dtype="uint16")
     print(f"  [+] Exported Valid Observations GeoTIFF to: {obs_tif_path}")
 
-    water_tif_path = out_dir / "barpeta_water_detection_count.tif"
+    water_tif_path = paths.frequency("water_detection_count")
     save_raster_geotiff(water_tif_path, water_counts, master_transform, master_crs, nodata=0, dtype="uint16")
     print(f"  [+] Exported Flood Detection Count GeoTIFF to: {water_tif_path}")
 
+    # Run record consumed by Milestones D/E for provenance
+    run_record = {
+        "district": cfg.key,
+        "observation_period": cfg.s1_datetime_range,
+        "num_scenes": len(scenes),
+        "num_scenes_available": len(all_scenes),
+        "scene_ids": [m.get("id") for m in processed_metas],
+        "threshold_db": args.threshold_db,
+        "resolution_m": resolution_m,
+        "s1_read_decimation": args.s1_decimation,
+        "occurrence_threshold_pct": OCCURRENCE_THRESHOLD_PCT,
+        "mean_frequency": float(mean_freq),
+        "max_frequency": float(max_freq),
+    }
+    paths.frequency_meta.write_text(json.dumps(run_record, indent=2))
+    print(f"  [+] Exported run record to: {paths.frequency_meta}")
+
     # Generate multi-panel preview visualization (6 panels)
-    preview_path = out_dir / "barpeta_milestone_b_preview.png"
+    preview_path = paths.frequency("milestone_b_preview", ".png")
     generate_milestone_b_preview(
         jrc_occurrence=jrc_occurrence,
         permanent_mask=permanent_water_mask,
@@ -177,12 +213,13 @@ def main():
         water_counts=water_counts,
         frequency=frequency,
         num_scenes=len(scenes),
+        cfg=cfg,
         out_path=preview_path,
     )
     print(f"  [+] Exported Milestone B Verification Preview PNG to: {preview_path}")
 
     print("\n" + "=" * 70)
-    print("Milestone B completed successfully!")
+    print(f"Milestone B completed successfully for {cfg.name}!")
     print("=" * 70)
 
 
@@ -194,6 +231,7 @@ def generate_milestone_b_preview(
     water_counts: np.ndarray,
     frequency: np.ndarray,
     num_scenes: int,
+    cfg: DistrictConfig,
     out_path: Path,
 ):
     """Render a 6-panel visual summary of Milestone B results (including Step 5.2 cropland fraction)."""
@@ -209,7 +247,7 @@ def generate_milestone_b_preview(
     # Panel 2: ESA WorldCover v200 Cropland Fraction (Step 5.2)
     crop_display = np.ma.masked_invalid(cropland_fraction)
     im2 = axes[0, 1].imshow(crop_display, cmap="YlGn", vmin=0.0, vmax=1.0)
-    axes[0, 1].set_title("2. ESA WorldCover v200 Cropland Fraction (Step 5.2)\n(Resampled onto 10m SAR Grid)", fontsize=11, fontweight="bold")
+    axes[0, 1].set_title("2. ESA WorldCover v200 Cropland Fraction (Step 5.2)\n(Resampled onto the SAR master grid)", fontsize=11, fontweight="bold")
     axes[0, 1].axis("off")
     cbar2 = plt.colorbar(im2, ax=axes[0, 1], fraction=0.046, pad=0.04)
     cbar2.set_label("Cropland Fraction [0.0 - 1.0]", fontsize=10)
@@ -245,7 +283,7 @@ def generate_milestone_b_preview(
     cbar6 = plt.colorbar(im6, ax=axes[1, 2], fraction=0.046, pad=0.04)
     cbar6.set_label("Flagged Cropland (1 = Flagged)", fontsize=10)
 
-    plt.suptitle("SETU-DRR Flood Susceptibility Pipeline — Milestone B (Barpeta Pilot)", fontsize=16, fontweight="bold", y=0.99)
+    plt.suptitle(f"SETU-DRR Flood Susceptibility Pipeline — Milestone B ({cfg.name} Pilot)", fontsize=16, fontweight="bold", y=0.99)
     plt.tight_layout()
     plt.savefig(out_path, bbox_inches="tight")
     plt.close()

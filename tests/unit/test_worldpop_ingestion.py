@@ -20,7 +20,7 @@ from pipeline.hazard.flood.h3_zonal import (
     compute_zonal_statistics,
     DEFAULT_H3_RESOLUTION,
 )
-from pipeline.hazard.flood.aoi import BARPETA_BBOX_WGS84
+from pipeline.hazard.flood.districts import get_district
 
 
 def test_validate_population_anchor_barpeta():
@@ -57,7 +57,7 @@ def test_h3_zonal_population_extraction():
     assert raster_path.exists()
 
     # Polyfill sample cells
-    cells = polyfill_reporting_aoi(BARPETA_BBOX_WGS84, resolution=DEFAULT_H3_RESOLUTION)[:20]
+    cells = polyfill_reporting_aoi(get_district("barpeta").bbox_wgs84, resolution=DEFAULT_H3_RESOLUTION)[:20]
     gdf = h3_cells_to_geodataframe(cells)
 
     # Run zonal stats with a mock susceptibility and the real population raster

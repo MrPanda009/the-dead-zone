@@ -1,18 +1,20 @@
-"""Milestone E Runner: Step 10 End-to-End (H3 Aggregation & Database Load).
+"""Milestone E Runner: Step 10 End-to-End (H3 Aggregation & Database Load) for any registered district.
 
 Moves flood susceptibility onto the platform's common H3 resolution 8 hexagonal grid:
-  1. Polyfills Barpeta reporting AOI at H3 Res 8 (7,497 cells).
-  2. Computes exact fractional-coverage zonal statistics using exactextract across all 7 rasters.
+  1. Polyfills the district reporting AOI at H3 Res 8 (bbox, or the census polygon
+     with --clip-to-boundary).
+  2. Computes exact fractional-coverage zonal statistics using exactextract across all rasters.
   3. Applies §10.3 quality control flagging for edge/low-coverage cells.
-  4. Exports canonical GeoParquet artifact to data/processed/flood/barpeta/.
+  4. Exports canonical GeoParquet artifact to data/processed/flood/<district>/.
   5. Copies final rasters and exports metadata.yaml and water_rule_scorecard.json.
-  6. Upserts grid_cell, hazard_static (with quality_flag) and hazard_static_flood rows
-     into PostgreSQL as 'riverine_flood'.
+  6. Upserts admin_boundary, grid_cell, hazard_static (with quality_flag) and
+     hazard_static_flood rows into PostgreSQL as 'riverine_flood'.
   7. Validates round-trip query from PostgreSQL and renders 4-panel verification preview.
+
+Usage:
+    uv run python -m pipeline.hazard.flood.run_milestone_e <district> [--clip-to-boundary]
 """
 
-import sys
-import os
 import shutil
 import json
 import time
@@ -29,63 +31,65 @@ import rasterio
 import psycopg
 import yaml
 
-# Ensure workspace root and pipeline packages are in sys.path
-WORKSPACE_ROOT = Path(__file__).resolve().parents[5]
-PACKAGE_DIR = Path(__file__).resolve().parent
-for p in [WORKSPACE_ROOT, PACKAGE_DIR, WORKSPACE_ROOT / "core" / "src", WORKSPACE_ROOT / "pipeline" / "src"]:
-    if str(p) not in sys.path:
-        sys.path.insert(0, str(p))
-
 from core.config import settings
-try:
-    from .aoi import BARPETA_BBOX_WGS84
-    from .susceptibility import DEFAULT_OBSERVATION_CEILING
-    from .h3_zonal import (
-        polyfill_reporting_aoi,
-        h3_cells_to_geodataframe,
-        compute_zonal_statistics,
-        apply_quality_flags,
-        export_parquet,
-        DEFAULT_H3_RESOLUTION,
-        DEFAULT_MIN_VALID_PIXEL_FRACTION,
-        DEFAULT_MODEL_VERSION,
-        DEFAULT_HAZARD_TYPE,
-    )
-except (ImportError, ValueError):
-    from aoi import BARPETA_BBOX_WGS84
-    from susceptibility import DEFAULT_OBSERVATION_CEILING
-    from h3_zonal import (
-        polyfill_reporting_aoi,
-        h3_cells_to_geodataframe,
-        compute_zonal_statistics,
-        apply_quality_flags,
-        export_parquet,
-        DEFAULT_H3_RESOLUTION,
-        DEFAULT_MIN_VALID_PIXEL_FRACTION,
-        DEFAULT_MODEL_VERSION,
-        DEFAULT_HAZARD_TYPE,
-    )
+from pipeline.hazard.flood.districts import DistrictConfig
+from pipeline.hazard.flood.milestone_common import (
+    MilestonePaths,
+    build_parser,
+    print_banner,
+    require_inputs,
+    resolve_district,
+)
+from pipeline.hazard.flood.hand_terrain import (
+    DEFAULT_HARD_ZERO_HAND_THRESHOLD_M,
+    DEFAULT_HARD_ZERO_SLOPE_THRESHOLD_DEG,
+)
+from pipeline.hazard.flood.susceptibility import DEFAULT_OBSERVATION_CEILING
+from pipeline.hazard.flood.h3_zonal import (
+    polyfill_reporting_aoi,
+    h3_cells_to_geodataframe,
+    compute_zonal_statistics,
+    apply_quality_flags,
+    export_parquet,
+    DEFAULT_H3_RESOLUTION,
+    DEFAULT_MIN_VALID_PIXEL_FRACTION,
+    DEFAULT_MODEL_VERSION,
+    DEFAULT_HAZARD_TYPE,
+)
 
-# Input interim raster paths
-INTERIM_SUSC_DIR = WORKSPACE_ROOT / "data" / "interim" / "susceptibility"
-INTERIM_FREQ_DIR = WORKSPACE_ROOT / "data" / "interim" / "frequency"
-INTERIM_HAND_DIR = WORKSPACE_ROOT / "data" / "interim" / "hand"
-INTERIM_EXPOSURE_DIR = WORKSPACE_ROOT / "data" / "interim" / "exposure"
-
-INPUT_RASTERS = {
-    "susceptibility": INTERIM_SUSC_DIR / "barpeta_flood_susceptibility.tif",
-    "confidence": INTERIM_SUSC_DIR / "barpeta_confidence.tif",
-    "frequency": INTERIM_FREQ_DIR / "barpeta_inundation_frequency.tif",
-    "hand": INTERIM_HAND_DIR / "barpeta_hand.tif",
-    "slope": INTERIM_HAND_DIR / "barpeta_slope.tif",
-    "cropland": INTERIM_SUSC_DIR / "barpeta_cropland_fraction.tif",
-    "hard_zero": INTERIM_HAND_DIR / "barpeta_hard_zero_mask.tif",
-    "population": INTERIM_EXPOSURE_DIR / "barpeta_worldpop_100m.tif",
+# Water-rule benchmark figures recorded for a district's pilot validation. They
+# are not computed by this runner; a district without an entry is reported as
+# NOT_BENCHMARKED rather than inheriting another district's numbers.
+WATER_RULE_BENCHMARKS: dict[str, dict] = {
+    "barpeta": {
+        "scorecard_metrics": {
+            "water_detection_precision_proxy": 0.942,
+            "water_detection_recall_proxy": 0.918,
+            "permanent_water_agreement_jrc_pct": 98.4,
+            "hillshade_false_positive_rate_pct": 0.0,
+        },
+        "status": "PASSED_M7_BENCHMARK",
+    },
 }
 
-# Output directories
-PROCESSED_DIR = WORKSPACE_ROOT / "data" / "processed" / "flood" / "barpeta"
-ARTIFACT_DIR = Path("/Users/shrey/.gemini/antigravity-ide/brain/18661d46-e6c8-45a4-99fa-84a0d8119ab7")
+
+def input_rasters(paths: MilestonePaths) -> dict[str, Path]:
+    """Milestone B/C/D outputs aggregated per H3 cell (population only if present)."""
+    rasters = {
+        "susceptibility": paths.susceptibility("flood_susceptibility"),
+        "confidence": paths.susceptibility("confidence"),
+        "frequency": paths.frequency("inundation_frequency"),
+        "hand": paths.hand("hand"),
+        "slope": paths.hand("slope"),
+        "cropland": paths.susceptibility("cropland_fraction"),
+        "hard_zero": paths.hand("hard_zero_mask"),
+    }
+    if paths.population_raster.exists():
+        rasters["population"] = paths.population_raster
+    else:
+        print(f"  [!] {paths.population_raster.name} not found; population -> 0. Produce it with: "
+              f"uv run python -m pipeline.ingestion.fetch_worldpop --district {paths.district.key}")
+    return rasters
 
 
 def _nullable_float(value) -> float | None:
@@ -100,18 +104,19 @@ def _nullable_float(value) -> float | None:
     return None if np.isnan(f) else f
 
 
-def copy_final_rasters(dest_dir: Path) -> dict[str, Path]:
+def copy_final_rasters(rasters: dict[str, Path], dest_dir: Path) -> dict[str, Path]:
     """Copies final interim rasters to processed destination."""
     dest_dir.mkdir(parents=True, exist_ok=True)
-    mapping = {
-        "susceptibility": ("flood_susceptibility.tif", INPUT_RASTERS["susceptibility"]),
-        "confidence": ("confidence.tif", INPUT_RASTERS["confidence"]),
-        "frequency": ("inundation_frequency.tif", INPUT_RASTERS["frequency"]),
-        "hand": ("hand.tif", INPUT_RASTERS["hand"]),
-        "slope": ("slope.tif", INPUT_RASTERS["slope"]),
-        "cropland": ("cropland_fraction.tif", INPUT_RASTERS["cropland"]),
-        "population": ("population.tif", INPUT_RASTERS["population"]),
+    filenames = {
+        "susceptibility": "flood_susceptibility.tif",
+        "confidence": "confidence.tif",
+        "frequency": "inundation_frequency.tif",
+        "hand": "hand.tif",
+        "slope": "slope.tif",
+        "cropland": "cropland_fraction.tif",
+        "population": "population.tif",
     }
+    mapping = {key: (filename, rasters[key]) for key, filename in filenames.items() if key in rasters}
     copied = {}
     for key, (filename, src_path) in mapping.items():
         dst_path = dest_dir / filename
@@ -124,29 +129,52 @@ def copy_final_rasters(dest_dir: Path) -> dict[str, Path]:
     return copied
 
 
-def load_database(stats_gdf: gpd.GeoDataFrame) -> dict:
-    """Upserts grid_cell, hazard_static and hazard_static_flood records into PostgreSQL.
+def load_database(
+    cfg: DistrictConfig,
+    stats_gdf: gpd.GeoDataFrame,
+    admin_geom_wkt: str | None = None,
+) -> dict:
+    """Upserts admin_boundary, grid_cell, hazard_static and hazard_static_flood records into PostgreSQL.
+
+    Args:
+        cfg: District whose cells are being loaded.
+        stats_gdf: Quality-flagged H3 zonal statistics from this run.
+        admin_geom_wkt: Optional district polygon (WKT, EPSG:4326) stored on admin_boundary.
 
     Returns:
-        Dictionary of database round-trip validation results.
+        Dictionary of database round-trip validation results for this run's cells.
     """
+    min_lon, min_lat, max_lon, max_lat = cfg.bbox_wgs84
+    h3_ids = [int(h) for h in stats_gdf["h3_int"]]
     conninfo = settings.get_direct_psycopg_conninfo()
     print(f"\n[5/7] Connecting to PostgreSQL at {conninfo.split('@')[-1]}...")
 
     with psycopg.connect(conninfo, autocommit=False) as conn:
         with conn.cursor() as cur:
-            # 1. Ensure Barpeta admin boundary exists
-            cur.execute("""
-                INSERT INTO admin_boundary (level, lgd_code, name, bbox)
-                VALUES (
-                    'district', 277, 'Barpeta',
-                    ST_MakeEnvelope(90.70, 26.05, 91.45, 26.75, 4326)
-                )
-                ON CONFLICT (lgd_code) DO UPDATE SET name = EXCLUDED.name
-                RETURNING id;
-            """)
+            # 1. Ensure the district admin boundary exists
+            if admin_geom_wkt:
+                cur.execute("""
+                    INSERT INTO admin_boundary (level, lgd_code, name, bbox, geom)
+                    VALUES (
+                        'district', %s, %s,
+                        ST_MakeEnvelope(%s, %s, %s, %s, 4326),
+                        ST_Multi(ST_GeomFromText(%s, 4326))
+                    )
+                    ON CONFLICT (lgd_code) DO UPDATE SET name = EXCLUDED.name, geom = EXCLUDED.geom
+                    RETURNING id;
+                """, (cfg.lgd_code, cfg.name, min_lon, min_lat, max_lon, max_lat, admin_geom_wkt))
+            else:
+                cur.execute("""
+                    INSERT INTO admin_boundary (level, lgd_code, name, bbox)
+                    VALUES (
+                        'district', %s, %s,
+                        ST_MakeEnvelope(%s, %s, %s, %s, 4326)
+                    )
+                    ON CONFLICT (lgd_code) DO UPDATE SET name = EXCLUDED.name
+                    RETURNING id;
+                """, (cfg.lgd_code, cfg.name, min_lon, min_lat, max_lon, max_lat))
             admin_id = cur.fetchone()[0]
-            print(f"  [+] Admin boundary: Barpeta (id={admin_id}, lgd_code=277)")
+            print(f"  [+] Admin boundary: {cfg.name} (id={admin_id}, lgd_code={cfg.lgd_code})")
 
             # 2. Register pipeline run
             cur.execute("""
@@ -166,14 +194,14 @@ def load_database(stats_gdf: gpd.GeoDataFrame) -> dict:
                 pop_val = float(row["population"]) if "population" in row and not np.isnan(row["population"]) else 0.0
                 grid_data.append((
                     int(row["h3_int"]),
-                    8,
+                    DEFAULT_H3_RESOLUTION,
                     admin_id,
                     float(row["centroid_lon"]),
                     float(row["centroid_lat"]),
                     row["geometry"].wkt,
                     pop_val,
                     0.0,
-                    "barpeta-h3-res8-v1",
+                    f"{cfg.key}-h3-res{DEFAULT_H3_RESOLUTION}-v1",
                 ))
 
             cur.executemany("""
@@ -285,8 +313,8 @@ def load_database(stats_gdf: gpd.GeoDataFrame) -> dict:
                     COUNT(*) FILTER (WHERE susceptibility = 0.0) as zero_risk_cells,
                     COUNT(*) FILTER (WHERE confidence < 0.3) as low_conf_cells
                 FROM hazard_static
-                WHERE hazard_type = %s;
-            """, (DEFAULT_HAZARD_TYPE,))
+                WHERE hazard_type = %s AND h3 = ANY(%s);
+            """, (DEFAULT_HAZARD_TYPE, h3_ids))
             row = cur.fetchone()
             db_stats = {
                 "total_rows": row[0],
@@ -316,8 +344,8 @@ def load_database(stats_gdf: gpd.GeoDataFrame) -> dict:
                     ST_AsText(g.geom) as geom_wkt
                 FROM hazard_static h
                 JOIN grid_cell g ON h.h3 = g.h3
-                WHERE h.hazard_type = %s;
-            """, (DEFAULT_HAZARD_TYPE,))
+                WHERE h.hazard_type = %s AND h.h3 = ANY(%s);
+            """, (DEFAULT_HAZARD_TYPE, h3_ids))
             db_records = cur.fetchall()
 
     return {
@@ -328,6 +356,7 @@ def load_database(stats_gdf: gpd.GeoDataFrame) -> dict:
 
 
 def render_verification_preview(
+    cfg: DistrictConfig,
     stats_gdf: gpd.GeoDataFrame,
     db_records: list,
     output_paths: list[Path],
@@ -375,7 +404,7 @@ def render_verification_preview(
         legend=True,
         legend_kwds={"label": "Mean Flood Susceptibility (0-1)", "shrink": 0.7, "pad": 0.02},
     )
-    ax1.set_title("Panel 1: Flood Susceptibility (Queried from PostgreSQL)\nBarpeta Pilot (H3 Res 8, 7,497 Hexagons)", fontsize=12, fontweight="bold", pad=8)
+    ax1.set_title(f"Panel 1: Flood Susceptibility (Queried from PostgreSQL)\n{cfg.name} Pilot (H3 Res {DEFAULT_H3_RESOLUTION}, {len(db_gdf):,} Hexagons)", fontsize=12, fontweight="bold", pad=8)
     ax1.set_xlabel("Longitude (°E)", fontsize=10)
     ax1.set_ylabel("Latitude (°N)", fontsize=10)
     ax1.grid(True, linestyle=":", alpha=0.3, color="white")
@@ -457,7 +486,7 @@ def render_verification_preview(
     )
 
     fig.suptitle(
-        "SETU-DRR Platform — Milestone E Verification (Step 10)\n"
+        f"SETU-DRR Platform — Milestone E Verification (Step 10) — {cfg.name}\n"
         "H3 Resolution 8 Zonal Aggregation & Live PostgreSQL Rendering (hazard_type='riverine_flood')",
         fontsize=15,
         fontweight="bold",
@@ -472,26 +501,47 @@ def render_verification_preview(
     plt.close()
 
 
-def main():
+def main(argv: list[str] | None = None):
+    parser = build_parser("Milestone E (Step 10): H3 aggregation, GeoParquet export and PostgreSQL load")
+    parser.add_argument("--clip-to-boundary", action="store_true",
+                        help="Keep only H3 cells whose centroid lies inside the Census 2011 district polygon "
+                             "(recommended for districts whose bbox overlaps a neighbour's)")
+    args = parser.parse_args(argv)
+    cfg = resolve_district(args)
+    paths = MilestonePaths(cfg)
+
     t_start = time.time()
-    print("=" * 75)
-    print("SETU-DRR: Flood Susceptibility Pipeline - Milestone E (Step 10)")
-    print("Pilot: Barpeta (Brahmaputra Floodplain, Assam)")
-    print("Task: H3 Res-8 Zonal Aggregation, Parquet Export & PostgreSQL Load")
-    print("=" * 75)
+    print_banner("Milestone E (Step 10)", cfg, task="H3 Res-8 Zonal Aggregation, Parquet Export & PostgreSQL Load")
+
+    rasters = input_rasters(paths)
+    require_inputs(rasters["susceptibility"], rasters["confidence"], produced_by="run_milestone_d", district=cfg)
+    processed_dir = paths.processed_dir
+    s1_record = paths.read_frequency_meta()
 
     # -----------------------------------------------------------------
     # 1. Polyfill Reporting AOI
     # -----------------------------------------------------------------
-    print("\n[1/7] Polyfilling Barpeta reporting AOI at H3 Res 8...")
-    cells = polyfill_reporting_aoi(BARPETA_BBOX_WGS84, resolution=DEFAULT_H3_RESOLUTION)
-    print(f"  [+] Generated {len(cells):,} H3 Resolution 8 cells covering AOI bbox {BARPETA_BBOX_WGS84}")
+    print(f"\n[1/7] Polyfilling {cfg.name} reporting AOI at H3 Res {DEFAULT_H3_RESOLUTION}...")
+    cells = polyfill_reporting_aoi(cfg.bbox_wgs84, resolution=DEFAULT_H3_RESOLUTION)
+    print(f"  [+] Generated {len(cells):,} H3 Resolution {DEFAULT_H3_RESOLUTION} cells covering AOI bbox {cfg.bbox_wgs84}")
 
     # -----------------------------------------------------------------
     # 2. Convert to GeoDataFrame
     # -----------------------------------------------------------------
     print("\n[2/7] Converting H3 cells to GeoDataFrame (EPSG:4326)...")
     cells_gdf = h3_cells_to_geodataframe(cells)
+    admin_geom_wkt = None
+    if args.clip_to_boundary:
+        from pipeline.hazard.flood.run_district_flood import load_district_geometry
+
+        district_geom = load_district_geometry(cfg)
+        centroids = gpd.GeoSeries(
+            gpd.points_from_xy(cells_gdf["centroid_lon"], cells_gdf["centroid_lat"]),
+            crs="EPSG:4326",
+        )
+        cells_gdf = cells_gdf.loc[centroids.within(district_geom).to_numpy()].reset_index(drop=True)
+        admin_geom_wkt = district_geom.wkt
+        print(f"  [+] Clipped to {len(cells_gdf):,} cells centred within the {cfg.name} census polygon")
     print(f"  [+] Created GeoDataFrame with {len(cells_gdf):,} hexagonal geometries")
 
     # -----------------------------------------------------------------
@@ -499,13 +549,12 @@ def main():
     # -----------------------------------------------------------------
     print("\n[3/7] Computing fractional-coverage zonal statistics using exactextract...")
     t_zonal = time.time()
+    # Reproject cells into the rasters' own CRS/pixel size (Milestone B/C master grid).
     stats_raw = compute_zonal_statistics(
         cells_gdf=cells_gdf,
-        raster_paths=INPUT_RASTERS,
-        target_crs="EPSG:32645",
-        pixel_res_m=10.0,
+        raster_paths=rasters,
     )
-    print(f"  [+] Zonal statistics computed across all 7 rasters in {time.time() - t_zonal:.2f}s")
+    print(f"  [+] Zonal statistics computed across {len(rasters)} rasters in {time.time() - t_zonal:.2f}s")
 
     # -----------------------------------------------------------------
     # 4. Apply Quality Control
@@ -529,48 +578,50 @@ def main():
     # -----------------------------------------------------------------
     # 5. Export GeoParquet & Copy Rasters
     # -----------------------------------------------------------------
-    PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
-    parquet_path = PROCESSED_DIR / "flood_susceptibility_h3_res8.parquet"
+    processed_dir.mkdir(parents=True, exist_ok=True)
+    parquet_path = processed_dir / f"flood_susceptibility_h3_res{DEFAULT_H3_RESOLUTION}.parquet"
     export_parquet(stats_gdf, parquet_path)
     print(f"  [+] Exported GeoParquet: {parquet_path} ({parquet_path.stat().st_size / 1e6:.2f} MB, {len(stats_gdf)} rows)")
 
-    copied_rasters = copy_final_rasters(PROCESSED_DIR)
+    copy_final_rasters(rasters, processed_dir)
 
     # Write water rule scorecard
+    benchmark = WATER_RULE_BENCHMARKS.get(cfg.key, {})
     scorecard = {
         "rule_name": "VV dB amplitude threshold",
-        "threshold_db": -16.0,
+        "threshold_db": s1_record.get("threshold_db"),
         "polarization": "VV",
-        "target_region": "Barpeta, Assam (Brahmaputra Floodplain)",
-        "source_stack": "Sentinel-1 RTC (10 scenes, Jun-Dec 2020)",
+        "target_region": f"{cfg.name}, {cfg.state} ({cfg.river_basin})",
+        "source_stack": (
+            f"Sentinel-1 RTC ({s1_record['num_scenes']} scenes, {s1_record['observation_period']})"
+            if s1_record else None
+        ),
         "hard_zero_constraints": {
-            "hand_threshold_m": 30.0,
-            "slope_threshold_deg": 15.0,
+            "hand_threshold_m": DEFAULT_HARD_ZERO_HAND_THRESHOLD_M,
+            "slope_threshold_deg": DEFAULT_HARD_ZERO_SLOPE_THRESHOLD_DEG,
             "rule": "FR-3.17 hard zero exclusion",
         },
-        "scorecard_metrics": {
-            "water_detection_precision_proxy": 0.942,
-            "water_detection_recall_proxy": 0.918,
-            "permanent_water_agreement_jrc_pct": 98.4,
-            "hillshade_false_positive_rate_pct": 0.0,
-        },
-        "status": "PASSED_M7_BENCHMARK",
+        "scorecard_metrics": benchmark.get("scorecard_metrics"),
+        "status": benchmark.get("status", "NOT_BENCHMARKED"),
     }
-    scorecard_path = PROCESSED_DIR / "water_rule_scorecard.json"
+    scorecard_path = processed_dir / "water_rule_scorecard.json"
     with open(scorecard_path, "w", encoding="utf-8") as f:
         json.dump(scorecard, f, indent=2)
-    print(f"  [+] Exported {scorecard_path.name}")
+    print(f"  [+] Exported {scorecard_path.name} (status={scorecard['status']})")
 
     # -----------------------------------------------------------------
     # 6. Database Load & Validation
     # -----------------------------------------------------------------
-    db_result = load_database(stats_gdf)
+    db_result = load_database(cfg, stats_gdf, admin_geom_wkt=admin_geom_wkt)
 
     # Export final metadata.yaml
     metadata = {
         "pipeline_step": "Step 10 (Milestone E - H3 Aggregation & Load)",
-        "district": "Barpeta",
-        "state": "Assam",
+        "district": cfg.name,
+        "district_key": cfg.key,
+        "state": cfg.state,
+        "lgd_code": cfg.lgd_code,
+        "reporting_aoi": "census_polygon" if args.clip_to_boundary else "bbox",
         "h3_resolution": DEFAULT_H3_RESOLUTION,
         "total_cells": len(stats_gdf),
         "hazard_type": DEFAULT_HAZARD_TYPE,
@@ -599,7 +650,7 @@ def main():
             "ESA WorldCover 10m 2021 (CC BY 4.0)",
         ],
     }
-    meta_path = PROCESSED_DIR / "metadata.yaml"
+    meta_path = processed_dir / "metadata.yaml"
     with open(meta_path, "w", encoding="utf-8") as f:
         yaml.dump(metadata, f, sort_keys=False)
     print(f"  [+] Exported {meta_path.name}")
@@ -607,19 +658,19 @@ def main():
     # -----------------------------------------------------------------
     # 7. Render 4-Panel Verification Preview
     # -----------------------------------------------------------------
-    preview_processed = PROCESSED_DIR / "barpeta_milestone_e_preview.png"
-    preview_artifact = ARTIFACT_DIR / "barpeta_milestone_e_preview.png"
+    preview_path = processed_dir / f"{cfg.file_prefix}_milestone_e_preview.png"
     render_verification_preview(
+        cfg,
         stats_gdf,
         db_result["db_records"],
-        [preview_processed, preview_artifact],
+        [preview_path],
     )
 
     print("\n" + "=" * 75)
-    print(f"MILESTONE E COMPLETED SUCCESSFULLY in {time.time() - t_start:.2f}s")
+    print(f"MILESTONE E COMPLETED SUCCESSFULLY for {cfg.name} in {time.time() - t_start:.2f}s")
     print(f"Final Parquet: {parquet_path}")
     print(f"Postgres Rows: {db_result['stats']['total_rows']:,} (hazard_type='{DEFAULT_HAZARD_TYPE}')")
-    print(f"Preview Image: {preview_artifact}")
+    print(f"Preview Image: {preview_path}")
     print("=" * 75)
 
 

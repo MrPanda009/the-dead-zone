@@ -346,10 +346,10 @@ def compute_and_persist_dynamic_snapshots(
             for chunk in _chunker(snapshot_rows, size=500):
                 session.execute(upsert_sql, chunk)
 
+            session.commit()
             total_persisted += len(snapshot_rows)
             successful_timestamps.append(ts)
 
-        session.commit()
         logger.info(
             f"Successfully evaluated and persisted {total_persisted} mhi_snapshot records "
             f"across {len(successful_timestamps)} timestamps for {len(all_processed_cells)} H3 cells."

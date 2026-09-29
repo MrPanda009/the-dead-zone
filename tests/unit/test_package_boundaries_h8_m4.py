@@ -126,8 +126,9 @@ class TestM4Sentinel1PackagingAndReachability:
     def test_canonical_sentinel1_public_exports(self):
         """Verify canonical Sentinel-1 functions are exported by pipeline.hazard.flood."""
         from pipeline.hazard.flood import (
-            get_barpeta_bbox_wgs84,
-            get_barpeta_bounds_projected,
+            get_district,
+            get_bbox_wgs84,
+            get_bounds_projected,
             get_stac_client,
             query_sentinel1_rtc,
             extract_scene_metadata,
@@ -145,7 +146,7 @@ class TestM4Sentinel1PackagingAndReachability:
             calculate_inundation_frequency,
         )
 
-        bbox = get_barpeta_bbox_wgs84()
+        bbox = get_bbox_wgs84(get_district("barpeta"))
         assert len(bbox) == 4
         assert bbox[0] < bbox[2]
         assert bbox[1] < bbox[3]
