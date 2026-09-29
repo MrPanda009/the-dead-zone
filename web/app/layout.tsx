@@ -22,8 +22,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "T.E.R.R.A. | Terrain-based Environmental Risk and Relocation Analytics",
-  description: "T.E.R.R.A. (Terrain-based Environmental Risk and Relocation Analytics) — Global Vulnerability Command Center & Hazard Relocation Decision Support Platform",
+  title: "TERRA | Terrain-based Environmental Risk and Relocation Analytics",
+  description: "TERRA (Terrain-based Environmental Risk and Relocation Analytics) — Geotechnical Hazard Red Zone & Autonomous Relocation Decision Support Platform",
 };
 
 export default function RootLayout({

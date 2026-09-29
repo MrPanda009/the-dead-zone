@@ -1,3 +1,11 @@
+'use client';
+
+import { useRef } from 'react';
+import { useGSAP } from '@gsap/react';
+import gsap from 'gsap';
+
+import { M3_DURATION, M3_EASE } from '@/lib/motion/m3';
+import { usePrefersReducedMotion } from '@/lib/hooks/usePrefersReducedMotion';
 import type { CandidateSiteItem } from '@/lib/api/types';
 
 export interface SiteAssessmentNoticeProps {
@@ -12,22 +20,38 @@ export interface SiteAssessmentNoticeProps {
 /**
  * States how far the listed sites have actually been assessed.
  *
- * Derived from each site's `assessment_status` rather than asserted, so the notice cannot drift
- * from the data: a screening-only site has had no geotechnical or hydraulic investigation, and
- * its capacity figures are norm-derived rather than observed.
+ * Smooth entrance animation so it doesn't jarringly snap into place.
  */
 export const SiteAssessmentNotice = ({
   sites,
   className = '',
   classNames = {},
 }: SiteAssessmentNoticeProps) => {
-  if (sites.length === 0) return null;
+  const rootRef = useRef<HTMLDivElement>(null);
+  const prefersReducedMotion = usePrefersReducedMotion();
 
   const partial = sites.filter((site) => site.assessment_status !== 'fully_assessed');
-  if (partial.length === 0) return null;
+  const shouldRender = sites.length > 0 && partial.length > 0;
+
+  useGSAP(
+    () => {
+      if (prefersReducedMotion || !rootRef.current || !shouldRender) return;
+      gsap.from(rootRef.current, {
+        y: 6,
+        opacity: 0,
+        duration: M3_DURATION.medium2,
+        ease: M3_EASE.decelerate,
+        clearProps: 'transform,opacity',
+      });
+    },
+    { scope: rootRef, dependencies: [shouldRender, prefersReducedMotion] },
+  );
+
+  if (!shouldRender) return null;
 
   return (
     <div
+      ref={rootRef}
       className={[
         'rounded-xl border border-line/60 bg-surface-1/40 px-3 py-2',
         classNames.root ?? '',

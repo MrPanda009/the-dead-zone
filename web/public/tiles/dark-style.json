@@ -1630,22 +1630,12 @@
       "source-layer": "boundary",
       "maxzoom": 5,
       "filter": [
-        "all",
+        "==",
         [
-          "==",
-          [
-            "get",
-            "admin_level"
-          ],
-          2
+          "get",
+          "admin_level"
         ],
-        [
-          "!",
-          [
-            "has",
-            "claimed_by"
-          ]
-        ]
+        2
       ],
       "layout": {
         "line-cap": "round",
@@ -1702,6 +1692,40 @@
           22,
           4
         ],
+        "line-color": "#94a3b8",
+        "line-opacity": 1,
+        "line-width": 2
+      }
+    },
+    {
+      "id": "boundary_disputed",
+      "type": "line",
+      "source": "openmaptiles",
+      "source-layer": "boundary",
+      "filter": [
+        "all",
+        [
+          "!=",
+          [
+            "get",
+            "maritime"
+          ],
+          1
+        ],
+        [
+          "==",
+          [
+            "get",
+            "disputed"
+          ],
+          1
+        ]
+      ],
+      "layout": {
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      "paint": {
         "line-color": "#94a3b8",
         "line-opacity": 1,
         "line-width": 2
@@ -2623,5 +2647,5 @@
       }
     }
   ],
-  "name": "T.E.R.R.A. Dark Vector (OpenFreeMap)"
+  "name": "TERRA Dark Vector (OpenFreeMap)"
 }

@@ -4,6 +4,7 @@ import { useMemo, useRef } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 
+import { M3_DURATION, M3_EASE } from '@/lib/motion/m3';
 import { usePrefersReducedMotion } from '@/lib/hooks/usePrefersReducedMotion';
 import type { BindingConstraint, CapacityBreakdown } from '@/lib/api/types';
 
@@ -36,8 +37,7 @@ export interface CapacityWaterfallProps {
 /**
  * A site's carrying capacity as the minimum across four independent resource dimensions.
  *
- * The final figure is not a sum or an average — it is whichever resource runs out first, which
- * is why the binding dimension is called out rather than left for the reader to spot.
+ * Coordinates numeric headline count-up with staggered child capacity bar reveals.
  */
 export const CapacityWaterfall = ({
   capacity,
@@ -51,7 +51,7 @@ export const CapacityWaterfall = ({
   const finalRef = useRef<HTMLSpanElement>(null);
   const prefersReducedMotion = usePrefersReducedMotion();
 
-  const { disabled: animationDisabled = false, duration = 0.5 } = animation;
+  const { disabled: animationDisabled = false, duration = M3_DURATION.medium4 } = animation;
   const animate = !animationDisabled && !prefersReducedMotion;
 
   const values = useMemo<Record<BindingConstraint, number | null | undefined>>(
@@ -79,7 +79,7 @@ export const CapacityWaterfall = ({
       gsap.to(counter, {
         value: ccFinal,
         duration,
-        ease: 'power2.out',
+        ease: M3_EASE.decelerate,
         onUpdate: () => {
           target.textContent = Math.round(counter.value).toLocaleString();
         },
@@ -116,13 +116,18 @@ export const CapacityWaterfall = ({
 
       {showDimensions ? (
         <div className={['flex flex-col gap-2', classNames.bars ?? ''].join(' ')}>
-          {DIMENSIONS.map((dimension) => (
+          {DIMENSIONS.map((dimension, index) => (
             <CapacityBar
               key={dimension}
               constraint={dimension}
               value={values[dimension]}
               max={max}
               isBinding={capacity.binding_constraint === dimension}
+              animation={{
+                disabled: !animate,
+                duration: 0.35,
+                delay: index * 0.04,
+              }}
             />
           ))}
         </div>

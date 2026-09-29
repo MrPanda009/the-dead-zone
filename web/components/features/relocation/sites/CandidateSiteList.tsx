@@ -4,8 +4,9 @@ import { useRef } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 
-import { EmptyState, ErrorState, ScreeningGradeNotice, SectionHeader } from '@/components/common';
+import { EmptyState, ErrorState, SectionHeader } from '@/components/common';
 import { Button } from '@/components/ui';
+import { M3_DURATION, M3_EASE } from '@/lib/motion/m3';
 import { usePrefersReducedMotion } from '@/lib/hooks/usePrefersReducedMotion';
 import type { ApiError } from '@/lib/api/client';
 import type { CandidateSiteItem } from '@/lib/api/types';
@@ -44,7 +45,7 @@ export interface CandidateSiteListProps {
   };
 }
 
-/** Ranked destination sites for the selected habitation. */
+/** Ranked destination sites for the selected habitation with cascade entrance. */
 export const CandidateSiteList = ({
   sites,
   isLoading = false,
@@ -66,24 +67,31 @@ export const CandidateSiteList = ({
   const rootRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = usePrefersReducedMotion();
 
-  const { disabled: animationDisabled = false, stagger = 0.05, duration = 0.35 } = animation;
+  const {
+    disabled: animationDisabled = false,
+    stagger = 0.04,
+    duration = M3_DURATION.medium4,
+  } = animation;
   const animate = !animationDisabled && !prefersReducedMotion;
 
   useGSAP(
     () => {
       if (!animate || sites.length === 0) return;
-      gsap.from('[data-site-card]', {
-        y: 10,
-        opacity: 0,
-        duration,
-        stagger,
-        ease: 'power2.out',
-      });
+      gsap.fromTo(
+        '[data-site-card]',
+        { y: 14, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration,
+          stagger,
+          ease: M3_EASE.decelerate,
+          clearProps: 'transform,opacity',
+        }
+      );
     },
     { scope: rootRef, dependencies: [sites, animate, duration, stagger] },
   );
-
-  const screeningNotice = sites[0]?.screening_grade;
 
   return (
     <div
@@ -122,25 +130,20 @@ export const CandidateSiteList = ({
           />
         ))
       ) : (
-        <>
-          <div className={['flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-0.5', classNames.list ?? ''].join(' ')}>
-            {sites.map((site, index) => (
-              <CandidateSiteCard
-                key={site.id}
-                site={site}
-                rank={index + 1}
-                isSelected={site.id === selectedId}
-                onSelect={onSelect}
-                onSimulateCapacity={onSimulateCapacity}
-                compact={compactCards}
-                animation={{ disabled: !animate }}
-              />
-            ))}
-          </div>
-          {screeningNotice ? (
-            <ScreeningGradeNotice notice={screeningNotice} className={classNames.notice} />
-          ) : null}
-        </>
+        <div className={['flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-0.5', classNames.list ?? ''].join(' ')}>
+          {sites.map((site, index) => (
+            <CandidateSiteCard
+              key={site.id}
+              site={site}
+              rank={index + 1}
+              isSelected={site.id === selectedId}
+              onSelect={onSelect}
+              onSimulateCapacity={onSimulateCapacity}
+              compact={compactCards}
+              animation={{ disabled: !animate }}
+            />
+          ))}
+        </div>
       )}
     </div>
   );

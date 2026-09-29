@@ -15,7 +15,7 @@ web
 
 ## Product Purpose
 
-SETU-DRR (Hazard Red Zone & Relocation Decision Support Platform) bridges frontline climate geohazard data with scientifically backed relocation and in-situ mitigation planning. It eliminates guesswork and political inertia in disaster risk reduction by providing cell-level risk dossiers, rigorous carrying capacity assessments, and transparent decision-support tools for both government decision-makers and the traveling public.
+TERRA (Terrain-based Environmental Risk and Relocation Analytics) bridges frontline climate geohazard data with scientifically backed relocation and in-situ mitigation planning. It eliminates guesswork and political inertia in disaster risk reduction by providing cell-level risk dossiers, rigorous carrying capacity assessments, and transparent decision-support tools for both government decision-makers and the traveling public.
 
 ## Positioning
 
@@ -38,7 +38,7 @@ Unlike conventional disaster mapping dashboards that merely overlay passive sate
 
 - **Tone & Voice**: Authoritative, scientific, respectful, un-sensationalized, resilient.
 - **Design Language**: Rich cartographic aesthetics, glassmorphism, universal dark/light theme compliance, high tactile GSAP microinteractions, and precision typography.
-- **Name**: SETU-DRR (Hazard Red Zone & Relocation Decision Support Platform).
+- **Name**: TERRA (Terrain-based Environmental Risk and Relocation Analytics).
 
 ## Evidence on Hand
 

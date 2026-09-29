@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import {
   ThreePanelLayout,
@@ -8,10 +8,10 @@ import {
   CenterPanel,
   RightPanel,
 } from '@/components/layout';
-import { ScreeningGradeNotice } from '@/components/common/ScreeningGradeNotice';
+import { cellToParent, cellToLatLng, latLngToCell, getResolution } from 'h3-js';
 import { TopRiskList } from '@/components/features/triage';
 import { CellDossier } from '@/components/features/dossier';
-import { HazardLayerSelect } from '@/components/features/map/controls';
+import { HazardLayerSelect, MapTopControlBar } from '@/components/features/map/controls';
 import { MapSkeleton } from '@/components/features/map/MapSkeleton';
 import { LayerStatsPanel } from '@/components/features/workspace/LayerStatsPanel';
 import { India3DCanvas } from '@/components/features/map-3d';
@@ -29,10 +29,10 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { GovWorkspaceHeader } from './GovWorkspaceHeader';
 
-// MapLibre is dynamically loaded for the High-Res GIS view
+// MapLibre is dynamically loaded for the 2D View
 const FloodHazardMap = dynamic(
   () => import('@/components/features/map/FloodHazardMap').then((m) => m.FloodHazardMap),
-  { ssr: false, loading: () => <MapSkeleton label="Loading High-Res GIS Map…" /> },
+  { ssr: false, loading: () => <MapSkeleton label="Loading 2D Map…" /> },
 );
 
 export interface GovWorkspaceProps {
@@ -95,9 +95,68 @@ export const GovWorkspace: React.FC<GovWorkspaceProps> = ({
     setSelectedH3('8860064a15fffff');
   }, [selectHazardType]);
 
+  const handleResolutionChange = useCallback((newRes: number) => {
+    setDisplay((current) => ({ ...current, resolution: newRes }));
+    if (selectedH3) {
+      try {
+        const curRes = getResolution(selectedH3);
+        if (curRes !== newRes) {
+          let nextH3: string;
+          if (newRes < curRes) {
+            nextH3 = cellToParent(selectedH3, newRes);
+          } else {
+            const [lat, lng] = cellToLatLng(selectedH3);
+            nextH3 = latLngToCell(lat, lng, newRes);
+          }
+          setSelectedH3(nextH3);
+        }
+      } catch (err) {
+        console.warn('Failed to translate selected cell to new resolution:', err);
+      }
+    }
+  }, [selectedH3]);
+
   const handleDisplayChange = useCallback((next: Partial<FloodHazardMapDisplayState>) => {
+    if (next.resolution !== undefined && next.resolution !== display.resolution) {
+      handleResolutionChange(next.resolution);
+      return;
+    }
     setDisplay((current) => ({ ...current, ...next }));
-  }, []);
+  }, [display.resolution, handleResolutionChange]);
+
+  // Retain and align selected node when resolution changes and new cells load
+  useEffect(() => {
+    if (!selectedH3 || cells.length === 0) return;
+    try {
+      const curRes = getResolution(selectedH3);
+      if (curRes !== display.resolution) {
+        let targetH3: string;
+        if (display.resolution < curRes) {
+          targetH3 = cellToParent(selectedH3, display.resolution);
+        } else {
+          const [lat, lng] = cellToLatLng(selectedH3);
+          targetH3 = latLngToCell(lat, lng, display.resolution);
+        }
+        if (cells.some((c) => c.h3 === targetH3)) {
+          setSelectedH3(targetH3);
+        } else {
+          const match = cells.find((c) => {
+            try {
+              return (
+                cellToParent(c.h3, Math.min(curRes, display.resolution)) ===
+                cellToParent(selectedH3, Math.min(curRes, display.resolution))
+              );
+            } catch {
+              return false;
+            }
+          });
+          if (match) setSelectedH3(match.h3);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, [cells, display.resolution, selectedH3]);
 
   const handleSelectLayer = useCallback((next: HazardType) => {
     selectHazardType(next);
@@ -107,6 +166,17 @@ export const GovWorkspace: React.FC<GovWorkspaceProps> = ({
 
   const przThreshold = data?.legend.prz_susceptibility_threshold ?? 0.85;
   const breaks = useMemo(() => data?.legend.breaks ?? [], [data]);
+  const selectedCell = useMemo(() => cells.find((c) => c.h3 === selectedH3) ?? null, [cells, selectedH3]);
+
+  const hatchedCount = useMemo(() => {
+    if (!display.showConfidenceHatch || !data?.legend) return 0;
+    const ceiling = data.legend.confidence_ceiling ?? 1;
+    return cells.filter(
+      (cell) =>
+        cell.quality_flag !== 'no_coverage' &&
+        cell.confidence / ceiling < display.confidenceThreshold,
+    ).length;
+  }, [cells, data?.legend, display.confidenceThreshold, display.showConfidenceHatch]);
 
   // 1. Initial auth loading skeleton
   if (authLoading) {
@@ -172,7 +242,7 @@ export const GovWorkspace: React.FC<GovWorkspaceProps> = ({
               Official Clearance Required
             </h2>
             <p className="text-xs text-text-secondary mt-1.5 leading-relaxed font-sans">
-              Logged in as <span className="font-mono text-text-primary">{user.email}</span>. Civilian accounts do not possess operational clearance for the high-resolution GIS response matrix.
+              Logged in as <span className="font-mono text-text-primary">{user.email}</span>. Civilian accounts do not possess operational clearance for the 2D view response matrix.
             </p>
           </div>
           <div className="pt-2 flex flex-col gap-2.5">
@@ -208,12 +278,8 @@ export const GovWorkspace: React.FC<GovWorkspaceProps> = ({
           viewMode={viewMode}
           onViewModeChange={setViewMode}
           hazardType={hazardType}
-          modelVersion={data?.model_version}
           isLoading={isLoading}
-          cellCount={cells.length}
           officerId={officerId}
-          onInspectWayanad={handleInspectWayanad}
-          wayanadAlertCount={forecast.items.length}
         />
       }
       left={
@@ -248,6 +314,8 @@ export const GovWorkspace: React.FC<GovWorkspaceProps> = ({
               hoveredH3={hoveredH3}
               onSelectCell={setSelectedH3}
               onHoverCell={setHoveredH3}
+              resolution={display.resolution}
+              onResolutionChange={handleResolutionChange}
               isLoading={isLoading}
               errorMessage={error?.message ?? null}
               forecastItems={forecast.items}
@@ -285,11 +353,13 @@ export const GovWorkspace: React.FC<GovWorkspaceProps> = ({
             hazardType={hazardType}
             przThreshold={przThreshold}
             forecastItems={forecast.items}
-            onInspectWayanad={handleInspectWayanad}
+            fallbackCell={selectedCell}
+            display={display}
+            onDisplayChange={handleDisplayChange}
+            hatchedCount={hatchedCount}
           />
         </RightPanel>
       }
-      footer={<ScreeningGradeNotice notice={data?.screening_grade} />}
     />
   );
 };

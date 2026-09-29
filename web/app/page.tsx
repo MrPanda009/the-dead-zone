@@ -17,7 +17,6 @@ import { HeroContent } from '@/components/features/hero';
 import {
   LANDING_STORIES,
   StorySection,
-  ScrollIndicator,
 } from '@/components/features/landing';
 import { AtmosphericMist } from '@/components/features/mist';
 
@@ -37,7 +36,7 @@ export default function HomePage() {
 
   // Track active landing page section (0 to 4) so the 3D globe cleanly snaps into the right place per page
   useEffect(() => {
-    const sectionIds = ['hero', 'triage-engine', 'sovi-relocation', 'sar-radar', 'command-horizon'];
+    const sectionIds = ['hero', 'triage-workspace', 'relocation-solver', 'tourist-stories', 'command-horizon'];
 
     const handleScroll = () => {
       const scrollY = window.scrollY || window.pageYOffset || 0;
@@ -165,15 +164,11 @@ export default function HomePage() {
           Individual cards have pointer-events-auto.
           ============================================================ */}
       <main className="relative z-10 w-full flex flex-col pointer-events-none">
-        {/* Section 0: Hero Section (Text on Left, Globe in Empty Space on Right) */}
         <div
           id="hero"
-          className="relative min-h-screen shrink-0 w-full flex flex-col justify-between pt-20 lg:pt-24 pb-4 sm:pb-6 px-6 sm:px-10 lg:px-16 xl:px-20 pointer-events-none snap-start snap-always"
+          className="relative min-h-screen shrink-0 w-full flex flex-col justify-center pt-20 lg:pt-24 pb-8 sm:pb-12 px-6 sm:px-10 lg:px-16 xl:px-20 pointer-events-none snap-start snap-always"
         >
           <HeroContent portalHref={APP_ROUTES.login} className="pt-0 px-0 pointer-events-none" />
-          <div className="pointer-events-auto mt-2 sm:mt-4 flex items-center justify-start">
-            <ScrollIndicator targetId={LANDING_STORIES[0].id} />
-          </div>
         </div>
 
         {/* Narrative Sections: Globe zig-zags into the empty space next to text */}
@@ -192,7 +187,7 @@ export default function HomePage() {
           <div className="max-w-xl mx-auto px-6 sm:px-10 text-center pointer-events-auto">
             <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-surface-0/80 dark:bg-forest-surface/80 backdrop-blur-md border border-line dark:border-white/10 text-[11px] font-mono font-semibold text-accent-emerald-bright mb-4">
               <span className="w-2 h-2 rounded-full bg-accent-emerald-bright animate-ping" />
-              PLANETARY HORIZON · NDMD RESILIENCE
+              NATIONAL HORIZON · NDMD RESILIENCE
             </div>
             <h2 className="text-3xl sm:text-5xl font-display font-black text-ink dark:text-text-primary tracking-tight mb-4">
               The National Relocation Grid
@@ -217,7 +212,7 @@ export default function HomePage() {
         spot={hoveredHotspot ? hoveredHotspot.spot : null}
         position={hoveredHotspot ? hoveredHotspot.position : null}
         onViewPlan={(spot) => {
-          showToast(`Dead Zone Telemetry Loaded: ${spot.name}`);
+          showToast(`Dead Zone Risk Analysis Loaded: ${spot.name}`);
         }}
       />
 

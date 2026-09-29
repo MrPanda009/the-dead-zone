@@ -45,7 +45,7 @@ export const QuantileLegend = ({
   breaks,
   domain,
   quantiles,
-  title = 'Flood susceptibility',
+  title = 'Susceptibility Range',
   description,
   ramp = SUSCEPTIBILITY_RAMP,
   classCounts,
@@ -67,13 +67,18 @@ export const QuantileLegend = ({
   useGSAP(
     () => {
       if (!animate || classes.length === 0) return;
-      gsap.from('[data-legend-row]', {
-        x: -6,
-        opacity: 0,
-        duration,
-        stagger,
-        ease: 'power2.out',
-      });
+      gsap.fromTo(
+        '[data-legend-row]',
+        { x: -6, opacity: 0 },
+        {
+          x: 0,
+          opacity: 1,
+          duration,
+          stagger,
+          ease: 'power2.out',
+          clearProps: 'opacity,transform',
+        }
+      );
     },
     { scope: rootRef, dependencies: [animate, classes.length, duration, stagger] },
   );

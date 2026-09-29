@@ -18,5 +18,6 @@ export * from './DistrictDisasterHistory';
 export * from './TravelAdvisoryBanner';
 export * from './DistrictRiskModal';
 export * from './DistrictPhotoShowcase';
+export * from './TouristDistrictCard';
 export * from './PublicStoriesPage';
 

@@ -17,8 +17,14 @@ export interface CameraTarget {
 }
 
 export interface GlobeCanvasProps {
-  /** Mode: 'landing' starts framed for hero presentation; 'login' spins and glides globe off-screen */
-  viewMode?: 'landing' | 'login';
+  /** Mode: 'landing' starts framed for hero presentation; 'login' spins and glides globe off-screen; 'about' centers globe behind hero text */
+  viewMode?: 'landing' | 'login' | 'about';
+  /** Positioning mode: 'fixed' (default) fills viewport; 'absolute' anchors inside parent container */
+  positionMode?: 'fixed' | 'absolute';
+  /** Whether the globe should spin/accelerate in response to page scrolling (default: true for 'landing', false for 'about') */
+  enableScrollSpin?: boolean;
+  /** Optional custom scale multiplier for the globe */
+  globeScale?: number;
   /** Whether earth is auto-rotating */
   isAutoRotating?: boolean;
   /** Whether cyber radar sweep is active */
@@ -70,11 +76,21 @@ export const getSectionConfig = (
   sectionIdx: number,
   w: number,
   h: number,
-  viewMode: 'landing' | 'login' = 'landing'
+  viewMode: 'landing' | 'login' | 'about' = 'landing'
 ) => {
   const vFovRad = (45 * Math.PI) / 180;
   const visibleWorldHeight = 2 * 4.8 * Math.tan(vFovRad / 2); // ~3.97645 at camera z = 4.8
   const visibleWorldWidth = visibleWorldHeight * (w / Math.max(h, 1));
+
+  if (viewMode === 'about') {
+    const isDesktop = w >= 1024;
+    const isTablet = w >= 640 && w < 1024;
+    return {
+      x: 0,
+      y: isDesktop ? 0.04 : 0.02,
+      scale: isDesktop ? 0.90 : isTablet ? 0.82 : 0.72,
+    };
+  }
 
   if (viewMode === 'login') {
     const isDesktop = w >= 1024;
@@ -138,7 +154,10 @@ export const getSectionConfig = (
 
 export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
   viewMode = 'landing',
+  positionMode = 'fixed',
   isAutoRotating = true,
+  enableScrollSpin = viewMode === 'landing',
+  globeScale,
   isRadarActive = true,
   cameraTarget = null,
   hotspots = DEAD_ZONES_DATA,
@@ -180,27 +199,14 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     const h = typeof window !== 'undefined' ? window.innerHeight : 1080;
     const target = getSectionConfig(activeSection, w, h, viewMode);
 
-    if (activeSection === 4) {
-      // Bottom horizon: smooth glide down into bottom center, 50% above frosted footer
-      gsap.to(earthGroup.position, {
-        x: target.x,
-        y: target.y,
-        duration: 1.15,
-        ease: 'power3.out',
-        overwrite: 'auto',
-      });
-    } else {
-      // Lateral section transitions: slide X, subtle diagonal dip down and recovery to target Y
-      gsap.to(earthGroup.position, {
-        x: target.x,
-        duration: 1.1,
-        ease: 'power3.out',
-        overwrite: 'auto',
-      });
-      gsap.timeline({ overwrite: 'auto' })
-        .to(earthGroup.position, { y: -0.28, duration: 0.45, ease: 'power2.in' })
-        .to(earthGroup.position, { y: target.y, duration: 0.65, ease: 'power3.out' });
-    }
+    // Smooth, direct glide to target position and scale without any vertical dip or bounce
+    gsap.to(earthGroup.position, {
+      x: target.x,
+      y: target.y,
+      duration: activeSection === 4 ? 1.15 : 1.1,
+      ease: 'power3.out',
+      overwrite: 'auto',
+    });
 
     gsap.to(earthGroup.scale, {
       x: target.scale,
@@ -222,6 +228,7 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     primaryBeaconGroup: THREE.Group;
     isAutoRotating: boolean;
     isRadarActive: boolean;
+    isFocusing: boolean;
   } | null>(null);
 
   // Dynamically update globe lighting when theme changes
@@ -246,22 +253,53 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     }
   }, [isAutoRotating, isRadarActive]);
 
-  // Focus Trigger: Smoothly rotate Earth to center on India Hazard Red Zone
+  // Focus Trigger: Smoothly rotate Earth to center on India Hazard Red Zone via shortest angular path
   useEffect(() => {
     if (!sceneRef.current || focusTrigger === 0) return;
-    const { earthMesh, hotspotGroup, primaryBeaconGroup, camera } = sceneRef.current;
+    const { earthGroup, earthMesh, hotspotGroup, primaryBeaconGroup, camera } = sceneRef.current;
 
-    const targetY = -2.93;
+    const TWO_PI = Math.PI * 2;
+    const BASE_INDIA_Y = -2.93;
+    const currentY = earthMesh.rotation.y;
+
+    // Calculate shortest angular offset to India (at most Math.PI radians, or 180 degrees)
+    let delta = (BASE_INDIA_Y - currentY) % TWO_PI;
+    if (delta > Math.PI) delta -= TWO_PI;
+    if (delta < -Math.PI) delta += TWO_PI;
+
+    const targetY = currentY + delta;
+
+    sceneRef.current.isFocusing = true;
+
     gsap.to([earthMesh.rotation, hotspotGroup.rotation, primaryBeaconGroup.rotation], {
       y: targetY,
-      duration: 1.6,
+      duration: 1.4,
       ease: 'power3.inOut',
       overwrite: 'auto',
+      onComplete: () => {
+        if (!sceneRef.current) return;
+        // Normalize rotation angle to [-Math.PI, Math.PI] to keep numerical values clean and bounded
+        const normalized = ((targetY % TWO_PI) + TWO_PI) % TWO_PI;
+        const cleanY = normalized > Math.PI ? normalized - TWO_PI : normalized;
+        earthMesh.rotation.y = cleanY;
+        hotspotGroup.rotation.y = cleanY;
+        primaryBeaconGroup.rotation.y = cleanY;
+        sceneRef.current.isFocusing = false;
+      },
     });
+
+    gsap.to(earthGroup.rotation, {
+      x: 0,
+      duration: 1.2,
+      ease: 'power2.out',
+      overwrite: 'auto',
+    });
+
     gsap.to(camera.position, {
       z: 4.8,
       duration: 1.4,
       ease: 'power2.out',
+      overwrite: 'auto',
     });
   }, [focusTrigger]);
 
@@ -271,11 +309,24 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     const { earthMesh, hotspotGroup, primaryBeaconGroup, camera } = sceneRef.current;
     const duration = cameraTarget.duration || 1.4;
 
+    const TWO_PI = Math.PI * 2;
+    const currentY = earthMesh.rotation.y;
+    let delta = (cameraTarget.y - currentY) % TWO_PI;
+    if (delta > Math.PI) delta -= TWO_PI;
+    if (delta < -Math.PI) delta += TWO_PI;
+    const targetY = currentY + delta;
+
+    sceneRef.current.isFocusing = true;
+
     gsap.to([earthMesh.rotation, hotspotGroup.rotation, primaryBeaconGroup.rotation], {
-      y: cameraTarget.y,
+      y: targetY,
       duration,
       ease: 'power2.inOut',
       overwrite: 'auto',
+      onComplete: () => {
+        if (!sceneRef.current) return;
+        sceneRef.current.isFocusing = false;
+      },
     });
     gsap.to(camera.position, {
       z: cameraTarget.dist,
@@ -289,13 +340,14 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     const container = containerRef.current;
     if (!container) return;
 
-    // Strictly measure browser viewport dimensions (never transformed parent container)
-    let width = typeof window !== 'undefined' ? window.innerWidth : 1920;
-    let height = typeof window !== 'undefined' ? window.innerHeight : 1080;
+    const isAbsolute = positionMode === 'absolute';
+    // Strictly measure browser viewport dimensions or container dimensions
+    let width = isAbsolute && container.clientWidth ? container.clientWidth : (typeof window !== 'undefined' ? window.innerWidth : 1920);
+    let height = isAbsolute && container.clientHeight ? container.clientHeight : (typeof window !== 'undefined' ? window.innerHeight : 1080);
 
     // 1. Scene & Perspective Camera at normal framing distance
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 2000);
+    const camera = new THREE.PerspectiveCamera(45, width / Math.max(height, 1), 0.1, 2000);
     camera.position.set(0, 0, 4.8);
 
     // 2. WebGL Renderer
@@ -312,26 +364,31 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     }
     renderer.domElement.style.touchAction = 'none';
     renderer.domElement.style.cursor = 'grab';
-    renderer.domElement.style.position = 'fixed';
+    renderer.domElement.style.position = isAbsolute ? 'absolute' : 'fixed';
     renderer.domElement.style.top = '0';
     renderer.domElement.style.left = '0';
-    renderer.domElement.style.width = '100vw';
-    renderer.domElement.style.height = '100vh';
+    renderer.domElement.style.width = isAbsolute ? '100%' : '100vw';
+    renderer.domElement.style.height = isAbsolute ? '100%' : '100vh';
     renderer.domElement.style.zIndex = '1';
+    renderer.domElement.style.pointerEvents = 'auto';
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
 
     // 3. Directional & Atmospheric Lighting
-    const sunLight = new THREE.DirectionalLight(0xfff8ee, isLight ? 2.2 : 1.9);
-    sunLight.position.set(6, 4, 4.5);
+    const isAbout = viewMode === 'about';
+    const sunLight = new THREE.DirectionalLight(0xfff8ee, isAbout ? (isLight ? 2.3 : 2.1) : (isLight ? 2.2 : 1.9));
+    sunLight.position.set(isAbout ? 5 : 6, isAbout ? 5.8 : 4, 4.5);
     sunLightRef.current = sunLight;
     scene.add(sunLight);
 
-    const atmosphereLight = new THREE.DirectionalLight(0x5eead4, 0.6);
-    atmosphereLight.position.set(-5, -2, -4);
+    const atmosphereLight = new THREE.DirectionalLight(0x5eead4, isAbout ? 0.15 : 0.6);
+    atmosphereLight.position.set(-5, isAbout ? -0.5 : -2, -4);
     scene.add(atmosphereLight);
 
-    const ambientLight = new THREE.AmbientLight(isLight ? 0xc4d4c5 : 0x0e1b14, isLight ? 2.5 : 1.3);
+    const ambientLight = new THREE.AmbientLight(
+      isLight ? 0xc4d4c5 : 0x0e1b14,
+      isAbout ? (isLight ? 1.7 : 0.85) : (isLight ? 2.5 : 1.3)
+    );
     ambientLightRef.current = ambientLight;
     scene.add(ambientLight);
 
@@ -372,10 +429,11 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     // Moves across the screen in 3D in the empty space next to text!
     // Rotation is centered on its own local origin (0, 0, 0).
     const initialConfig = getSectionConfig(activeSectionRef.current, width, height, viewMode);
+    const initScale = globeScale ? initialConfig.scale * globeScale : initialConfig.scale;
     const earthGroup = new THREE.Group();
     earthGroup.rotation.z = 23.4 * (Math.PI / 180);
     earthGroup.position.set(initialConfig.x, initialConfig.y, 0);
-    earthGroup.scale.set(initialConfig.scale, initialConfig.scale, initialConfig.scale);
+    earthGroup.scale.set(initScale, initScale, initScale);
     scene.add(earthGroup);
 
     // 6. Earth Mesh (Normal size: radius 2.0)
@@ -550,6 +608,10 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     const handlePointerDown = (e: PointerEvent) => {
       if (e.button !== 0 && e.pointerType === 'mouse') return;
       isPointerDown = true;
+      if (sceneRef.current) {
+        sceneRef.current.isFocusing = false;
+        gsap.killTweensOf([earthMesh.rotation, hotspotGroup.rotation, primaryBeaconGroup.rotation]);
+      }
       prevPointer = { x: e.clientX, y: e.clientY };
       dragVelocity = { x: 0, y: 0 };
       domEl.style.cursor = 'grabbing';
@@ -584,8 +646,9 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
       }
     };
 
-    // Scroll spin: responsive, lively rotation as the user scrolls
+    // Scroll spin: responsive, lively rotation as the user scrolls (only when enabled)
     const handleScrollSpin = () => {
+      if (!enableScrollSpin) return;
       const currentScrollY = window.scrollY || window.pageYOffset || 0;
       const deltaY = currentScrollY - lastScrollY;
       lastScrollY = currentScrollY;
@@ -596,6 +659,7 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     };
 
     const handleWheelSpin = (e: WheelEvent) => {
+      if (!enableScrollSpin) return;
       const impulse = (e.deltaY || 0) * 0.00035;
       scrollSpinVelocity = Math.max(-0.014, Math.min(0.014, scrollSpinVelocity + impulse));
     };
@@ -612,8 +676,13 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
     const mouse = new THREE.Vector2();
 
     const handleMouseMove = (e: MouseEvent) => {
-      mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-      mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+      const rect = isAbsolute
+        ? container.getBoundingClientRect()
+        : { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight };
+      const clientX = e.clientX - rect.left;
+      const clientY = e.clientY - rect.top;
+      mouse.x = (clientX / Math.max(rect.width, 1)) * 2 - 1;
+      mouse.y = -(clientY / Math.max(rect.height, 1)) * 2 + 1;
 
       raycaster.setFromCamera(mouse, camera);
       const intersects = raycaster.intersectObjects(hotspotGroup.children);
@@ -635,17 +704,18 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
 
     window.addEventListener('mousemove', handleMouseMove);
 
-    // Responsive Resize Handler: strictly updates with window viewport dimensions
+    // Responsive Resize Handler: strictly updates with window viewport dimensions or container
     const handleResize = () => {
-      width = window.innerWidth;
-      height = window.innerHeight;
-      camera.aspect = width / height;
+      width = isAbsolute && container.clientWidth ? container.clientWidth : window.innerWidth;
+      height = isAbsolute && container.clientHeight ? container.clientHeight : window.innerHeight;
+      camera.aspect = width / Math.max(height, 1);
       camera.updateProjectionMatrix();
       renderer.setSize(width, height);
 
       const target = getSectionConfig(activeSectionRef.current, width, height, viewMode);
+      const resScale = globeScale ? target.scale * globeScale : target.scale;
       earthGroup.position.set(target.x, target.y, 0);
-      earthGroup.scale.set(target.scale, target.scale, target.scale);
+      earthGroup.scale.set(resScale, resScale, resScale);
     };
     window.addEventListener('resize', handleResize);
 
@@ -659,6 +729,7 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
       primaryBeaconGroup,
       isAutoRotating,
       isRadarActive,
+      isFocusing: false,
     };
 
     // 14. Animation Render Loop
@@ -667,8 +738,8 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
       animationFrameId = requestAnimationFrame(animate);
       const elapsed = performance.now() * 0.001;
 
-      // Continuous Auto-Rotation: increased a bit as requested
-      if (sceneRef.current?.isAutoRotating) {
+      // Continuous Auto-Rotation: advance when not actively tweening to focus
+      if (sceneRef.current?.isAutoRotating && !sceneRef.current?.isFocusing) {
         earthMesh.rotation.y += 0.0016;
         hotspotGroup.rotation.y += 0.0016;
         primaryBeaconGroup.rotation.y += 0.0016;
@@ -684,7 +755,7 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
       }
 
       // Scroll-Driven Spin: lively planetary rotation with smooth inertia damping
-      if (Math.abs(scrollSpinVelocity) > 0.00001) {
+      if (Math.abs(scrollSpinVelocity) > 0.00001 && !sceneRef.current?.isFocusing) {
         earthMesh.rotation.y += scrollSpinVelocity;
         hotspotGroup.rotation.y += scrollSpinVelocity;
         primaryBeaconGroup.rotation.y += scrollSpinVelocity;
@@ -692,7 +763,7 @@ export const GlobeCanvas: React.FC<GlobeCanvasProps> = ({
       }
 
       // Manual drag inertia momentum decay
-      if (!isPointerDown) {
+      if (!isPointerDown && !sceneRef.current?.isFocusing) {
         dragVelocity.x *= 0.95;
         dragVelocity.y *= 0.95;
         if (Math.abs(dragVelocity.x) > 0.00005) {

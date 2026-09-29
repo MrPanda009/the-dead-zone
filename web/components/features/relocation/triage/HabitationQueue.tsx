@@ -6,6 +6,7 @@ import gsap from 'gsap';
 
 import { EmptyState, ErrorState, SectionHeader } from '@/components/common';
 import { Button } from '@/components/ui';
+import { M3_DURATION, M3_EASE } from '@/lib/motion/m3';
 import { usePrefersReducedMotion } from '@/lib/hooks/usePrefersReducedMotion';
 import type { ApiError } from '@/lib/api/client';
 import type { HabitationListItem } from '@/lib/api/types';
@@ -62,7 +63,11 @@ export const HabitationQueue = ({
   const prefersReducedMotion = usePrefersReducedMotion();
   const [searchQuery, setSearchQuery] = useState('');
 
-  const { disabled: animationDisabled = false, stagger = 0.04, duration = 0.3 } = animation;
+  const {
+    disabled: animationDisabled = false,
+    stagger = 0.035,
+    duration = M3_DURATION.medium2,
+  } = animation;
   const animate = !animationDisabled && !prefersReducedMotion;
 
   const filteredHabitations = useMemo(() => {
@@ -74,13 +79,18 @@ export const HabitationQueue = ({
   useGSAP(
     () => {
       if (!animate || filteredHabitations.length === 0) return;
-      gsap.from('[data-habitation-row]', {
-        y: 8,
-        opacity: 0,
-        duration,
-        stagger,
-        ease: 'power2.out',
-      });
+      gsap.fromTo(
+        '[data-habitation-row]',
+        { y: 10, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration,
+          stagger,
+          ease: M3_EASE.decelerate,
+          clearProps: 'transform,opacity',
+        }
+      );
     },
     { scope: rootRef, dependencies: [filteredHabitations, animate, duration, stagger] },
   );

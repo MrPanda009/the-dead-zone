@@ -5,7 +5,6 @@ import { useGSAP } from '@gsap/react';
 import { gsap, M3_DURATION, M3_EASE, type M3AnimationConfig } from '@/lib/motion/m3';
 import { usePrefersReducedMotion } from '@/lib/hooks/usePrefersReducedMotion';
 import { INTRO_TIMINGS } from '@/lib/motion/introSequence';
-import { ObservationBadge } from './ObservationBadge';
 import { HeroTypography } from './HeroTypography';
 import { CommandPortalCta } from './CommandPortalCta';
 
@@ -43,7 +42,7 @@ export const HeroContent: React.FC<HeroContentProps> = ({
       // below animates *from* opacity 0.
       if (!animate) {
         gsap.set(
-          ['.hero-badge-wrap', '.hero-word-line', '.hero-tagline', '.hero-description', '.hero-cta-wrap'],
+          ['.hero-word-line', '.hero-tagline', '.hero-description', '.hero-cta-wrap'],
           { clearProps: 'all' }
         );
         return;
@@ -52,16 +51,10 @@ export const HeroContent: React.FC<HeroContentProps> = ({
       const tl = gsap.timeline({ delay, defaults: { ease: M3_EASE.emphasized } });
 
       tl.fromTo(
-        '.hero-badge-wrap',
-        { y: -20, opacity: 0 },
-        { y: 0, opacity: 1, duration: M3_DURATION.extraLong2, ease: M3_EASE.decelerate }
+        '.hero-word-line',
+        { y: 45, opacity: 0 },
+        { y: 0, opacity: 1, duration: M3_DURATION.extraLong2, stagger: 0.12 }
       )
-        .fromTo(
-          '.hero-word-line',
-          { y: 45, opacity: 0 },
-          { y: 0, opacity: 1, duration: M3_DURATION.extraLong2, stagger: 0.12 },
-          '-=0.35'
-        )
         .fromTo(
           '.hero-tagline',
           { y: 30, opacity: 0 },
@@ -91,11 +84,6 @@ export const HeroContent: React.FC<HeroContentProps> = ({
     >
       {/* Upper Content Column */}
       <div className="max-w-lg xl:max-w-xl flex flex-col items-start pt-1 sm:pt-3 lg:pt-4">
-        {/* Status observation badge */}
-        <div className="hero-badge-wrap mb-3 sm:mb-4 lg:mb-5 pointer-events-auto">
-          <ObservationBadge />
-        </div>
-
         {/* Monumental Typography & Mission Description */}
         <HeroTypography />
 

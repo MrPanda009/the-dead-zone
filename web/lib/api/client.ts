@@ -1,4 +1,4 @@
-/** Minimal typed fetch wrapper that unwraps the T.E.R.R.A. error envelope. */
+/** Minimal typed fetch wrapper that unwraps the SETU-DRR error envelope. */
 
 import type { ApiErrorEnvelope } from './types';
 
@@ -110,7 +110,7 @@ export async function apiGet<T>(
   } catch (cause) {
     if (cause instanceof DOMException && cause.name === 'AbortError') throw cause;
     throw new ApiError(
-      `Cannot reach the SETU-DRR API at ${API_BASE_URL}. If the service was idle, Render may be waking up (cold start can take ~30-50s). Please wait a moment and retry.`,
+      `Cannot reach the TERRA API at ${API_BASE_URL}. If the service was idle, Render may be waking up (cold start can take ~30-50s). Please wait a moment and retry.`,
       0,
       'NETWORK_ERROR',
     );
@@ -145,7 +145,7 @@ export async function apiPost<T>(
   } catch (cause) {
     if (cause instanceof DOMException && cause.name === 'AbortError') throw cause;
     throw new ApiError(
-      `Cannot reach the SETU-DRR API at ${API_BASE_URL}. If the service was idle, Render may be waking up (cold start can take ~30-50s). Please wait a moment and retry.`,
+      `Cannot reach the TERRA API at ${API_BASE_URL}. If the service was idle, Render may be waking up (cold start can take ~30-50s). Please wait a moment and retry.`,
       0,
       'NETWORK_ERROR',
     );

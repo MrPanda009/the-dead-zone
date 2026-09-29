@@ -52,7 +52,7 @@ export const FrostedFooter: React.FC<FrostedFooterProps> = ({
           <FooterNav />
 
           <p className="text-[11px] font-mono text-ink-muted dark:text-text-muted">
-            © 2026 SETU-DRR · NDMD / NDRF · All Rights Reserved
+            © 2026 TERRA · NDMD / NDRF · All Rights Reserved
           </p>
         </div>
       </div>

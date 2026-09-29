@@ -63,13 +63,18 @@ export const ForecastCycleBadge = ({
   useGSAP(
     () => {
       if (animation?.disabled || reduceMotion) return;
-      gsap.from('.forecast-cycle-line', {
-        y: 6,
-        opacity: 0,
-        duration: animation?.duration ?? 0.35,
-        stagger: 0.04,
-        ease: 'power2.out',
-      });
+      gsap.fromTo(
+        '.forecast-cycle-line',
+        { y: 6, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration: animation?.duration ?? 0.35,
+          stagger: 0.04,
+          ease: 'power2.out',
+          clearProps: 'opacity,transform',
+        }
+      );
     },
     { scope: rootRef, dependencies: [forecastCycleAt, reduceMotion] },
   );

@@ -36,3 +36,6 @@ export type { AttributionModelNoticeProps } from './AttributionModelNotice';
 
 export { DriverBreakdownSkeleton } from './DriverBreakdownSkeleton';
 export type { DriverBreakdownSkeletonProps } from './DriverBreakdownSkeleton';
+
+export { FiltersAndRulesBox } from './FiltersAndRulesBox';
+export type { FiltersAndRulesBoxProps } from './FiltersAndRulesBox';

@@ -1,5 +1,6 @@
 export * from './India3DCanvas';
 export * from './Map3DControlBar';
+export * from './Map3DSideControls';
 export * from './Hex3DTooltip';
 export * from './HexRiskColumns';
 export * from './HexTargetBeacon';

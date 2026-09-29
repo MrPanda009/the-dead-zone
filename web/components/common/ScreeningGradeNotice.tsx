@@ -20,30 +20,4 @@ const DEFAULT_NOTICE =
  * Required on every output surface — the scores rank cells for investigation, they do not
  * authorise a relocation order.
  */
-export const ScreeningGradeNotice = ({
-  notice = DEFAULT_NOTICE,
-  className = '',
-  classNames = {},
-}: ScreeningGradeNoticeProps) => (
-  <div
-    className={[
-      'flex items-start gap-2 rounded-xl border border-line/60 bg-surface-0 px-3 py-2',
-      classNames.root ?? '',
-      className,
-    ]
-      .filter(Boolean)
-      .join(' ')}
-  >
-    <span
-      className={[
-        'mt-px shrink-0 rounded-md border border-warning/50 bg-warning/12 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-warning',
-        classNames.label ?? '',
-      ].join(' ')}
-    >
-      Screening
-    </span>
-    <p className={['text-[10px] leading-snug text-ink-faint', classNames.text ?? ''].join(' ')}>
-      {notice}
-    </p>
-  </div>
-);
+export const ScreeningGradeNotice = ({}: ScreeningGradeNoticeProps) => null;

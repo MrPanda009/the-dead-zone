@@ -4,7 +4,6 @@ import { useCallback, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 
 import { Badge } from '@/components/ui/Badge';
-import { ScreeningGradeNotice } from '@/components/common/ScreeningGradeNotice';
 import {
   AppHeader,
   CenterPanel,
@@ -68,8 +67,8 @@ const DEFAULT_FORECAST_HORIZON_HOURS = 72;
 export const HazardWorkspace = ({
   initialHazardType,
   admin,
-  title = 'T.E.R.R.A.',
-  subtitle = 'Terrain-based Environmental Risk & Relocation Analytics',
+  title = 'TERRA',
+  subtitle = 'Terrain-based Environmental Risk and Relocation Analytics',
   className = '',
 }: HazardWorkspaceProps) => {
   const { hazardType, selectHazardType } = useDistrictHazardType({ admin, initialHazardType });
@@ -102,6 +101,17 @@ export const HazardWorkspace = ({
 
   const przThreshold = data?.legend.prz_susceptibility_threshold ?? 0.85;
   const breaks = useMemo(() => data?.legend.breaks ?? [], [data]);
+  const selectedCell = useMemo(() => cells.find((c) => c.h3 === selectedH3) ?? null, [cells, selectedH3]);
+
+  const hatchedCount = useMemo(() => {
+    if (!display.showConfidenceHatch || !data?.legend) return 0;
+    const ceiling = data.legend.confidence_ceiling ?? 1;
+    return cells.filter(
+      (cell) =>
+        cell.quality_flag !== 'no_coverage' &&
+        cell.confidence / ceiling < display.confidenceThreshold,
+    ).length;
+  }, [cells, data?.legend, display.confidenceThreshold, display.showConfidenceHatch]);
 
   return (
     <ThreePanelLayout
@@ -190,11 +200,14 @@ export const HazardWorkspace = ({
               hazardType={hazardType}
               przThreshold={przThreshold}
               forecastItems={forecast.items}
+              fallbackCell={selectedCell}
+              display={display}
+              onDisplayChange={handleDisplayChange}
+              hatchedCount={hatchedCount}
             />
           </div>
         </RightPanel>
       }
-      footer={<ScreeningGradeNotice notice={data?.screening_grade} />}
     />
   );
 };

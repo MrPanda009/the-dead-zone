@@ -109,17 +109,23 @@ export const DistrictRiskModal: React.FC<DistrictRiskModalProps> = ({
 
   if (!isOpen) return null;
 
-  const normalizedKey = (
-    profile.districtName === 'Wayanad' || zone === 'Wayanad' || zone === 'South'
-      ? 'Wayanad'
-      : profile.districtName === 'Kodagu' || zone === 'Kodagu' || zone === 'West'
+  const normalizedKey: ZoneId =
+    zone === 'North' || profile.districtName.includes('Joshimath') || profile.districtName.includes('Chamoli')
+      ? 'North'
+      : zone === 'Central' || profile.districtName.includes('Satpura') || profile.districtName.includes('Hoshangabad')
+      ? 'Central'
+      : zone === 'West' || profile.districtName.includes('Kachchh') || profile.districtName.includes('Kutch')
+      ? 'West'
+      : zone === 'Kodagu' || profile.districtName === 'Kodagu'
       ? 'Kodagu'
-      : 'Barpeta'
-  ) as ZoneId;
+      : zone === 'East' || zone === 'Barpeta' || profile.districtName === 'Barpeta'
+      ? 'East'
+      : 'South';
 
   const regionalStory =
     REGIONAL_STORIES[normalizedKey] ||
     REGIONAL_STORIES[zone] ||
+    REGIONAL_STORIES.South ||
     REGIONAL_STORIES.Wayanad;
 
   const activeSpot =

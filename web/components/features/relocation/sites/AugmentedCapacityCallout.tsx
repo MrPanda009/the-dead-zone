@@ -1,3 +1,11 @@
+'use client';
+
+import { useRef } from 'react';
+import { useGSAP } from '@gsap/react';
+import gsap from 'gsap';
+
+import { M3_DURATION, M3_EASE } from '@/lib/motion/m3';
+import { usePrefersReducedMotion } from '@/lib/hooks/usePrefersReducedMotion';
 import type { AugmentedCapacity } from '@/lib/api/types';
 
 import { CONSTRAINT_LABELS } from '../constants';
@@ -18,8 +26,7 @@ export interface AugmentedCapacityCalloutProps {
 /**
  * What the site could hold if its binding constraint were relieved, and what that would take.
  *
- * Turns a static capacity number into a lever: the next constraint is named too, so nobody
- * reads the augmented figure as unlimited headroom.
+ * Smooth entrance transition revealing the intervention and headroom potential.
  */
 export const AugmentedCapacityCallout = ({
   augmented,
@@ -27,6 +34,23 @@ export const AugmentedCapacityCallout = ({
   className = '',
   classNames = {},
 }: AugmentedCapacityCalloutProps) => {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const prefersReducedMotion = usePrefersReducedMotion();
+
+  useGSAP(
+    () => {
+      if (prefersReducedMotion || !rootRef.current) return;
+      gsap.from(rootRef.current, {
+        y: 6,
+        opacity: 0,
+        duration: M3_DURATION.medium2,
+        ease: M3_EASE.decelerate,
+        clearProps: 'transform,opacity',
+      });
+    },
+    { scope: rootRef, dependencies: [augmented, prefersReducedMotion] },
+  );
+
   if (!augmented) return null;
 
   const gain =
@@ -34,6 +58,7 @@ export const AugmentedCapacityCallout = ({
 
   return (
     <div
+      ref={rootRef}
       className={[
         'flex flex-col gap-1.5 rounded-xl border border-accent/30 bg-accent/5 px-3 py-2.5',
         classNames.root ?? '',

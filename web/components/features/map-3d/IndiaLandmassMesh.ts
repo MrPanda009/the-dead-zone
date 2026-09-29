@@ -41,6 +41,7 @@ export function createIndiaLandmass(
     if (idx === 0) shape.moveTo(x, y);
     else shape.lineTo(x, y);
   });
+  shape.closePath();
 
   const extrudeSettings: THREE.ExtrudeGeometryOptions = {
     steps: 1,
@@ -84,6 +85,7 @@ export function createIndiaLandmass(
       if (idx === 0) islShape.moveTo(x, y);
       else islShape.lineTo(x, y);
     });
+    islShape.closePath();
     const islGeom = new THREE.ExtrudeGeometry(islShape, {
       steps: 1,
       depth: depth * 0.8,

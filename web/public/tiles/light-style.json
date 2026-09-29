@@ -1727,21 +1727,6 @@
             "maritime"
           ],
           1
-        ],
-        [
-          "!=",
-          [
-            "get",
-            "disputed"
-          ],
-          1
-        ],
-        [
-          "!",
-          [
-            "has",
-            "claimed_by"
-          ]
         ]
       ],
       "layout": {
@@ -1806,10 +1791,6 @@
       ],
       "paint": {
         "line-color": "hsl(0,0%,70%)",
-        "line-dasharray": [
-          1,
-          2
-        ],
         "line-width": [
           "interpolate",
           [

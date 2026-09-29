@@ -150,11 +150,11 @@ export const LandingSectionCard: React.FC<LandingSectionCardProps> = ({
       {/* Action CTA Button */}
       {data.actionLabel && (
         <Link
-          href={data.actionHref || '/login'}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-mono font-semibold tracking-wider uppercase transition-transform duration-200 active:scale-95 bg-ink text-surface-0 dark:bg-citron dark:text-forest-dark hover:opacity-90"
+          href={data.actionHref || '/workspace'}
+          className="group inline-flex items-center gap-2.5 px-6 py-2.5 rounded-full text-xs font-mono font-bold tracking-wider uppercase transition-all duration-200 active:scale-95 bg-ink text-surface-0 dark:bg-citron dark:text-forest-dark hover:shadow-lg hover:brightness-105 hover:gap-3 cursor-pointer"
         >
           <span>{data.actionLabel}</span>
-          <span className="text-base leading-none">→</span>
+          <span className="text-sm transition-transform duration-200 group-hover:translate-x-1">→</span>
         </Link>
       )}
     </div>

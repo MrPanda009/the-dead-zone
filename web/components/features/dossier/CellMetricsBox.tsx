@@ -51,13 +51,18 @@ export const CellMetricsBox: React.FC<CellMetricsBoxProps> = ({
   useGSAP(
     () => {
       if (!containerRef.current) return;
-      gsap.from('[data-metric-elem]', {
-        y: 8,
-        opacity: 0,
-        duration: 0.35,
-        stagger: 0.04,
-        ease: 'power2.out',
-      });
+      gsap.fromTo(
+        '[data-metric-elem]',
+        { y: 8, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration: 0.25,
+          stagger: 0.03,
+          ease: 'power2.out',
+          clearProps: 'opacity,transform',
+        }
+      );
     },
     { scope: containerRef, dependencies: [detail.h3, forecastAlert?.h3] },
   );
@@ -104,15 +109,12 @@ export const CellMetricsBox: React.FC<CellMetricsBoxProps> = ({
         .filter(Boolean)
         .join(' ')}
     >
-      {/* Live Forecast Telemetry Strip for Wayanad Pilot Zone */}
-      {(hasLiveForecast || isWayanad) && (
+      {/* Live Forecast Telemetry Strip when cell matches an active forecast alert */}
+      {hasLiveForecast && (
         <div
           data-metric-elem
           className={[
-            'rounded-xl border p-2.5 transition-all text-xs',
-            hasLiveForecast
-              ? 'bg-crimson/5 dark:bg-crimson/10 border-crimson/30 text-text-primary'
-              : 'bg-surface-1/80 border-line text-text-secondary',
+            'rounded-xl border p-2.5 transition-all text-xs bg-crimson/5 dark:bg-crimson/10 border-crimson/30 text-text-primary',
             classNames.telemetry ?? '',
           ].join(' ')}
         >
@@ -123,9 +125,7 @@ export const CellMetricsBox: React.FC<CellMetricsBoxProps> = ({
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-crimson"></span>
               </span>
               <span className="text-crimson dark:text-red-400 uppercase font-bold">
-                {hasLiveForecast
-                  ? 'Wayanad Live Forecast Active'
-                  : 'Wayanad Pilot Sector Active'}
+                METEOROLOGICAL FORECAST ALERT ACTIVE
               </span>
             </div>
             <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface-2 text-text-muted border border-line">
@@ -135,9 +135,7 @@ export const CellMetricsBox: React.FC<CellMetricsBoxProps> = ({
 
           <div className="flex items-center justify-between text-[10px] font-mono text-text-muted">
             <span>
-              {hasLiveForecast
-                ? `Hazard: ${(forecastAlert?.dominant_hazard ?? 'landslide').toUpperCase()}`
-                : 'Hazard: LANDSLIDE & RUNOFF'}
+              Hazard: {(forecastAlert?.dominant_hazard ?? detail.hazard_type ?? 'flood').toUpperCase()}
             </span>
             <span>
               {validTimeStr ? `Valid thru ${validTimeStr}` : 'Cycle Synced'}
@@ -249,7 +247,7 @@ export const CellMetricsBox: React.FC<CellMetricsBoxProps> = ({
                     forecastAlert.exposed_population,
                   ).toLocaleString()} exposed in forecast alert sector`
                 : districtForecastSummary?.totalExposed
-                  ? `${Math.round(detail.population ?? 0).toLocaleString()} in cell · ${districtForecastSummary.totalExposed.toLocaleString()} exposed across Wayanad forecast alert zone`
+                  ? `${Math.round(detail.population ?? 0).toLocaleString()} in cell · ${districtForecastSummary.totalExposed.toLocaleString()} exposed across forecast alert zone`
                   : 'WorldPop 100m constrained sum across hexagon'
             }
           />

@@ -4,7 +4,8 @@ import { useRef } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 
-import { EmptyState, ErrorState, ScreeningGradeNotice, SectionHeader } from '@/components/common';
+import { EmptyState, ErrorState, SectionHeader } from '@/components/common';
+import { M3_DURATION, M3_EASE } from '@/lib/motion/m3';
 import { usePrefersReducedMotion } from '@/lib/hooks/usePrefersReducedMotion';
 import type { ApiError } from '@/lib/api/client';
 import type { AllocationAssignment, AllocationPlanResponse } from '@/lib/api/types';
@@ -42,7 +43,7 @@ export interface AllocationPanelProps {
   };
 }
 
-/** Solver parameters, the resulting plan, and every assignment it produced. */
+/** Solver parameters, the resulting plan, and orchestrated results reveal. */
 export const AllocationPanel = ({
   plan,
   isSolving = false,
@@ -61,23 +62,67 @@ export const AllocationPanel = ({
   const rootRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = usePrefersReducedMotion();
 
-  const { disabled: animationDisabled = false, stagger = 0.04, duration = 0.3 } = animation;
+  const {
+    disabled: animationDisabled = false,
+    stagger = 0.035,
+    duration = M3_DURATION.medium2,
+  } = animation;
   const animate = !animationDisabled && !prefersReducedMotion;
 
   const assignments = plan?.assignments ?? [];
 
   useGSAP(
     () => {
-      if (!animate || assignments.length === 0) return;
-      gsap.from('[data-assignment-row]', {
-        y: 8,
-        opacity: 0,
-        duration,
-        stagger,
-        ease: 'power2.out',
-      });
+      if (!animate || !plan) return;
+
+      const tl = gsap.timeline();
+
+      if (rootRef.current?.querySelector('[data-allocation-summary]')) {
+        tl.fromTo(
+          '[data-allocation-summary]',
+          { y: 10, opacity: 0 },
+          {
+            y: 0,
+            opacity: 1,
+            duration: M3_DURATION.medium2,
+            ease: M3_EASE.decelerate,
+            clearProps: 'transform,opacity',
+          },
+        );
+      }
+
+      if (rootRef.current?.querySelector('[data-allocation-warnings]')) {
+        tl.fromTo(
+          '[data-allocation-warnings]',
+          { y: -6, opacity: 0 },
+          {
+            y: 0,
+            opacity: 1,
+            duration: M3_DURATION.short4,
+            ease: 'back.out(1.4)',
+            clearProps: 'transform,opacity',
+          },
+          '-=0.1',
+        );
+      }
+
+      if (assignments.length > 0 && rootRef.current?.querySelector('[data-assignment-row]')) {
+        tl.fromTo(
+          '[data-assignment-row]',
+          { y: 8, opacity: 0 },
+          {
+            y: 0,
+            opacity: 1,
+            duration,
+            stagger,
+            ease: M3_EASE.decelerate,
+            clearProps: 'transform,opacity',
+          },
+          '-=0.15',
+        );
+      }
     },
-    { scope: rootRef, dependencies: [assignments, animate, duration, stagger] },
+    { scope: rootRef, dependencies: [plan, assignments.length, animate, duration, stagger] },
   );
 
   return (
@@ -138,23 +183,22 @@ export const AllocationPanel = ({
 
           {assignments.length === 0 ? (
             <EmptyState
-              title="No assignments"
-              description="The solver completed but placed nobody — no eligible site had spare capacity within the radius."
+              title="Zero households allocated"
+              description="No households could be allocated. Widen search radius or lower constraints."
             />
           ) : (
-            <div className={['flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto pr-0.5', classNames.list ?? ''].join(' ')}>
-              {assignments.map((assignment, index) => (
+            <div className={['flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pr-0.5', classNames.list ?? ''].join(' ')}>
+              {assignments.map((assignment) => (
                 <AllocationAssignmentRow
-                  key={`${assignment.habitation_id}-${assignment.site_id}-${index}`}
+                  key={`${assignment.habitation_id}-${assignment.site_id}`}
                   assignment={assignment}
-                  isHighlighted={assignment.habitation_id === highlightedHabitationId}
+                  isHighlighted={highlightedHabitationId === assignment.habitation_id}
                   onSelect={onSelectAssignment}
+                  animation={{ disabled: !animate }}
                 />
               ))}
             </div>
           )}
-
-          <ScreeningGradeNotice notice={plan.screening_grade} />
         </div>
       )}
     </div>

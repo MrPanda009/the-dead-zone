@@ -1,5 +1,5 @@
 /**
- * T.E.R.R.A. Hexagonal Risk Propagation Animation Types
+ * SETU-DRR Hexagonal Risk Propagation Animation Types
  * High-precision geospatial risk simulation interfaces
  */
 

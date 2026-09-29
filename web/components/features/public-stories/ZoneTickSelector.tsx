@@ -22,9 +22,12 @@ export interface DistrictItem {
 }
 
 const DISTRICT_ITEMS: DistrictItem[] = [
-  { id: 'Wayanad', name: 'Wayanad', state: 'Kerala', riskTag: 'L4 Red Zone' },
-  { id: 'Kodagu', name: 'Kodagu', state: 'Karnataka', riskTag: 'L3 Amber' },
-  { id: 'Barpeta', name: 'Barpeta', state: 'Assam', riskTag: 'L3 Flood' },
+  { id: 'North', name: 'Joshimath', state: 'Uttarakhand', riskTag: 'Subsidence' },
+  { id: 'West', name: 'Kachchh', state: 'Gujarat', riskTag: 'Seismic' },
+  { id: 'Central', name: 'Satpura', state: 'Madhya Pradesh', riskTag: 'Monitored' },
+  { id: 'East', name: 'Barpeta', state: 'Assam', riskTag: 'Flood Alert' },
+  { id: 'Kodagu', name: 'Kodagu', state: 'Karnataka', riskTag: 'Slope Warning' },
+  { id: 'South', name: 'Wayanad', state: 'Kerala', riskTag: 'High Hazard' },
 ];
 
 export const ZoneTickSelector: React.FC<ZoneTickSelectorProps> = ({
@@ -35,15 +38,13 @@ export const ZoneTickSelector: React.FC<ZoneTickSelectorProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const activeTickRef = useRef<HTMLDivElement>(null);
 
-  // Normalize selectedZone to one of the 3 pilot districts
+  // Normalize selectedZone to match primary story regions
   const normalizedZone: ZoneId =
-    selectedZone === 'South' || selectedZone === 'Wayanad'
-      ? 'Wayanad'
-      : selectedZone === 'West' || selectedZone === 'Kodagu'
-      ? 'Kodagu'
-      : selectedZone === 'East' || selectedZone === 'Barpeta'
-      ? 'Barpeta'
-      : 'Wayanad';
+    selectedZone === 'Wayanad'
+      ? 'South'
+      : selectedZone === 'Barpeta'
+      ? 'East'
+      : selectedZone;
 
   const selectedIndex = Math.max(
     0,
@@ -52,7 +53,7 @@ export const ZoneTickSelector: React.FC<ZoneTickSelectorProps> = ({
 
   useGSAP(() => {
     if (!activeTickRef.current) return;
-    const targetY = selectedIndex * 52 + 10;
+    const targetY = selectedIndex * 46 + 6;
     gsap.to(activeTickRef.current, {
       y: targetY,
       duration: 0.35,
@@ -117,12 +118,12 @@ export const ZoneTickSelector: React.FC<ZoneTickSelectorProps> = ({
         </div>
 
         {/* Vertical Tick-Mark Ruler */}
-        <div className="relative h-[165px] w-4 flex flex-col justify-between py-1">
+        <div className="relative h-[240px] w-4 flex flex-col justify-between py-1">
           {/* Subtle vertical spine line */}
           <div className="absolute top-1 bottom-1 right-[2px] w-[1px] bg-ink/15 dark:bg-cream/15" />
 
           {/* Individual ruler ticks */}
-          {Array.from({ length: 18 }).map((_, i) => (
+          {Array.from({ length: 24 }).map((_, i) => (
             <div
               key={i}
               className={`h-[1px] ml-auto ${

@@ -40,78 +40,112 @@ export const DistrictTelemetryGrid: React.FC<DistrictTelemetryGridProps> = ({
     );
   }, { scope: gridRef, dependencies: [spot.id], revertOnUpdate: true });
 
-  const priorityScore = spot.priorityScore !== undefined ? spot.priorityScore.toFixed(3) : '0.948';
-  const przOverlap = spot.przOverlapPct !== undefined ? `${spot.przOverlapPct.toFixed(1)}%` : '91.0%';
-  const soviScore = spot.soviScore !== undefined ? spot.soviScore.toFixed(2) : '0.84';
+  const isHighDanger =
+    spot.tier.toLowerCase().includes('tier 1') ||
+    (spot.przOverlapPct !== undefined && spot.przOverlapPct > 70);
+
   const hazardName = spot.hazardType || fallbackHazard;
+
+  // Derive civilian-readable road & travel conditions
+  const roadCondition = isHighDanger
+    ? 'Winding Ghat Road • Caution'
+    : spot.type === 'town'
+    ? 'Paved Highway • Normal Transit'
+    : 'Local Estate Road • Drive <30 km/h';
+
+  const safeBase =
+    spot.name === 'Sunil Ward' || spot.name === 'Manohar Bagh' || spot.name.includes('Joshimath')
+      ? 'Bhatoli Plateau Sanctuary'
+      : spot.name.includes('Dhordo') || spot.name.includes('Bhuj') || spot.name.includes('Habo')
+      ? 'Habo Hill & Bhuj High Ridge'
+      : spot.name.includes('Pachmarhi') || spot.name.includes('Pipariya')
+      ? 'Pachmarhi High Plateau'
+      : spot.name === 'Chooralmala' || spot.name === 'Mundakkai' || spot.name === 'Meppadi'
+      ? 'Kalpetta East & Sulthan Bathery'
+      : spot.name === 'Bhagamandala' || spot.name === 'Madikeri' || spot.name === 'Somwarpet'
+      ? 'Kushalnagar Plain & Madikeri Hub'
+      : spot.name === 'Mandia Char Cluster' || spot.name === 'Baghbar Riparian Reach'
+      ? 'Barpeta Road & Howly Plateau'
+      : 'District Emergency Safe Base';
 
   return (
     <div
       ref={gridRef}
       className={`grid grid-cols-2 sm:grid-cols-4 gap-3 ${className}`}
     >
-      {/* Priority Urgency Score */}
+      {/* 1. Travel Safety Status */}
       <div className="p-3.5 rounded-2xl bg-surface-1 dark:bg-white/5 border border-line dark:border-white/10 flex flex-col justify-between">
         <span className="text-[10px] font-mono uppercase tracking-wider text-ink-muted dark:text-cream/60">
-          Priority Score (PS)
+          Travel Safety Status
         </span>
-        <div className="mt-2 flex items-baseline gap-1.5">
-          <span className="text-xl sm:text-2xl font-mono font-bold text-red-600 dark:text-red-400">
-            {priorityScore}
+        <div className="mt-2 flex items-center gap-1.5">
+          <span
+            className={`w-2.5 h-2.5 rounded-full ${
+              isHighDanger ? 'bg-red-500 animate-pulse' : 'bg-amber-400'
+            }`}
+          />
+          <span
+            className={`text-sm sm:text-base font-sans font-bold leading-tight ${
+              isHighDanger
+                ? 'text-red-600 dark:text-red-400'
+                : 'text-amber-600 dark:text-amber-400'
+            }`}
+          >
+            {isHighDanger ? 'High Hazard Zone' : 'Caution Advised'}
           </span>
-          <span className="text-[10px] font-mono text-ink-faint dark:text-cream/40">/ 1.0</span>
         </div>
-        <span className="text-[10px] text-ink-faint dark:text-cream/50 mt-1">
-          {spot.tier}
+        <span className="text-[10px] text-ink-faint dark:text-cream/50 mt-1.5 leading-tight">
+          {isHighDanger
+            ? 'Avoid steep slopes & hiking trails'
+            : 'Precaution during heavy rainfall'}
         </span>
       </div>
 
-      {/* PRZ Red Zone Overlap */}
+      {/* 2. Primary Terrain Hazard */}
       <div className="p-3.5 rounded-2xl bg-surface-1 dark:bg-white/5 border border-line dark:border-white/10 flex flex-col justify-between">
         <span className="text-[10px] font-mono uppercase tracking-wider text-ink-muted dark:text-cream/60">
-          PRZ Overlap
+          Primary Hazard
         </span>
-        <div className="mt-2 flex items-baseline gap-1">
-          <span className="text-xl sm:text-2xl font-mono font-bold text-amber-600 dark:text-amber-400">
-            {przOverlap}
-          </span>
-        </div>
-        <span className="text-[10px] text-ink-faint dark:text-cream/50 mt-1">
-          Red Zone Boundary
-        </span>
-      </div>
-
-      {/* Population & Households */}
-      <div className="p-3.5 rounded-2xl bg-surface-1 dark:bg-white/5 border border-line dark:border-white/10 flex flex-col justify-between">
-        <span className="text-[10px] font-mono uppercase tracking-wider text-ink-muted dark:text-cream/60">
-          Exposure Census
-        </span>
-        <div className="mt-2 flex items-baseline gap-1.5">
-          <span className="text-xl sm:text-2xl font-mono font-bold text-ink dark:text-cream">
-            {spot.population.toLocaleString()}
-          </span>
-          <span className="text-[10px] font-mono text-ink-faint dark:text-cream/40">pop</span>
-        </div>
-        <span className="text-[10px] text-ink-faint dark:text-cream/50 mt-1">
-          {spot.households.toLocaleString()} households
-        </span>
-      </div>
-
-      {/* SoVI / InSAR Status */}
-      <div className="p-3.5 rounded-2xl bg-surface-1 dark:bg-white/5 border border-line dark:border-white/10 flex flex-col justify-between">
-        <span className="text-[10px] font-mono uppercase tracking-wider text-ink-muted dark:text-cream/60">
-          Vulnerability & Hazard
-        </span>
-        <div className="mt-1 flex flex-col">
-          <span className="text-xs font-sans font-semibold text-ink dark:text-cream truncate" title={hazardName}>
+        <div className="mt-2 flex flex-col">
+          <span
+            className="text-xs sm:text-sm font-sans font-bold text-ink dark:text-cream leading-tight line-clamp-2"
+            title={hazardName}
+          >
             {hazardName}
           </span>
-          <span className="text-[11px] font-mono text-ink-muted dark:text-cream/60 mt-0.5">
-            SoVI: {soviScore} &bull; {spot.activeDeformation ? 'Active InSAR Creep' : 'Monitored Toe'}
+        </div>
+        <span className="text-[10px] text-ink-faint dark:text-cream/50 mt-1.5 leading-tight">
+          Monsoon saturation corridor
+        </span>
+      </div>
+
+      {/* 3. Road & Transit Condition */}
+      <div className="p-3.5 rounded-2xl bg-surface-1 dark:bg-white/5 border border-line dark:border-white/10 flex flex-col justify-between">
+        <span className="text-[10px] font-mono uppercase tracking-wider text-ink-muted dark:text-cream/60">
+          Roads & Transit
+        </span>
+        <div className="mt-2 flex flex-col">
+          <span className="text-xs sm:text-sm font-sans font-bold text-ink dark:text-cream leading-tight">
+            {roadCondition}
           </span>
         </div>
-        <span className="text-[10px] text-ink-faint dark:text-cream/40 mt-1">
-          Type: {spot.type}
+        <span className="text-[10px] text-ink-faint dark:text-cream/50 mt-1.5 leading-tight">
+          Daytime transit recommended
+        </span>
+      </div>
+
+      {/* 4. Safe Haven & Emergency Base */}
+      <div className="p-3.5 rounded-2xl bg-surface-1 dark:bg-white/5 border border-line dark:border-white/10 flex flex-col justify-between">
+        <span className="text-[10px] font-mono uppercase tracking-wider text-ink-muted dark:text-cream/60">
+          Nearest Safe Refuge
+        </span>
+        <div className="mt-2 flex flex-col">
+          <span className="text-xs sm:text-sm font-sans font-bold text-emerald-600 dark:text-emerald-400 leading-tight">
+            {safeBase}
+          </span>
+        </div>
+        <span className="text-[10px] font-mono text-ink-faint dark:text-cream/50 mt-1.5 leading-tight">
+          Emergency Desk: 112 / 1070
         </span>
       </div>
     </div>

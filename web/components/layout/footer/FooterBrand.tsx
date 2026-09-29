@@ -17,21 +17,20 @@ export const FooterBrand: React.FC<FooterBrandProps> = ({ className = '' }) => {
       >
         {/* Emblem Crest */}
         <div className="w-7 h-7 rounded-md bg-surface-1 dark:bg-forest-surface border border-line dark:border-white/15 flex items-center justify-center font-serif font-black text-xs text-ochre shadow-xs">
-          सं
+          T
         </div>
         <div className="flex items-baseline gap-2">
           <span className="font-display font-bold text-sm tracking-tight text-ink dark:text-text-primary group-hover:text-accent transition-colors">
-            SETU-DRR
+            TERRA
           </span>
           <span className="text-[11px] font-mono text-ink-muted dark:text-text-muted">
-            v2.4
+            v1.0
           </span>
         </div>
       </Link>
 
       <p className="text-xs text-ink-muted dark:text-text-secondary max-w-md leading-relaxed">
-        Disaster Management Division · Ministry of Home Affairs · Government of India.
-        Frontline hazard intelligence and relocation decision support.
+        TERRA · Terrain-based Environmental Risk and Relocation Analytics · Disaster Management Division · Ministry of Home Affairs · Government of India.
       </p>
     </div>
   );

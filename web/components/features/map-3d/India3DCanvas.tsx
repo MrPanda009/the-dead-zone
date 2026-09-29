@@ -27,6 +27,8 @@ import {
 } from './HexTargetBeacon';
 import { Hex3DTooltip } from './Hex3DTooltip';
 import { Map3DControlBar } from './Map3DControlBar';
+import { Map3DSideControls, Map3DInteractionMode } from './Map3DSideControls';
+import { useLayoutContext } from '@/components/layout/ThreePanelLayout';
 
 /** Stable identity so a default `breaks` prop cannot re-trigger effects each render. */
 const EMPTY_BREAKS: number[] = [];
@@ -40,6 +42,8 @@ export interface India3DCanvasProps {
   hoveredH3?: string | null;
   onSelectCell?: (h3: string | null) => void;
   onHoverCell?: (h3: string | null) => void;
+  resolution?: number;
+  onResolutionChange?: (resolution: number) => void;
   isLoading?: boolean;
   errorMessage?: string | null;
   forecastItems?: ForecastAlertItem[];
@@ -54,12 +58,16 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
   hoveredH3 = null,
   onSelectCell,
   onHoverCell,
+  resolution = 8,
+  onResolutionChange,
   isLoading = false,
   forecastItems,
   className = '',
 }) => {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
+
+  const { isTopCollapsed } = useLayoutContext();
 
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -91,7 +99,10 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
 
   // Control bar state
   const [activePreset, setActivePreset] = useState<string>('national');
-  const [isTopDown, setIsTopDown] = useState(false);
+
+  // Drag interaction mode: 'pan' (hold & drag like 2D) vs 'rotate' (3D orbit)
+  const [interactionMode, setInteractionMode] = useState<Map3DInteractionMode>('pan');
+  const pointerDownPosRef = useRef<{ x: number; y: number } | null>(null);
 
   // Memoized forecast map for fast tooltip resolution
   const forecastMap = useMemo(() => {
@@ -124,7 +135,7 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
     scene.fog = new THREE.FogExp2(bgColor, 0.006);
     sceneRef.current = scene;
 
-    const camera = new THREE.PerspectiveCamera(38, width / height, 0.01, 1000);
+    const camera = new THREE.PerspectiveCamera(38, width / height, 0.05, 500);
     const initialPreset = REGIONAL_CAMERA_PRESETS.national;
     camera.position.set(
       initialPreset.cameraPos.x,
@@ -153,6 +164,17 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
     // be small enough to actually inspect one column.
     controls.minDistance = 0.05;
     controls.maxDistance = 200;
+    controls.enablePan = true;
+    controls.screenSpacePanning = true;
+    controls.mouseButtons = {
+      LEFT: THREE.MOUSE.PAN,
+      MIDDLE: THREE.MOUSE.DOLLY,
+      RIGHT: THREE.MOUSE.ROTATE,
+    };
+    controls.touches = {
+      ONE: THREE.TOUCH.PAN,
+      TWO: THREE.TOUCH.DOLLY_PAN,
+    };
     controls.target.set(
       initialPreset.target.x,
       initialPreset.target.y,
@@ -211,14 +233,36 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
       if (!containerRef.current || !rendererRef.current || !cameraRef.current) return;
       const w = containerRef.current.clientWidth;
       const h = containerRef.current.clientHeight;
-      cameraRef.current.aspect = w / h;
-      cameraRef.current.updateProjectionMatrix();
-      rendererRef.current.setSize(w, h);
+      if (w > 0 && h > 0) {
+        cameraRef.current.aspect = w / h;
+        cameraRef.current.updateProjectionMatrix();
+        rendererRef.current.setSize(w, h);
+      }
     };
     window.addEventListener('resize', handleResize);
 
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width: w, height: h } = entry.contentRect;
+        if (w > 0 && h > 0 && cameraRef.current && rendererRef.current) {
+          cameraRef.current.aspect = w / h;
+          cameraRef.current.updateProjectionMatrix();
+          rendererRef.current.setSize(w, h);
+        }
+      }
+    });
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
+    // Force initial frame layout synchronization
+    requestAnimationFrame(() => {
+      handleResize();
+    });
+
     return () => {
       window.removeEventListener('resize', handleResize);
+      resizeObserver.disconnect();
       cancelAnimationFrame(animId);
       landmass.dispose();
       hexColumns.dispose();
@@ -258,6 +302,33 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
     landmassRef.current?.updateTheme(isDark);
     beaconRef.current?.updateTheme(isDark);
   }, [isDark]);
+
+  // Synchronize OrbitControls interaction mode (Hold & Drag Pan vs 3D Orbit Rotate)
+  useEffect(() => {
+    if (!controlsRef.current) return;
+    const controls = controlsRef.current;
+    if (interactionMode === 'pan') {
+      controls.mouseButtons = {
+        LEFT: THREE.MOUSE.PAN,
+        MIDDLE: THREE.MOUSE.DOLLY,
+        RIGHT: THREE.MOUSE.ROTATE,
+      };
+      controls.touches = {
+        ONE: THREE.TOUCH.PAN,
+        TWO: THREE.TOUCH.DOLLY_PAN,
+      };
+    } else {
+      controls.mouseButtons = {
+        LEFT: THREE.MOUSE.ROTATE,
+        MIDDLE: THREE.MOUSE.DOLLY,
+        RIGHT: THREE.MOUSE.PAN,
+      };
+      controls.touches = {
+        ONE: THREE.TOUCH.ROTATE,
+        TWO: THREE.TOUCH.DOLLY_PAN,
+      };
+    }
+  }, [interactionMode]);
 
   // Smooth Camera Flight Navigation (GSAP)
   const flyTo = useCallback(
@@ -327,17 +398,15 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
     [flyTo, OBLIQUE_DIR],
   );
 
-  // Frame a newly loaded grid once, so correctly-sized cells are actually on
-  // screen rather than a few sub-pixel specks at national zoom.
+  // Frame a newly loaded grid once on initial load, but NEVER reset the camera when toggling resolution
   useEffect(() => {
     if (cells.length === 0) return;
-    const gridId = `${cells.length}:${cells[0].h3}:${cells[cells.length - 1].h3}`;
-    if (framedGridRef.current === gridId) return;
+    if (framedGridRef.current) return;
 
     const bounds = hexColumnsRef.current?.getBounds();
     if (!bounds) return;
 
-    framedGridRef.current = gridId;
+    framedGridRef.current = 'framed';
     fitToBounds(bounds);
   }, [cells, fitToBounds]);
 
@@ -350,55 +419,55 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
     [flyTo],
   );
 
-  // Auto-focus Camera when a cell is selected, framing its neighbourhood.
-  useEffect(() => {
-    if (!selectedBeaconPos) return;
-    const radius = hexColumnsRef.current?.getCellRadius() ?? 0;
-    if (radius <= 0) return;
-
-    const span = radius * 12;
-    fitToBounds(
-      new THREE.Box3(
-        new THREE.Vector3(
-          selectedBeaconPos.x - span,
-          selectedBeaconPos.y - span,
-          selectedBeaconPos.z,
-        ),
-        new THREE.Vector3(
-          selectedBeaconPos.x + span,
-          selectedBeaconPos.y + span,
-          selectedBeaconPos.z + radius * 4,
-        ),
-      ),
-    );
-  }, [selectedBeaconPos, fitToBounds]);
-
   const handleResetCamera = useCallback(() => {
     const bounds = hexColumnsRef.current?.getBounds();
     if (bounds) fitToBounds(bounds);
     else handleSelectPreset(REGIONAL_CAMERA_PRESETS.national);
   }, [fitToBounds, handleSelectPreset]);
 
-  // View Angle Toggle (2D Plan vs 3D Oblique)
-  const handleToggleTopDown = useCallback(() => {
+  // Dedicated 3D Zoom In and Out Controls
+  const handleZoomIn = useCallback(() => {
     if (!cameraRef.current || !controlsRef.current) return;
-    const next = !isTopDown;
-    setIsTopDown(next);
-
+    const camera = cameraRef.current;
     const target = controlsRef.current.target;
-    if (next) {
-      // Preserve the current viewing distance — a fixed altitude would fly past
-      // a district-sized grid entirely.
-      const distance = cameraRef.current.position.distanceTo(target);
-      flyTo(
-        { x: target.x, y: target.y, z: target.z },
-        { x: target.x, y: target.y + distance * 1e-4, z: target.z + distance },
-      );
-    } else {
-      const preset = REGIONAL_CAMERA_PRESETS[activePreset] ?? REGIONAL_CAMERA_PRESETS.national;
-      flyTo(preset.target, preset.cameraPos);
-    }
-  }, [isTopDown, activePreset, flyTo]);
+    const offset = camera.position.clone().sub(target);
+    const newOffset = offset.clone().multiplyScalar(0.7);
+    if (newOffset.length() < 3) return;
+
+    const nextPos = target.clone().add(newOffset);
+    gsap.to(camera.position, {
+      x: nextPos.x,
+      y: nextPos.y,
+      z: nextPos.z,
+      duration: 0.35,
+      ease: 'power2.out',
+      onUpdate: () => {
+        controlsRef.current?.update();
+      },
+    });
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    if (!cameraRef.current || !controlsRef.current) return;
+    const camera = cameraRef.current;
+    const target = controlsRef.current.target;
+    const offset = camera.position.clone().sub(target);
+    const newOffset = offset.clone().multiplyScalar(1.4);
+    if (newOffset.length() > 350) return;
+
+    const nextPos = target.clone().add(newOffset);
+    gsap.to(camera.position, {
+      x: nextPos.x,
+      y: nextPos.y,
+      z: nextPos.z,
+      duration: 0.35,
+      ease: 'power2.out',
+      onUpdate: () => {
+        controlsRef.current?.update();
+      },
+    });
+  }, []);
+
 
   // Pointer Picking — resolved analytically by the grid controller.
   const pickAtClient = useCallback((clientX: number, clientY: number) => {
@@ -444,8 +513,19 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
     onHoverCell?.(null);
   }, [onHoverCell]);
 
+  const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    pointerDownPosRef.current = { x: e.clientX, y: e.clientY };
+  }, []);
+
   const handleClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
+      const down = pointerDownPosRef.current;
+      if (down) {
+        const dist = Math.hypot(e.clientX - down.x, e.clientY - down.y);
+        // If the pointer moved more than 5px during mouse-down, the user was dragging/panning!
+        // Never trigger cell selection on drag gestures.
+        if (dist > 5) return;
+      }
       const hit = pickAtClient(e.clientX, e.clientY);
       if (hit) onSelectCell?.(hit.h3);
     },
@@ -459,28 +539,43 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
     [],
   );
 
+  const cursorClass =
+    interactionMode === 'pan'
+      ? 'cursor-grab active:cursor-grabbing'
+      : 'cursor-move active:cursor-grabbing';
+
   return (
     <div
       ref={containerRef}
+      onPointerDown={handlePointerDown}
       onMouseMove={handlePointerMove}
       onMouseLeave={handlePointerLeave}
       onClick={handleClick}
-      className={`relative w-full h-full overflow-hidden select-none cursor-grab active:cursor-grabbing ${className}`}
+      className={`relative w-full h-full overflow-hidden select-none ${cursorClass} ${className}`}
     >
       <canvas ref={canvasRef} className="w-full h-full block" />
 
       {/* Floating 3D Control Bar (Top) */}
-      <div className="absolute top-4 left-4 right-4 z-20 pointer-events-none">
+      <div className="absolute top-3 left-4 right-4 z-20 pointer-events-none">
         <Map3DControlBar
           activePresetId={activePreset}
           onSelectPreset={handleSelectPreset}
-          isTopDown={isTopDown}
-          onToggleTopDown={handleToggleTopDown}
           onResetCamera={handleResetCamera}
+          resolution={resolution}
+          onResolutionChange={onResolutionChange}
           isLoading={isLoading}
           cellCount={cells.length}
         />
       </div>
+
+      {/* Floating 3D Side Control Panel (Zoom & Hold-and-Drag Option, matching 2D page) */}
+      <Map3DSideControls
+        interactionMode={interactionMode}
+        onInteractionModeChange={setInteractionMode}
+        onZoomIn={handleZoomIn}
+        onZoomOut={handleZoomOut}
+        position="bottom-right"
+      />
 
       {/* Floating HUD Tooltip */}
       <Hex3DTooltip

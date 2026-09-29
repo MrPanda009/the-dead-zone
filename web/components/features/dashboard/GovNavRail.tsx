@@ -39,7 +39,7 @@ export const GovNavRail: React.FC<GovNavRailProps> = ({
         <button
           type="button"
           onClick={() => onTabChange('overview')}
-          title="T.E.R.R.A. Platform"
+          title="TERRA — Terrain-based Environmental Risk and Relocation Analytics"
           className="w-10 h-10 rounded-xl bg-gov-surface border border-gov-sage/30 text-gov-sage-light flex items-center justify-center shadow-inner hover:scale-105 transition-transform cursor-pointer"
         >
           <span className="font-serif font-black text-base text-gov-amber">T</span>

@@ -1,10 +1,10 @@
 'use client';
 
 import { Badge } from '@/components/ui/Badge';
-import { CoverageStatusPill } from '@/components/common/StatusPill';
 import type { HazardCellDetail } from '@/lib/api/types';
 import { HAZARD_LABELS } from '@/lib/map/constants';
 import { formatH3 } from '@/lib/map/format';
+import { resolveDistrictFromCoords } from '@/lib/geo/districtResolver';
 
 export interface DossierHeaderProps {
   detail: HazardCellDetail;
@@ -18,20 +18,25 @@ export interface DossierHeaderProps {
 }
 
 /** Identity block for the selected cell: where it is, what layer, how well observed. */
-export const DossierHeader = ({ detail, className = '', classNames = {} }: DossierHeaderProps) => (
-  <div className={['flex flex-col gap-2', classNames.root ?? '', className].filter(Boolean).join(' ')}>
-    <div className="flex items-start justify-between gap-2">
-      <div className="flex flex-col gap-0.5">
-        <h2 className={['text-sm font-semibold text-ink', classNames.title ?? ''].join(' ')}>
-          {detail.admin_name ?? 'Unassigned district'}
-        </h2>
-        <p className={['font-mono text-[10px] text-ink-faint', classNames.meta ?? ''].join(' ')}>
-          {formatH3(detail.h3)} · R{detail.res} · {detail.centroid[1].toFixed(4)},{' '}
-          {detail.centroid[0].toFixed(4)}
-        </p>
+export const DossierHeader = ({ detail, className = '', classNames = {} }: DossierHeaderProps) => {
+  const districtName =
+    detail.admin_name && detail.admin_name.toLowerCase() !== 'unassigned district'
+      ? detail.admin_name
+      : resolveDistrictFromCoords(detail.centroid[1], detail.centroid[0]);
+
+  return (
+    <div className={['flex flex-col gap-2', classNames.root ?? '', className].filter(Boolean).join(' ')}>
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex flex-col gap-0.5">
+          <h2 className={['text-sm font-semibold text-ink', classNames.title ?? ''].join(' ')}>
+            {districtName}
+          </h2>
+          <p className={['font-mono text-[10px] text-ink-faint', classNames.meta ?? ''].join(' ')}>
+            {formatH3(detail.h3)} · R{detail.res} · {detail.centroid[1].toFixed(4)},{' '}
+            {detail.centroid[0].toFixed(4)}
+          </p>
+        </div>
       </div>
-      <CoverageStatusPill flag={detail.quality_flag} showDescription />
-    </div>
 
     <div className={['flex flex-wrap gap-1.5', classNames.badges ?? ''].join(' ')}>
       <Badge variant="info">{HAZARD_LABELS[detail.hazard_type] ?? detail.hazard_type}</Badge>
@@ -40,9 +45,7 @@ export const DossierHeader = ({ detail, className = '', classNames = {} }: Dossi
           PRZ candidate
         </Badge>
       ) : null}
-      <Badge variant="neutral" title={`Model version ${detail.model_version}`}>
-        {detail.model_version}
-      </Badge>
     </div>
   </div>
 );
+};

@@ -94,6 +94,7 @@ export const MapContainer = ({
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
     let disposed = false;
+    let resizeObserver: ResizeObserver | null = null;
 
     const init = async () => {
       await registerPMTilesProtocol();
@@ -114,7 +115,6 @@ export const MapContainer = ({
         attributionControl: false,
       });
 
-      map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
       map.addControl(
         new maplibregl.AttributionControl({ compact: true, customAttribution: attribution }),
         'bottom-left',
@@ -140,7 +140,27 @@ export const MapContainer = ({
         }) as PickingInfo | null;
         if (!picked?.object) onBackgroundClickRef.current?.();
       });
-      map.on('load', () => onMapLoadRef.current?.(map));
+      map.on('load', () => {
+        map.resize();
+        onMapLoadRef.current?.(map);
+      });
+
+      // Keep MapLibre viewport dimensions synchronized whenever the container changes size
+      resizeObserver = new ResizeObserver(() => {
+        if (mapRef.current) {
+          mapRef.current.resize();
+        }
+      });
+      if (containerRef.current) {
+        resizeObserver.observe(containerRef.current);
+      }
+
+      // Force initial frame resize check once mounted
+      requestAnimationFrame(() => {
+        if (!disposed && mapRef.current) {
+          mapRef.current.resize();
+        }
+      });
 
       mapRef.current = map;
       overlayRef.current = overlay;
@@ -151,6 +171,10 @@ export const MapContainer = ({
 
     return () => {
       disposed = true;
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+        resizeObserver = null;
+      }
       overlayRef.current?.finalize();
       overlayRef.current = null;
       mapRef.current?.remove();

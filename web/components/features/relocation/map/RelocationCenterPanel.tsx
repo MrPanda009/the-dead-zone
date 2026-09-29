@@ -119,41 +119,6 @@ export const RelocationCenterPanel = ({
         onShowHealthFacilitiesChange={setShowHealthFacilities}
       />
 
-      {/* Floating Expand Button for Left Panel when Collapsed */}
-      {isLeftCollapsed && (
-        <button
-          type="button"
-          onClick={onToggleLeftCollapse}
-          className="absolute left-4 top-20 z-20 flex items-center gap-2 rounded-xl border border-line/80 bg-surface-0/95 dark:bg-forest-surface/95 px-3 py-2 text-xs font-semibold text-ink shadow-lg backdrop-blur-md hover:bg-surface-1 hover:border-line-strong transition-all active:scale-95 cursor-pointer"
-          title="Expand Triage Queue"
-        >
-          <svg className="h-4 w-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-          </svg>
-          <span>Triage Queue</span>
-          {habitations.length > 0 && (
-            <span className="rounded-md bg-accent/15 px-1.5 py-0.5 font-mono text-[10px] text-accent">
-              {habitations.length}
-            </span>
-          )}
-        </button>
-      )}
-
-      {/* Floating Expand Button for Right Panel when Collapsed */}
-      {isRightCollapsed && (
-        <button
-          type="button"
-          onClick={onToggleRightCollapse}
-          className="absolute right-4 bottom-8 z-20 flex items-center gap-2 rounded-xl border border-line/80 bg-surface-0/95 dark:bg-forest-surface/95 px-3 py-2 text-xs font-semibold text-ink shadow-lg backdrop-blur-md hover:bg-surface-1 hover:border-line-strong transition-all active:scale-95 cursor-pointer"
-          title="Expand Allocation Plan"
-        >
-          <svg className="h-4 w-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-          <span>Allocation Plan</span>
-        </button>
-      )}
-
       {/* Candidate Parcels Slide-Over Drawer */}
       <RelocationParcelDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)}>
         <RelocationSitesPanel
