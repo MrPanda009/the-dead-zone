@@ -19,11 +19,23 @@ export const CenterPanel = ({
   classNames = {},
 }: CenterPanelProps) => (
   <main
-    className={['relative flex min-w-0 flex-1 flex-col', classNames.root ?? '', className]
+    className={[
+      'relative flex h-full w-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden',
+      classNames.root ?? '',
+      className,
+    ]
       .filter(Boolean)
       .join(' ')}
   >
-    <div className={['relative min-h-0 flex-1', classNames.body ?? ''].join(' ')}>{children}</div>
+    <div
+      className={[
+        'relative flex h-full w-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden',
+        classNames.body ?? '',
+      ].join(' ')}
+    >
+      {children}
+    </div>
     {footerSlot ? <div className={classNames.footer}>{footerSlot}</div> : null}
   </main>
 );
+

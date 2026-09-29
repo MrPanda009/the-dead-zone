@@ -90,7 +90,7 @@ export interface AboutHeroProps {
  * Props for alternating split narrative sections with organic curved imagery.
  */
 export interface AboutSplitSectionProps {
-  /** Small category / eyebrow tag (e.g. 'About SETU-DRR' or 'Our Approach') */
+  /** Small category / eyebrow tag (e.g. 'About TERRA' or 'Our Approach') */
   eyebrow: string;
   /** Main editorial headline */
   headline: React.ReactNode;

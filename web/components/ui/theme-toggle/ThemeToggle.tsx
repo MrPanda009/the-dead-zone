@@ -72,7 +72,7 @@ const ICON_SIZE_CLASSES: Record<ThemeToggleSize, string> = {
 export const ThemeToggle: React.FC<ThemeToggleProps> = ({
   variant = 'button',
   size = 'md',
-  showLabel = true,
+  showLabel = false,
   darkLabel = 'Light Mode',
   lightLabel = 'Dark Mode',
   title,

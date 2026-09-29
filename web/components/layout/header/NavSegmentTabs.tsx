@@ -42,7 +42,7 @@ export interface NavSegmentTabsProps {
  * The canonical list (with routes) lives in `@/lib/routes`.
  */
 export const DEFAULT_NAV_TABS: NavTabItem[] = [
-  { id: 'gov', label: '3D & GIS Map', icon: 'view_in_ar', href: '/gov' },
+  { id: 'gov', label: '3D & 2D Map', icon: 'view_in_ar', href: '/gov' },
   { id: 'relocation', label: 'Relocation Solver', icon: 'moving', href: '/relocation' },
   { id: 'stories', label: 'Tourist Stories', icon: 'auto_stories', href: '/stories' },
   { id: 'about', label: 'About TERRA', icon: 'info', href: '/about' },

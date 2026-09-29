@@ -34,6 +34,16 @@ export interface AuthProviderProps {
   children: React.ReactNode;
 }
 
+const sanitizeUser = (u: UserResponse | null): UserResponse | null => {
+  if (!u) return null;
+  return {
+    ...u,
+    full_name: u.full_name
+      ? u.full_name.replace(/SETU[-_\s]*DRR/gi, 'TERRA').replace(/SETU/gi, 'TERRA')
+      : u.full_name,
+  };
+};
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<UserResponse | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -42,9 +52,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const refreshUser = useCallback(async (): Promise<UserResponse | null> => {
     try {
       const data = await apiGet<UserResponse>('/auth/me');
-      setUser(data);
+      const sanitized = sanitizeUser(data);
+      setUser(sanitized);
       setError(null);
-      return data;
+      return sanitized;
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         // Normal unauthenticated session state — silent resolution
@@ -87,8 +98,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (authenticatedUser.access_token) {
           setStoredToken(authenticatedUser.access_token);
         }
-        setUser(authenticatedUser);
-        return authenticatedUser;
+        const sanitized = sanitizeUser(authenticatedUser) ?? authenticatedUser;
+        setUser(sanitized);
+        return sanitized;
       } catch (err) {
         const message = err instanceof ApiError ? err.message : 'Authentication failed.';
         setError(message);

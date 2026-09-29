@@ -71,47 +71,61 @@ export const MapLegendPanel = ({
   );
 
   return (
-    <div
-      ref={rootRef}
-      className={[
-        'pointer-events-auto absolute bottom-8 left-3 z-10 w-60 rounded-2xl border border-line bg-panel/92 p-3 shadow-lg backdrop-blur-md',
-        classNames.root ?? '',
-        className,
-      ]
-        .filter(Boolean)
-        .join(' ')}
-    >
-      <div className="flex items-center justify-between">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
-          {title}
-        </span>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="!h-5 !px-1.5"
+    <div className="pointer-events-auto absolute bottom-4 left-4 z-20 flex flex-col gap-2">
+      <div
+        ref={rootRef}
+        className={[
+          'rounded-2xl border border-line dark:border-[#1e2d45] bg-surface-0/95 dark:bg-[#0c1524]/92 text-ink dark:text-text-primary shadow-2xl backdrop-blur-xl transition-all duration-300',
+          collapsed ? 'w-auto p-1.5' : 'w-64 p-3.5',
+          classNames.root ?? '',
+          className,
+        ]
+          .filter(Boolean)
+          .join(' ')}
+      >
+        <button
+          type="button"
           onClick={() => setCollapsed((value) => !value)}
           aria-expanded={!collapsed}
+          className="flex items-center gap-2 px-2.5 py-1 text-xs font-mono font-bold tracking-wider text-ink dark:text-text-primary hover:text-accent dark:hover:text-white cursor-pointer w-full justify-between select-none"
         >
-          {collapsed ? 'Show' : 'Hide'}
-        </Button>
-      </div>
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-base text-sky-400">layers</span>
+            <span className="uppercase text-[11px]">{title}</span>
+          </div>
+          <span className="material-symbols-outlined text-sm text-text-muted transition-transform">
+            {collapsed ? 'expand_less' : 'expand_more'}
+          </span>
+        </button>
 
-      <div ref={bodyRef} className={['overflow-hidden', classNames.body ?? ''].join(' ')}>
-        <div className="flex flex-col gap-3.5 pt-3">
-          <QuantileLegend
-            breaks={legend.breaks}
-            domain={legend.domain as number[]}
-            quantiles={legend.quantiles}
-            description="Classed on quantiles — the scores cluster too tightly for an even ramp."
-          />
-          <CoverageLegend coverage={coverage} />
-          <ConfidenceHatchKey
-            confidenceCeiling={legend.confidence_ceiling}
-            threshold={confidenceThreshold}
-            hatchedCount={hatchedCount}
-          />
+        <div ref={bodyRef} className={['overflow-hidden', classNames.body ?? ''].join(' ')}>
+          <div className="flex flex-col gap-3 pt-3 border-t border-line dark:border-white/10 mt-2">
+            <QuantileLegend
+              breaks={legend.breaks}
+              domain={legend.domain as number[]}
+              quantiles={legend.quantiles}
+              description="Classed on quantiles — the scores cluster too tightly for an even ramp."
+            />
+            <CoverageLegend coverage={coverage} />
+            <ConfidenceHatchKey
+              confidenceCeiling={legend.confidence_ceiling}
+              threshold={confidenceThreshold}
+              hatchedCount={hatchedCount}
+            />
+          </div>
         </div>
       </div>
+
+      {/* Floating Info (i) button below Legend */}
+      <button
+        type="button"
+        title="Map Layer Information & Standards"
+        aria-label="Map Layer Information"
+        onClick={() => setCollapsed(false)}
+        className="w-8 h-8 rounded-full border border-line dark:border-[#1e2d45] bg-surface-0/95 dark:bg-[#0c1524]/92 text-text-muted hover:text-ink dark:hover:text-white flex items-center justify-center shadow-2xl backdrop-blur-xl transition-all cursor-pointer hover:scale-105 active:scale-95"
+      >
+        <span className="material-symbols-outlined text-base">info</span>
+      </button>
     </div>
   );
 };

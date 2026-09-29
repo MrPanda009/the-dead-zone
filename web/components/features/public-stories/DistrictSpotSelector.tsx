@@ -51,7 +51,9 @@ export const DistrictSpotSelector: React.FC<DistrictSpotSelectorProps> = ({
         ref={scrollRef}
         className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-thin scrollbar-thumb-line dark:scrollbar-thumb-white/10"
       >
-        {spots.map((spot) => {
+        {spots
+          .filter((spot) => !/^settlement\s*\d+/i.test(spot.name.trim()))
+          .map((spot) => {
           const isSelected = spot.id === selectedSpotId;
           const isTier1 = spot.tier.toLowerCase().includes('tier 1') || spot.tier.toLowerCase().includes('immediate');
 

@@ -24,7 +24,7 @@ export type AppRoute = (typeof APP_ROUTES)[AppRouteKey];
  * is the case for the SAR mesh sweep, which has no route of its own).
  */
 export const NAV_TABS: NavTabItem[] = [
-  { id: 'gov', label: '3D & GIS Map', icon: 'view_in_ar', href: APP_ROUTES.gov },
+  { id: 'gov', label: '3D & 2D Map', icon: 'view_in_ar', href: APP_ROUTES.gov },
   { id: 'relocation', label: 'Relocation Solver', icon: 'moving', href: APP_ROUTES.relocation },
   { id: 'stories', label: 'Tourist Stories', icon: 'auto_stories', href: APP_ROUTES.stories },
   { id: 'about', label: 'About TERRA', icon: 'info', href: APP_ROUTES.about },

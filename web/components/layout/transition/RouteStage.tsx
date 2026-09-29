@@ -64,7 +64,10 @@ export const RouteStage: React.FC<RouteStageProps> = ({
   );
 
   return (
-    <Element ref={stageRef as React.Ref<never>} className={`route-stage ${className}`}>
+    <Element
+      ref={stageRef as React.Ref<never>}
+      className={`route-stage flex h-full w-full flex-1 flex-col min-h-0 ${className}`}
+    >
       {children}
     </Element>
   );

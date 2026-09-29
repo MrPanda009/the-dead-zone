@@ -87,7 +87,7 @@ export const AboutHero: React.FC<AboutHeroProps> = ({
   return (
     <section
       ref={containerRef}
-      aria-label="About SETU-DRR Hero"
+      aria-label="About TERRA Hero"
       className={`relative w-full min-h-[440px] sm:min-h-[500px] md:min-h-[560px] flex flex-col items-center justify-center text-center overflow-hidden pt-28 sm:pt-32 pb-16 sm:pb-20 select-none ${className} ${
         classNames.root ?? ''
       }`}

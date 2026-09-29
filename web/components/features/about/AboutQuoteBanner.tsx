@@ -6,7 +6,7 @@ import { usePrefersReducedMotion } from '@/lib/hooks/usePrefersReducedMotion';
 import type { AboutQuoteBannerProps } from './types';
 
 export const AboutQuoteBanner: React.FC<AboutQuoteBannerProps> = ({
-  quote = 'SETU-DRR transforms overwhelming satellite observation streams into clear, rapid, life-saving decisions — enabling preemptive evacuation and resilient resettlement before disaster strikes.',
+  quote = 'TERRA transforms overwhelming satellite observation streams into clear, rapid, life-saving decisions — enabling preemptive evacuation and resilient resettlement before disaster strikes.',
   author = 'Disaster Risk Reduction Advisory Board',
   affiliation = 'National Resilience & Climate Adaptation Framework',
   className = '',

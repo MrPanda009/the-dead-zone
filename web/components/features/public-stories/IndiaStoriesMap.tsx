@@ -57,7 +57,7 @@ export const IndiaStoriesMap: React.FC<IndiaStoriesMapProps> = ({
 
   const hotspots = useMemo(
     () =>
-      (['North', 'West', 'Central', 'East', 'South'] as ZoneId[]).map((zone) => {
+      (['North', 'West', 'Central', 'East', 'South', 'Kodagu'] as ZoneId[]).map((zone) => {
         const { lon, lat, label } = HOTSPOT_LONLAT[zone];
         const { x, y } = projectLonLat(lon, lat);
         return { zone, label, cx: x, cy: y };

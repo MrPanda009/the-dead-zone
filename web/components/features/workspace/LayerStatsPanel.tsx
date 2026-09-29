@@ -44,19 +44,25 @@ export const LayerStatsPanel = ({
 
   return (
     <div className={['flex flex-col gap-2', classNames.root ?? '', className].filter(Boolean).join(' ')}>
-      <SectionHeader
-        title={title}
-        description={`H3 Resolution R${layer.res}`}
-      />
+      <div className="flex flex-col">
+        <span className="text-[11px] font-mono font-bold tracking-wider uppercase text-text-secondary">
+          {title}
+        </span>
+        <span className="text-[10px] font-mono text-text-muted">
+          H3 Resolution R{layer.res}
+        </span>
+      </div>
       <div className={['grid grid-cols-2 gap-2', classNames.grid ?? ''].join(' ')}>
         <MetricCard
           label="Cells"
+          icon={<span className="material-symbols-outlined text-xs text-text-muted">grid_view</span>}
           value={layer.count}
           numericValue={layer.count}
           formatNumeric={(v) => Math.round(v).toLocaleString()}
         />
         <MetricCard
           label="PRZ candidates"
+          icon={<span className="material-symbols-outlined text-xs text-red-400">crisis_alert</span>}
           value={przCount}
           numericValue={przCount}
           formatNumeric={(v) => Math.round(v).toLocaleString()}
@@ -65,6 +71,7 @@ export const LayerStatsPanel = ({
         />
         <MetricCard
           label="Median score"
+          icon={<span className="material-symbols-outlined text-xs text-text-muted">bar_chart</span>}
           value={layer.legend.breaks[1] ?? 0}
           numericValue={layer.legend.breaks[1] ?? 0}
           formatNumeric={(v) => v.toFixed(3)}
@@ -72,6 +79,7 @@ export const LayerStatsPanel = ({
         />
         <MetricCard
           label="No data"
+          icon={<span className="material-symbols-outlined text-xs text-text-muted">database</span>}
           value={layer.coverage.no_coverage}
           numericValue={layer.coverage.no_coverage}
           formatNumeric={(v) => Math.round(v).toLocaleString()}

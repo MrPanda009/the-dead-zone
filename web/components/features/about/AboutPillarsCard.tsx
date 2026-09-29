@@ -86,7 +86,7 @@ export const AboutPillarsCard: React.FC<AboutPillarsCardProps> = ({
   return (
     <section
       id="pillars"
-      aria-label="Core Pillars of SETU-DRR"
+      aria-label="Core Pillars of TERRA"
       className={`relative z-20 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 sm:-mt-28 md:-mt-36 ${className}`}
     >
       <ScrollReveal distance={40} duration={0.9} threshold={0.1}>

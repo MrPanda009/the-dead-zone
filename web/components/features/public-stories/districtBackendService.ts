@@ -839,31 +839,40 @@ export async function loadDistrictData(
     clearTimeout(timeoutId);
 
     if (habResult && habResult.items && habResult.items.length > 0) {
-      const liveHabitations: BackendHabitationRecord[] = habResult.items.map(
-        (item: HabitationApiResponseItem) => ({
-          id: item.id,
-          name: item.name,
-          type: item.type ?? 'village',
-          population: item.population,
-          households: item.households,
-          przOverlapPct: item.risk?.prz_overlap_pct,
-          activeDeformation: item.risk?.active_deformation,
-          priorityScore: item.risk?.priority_score,
-          hazardType: item.risk?.hazard_type,
-          soviScore: item.risk?.sovi_score,
-          tier: item.risk?.tier ?? 'Tier 2 (Short-Term)',
-        })
+      // Filter out synthetic items named "Settlement [number]" to keep real tourist destinations
+      const realNamedItems = habResult.items.filter(
+        (item: HabitationApiResponseItem) => !/^settlement\s*\d+/i.test(item.name.trim())
       );
+
+      const liveHabitations: BackendHabitationRecord[] = (
+        realNamedItems.length > 0 ? realNamedItems : []
+      ).map((item: HabitationApiResponseItem) => ({
+        id: item.id,
+        name: item.name,
+        type: item.type ?? 'village',
+        population: item.population,
+        households: item.households,
+        przOverlapPct: item.risk?.prz_overlap_pct,
+        activeDeformation: item.risk?.active_deformation,
+        priorityScore: item.risk?.priority_score,
+        hazardType: item.risk?.hazard_type,
+        soviScore: item.risk?.sovi_score,
+        tier: item.risk?.tier ?? 'Tier 2 (Short-Term)',
+      }));
+
+      // If backend only contains synthetic settlements, keep authentic baseline destinations
+      const finalHabitations =
+        liveHabitations.length > 0 ? liveHabitations : baseline.habitations;
 
       return {
         profile: {
           ...baseline,
-          totalHabitationsCount: habResult.total || liveHabitations.length,
+          totalHabitationsCount: habResult.total || finalHabitations.length,
           totalHouseholdsAtRisk: habResult.items.reduce(
             (acc: number, h: HabitationApiResponseItem) => acc + (h.households ?? 0),
             0
           ),
-          habitations: liveHabitations,
+          habitations: finalHabitations,
         },
         isLive: true,
       };
