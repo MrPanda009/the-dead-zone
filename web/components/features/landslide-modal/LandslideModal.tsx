@@ -92,14 +92,19 @@ export const LandslideModal: React.FC<LandslideModalProps> = ({
         {/* Hero Section */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
           <div className="lg:col-span-7 space-y-4">
-            <div className="text-xs font-mono uppercase tracking-widest text-citron font-semibold">
-              You Selected
+            <div className="flex items-center gap-2">
+              <div className="text-xs font-mono uppercase tracking-widest text-citron font-semibold">
+                You Selected
+              </div>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/15 text-amber-500 border border-amber-500/30">
+                Illustrative (Synthetic)
+              </span>
             </div>
             <h2 className="font-display text-3xl sm:text-4xl font-extrabold text-ink dark:text-white flex items-center gap-2 tracking-tight">
               Landslide 🏔️
             </h2>
             <p className="text-sm text-text-secondary leading-relaxed">
-              Landslides are sudden movements of rock, soil or debris down a slope, often triggered by heavy rainfall, earthquakes or rapid human infrastructure development.
+              Landslides are sudden movements of rock, soil or debris down a slope. Indicators represent historical spatial occurrences and geotechnical proxies, not a predictive machine learning model.
             </p>
 
             <div className="space-y-1.5 pt-1">

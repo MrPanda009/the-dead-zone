@@ -9,7 +9,7 @@ never touches `mhi_snapshot`, so a cell can carry a fully-modelled flood suscept
 while its MHI row does not exist. These schemas serve the raw per-hazard layer directly.
 """
 
-from typing import Optional, List
+from typing import Any, Dict, List, Optional
 from pydantic import Field
 
 from core.enums import CoverageFlag
@@ -158,4 +158,45 @@ class HazardCellDetailDTO(BaseSchema):
         default=False, description="susceptibility >= PRZ_ANY_SUSCEPTIBILITY (FR-3.9)."
     )
     drivers: Optional[FloodDriverDTO] = None
+    screening_grade: str = Field(default=SCREENING_GRADE_NOTICE)
+
+
+class SusceptibilityBandBreakdown(BaseSchema):
+    """Distribution shares of cells across susceptibility thresholds."""
+
+    very_low: float = Field(default=0.0, description="Share with S < 0.20 [0, 1].")
+    low: float = Field(default=0.0, description="Share with 0.20 <= S < 0.40 [0, 1].")
+    moderate: float = Field(default=0.0, description="Share with 0.40 <= S < 0.60 [0, 1].")
+    high: float = Field(default=0.0, description="Share with 0.60 <= S < 0.80 [0, 1].")
+    very_high: float = Field(default=0.0, description="Share with S >= 0.80 [0, 1].")
+
+
+class DistrictHazardSummaryDTO(BaseSchema):
+    """District-level rollup for officer decision support (GET /hazard/summary)."""
+
+    admin_id: int
+    admin_name: str
+    lgd_code: Optional[int] = None
+    hazard_type: str = "riverine_flood"
+    model_status: str = Field(
+        default="computed",
+        description="'computed' for SAR-modeled districts; 'not_computed' for unmodeled districts.",
+    )
+    model_version: Optional[str] = None
+    total_cells: int = 0
+    coverage: HazardLayerCoverageDTO = Field(default_factory=HazardLayerCoverageDTO)
+    unmeasured_cells_count: int = Field(
+        default=0,
+        description="Number of no_coverage cells. Treated strictly as unmeasured, never safe.",
+    )
+    band_distribution: SusceptibilityBandBreakdown = Field(
+        default_factory=SusceptibilityBandBreakdown
+    )
+    mean_susceptibility: float = 0.0
+    max_susceptibility: float = 0.0
+    habitations_at_risk_count: int = 0
+    population_at_risk_sum: int = 0
+    drivers_summary: Optional[FloodDriverDTO] = None
+    last_recorded_flood_loss: Optional[dict[str, Any]] = None
+    officer_decision_prompt: str = ""
     screening_grade: str = Field(default=SCREENING_GRADE_NOTICE)

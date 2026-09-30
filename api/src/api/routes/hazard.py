@@ -23,6 +23,7 @@ from core.schemas.hazard import (
     HazardCellDetailDTO,
     HazardLayerResponse,
     HazardLayerSummaryDTO,
+    DistrictHazardSummaryDTO,
 )
 
 router = APIRouter(
@@ -113,3 +114,21 @@ def get_hazard_cell_detail(
     db: Session = Depends(get_db),
 ) -> HazardCellDetailDTO:
     return HazardService(db).get_cell_detail(h3, hazard_type=hazard_type)
+
+
+@router.get(
+    "/summary",
+    response_model=DistrictHazardSummaryDTO,
+    summary="Get district-level hazard rollup and officer decision prompt",
+    description=(
+        "Returns district-level susceptibility band distributions, habitations & citizens at risk, "
+        "physical drivers, and an objective factual decision prompt. Districts without computed models "
+        "(such as Wayanad or Kodagu) return `model_status: 'not_computed'`."
+    ),
+)
+def get_district_hazard_summary(
+    admin: int = Query(..., description="Admin boundary ID or LGD code (e.g. 277 for Barpeta, 98 for Dholpur)."),
+    hazard_type: str = Query(Hazard.RIVERINE_FLOOD.value, description="Hazard layer to summarize."),
+    db: Session = Depends(get_db),
+) -> DistrictHazardSummaryDTO:
+    return HazardService(db).get_district_summary(admin, hazard_type=hazard_type)

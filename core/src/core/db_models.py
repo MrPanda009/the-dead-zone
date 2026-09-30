@@ -19,6 +19,7 @@ from sqlalchemy import (
     SmallInteger,
     String,
     Table,
+    Text,
     text,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID as PG_UUID
@@ -664,4 +665,125 @@ class HealthFacility(Base):
     )
 
     admin_boundary: Mapped[Optional[AdminBoundary]] = relationship("AdminBoundary")
+
+
+class HistoricalDisasterLoss(Base):
+    __tablename__ = "historical_disaster_loss"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    state_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    year_label: Mapped[str] = mapped_column(String(30), nullable=False)
+    year_start: Mapped[int] = mapped_column(Integer, nullable=False)
+    year_end: Mapped[int] = mapped_column(Integer, nullable=False)
+    lives_lost: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    cattle_lost: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    houses_damaged: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    crop_area_affected_ha: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    hazard_types_included: Mapped[str] = mapped_column(
+        String(255), default="Floods/Heavy Rains/Landslides/Cyclones", nullable=False
+    )
+    source_uuid: Mapped[str] = mapped_column(String(64), nullable=False)
+    source_title: Mapped[str] = mapped_column(String(255), nullable=False)
+    source_ministry: Mapped[str] = mapped_column(String(255), nullable=False)
+    data_quality_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+
+class NcrbNaturalHazardCasualty(Base):
+    __tablename__ = "ncrb_natural_hazard_casualty"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    state_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    calendar_year: Mapped[int] = mapped_column(Integer, nullable=False)
+    landslide_deaths: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    flash_flood_deaths: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    flood_deaths: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    cloudburst_deaths: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    cyclone_deaths: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    avalanche_deaths: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    lightning_deaths: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    cold_heat_wave_deaths: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    other_nature_deaths: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    total_deaths: Mapped[int] = mapped_column(Integer, nullable=False)
+    source_uuid: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+
+class CwcFloodDamageRecord(Base):
+    __tablename__ = "cwc_flood_damage_record"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    state_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    calendar_year: Mapped[int] = mapped_column(Integer, nullable=False)
+    area_affected_mha: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    population_affected_m: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    human_lives_lost: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    cattle_lost: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    houses_damaged_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    total_damage_crores: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    source_uuid: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+
+class HighwayDisasterDamage(Base):
+    __tablename__ = "highway_disaster_damage"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    state_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    reporting_period: Mapped[str] = mapped_column(String(50), nullable=False)
+    damaged_length_km: Mapped[float] = mapped_column(Float, nullable=False)
+    disaster_triggers: Mapped[str] = mapped_column(
+        String(255), default="Heavy Rain / Landslide / Flood", nullable=False
+    )
+    source_uuid: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+
+class DisasterReliefAllocation(Base):
+    __tablename__ = "disaster_relief_allocation"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    state_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    fiscal_year: Mapped[str] = mapped_column(String(30), nullable=False)
+    sdrf_central_share_cr: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    sdrf_state_share_cr: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    ndrf_releases_cr: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    lives_saved_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    source_uuid: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+
+class DisasterCaseStudy(Base):
+    __tablename__ = "disaster_case_study"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    slug: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    disaster_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    state_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    location_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    event_date: Mapped[date] = mapped_column(SQLDate, nullable=False)
+    fatalities: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    injured: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    missing: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    compensation_cr: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    summary: Mapped[str] = mapped_column(Text, nullable=False)
+    geotechnical_context: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    response_actions: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSONB, default=list, nullable=False
+    )
+    source_refs: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, default=list, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
 

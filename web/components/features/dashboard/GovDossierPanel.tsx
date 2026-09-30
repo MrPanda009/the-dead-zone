@@ -127,8 +127,13 @@ export const GovDossierPanel: React.FC<GovDossierPanelProps> = ({
 
             {/* Landslide History */}
             <div>
-              <div className="flex justify-between text-xs font-medium mb-1">
-                <span>Landslide / Geomorphic History</span>
+              <div className="flex justify-between items-center text-xs font-medium mb-1">
+                <span className="flex items-center gap-1.5">
+                  <span>Landslide / Geomorphic History</span>
+                  <span className="text-[9px] px-1.5 py-0.5 rounded font-mono uppercase bg-amber-500/15 text-amber-500 border border-amber-500/20">
+                    Historical Proxy
+                  </span>
+                </span>
                 <span className="font-mono text-[11px] font-bold text-gov-amber">
                   {habitation.breakdown.landslideHistory.toFixed(2)}
                 </span>

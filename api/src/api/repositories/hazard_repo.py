@@ -212,3 +212,183 @@ class HazardRepository:
         row = self.db.execute(query, {"hazard_type": hazard_type}).mappings().first()
         ceiling = row["ceiling"] if row else None
         return float(ceiling) if ceiling else 1.0
+
+    def get_district_summary(
+        self,
+        admin_identifier: int,
+        hazard_type: str = "riverine_flood",
+    ) -> Optional[dict[str, Any]]:
+        """Computes district-level rollup: band shares, habitations & population at risk, drivers."""
+        admin_row = self.db.execute(
+            text(
+                "SELECT id, name, lgd_code FROM admin_boundary "
+                "WHERE id = :admin OR lgd_code = :admin LIMIT 1;"
+            ),
+            {"admin": admin_identifier},
+        ).mappings().first()
+
+        if not admin_row:
+            return None
+
+        admin_id = int(admin_row["id"])
+        admin_name = str(admin_row["name"])
+        lgd_code = int(admin_row["lgd_code"]) if admin_row["lgd_code"] is not None else None
+
+        # Check if cells exist for this hazard_type in this admin
+        cell_stats_query = text("""
+            SELECT
+                COUNT(*) AS total_cells,
+                COUNT(*) FILTER (WHERE h.quality_flag = 'full') AS full_count,
+                COUNT(*) FILTER (WHERE h.quality_flag = 'low_coverage') AS low_coverage_count,
+                COUNT(*) FILTER (WHERE h.quality_flag = 'no_coverage') AS no_coverage_count,
+                COUNT(*) FILTER (WHERE h.susceptibility < 0.20) AS band_very_low,
+                COUNT(*) FILTER (WHERE h.susceptibility >= 0.20 AND h.susceptibility < 0.40) AS band_low,
+                COUNT(*) FILTER (WHERE h.susceptibility >= 0.40 AND h.susceptibility < 0.60) AS band_moderate,
+                COUNT(*) FILTER (WHERE h.susceptibility >= 0.60 AND h.susceptibility < 0.80) AS band_high,
+                COUNT(*) FILTER (WHERE h.susceptibility >= 0.80) AS band_very_high,
+                AVG(h.susceptibility) AS mean_susceptibility,
+                MAX(h.susceptibility) AS max_susceptibility,
+                MAX(h.model_version) AS model_version
+            FROM hazard_static h
+            JOIN grid_cell g ON g.h3 = h.h3
+            WHERE g.admin_id = :admin_id AND h.hazard_type = :hazard_type;
+        """)
+        cell_stats = (
+            self.db.execute(
+                cell_stats_query, {"admin_id": admin_id, "hazard_type": hazard_type}
+            )
+            .mappings()
+            .first()
+        )
+
+        total_cells = int(cell_stats["total_cells"] or 0) if cell_stats else 0
+        if total_cells == 0:
+            return {
+                "admin_id": admin_id,
+                "admin_name": admin_name,
+                "lgd_code": lgd_code,
+                "hazard_type": hazard_type,
+                "model_status": "not_computed",
+                "model_version": None,
+                "total_cells": 0,
+                "coverage": {"full": 0, "low_coverage": 0, "no_coverage": 0},
+                "unmeasured_cells_count": 0,
+                "band_distribution": {
+                    "very_low": 0.0,
+                    "low": 0.0,
+                    "moderate": 0.0,
+                    "high": 0.0,
+                    "very_high": 0.0,
+                },
+                "mean_susceptibility": 0.0,
+                "max_susceptibility": 0.0,
+                "habitations_at_risk_count": 0,
+                "population_at_risk_sum": 0,
+                "drivers_summary": None,
+                "last_recorded_flood_loss": None,
+            }
+
+        # Query habitations at risk (cells with susceptibility >= 0.50)
+        hab_query = text("""
+            SELECT
+                COUNT(DISTINCT hab.id) AS hab_count,
+                COALESCE(SUM(hab.population), 0) AS pop_sum
+            FROM habitation hab
+            JOIN grid_cell g ON (g.habitation_id = hab.id OR ST_Contains(g.geom, hab.geom_point))
+            JOIN hazard_static h ON h.h3 = g.h3 AND h.hazard_type = :hazard_type
+            WHERE hab.admin_id = :admin_id AND h.susceptibility >= 0.50;
+        """)
+        hab_stats = (
+            self.db.execute(hab_query, {"admin_id": admin_id, "hazard_type": hazard_type})
+            .mappings()
+            .first()
+        )
+        hab_at_risk = int(hab_stats["hab_count"] or 0) if hab_stats else 0
+        pop_at_risk = int(hab_stats["pop_sum"] or 0) if hab_stats else 0
+
+        # Query drivers summary if flood
+        driver_stats = None
+        if hazard_type == "riverine_flood":
+            driver_query = text("""
+                SELECT
+                    AVG(f.mean_inundation_frequency) AS mean_inundation_frequency,
+                    AVG(f.mean_hand_m) AS mean_hand_m,
+                    MIN(f.min_hand_m) AS min_hand_m,
+                    AVG(f.mean_slope_deg) AS mean_slope_deg,
+                    AVG(f.mean_cropland_fraction) AS mean_cropland_fraction
+                FROM hazard_static_flood f
+                JOIN grid_cell g ON g.h3 = f.h3
+                WHERE g.admin_id = :admin_id;
+            """)
+            drow = self.db.execute(driver_query, {"admin_id": admin_id}).mappings().first()
+            if drow and drow["mean_hand_m"] is not None:
+                driver_stats = {
+                    "mean_inundation_frequency": round(
+                        float(drow["mean_inundation_frequency"] or 0.0), 4
+                    ),
+                    "mean_hand_m": round(float(drow["mean_hand_m"] or 0.0), 2),
+                    "min_hand_m": round(float(drow["min_hand_m"] or 0.0), 2),
+                    "mean_slope_deg": round(float(drow["mean_slope_deg"] or 0.0), 2),
+                    "mean_cropland_fraction": round(
+                        float(drow["mean_cropland_fraction"] or 0.0), 4
+                    ),
+                }
+
+        # Query last recorded flood loss for state
+        state_mapping = {
+            "barpeta": "Assam",
+            "dholpur": "Rajasthan",
+            "morena": "Madhya Pradesh",
+            "wayanad": "Kerala",
+            "kodagu": "Karnataka",
+        }
+        state_name = state_mapping.get(admin_name.lower(), admin_name)
+        cwc_query = text("""
+            SELECT calendar_year, human_lives_lost, houses_damaged_count, total_damage_crores
+            FROM cwc_flood_damage_record
+            WHERE lower(state_name) = lower(:state_name)
+            ORDER BY calendar_year DESC LIMIT 1;
+        """)
+        cwc_row = self.db.execute(cwc_query, {"state_name": state_name}).mappings().first()
+        last_loss = (
+            {
+                "calendar_year": int(cwc_row["calendar_year"]),
+                "human_lives_lost": int(cwc_row["human_lives_lost"] or 0),
+                "houses_damaged_count": int(cwc_row["houses_damaged_count"] or 0),
+                "total_damage_crores": float(cwc_row["total_damage_crores"] or 0.0),
+            }
+            if cwc_row
+            else None
+        )
+
+        model_version_str = str(cell_stats["model_version"] or "")
+        is_modeled = "flood-susceptibility" in model_version_str
+
+        return {
+            "admin_id": admin_id,
+            "admin_name": admin_name,
+            "lgd_code": lgd_code,
+            "hazard_type": hazard_type,
+            "model_status": "computed" if is_modeled else "not_computed",
+            "model_version": cell_stats["model_version"],
+            "total_cells": total_cells,
+            "coverage": {
+                "full": int(cell_stats["full_count"] or 0),
+                "low_coverage": int(cell_stats["low_coverage_count"] or 0),
+                "no_coverage": int(cell_stats["no_coverage_count"] or 0),
+            },
+            "unmeasured_cells_count": int(cell_stats["no_coverage_count"] or 0),
+            "band_distribution": {
+                "very_low": round(float(cell_stats["band_very_low"] or 0) / total_cells, 4),
+                "low": round(float(cell_stats["band_low"] or 0) / total_cells, 4),
+                "moderate": round(float(cell_stats["band_moderate"] or 0) / total_cells, 4),
+                "high": round(float(cell_stats["band_high"] or 0) / total_cells, 4),
+                "very_high": round(float(cell_stats["band_very_high"] or 0) / total_cells, 4),
+            },
+            "mean_susceptibility": round(float(cell_stats["mean_susceptibility"] or 0.0), 4),
+            "max_susceptibility": round(float(cell_stats["max_susceptibility"] or 0.0), 4),
+            "habitations_at_risk_count": hab_at_risk,
+            "population_at_risk_sum": pop_at_risk,
+            "drivers_summary": driver_stats,
+            "last_recorded_flood_loss": last_loss,
+        }

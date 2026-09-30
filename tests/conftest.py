@@ -250,6 +250,11 @@ def db_environment():
     # 3. Deterministically seed pilot fixtures
     seed_database(test_sqla_url)
 
+    # 3.1 Seed historical disaster datasets
+    from pipeline.jobs.ingest_disaster_history import DisasterHistoryIngestor
+    with Session(create_engine(test_sqla_url)) as sess:
+        DisasterHistoryIngestor(sess).run_all()
+
     # 4. Reconfigure settings and API dependencies to target the test database
     original_db_url = settings.DATABASE_URL
     original_direct_url = settings.DIRECT_DATABASE_URL

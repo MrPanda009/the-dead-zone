@@ -660,6 +660,103 @@
         }
       }
     },
+    "/hazard/summary": {
+      "get": {
+        "tags": [
+          "Hazard Layers"
+        ],
+        "summary": "Get district-level hazard rollup and officer decision prompt",
+        "description": "Returns district-level susceptibility band distributions, habitations & citizens at risk, physical drivers, and an objective factual decision prompt. Districts without computed models (such as Wayanad or Kodagu) return `model_status: 'not_computed'`.",
+        "operationId": "get_district_hazard_summary_hazard_summary_get",
+        "parameters": [
+          {
+            "name": "admin",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Admin boundary ID or LGD code (e.g. 277 for Barpeta, 98 for Dholpur).",
+              "title": "Admin"
+            },
+            "description": "Admin boundary ID or LGD code (e.g. 277 for Barpeta, 98 for Dholpur)."
+          },
+          {
+            "name": "hazard_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Hazard layer to summarize.",
+              "default": "riverine_flood",
+              "title": "Hazard Type"
+            },
+            "description": "Hazard layer to summarize."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DistrictHazardSummaryDTO"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid parameters or malformed input format.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found - Requested resource, cell, or entity does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error - Request parameter or payload validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error - An unexpected system or database error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable - No valid serving version is active. Pipeline data is not ready.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/habitations": {
       "get": {
         "tags": [
@@ -2276,6 +2373,385 @@
         }
       }
     },
+    "/stats/states": {
+      "get": {
+        "tags": [
+          "Disaster History & Statistics"
+        ],
+        "summary": "List states with published historical disaster records",
+        "operationId": "list_available_states_stats_states_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvailableStatesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid parameters or malformed input format.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found - Requested resource, cell, or entity does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error - Request parameter or payload validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error - An unexpected system or database error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable - No valid serving version is active. Pipeline data is not ready.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stats/disasters": {
+      "get": {
+        "tags": [
+          "Disaster History & Statistics"
+        ],
+        "summary": "Get historical disaster loss time-series and NCRB hazard breakdowns",
+        "description": "Returns chained annual disaster losses (lives, cattle, houses, crop area), NCRB Forces of Nature casualty breakdown by hazard, CWC flood damage records, MoRTH highway damage, and SDRF/NDRF relief allocation curves.",
+        "operationId": "get_disaster_stats_stats_disasters_get",
+        "parameters": [
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "State name (e.g. 'Assam', 'Rajasthan', 'Kerala', 'Madhya Pradesh').",
+              "default": "Assam",
+              "title": "State"
+            },
+            "description": "State name (e.g. 'Assam', 'Rajasthan', 'Kerala', 'Madhya Pradesh')."
+          },
+          {
+            "name": "from_year",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 2030,
+              "minimum": 2000,
+              "description": "Start year filter.",
+              "default": 2014,
+              "title": "From Year"
+            },
+            "description": "Start year filter."
+          },
+          {
+            "name": "to_year",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 2030,
+              "minimum": 2000,
+              "description": "End year filter.",
+              "default": 2024,
+              "title": "To Year"
+            },
+            "description": "End year filter."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisasterStatsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid parameters or malformed input format.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found - Requested resource, cell, or entity does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error - Request parameter or payload validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error - An unexpected system or database error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable - No valid serving version is active. Pipeline data is not ready.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stats/disasters/comparison": {
+      "get": {
+        "tags": [
+          "Disaster History & Statistics"
+        ],
+        "summary": "Compare historical disaster impact between two states",
+        "description": "Compares cumulative fatalities, housing loss, crop damages, and dominant hazard killers.",
+        "operationId": "compare_disaster_stats_stats_disasters_comparison_get",
+        "parameters": [
+          {
+            "name": "state1",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "First state to compare.",
+              "default": "Assam",
+              "title": "State1"
+            },
+            "description": "First state to compare."
+          },
+          {
+            "name": "state2",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Second state to compare.",
+              "default": "Kerala",
+              "title": "State2"
+            },
+            "description": "Second state to compare."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StateDisasterComparisonDTO"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid parameters or malformed input format.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found - Requested resource, cell, or entity does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error - Request parameter or payload validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error - An unexpected system or database error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable - No valid serving version is active. Pipeline data is not ready.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stats/case-studies": {
+      "get": {
+        "tags": [
+          "Disaster History & Statistics"
+        ],
+        "summary": "List curated landmark disaster event case studies",
+        "description": "Returns detailed geotechnical context, casualty records, and response agency actions.",
+        "operationId": "list_case_studies_stats_case_studies_get",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional case study slug filter (e.g. 'manipur-noney-landslide-2022').",
+              "title": "Slug"
+            },
+            "description": "Optional case study slug filter (e.g. 'manipur-noney-landslide-2022')."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DisasterCaseStudyDTO"
+                  },
+                  "title": "Response List Case Studies Stats Case Studies Get"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid parameters or malformed input format.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found - Requested resource, cell, or entity does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error - Request parameter or payload validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error - An unexpected system or database error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable - No valid serving version is active. Pipeline data is not ready.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/": {
       "get": {
         "tags": [
@@ -2864,6 +3340,28 @@
         "title": "AugmentedCapacityDTO",
         "description": "Augmentation relief assessment for relieving the primary binding constraint."
       },
+      "AvailableStatesResponse": {
+        "properties": {
+          "states": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "States"
+          },
+          "default_state": {
+            "type": "string",
+            "title": "Default State",
+            "default": "Assam"
+          }
+        },
+        "type": "object",
+        "required": [
+          "states"
+        ],
+        "title": "AvailableStatesResponse",
+        "description": "States with published historical disaster records."
+      },
       "BindingConstraint": {
         "type": "string",
         "enum": [
@@ -3369,6 +3867,55 @@
         "title": "CoverageFlag",
         "description": "Zonal coverage class for an aggregated H3 cell (Step 10 \u00a710.3).\n\nCRITICAL RENDERING RULE:\nA NO_COVERAGE cell carries susceptibility 0.0 because `apply_quality_flags()` fills\nNaN with zero \u2014 not because it was measured as safe. It must never be drawn with the\nsame treatment as a genuine FR-3.17 hard-zero cell."
       },
+      "CwcFloodDamageDTO": {
+        "properties": {
+          "calendar_year": {
+            "type": "integer",
+            "title": "Calendar Year"
+          },
+          "area_affected_mha": {
+            "type": "number",
+            "title": "Area Affected Mha",
+            "default": 0.0
+          },
+          "population_affected_m": {
+            "type": "number",
+            "title": "Population Affected M",
+            "default": 0.0
+          },
+          "human_lives_lost": {
+            "type": "integer",
+            "title": "Human Lives Lost",
+            "default": 0
+          },
+          "cattle_lost": {
+            "type": "integer",
+            "title": "Cattle Lost",
+            "default": 0
+          },
+          "houses_damaged_count": {
+            "type": "integer",
+            "title": "Houses Damaged Count",
+            "default": 0
+          },
+          "total_damage_crores": {
+            "type": "number",
+            "title": "Total Damage Crores",
+            "default": 0.0
+          },
+          "source_uuid": {
+            "type": "string",
+            "title": "Source Uuid"
+          }
+        },
+        "type": "object",
+        "required": [
+          "calendar_year",
+          "source_uuid"
+        ],
+        "title": "CwcFloodDamageDTO",
+        "description": "CWC recorded flood losses and economic damages."
+      },
       "DataQuality": {
         "type": "string",
         "enum": [
@@ -3382,6 +3929,287 @@
         ],
         "title": "DataQuality",
         "description": "Data quality and provenance classification across pipeline and API data (Day 6-7).\n\nPreserves all 7 distinct states:\n- VALID: Real-world observation meeting all quality controls\n- PARTIAL: Degraded spatial/temporal coverage or incomplete observation\n- STALE: Retained past expiry due to upstream feed latency or outage\n- FALLBACK: Secondary provider invoked due to primary feed exhaustion or failure\n- MISSING: Sensor/pipeline coverage absent; never silently cast to safe/zero\n- INVALID: Failed schema/range check; never treated as safe/no-risk\n- SYNTHETIC: Deterministic demo fixture or synthetic simulation"
+      },
+      "DisasterCaseStudyDTO": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "disaster_type": {
+            "type": "string",
+            "title": "Disaster Type"
+          },
+          "state_name": {
+            "type": "string",
+            "title": "State Name"
+          },
+          "location_name": {
+            "type": "string",
+            "title": "Location Name"
+          },
+          "event_date": {
+            "type": "string",
+            "title": "Event Date"
+          },
+          "fatalities": {
+            "type": "integer",
+            "title": "Fatalities",
+            "default": 0
+          },
+          "injured": {
+            "type": "integer",
+            "title": "Injured",
+            "default": 0
+          },
+          "missing": {
+            "type": "integer",
+            "title": "Missing",
+            "default": 0
+          },
+          "compensation_cr": {
+            "type": "number",
+            "title": "Compensation Cr",
+            "default": 0.0
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "geotechnical_context": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Geotechnical Context"
+          },
+          "response_actions": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Response Actions"
+          },
+          "source_refs": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Source Refs"
+          }
+        },
+        "type": "object",
+        "required": [
+          "slug",
+          "title",
+          "disaster_type",
+          "state_name",
+          "location_name",
+          "event_date",
+          "summary"
+        ],
+        "title": "DisasterCaseStudyDTO",
+        "description": "Detailed geotechnical and operational profile for landmark disaster events."
+      },
+      "DisasterStatsResponse": {
+        "properties": {
+          "state_name": {
+            "type": "string",
+            "title": "State Name"
+          },
+          "period_start": {
+            "type": "integer",
+            "title": "Period Start"
+          },
+          "period_end": {
+            "type": "integer",
+            "title": "Period End"
+          },
+          "loss_time_series": {
+            "items": {
+              "$ref": "#/components/schemas/HistoricalLossDTO"
+            },
+            "type": "array",
+            "title": "Loss Time Series"
+          },
+          "ncrb_hazard_breakdown": {
+            "items": {
+              "$ref": "#/components/schemas/NcrbHazardCasualtyDTO"
+            },
+            "type": "array",
+            "title": "Ncrb Hazard Breakdown"
+          },
+          "cwc_flood_history": {
+            "items": {
+              "$ref": "#/components/schemas/CwcFloodDamageDTO"
+            },
+            "type": "array",
+            "title": "Cwc Flood History"
+          },
+          "highway_damage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HighwayDisasterDamageDTO"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "response_funding": {
+            "items": {
+              "$ref": "#/components/schemas/ReliefAllocationDTO"
+            },
+            "type": "array",
+            "title": "Response Funding"
+          },
+          "data_caveats": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Data Caveats"
+          }
+        },
+        "type": "object",
+        "required": [
+          "state_name",
+          "period_start",
+          "period_end"
+        ],
+        "title": "DisasterStatsResponse",
+        "description": "Complete disaster history dossier for a state (GET /stats/disasters)."
+      },
+      "DistrictHazardSummaryDTO": {
+        "properties": {
+          "admin_id": {
+            "type": "integer",
+            "title": "Admin Id"
+          },
+          "admin_name": {
+            "type": "string",
+            "title": "Admin Name"
+          },
+          "lgd_code": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lgd Code"
+          },
+          "hazard_type": {
+            "type": "string",
+            "title": "Hazard Type",
+            "default": "riverine_flood"
+          },
+          "model_status": {
+            "type": "string",
+            "title": "Model Status",
+            "description": "'computed' for SAR-modeled districts; 'not_computed' for unmodeled districts.",
+            "default": "computed"
+          },
+          "model_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Version"
+          },
+          "total_cells": {
+            "type": "integer",
+            "title": "Total Cells",
+            "default": 0
+          },
+          "coverage": {
+            "$ref": "#/components/schemas/HazardLayerCoverageDTO"
+          },
+          "unmeasured_cells_count": {
+            "type": "integer",
+            "title": "Unmeasured Cells Count",
+            "description": "Number of no_coverage cells. Treated strictly as unmeasured, never safe.",
+            "default": 0
+          },
+          "band_distribution": {
+            "$ref": "#/components/schemas/SusceptibilityBandBreakdown"
+          },
+          "mean_susceptibility": {
+            "type": "number",
+            "title": "Mean Susceptibility",
+            "default": 0.0
+          },
+          "max_susceptibility": {
+            "type": "number",
+            "title": "Max Susceptibility",
+            "default": 0.0
+          },
+          "habitations_at_risk_count": {
+            "type": "integer",
+            "title": "Habitations At Risk Count",
+            "default": 0
+          },
+          "population_at_risk_sum": {
+            "type": "integer",
+            "title": "Population At Risk Sum",
+            "default": 0
+          },
+          "drivers_summary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FloodDriverDTO"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "last_recorded_flood_loss": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Recorded Flood Loss"
+          },
+          "officer_decision_prompt": {
+            "type": "string",
+            "title": "Officer Decision Prompt",
+            "default": ""
+          },
+          "screening_grade": {
+            "type": "string",
+            "title": "Screening Grade",
+            "default": "Screening Grade: Cell-level screening and prioritisation tool. Geotechnical investigation, hydraulic study, and community consultation required before executing relocation orders."
+          }
+        },
+        "type": "object",
+        "required": [
+          "admin_id",
+          "admin_name"
+        ],
+        "title": "DistrictHazardSummaryDTO",
+        "description": "District-level rollup for officer decision support (GET /hazard/summary)."
       },
       "ErrorDetail": {
         "properties": {
@@ -4721,6 +5549,116 @@
         "title": "HazardLayerSummaryDTO",
         "description": "One available static hazard layer (GET /hazard/layers)."
       },
+      "HighwayDisasterDamageDTO": {
+        "properties": {
+          "state_name": {
+            "type": "string",
+            "title": "State Name"
+          },
+          "reporting_period": {
+            "type": "string",
+            "title": "Reporting Period"
+          },
+          "damaged_length_km": {
+            "type": "number",
+            "title": "Damaged Length Km"
+          },
+          "disaster_triggers": {
+            "type": "string",
+            "title": "Disaster Triggers",
+            "default": "Heavy Rain / Landslide / Flood"
+          },
+          "source_uuid": {
+            "type": "string",
+            "title": "Source Uuid"
+          }
+        },
+        "type": "object",
+        "required": [
+          "state_name",
+          "reporting_period",
+          "damaged_length_km",
+          "source_uuid"
+        ],
+        "title": "HighwayDisasterDamageDTO",
+        "description": "Damaged National Highways reported to MoRTH."
+      },
+      "HistoricalLossDTO": {
+        "properties": {
+          "year_label": {
+            "type": "string",
+            "title": "Year Label",
+            "description": "Fiscal or monsoon year string, e.g. '2019-20'."
+          },
+          "year_start": {
+            "type": "integer",
+            "title": "Year Start"
+          },
+          "year_end": {
+            "type": "integer",
+            "title": "Year End"
+          },
+          "lives_lost": {
+            "type": "integer",
+            "title": "Lives Lost",
+            "default": 0
+          },
+          "cattle_lost": {
+            "type": "integer",
+            "title": "Cattle Lost",
+            "default": 0
+          },
+          "houses_damaged": {
+            "type": "integer",
+            "title": "Houses Damaged",
+            "default": 0
+          },
+          "crop_area_affected_ha": {
+            "type": "number",
+            "title": "Crop Area Affected Ha",
+            "default": 0.0
+          },
+          "hazard_types_included": {
+            "type": "string",
+            "title": "Hazard Types Included",
+            "default": "Floods/Landslides"
+          },
+          "source_uuid": {
+            "type": "string",
+            "title": "Source Uuid"
+          },
+          "source_title": {
+            "type": "string",
+            "title": "Source Title"
+          },
+          "source_ministry": {
+            "type": "string",
+            "title": "Source Ministry"
+          },
+          "data_quality_notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data Quality Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "year_label",
+          "year_start",
+          "year_end",
+          "source_uuid",
+          "source_title",
+          "source_ministry"
+        ],
+        "title": "HistoricalLossDTO",
+        "description": "Annual loss tally from MHA / Rajya Sabha reports."
+      },
       "JurisdictionDTO": {
         "properties": {
           "admin_id": {
@@ -4862,6 +5800,75 @@
           "source"
         ],
         "title": "LossEventDTO"
+      },
+      "NcrbHazardCasualtyDTO": {
+        "properties": {
+          "calendar_year": {
+            "type": "integer",
+            "title": "Calendar Year"
+          },
+          "landslide_deaths": {
+            "type": "integer",
+            "title": "Landslide Deaths",
+            "default": 0
+          },
+          "flash_flood_deaths": {
+            "type": "integer",
+            "title": "Flash Flood Deaths",
+            "default": 0
+          },
+          "flood_deaths": {
+            "type": "integer",
+            "title": "Flood Deaths",
+            "default": 0
+          },
+          "cloudburst_deaths": {
+            "type": "integer",
+            "title": "Cloudburst Deaths",
+            "default": 0
+          },
+          "cyclone_deaths": {
+            "type": "integer",
+            "title": "Cyclone Deaths",
+            "default": 0
+          },
+          "avalanche_deaths": {
+            "type": "integer",
+            "title": "Avalanche Deaths",
+            "default": 0
+          },
+          "lightning_deaths": {
+            "type": "integer",
+            "title": "Lightning Deaths",
+            "default": 0
+          },
+          "cold_heat_wave_deaths": {
+            "type": "integer",
+            "title": "Cold Heat Wave Deaths",
+            "default": 0
+          },
+          "other_nature_deaths": {
+            "type": "integer",
+            "title": "Other Nature Deaths",
+            "default": 0
+          },
+          "total_deaths": {
+            "type": "integer",
+            "title": "Total Deaths"
+          },
+          "source_uuid": {
+            "type": "string",
+            "title": "Source Uuid"
+          }
+        },
+        "type": "object",
+        "required": [
+          "calendar_year",
+          "total_deaths",
+          "source_uuid"
+        ],
+        "title": "NcrbHazardCasualtyDTO",
+        "description": "Accidental deaths categorized by natural hazard trigger (NCRB Forces of Nature)."
       },
       "OsmFacilityItemDTO": {
         "properties": {
@@ -5106,6 +6113,45 @@
         ],
         "title": "RegisterRequest",
         "description": "Request payload for public civilian registration.\n\nRole is strictly not accepted from client and is automatically set to CIVILIAN."
+      },
+      "ReliefAllocationDTO": {
+        "properties": {
+          "fiscal_year": {
+            "type": "string",
+            "title": "Fiscal Year"
+          },
+          "sdrf_central_share_cr": {
+            "type": "number",
+            "title": "Sdrf Central Share Cr",
+            "default": 0.0
+          },
+          "sdrf_state_share_cr": {
+            "type": "number",
+            "title": "Sdrf State Share Cr",
+            "default": 0.0
+          },
+          "ndrf_releases_cr": {
+            "type": "number",
+            "title": "Ndrf Releases Cr",
+            "default": 0.0
+          },
+          "lives_saved_count": {
+            "type": "integer",
+            "title": "Lives Saved Count",
+            "default": 0
+          },
+          "source_uuid": {
+            "type": "string",
+            "title": "Source Uuid"
+          }
+        },
+        "type": "object",
+        "required": [
+          "fiscal_year",
+          "source_uuid"
+        ],
+        "title": "ReliefAllocationDTO",
+        "description": "SDRF and NDRF disaster response allocations and lives saved."
       },
       "Role": {
         "type": "string",
@@ -5775,6 +6821,115 @@
         ],
         "title": "SortMode",
         "description": "Sort modes for prioritized habitation queues (PRD \u00a76.6, FR-6.3)."
+      },
+      "StateDisasterComparisonDTO": {
+        "properties": {
+          "state1": {
+            "$ref": "#/components/schemas/StateLossSummary"
+          },
+          "state2": {
+            "$ref": "#/components/schemas/StateLossSummary"
+          },
+          "comparison_period": {
+            "type": "string",
+            "title": "Comparison Period"
+          },
+          "insights": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Insights"
+          }
+        },
+        "type": "object",
+        "required": [
+          "state1",
+          "state2",
+          "comparison_period"
+        ],
+        "title": "StateDisasterComparisonDTO",
+        "description": "Comparative analysis between two states or state vs national."
+      },
+      "StateLossSummary": {
+        "properties": {
+          "state_name": {
+            "type": "string",
+            "title": "State Name"
+          },
+          "total_lives_lost": {
+            "type": "integer",
+            "title": "Total Lives Lost",
+            "default": 0
+          },
+          "total_houses_damaged": {
+            "type": "integer",
+            "title": "Total Houses Damaged",
+            "default": 0
+          },
+          "total_cattle_lost": {
+            "type": "integer",
+            "title": "Total Cattle Lost",
+            "default": 0
+          },
+          "total_crop_area_ha": {
+            "type": "number",
+            "title": "Total Crop Area Ha",
+            "default": 0.0
+          },
+          "dominant_hazard_killer": {
+            "type": "string",
+            "title": "Dominant Hazard Killer",
+            "default": "Flood / Heavy Rain"
+          },
+          "avg_annual_deaths": {
+            "type": "number",
+            "title": "Avg Annual Deaths",
+            "default": 0.0
+          }
+        },
+        "type": "object",
+        "required": [
+          "state_name"
+        ],
+        "title": "StateLossSummary"
+      },
+      "SusceptibilityBandBreakdown": {
+        "properties": {
+          "very_low": {
+            "type": "number",
+            "title": "Very Low",
+            "description": "Share with S < 0.20 [0, 1].",
+            "default": 0.0
+          },
+          "low": {
+            "type": "number",
+            "title": "Low",
+            "description": "Share with 0.20 <= S < 0.40 [0, 1].",
+            "default": 0.0
+          },
+          "moderate": {
+            "type": "number",
+            "title": "Moderate",
+            "description": "Share with 0.40 <= S < 0.60 [0, 1].",
+            "default": 0.0
+          },
+          "high": {
+            "type": "number",
+            "title": "High",
+            "description": "Share with 0.60 <= S < 0.80 [0, 1].",
+            "default": 0.0
+          },
+          "very_high": {
+            "type": "number",
+            "title": "Very High",
+            "description": "Share with S >= 0.80 [0, 1].",
+            "default": 0.0
+          }
+        },
+        "type": "object",
+        "title": "SusceptibilityBandBreakdown",
+        "description": "Distribution shares of cells across susceptibility thresholds."
       },
       "TenureType": {
         "type": "string",

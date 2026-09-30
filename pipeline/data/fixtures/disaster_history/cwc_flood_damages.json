@@ -1,0 +1,189 @@
+[
+  {
+    "state_name": "Assam",
+    "calendar_year": 2021,
+    "area_affected_mha": 0.38,
+    "population_affected_m": 1.45,
+    "human_lives_lost": 73,
+    "cattle_lost": 1540,
+    "houses_damaged_count": 26900,
+    "total_damage_crores": 1420.5,
+    "source_uuid": "16c52e9c-1284-4238-8d13-f22158d217b3"
+  },
+  {
+    "state_name": "Assam",
+    "calendar_year": 2020,
+    "area_affected_mha": 0.54,
+    "population_affected_m": 2.85,
+    "human_lives_lost": 149,
+    "cattle_lost": 2840,
+    "houses_damaged_count": 41200,
+    "total_damage_crores": 2680.0,
+    "source_uuid": "16c52e9c-1284-4238-8d13-f22158d217b3"
+  },
+  {
+    "state_name": "Assam",
+    "calendar_year": 2019,
+    "area_affected_mha": 0.62,
+    "population_affected_m": 5.25,
+    "human_lives_lost": 157,
+    "cattle_lost": 3190,
+    "houses_damaged_count": 46800,
+    "total_damage_crores": 3120.4,
+    "source_uuid": "16c52e9c-1284-4238-8d13-f22158d217b3"
+  },
+  {
+    "state_name": "Assam",
+    "calendar_year": 2017,
+    "area_affected_mha": 0.71,
+    "population_affected_m": 4.80,
+    "human_lives_lost": 160,
+    "cattle_lost": 4820,
+    "houses_damaged_count": 52400,
+    "total_damage_crores": 2940.0,
+    "source_uuid": "16c52e9c-1284-4238-8d13-f22158d217b3"
+  },
+  {
+    "state_name": "Assam",
+    "calendar_year": 2016,
+    "area_affected_mha": 0.48,
+    "population_affected_m": 3.20,
+    "human_lives_lost": 109,
+    "cattle_lost": 2150,
+    "houses_damaged_count": 34100,
+    "total_damage_crores": 1850.2,
+    "source_uuid": "16c52e9c-1284-4238-8d13-f22158d217b3"
+  },
+  {
+    "state_name": "Rajasthan",
+    "calendar_year": 2021,
+    "area_affected_mha": 0.12,
+    "population_affected_m": 0.45,
+    "human_lives_lost": 22,
+    "cattle_lost": 490,
+    "houses_damaged_count": 6700,
+    "total_damage_crores": 450.0,
+    "source_uuid": "16c52e9c-1284-4238-8d13-f22158d217b3"
+  },
+  {
+    "state_name": "Rajasthan",
+    "calendar_year": 2020,
+    "area_affected_mha": 0.08,
+    "population_affected_m": 0.28,
+    "human_lives_lost": 19,
+    "cattle_lost": 210,
+    "houses_damaged_count": 3400,
+    "total_damage_crores": 280.0,
+    "source_uuid": "16c52e9c-1284-4238-8d13-f22158d217b3"
+  },
+  {
+    "state_name": "Rajasthan",
+    "calendar_year": 2019,
+    "area_affected_mha": 0.18,
+    "population_affected_m": 0.65,
+    "human_lives_lost": 34,
+    "cattle_lost": 640,
+    "houses_damaged_count": 8900,
+    "total_damage_crores": 620.0,
+    "source_uuid": "16c52e9c-1284-4238-8d13-f22158d217b3"
+  },
+  {
+    "state_name": "Madhya Pradesh",
+    "calendar_year": 2021,
+    "area_affected_mha": 0.45,
+    "population_affected_m": 1.20,
+    "human_lives_lost": 55,
+    "cattle_lost": 2150,
+    "houses_damaged_count": 28300,
+    "total_damage_crores": 1820.0,
+    "source_uuid": "16c52e9c-1284-4238-8d13-f22158d217b3"
+  },
+  {
+    "state_name": "Madhya Pradesh",
+    "calendar_year": 2020,
+    "area_affected_mha": 0.29,
+    "population_affected_m": 0.82,
+    "human_lives_lost": 49,
+    "cattle_lost": 1210,
+    "houses_damaged_count": 16400,
+    "total_damage_crores": 980.0,
+    "source_uuid": "16c52e9c-1284-4238-8d13-f22158d217b3"
+  },
+  {
+    "state_name": "Madhya Pradesh",
+    "calendar_year": 2019,
+    "area_affected_mha": 0.72,
+    "population_affected_m": 2.10,
+    "human_lives_lost": 81,
+    "cattle_lost": 3400,
+    "houses_damaged_count": 42000,
+    "total_damage_crores": 3200.0,
+    "source_uuid": "16c52e9c-1284-4238-8d13-f22158d217b3"
+  },
+  {
+    "state_name": "Kerala",
+    "calendar_year": 2021,
+    "area_affected_mha": 0.04,
+    "population_affected_m": 0.35,
+    "human_lives_lost": 38,
+    "cattle_lost": 1410,
+    "houses_damaged_count": 19800,
+    "total_damage_crores": 840.0,
+    "source_uuid": "16c52e9c-1284-4238-8d13-f22158d217b3"
+  },
+  {
+    "state_name": "Kerala",
+    "calendar_year": 2020,
+    "area_affected_mha": 0.05,
+    "population_affected_m": 0.42,
+    "human_lives_lost": 44,
+    "cattle_lost": 1240,
+    "houses_damaged_count": 18500,
+    "total_damage_crores": 910.0,
+    "source_uuid": "16c52e9c-1284-4238-8d13-f22158d217b3"
+  },
+  {
+    "state_name": "Kerala",
+    "calendar_year": 2019,
+    "area_affected_mha": 0.11,
+    "population_affected_m": 1.25,
+    "human_lives_lost": 62,
+    "cattle_lost": 2980,
+    "houses_damaged_count": 34200,
+    "total_damage_crores": 2100.0,
+    "source_uuid": "16c52e9c-1284-4238-8d13-f22158d217b3"
+  },
+  {
+    "state_name": "Karnataka",
+    "calendar_year": 2021,
+    "area_affected_mha": 0.28,
+    "population_affected_m": 0.68,
+    "human_lives_lost": 28,
+    "cattle_lost": 1920,
+    "houses_damaged_count": 21900,
+    "total_damage_crores": 1150.0,
+    "source_uuid": "16c52e9c-1284-4238-8d13-f22158d217b3"
+  },
+  {
+    "state_name": "Karnataka",
+    "calendar_year": 2020,
+    "area_affected_mha": 0.32,
+    "population_affected_m": 0.74,
+    "human_lives_lost": 45,
+    "cattle_lost": 2140,
+    "houses_damaged_count": 24200,
+    "total_damage_crores": 1420.0,
+    "source_uuid": "16c52e9c-1284-4238-8d13-f22158d217b3"
+  },
+  {
+    "state_name": "Karnataka",
+    "calendar_year": 2019,
+    "area_affected_mha": 0.51,
+    "population_affected_m": 1.80,
+    "human_lives_lost": 64,
+    "cattle_lost": 4180,
+    "houses_damaged_count": 38900,
+    "total_damage_crores": 2980.0,
+    "source_uuid": "16c52e9c-1284-4238-8d13-f22158d217b3"
+  }
+]

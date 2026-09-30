@@ -1,0 +1,65 @@
+[
+  {
+    "state_name": "Assam",
+    "fiscal_year": "2023-24",
+    "sdrf_central_share_cr": 718.4,
+    "sdrf_state_share_cr": 79.8,
+    "ndrf_releases_cr": 340.2,
+    "lives_saved_count": 8420,
+    "source_uuid": "6054657b-2834-4ce9-ae48-3c73709110f7"
+  },
+  {
+    "state_name": "Assam",
+    "fiscal_year": "2022-23",
+    "sdrf_central_share_cr": 684.2,
+    "sdrf_state_share_cr": 76.0,
+    "ndrf_releases_cr": 648.8,
+    "lives_saved_count": 14200,
+    "source_uuid": "6054657b-2834-4ce9-ae48-3c73709110f7"
+  },
+  {
+    "state_name": "Rajasthan",
+    "fiscal_year": "2023-24",
+    "sdrf_central_share_cr": 1482.0,
+    "sdrf_state_share_cr": 494.0,
+    "ndrf_releases_cr": 0.0,
+    "lives_saved_count": 1280,
+    "source_uuid": "6054657b-2834-4ce9-ae48-3c73709110f7"
+  },
+  {
+    "state_name": "Madhya Pradesh",
+    "fiscal_year": "2023-24",
+    "sdrf_central_share_cr": 1820.0,
+    "sdrf_state_share_cr": 606.0,
+    "ndrf_releases_cr": 180.5,
+    "lives_saved_count": 3140,
+    "source_uuid": "6054657b-2834-4ce9-ae48-3c73709110f7"
+  },
+  {
+    "state_name": "Kerala",
+    "fiscal_year": "2023-24",
+    "sdrf_central_share_cr": 312.8,
+    "sdrf_state_share_cr": 104.2,
+    "ndrf_releases_cr": 145.2,
+    "lives_saved_count": 1890,
+    "source_uuid": "6054657b-2834-4ce9-ae48-3c73709110f7"
+  },
+  {
+    "state_name": "Karnataka",
+    "fiscal_year": "2023-24",
+    "sdrf_central_share_cr": 698.0,
+    "sdrf_state_share_cr": 232.0,
+    "ndrf_releases_cr": 210.0,
+    "lives_saved_count": 2450,
+    "source_uuid": "6054657b-2834-4ce9-ae48-3c73709110f7"
+  },
+  {
+    "state_name": "Himachal Pradesh",
+    "fiscal_year": "2023-24",
+    "sdrf_central_share_cr": 360.4,
+    "sdrf_state_share_cr": 40.0,
+    "ndrf_releases_cr": 862.5,
+    "lives_saved_count": 5280,
+    "source_uuid": "6054657b-2834-4ce9-ae48-3c73709110f7"
+  }
+]

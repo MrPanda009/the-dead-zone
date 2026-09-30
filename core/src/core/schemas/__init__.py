@@ -27,6 +27,20 @@ from core.schemas.hazard import (
     HazardLayerSummaryDTO,
     FloodDriverDTO,
     HazardCellDetailDTO,
+    SusceptibilityBandBreakdown,
+    DistrictHazardSummaryDTO,
+)
+from core.schemas.stats import (
+    HistoricalLossDTO,
+    NcrbHazardCasualtyDTO,
+    CwcFloodDamageDTO,
+    HighwayDisasterDamageDTO,
+    ReliefAllocationDTO,
+    DisasterStatsResponse,
+    StateLossSummary,
+    StateDisasterComparisonDTO,
+    DisasterCaseStudyDTO,
+    AvailableStatesResponse,
 )
 from core.schemas.habitations import (
     LossEventDTO,

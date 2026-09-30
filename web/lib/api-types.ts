@@ -146,6 +146,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/hazard/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get district-level hazard rollup and officer decision prompt
+         * @description Returns district-level susceptibility band distributions, habitations & citizens at risk, physical drivers, and an objective factual decision prompt. Districts without computed models (such as Wayanad or Kodagu) return `model_status: 'not_computed'`.
+         */
+        get: operations["get_district_hazard_summary_hazard_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/habitations": {
         parameters: {
             query?: never;
@@ -506,6 +526,83 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/stats/states": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List states with published historical disaster records */
+        get: operations["list_available_states_stats_states_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/stats/disasters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get historical disaster loss time-series and NCRB hazard breakdowns
+         * @description Returns chained annual disaster losses (lives, cattle, houses, crop area), NCRB Forces of Nature casualty breakdown by hazard, CWC flood damage records, MoRTH highway damage, and SDRF/NDRF relief allocation curves.
+         */
+        get: operations["get_disaster_stats_stats_disasters_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/stats/disasters/comparison": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Compare historical disaster impact between two states
+         * @description Compares cumulative fatalities, housing loss, crop damages, and dominant hazard killers.
+         */
+        get: operations["compare_disaster_stats_stats_disasters_comparison_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/stats/case-studies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List curated landmark disaster event case studies
+         * @description Returns detailed geotechnical context, casualty records, and response agency actions.
+         */
+        get: operations["list_case_studies_stats_case_studies_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/": {
         parameters: {
             query?: never;
@@ -811,6 +908,19 @@ export interface components {
             indicative_cost_inr_lakhs?: number | null;
         };
         /**
+         * AvailableStatesResponse
+         * @description States with published historical disaster records.
+         */
+        AvailableStatesResponse: {
+            /** States */
+            states: string[];
+            /**
+             * Default State
+             * @default Assam
+             */
+            default_state: string;
+        };
+        /**
          * BindingConstraint
          * @description Binding capacity constraints for destination sites (PRD §6.8).
          * @enum {string}
@@ -1093,6 +1203,46 @@ export interface components {
          */
         CoverageFlag: "full" | "low_coverage" | "no_coverage";
         /**
+         * CwcFloodDamageDTO
+         * @description CWC recorded flood losses and economic damages.
+         */
+        CwcFloodDamageDTO: {
+            /** Calendar Year */
+            calendar_year: number;
+            /**
+             * Area Affected Mha
+             * @default 0
+             */
+            area_affected_mha: number;
+            /**
+             * Population Affected M
+             * @default 0
+             */
+            population_affected_m: number;
+            /**
+             * Human Lives Lost
+             * @default 0
+             */
+            human_lives_lost: number;
+            /**
+             * Cattle Lost
+             * @default 0
+             */
+            cattle_lost: number;
+            /**
+             * Houses Damaged Count
+             * @default 0
+             */
+            houses_damaged_count: number;
+            /**
+             * Total Damage Crores
+             * @default 0
+             */
+            total_damage_crores: number;
+            /** Source Uuid */
+            source_uuid: string;
+        };
+        /**
          * DataQuality
          * @description Data quality and provenance classification across pipeline and API data (Day 6-7).
          *
@@ -1107,6 +1257,152 @@ export interface components {
          * @enum {string}
          */
         DataQuality: "valid" | "partial" | "stale" | "fallback" | "missing" | "invalid" | "synthetic";
+        /**
+         * DisasterCaseStudyDTO
+         * @description Detailed geotechnical and operational profile for landmark disaster events.
+         */
+        DisasterCaseStudyDTO: {
+            /** Slug */
+            slug: string;
+            /** Title */
+            title: string;
+            /** Disaster Type */
+            disaster_type: string;
+            /** State Name */
+            state_name: string;
+            /** Location Name */
+            location_name: string;
+            /** Event Date */
+            event_date: string;
+            /**
+             * Fatalities
+             * @default 0
+             */
+            fatalities: number;
+            /**
+             * Injured
+             * @default 0
+             */
+            injured: number;
+            /**
+             * Missing
+             * @default 0
+             */
+            missing: number;
+            /**
+             * Compensation Cr
+             * @default 0
+             */
+            compensation_cr: number;
+            /** Summary */
+            summary: string;
+            /** Geotechnical Context */
+            geotechnical_context?: string | null;
+            /** Response Actions */
+            response_actions?: {
+                [key: string]: unknown;
+            }[];
+            /** Source Refs */
+            source_refs?: {
+                [key: string]: unknown;
+            }[];
+        };
+        /**
+         * DisasterStatsResponse
+         * @description Complete disaster history dossier for a state (GET /stats/disasters).
+         */
+        DisasterStatsResponse: {
+            /** State Name */
+            state_name: string;
+            /** Period Start */
+            period_start: number;
+            /** Period End */
+            period_end: number;
+            /** Loss Time Series */
+            loss_time_series?: components["schemas"]["HistoricalLossDTO"][];
+            /** Ncrb Hazard Breakdown */
+            ncrb_hazard_breakdown?: components["schemas"]["NcrbHazardCasualtyDTO"][];
+            /** Cwc Flood History */
+            cwc_flood_history?: components["schemas"]["CwcFloodDamageDTO"][];
+            highway_damage?: components["schemas"]["HighwayDisasterDamageDTO"] | null;
+            /** Response Funding */
+            response_funding?: components["schemas"]["ReliefAllocationDTO"][];
+            /** Data Caveats */
+            data_caveats?: string[];
+        };
+        /**
+         * DistrictHazardSummaryDTO
+         * @description District-level rollup for officer decision support (GET /hazard/summary).
+         */
+        DistrictHazardSummaryDTO: {
+            /** Admin Id */
+            admin_id: number;
+            /** Admin Name */
+            admin_name: string;
+            /** Lgd Code */
+            lgd_code?: number | null;
+            /**
+             * Hazard Type
+             * @default riverine_flood
+             */
+            hazard_type: string;
+            /**
+             * Model Status
+             * @description 'computed' for SAR-modeled districts; 'not_computed' for unmodeled districts.
+             * @default computed
+             */
+            model_status: string;
+            /** Model Version */
+            model_version?: string | null;
+            /**
+             * Total Cells
+             * @default 0
+             */
+            total_cells: number;
+            coverage?: components["schemas"]["HazardLayerCoverageDTO"];
+            /**
+             * Unmeasured Cells Count
+             * @description Number of no_coverage cells. Treated strictly as unmeasured, never safe.
+             * @default 0
+             */
+            unmeasured_cells_count: number;
+            band_distribution?: components["schemas"]["SusceptibilityBandBreakdown"];
+            /**
+             * Mean Susceptibility
+             * @default 0
+             */
+            mean_susceptibility: number;
+            /**
+             * Max Susceptibility
+             * @default 0
+             */
+            max_susceptibility: number;
+            /**
+             * Habitations At Risk Count
+             * @default 0
+             */
+            habitations_at_risk_count: number;
+            /**
+             * Population At Risk Sum
+             * @default 0
+             */
+            population_at_risk_sum: number;
+            drivers_summary?: components["schemas"]["FloodDriverDTO"] | null;
+            /** Last Recorded Flood Loss */
+            last_recorded_flood_loss?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Officer Decision Prompt
+             * @default
+             */
+            officer_decision_prompt: string;
+            /**
+             * Screening Grade
+             * @default Screening Grade: Cell-level screening and prioritisation tool. Geotechnical investigation, hydraulic study, and community consultation required before executing relocation orders.
+             */
+            screening_grade: string;
+        };
         /**
          * ErrorDetail
          * @description Standardized error details conforming to SETU-DRR API error envelope.
@@ -1805,6 +2101,73 @@ export interface components {
             confidence_ceiling: number;
         };
         /**
+         * HighwayDisasterDamageDTO
+         * @description Damaged National Highways reported to MoRTH.
+         */
+        HighwayDisasterDamageDTO: {
+            /** State Name */
+            state_name: string;
+            /** Reporting Period */
+            reporting_period: string;
+            /** Damaged Length Km */
+            damaged_length_km: number;
+            /**
+             * Disaster Triggers
+             * @default Heavy Rain / Landslide / Flood
+             */
+            disaster_triggers: string;
+            /** Source Uuid */
+            source_uuid: string;
+        };
+        /**
+         * HistoricalLossDTO
+         * @description Annual loss tally from MHA / Rajya Sabha reports.
+         */
+        HistoricalLossDTO: {
+            /**
+             * Year Label
+             * @description Fiscal or monsoon year string, e.g. '2019-20'.
+             */
+            year_label: string;
+            /** Year Start */
+            year_start: number;
+            /** Year End */
+            year_end: number;
+            /**
+             * Lives Lost
+             * @default 0
+             */
+            lives_lost: number;
+            /**
+             * Cattle Lost
+             * @default 0
+             */
+            cattle_lost: number;
+            /**
+             * Houses Damaged
+             * @default 0
+             */
+            houses_damaged: number;
+            /**
+             * Crop Area Affected Ha
+             * @default 0
+             */
+            crop_area_affected_ha: number;
+            /**
+             * Hazard Types Included
+             * @default Floods/Landslides
+             */
+            hazard_types_included: string;
+            /** Source Uuid */
+            source_uuid: string;
+            /** Source Title */
+            source_title: string;
+            /** Source Ministry */
+            source_ministry: string;
+            /** Data Quality Notes */
+            data_quality_notes?: string | null;
+        };
+        /**
          * JurisdictionDTO
          * @description Authoritative administrative jurisdiction assignment.
          */
@@ -1895,6 +2258,63 @@ export interface components {
             source: string;
             /** Source Ref */
             source_ref?: string | null;
+        };
+        /**
+         * NcrbHazardCasualtyDTO
+         * @description Accidental deaths categorized by natural hazard trigger (NCRB Forces of Nature).
+         */
+        NcrbHazardCasualtyDTO: {
+            /** Calendar Year */
+            calendar_year: number;
+            /**
+             * Landslide Deaths
+             * @default 0
+             */
+            landslide_deaths: number;
+            /**
+             * Flash Flood Deaths
+             * @default 0
+             */
+            flash_flood_deaths: number;
+            /**
+             * Flood Deaths
+             * @default 0
+             */
+            flood_deaths: number;
+            /**
+             * Cloudburst Deaths
+             * @default 0
+             */
+            cloudburst_deaths: number;
+            /**
+             * Cyclone Deaths
+             * @default 0
+             */
+            cyclone_deaths: number;
+            /**
+             * Avalanche Deaths
+             * @default 0
+             */
+            avalanche_deaths: number;
+            /**
+             * Lightning Deaths
+             * @default 0
+             */
+            lightning_deaths: number;
+            /**
+             * Cold Heat Wave Deaths
+             * @default 0
+             */
+            cold_heat_wave_deaths: number;
+            /**
+             * Other Nature Deaths
+             * @default 0
+             */
+            other_nature_deaths: number;
+            /** Total Deaths */
+            total_deaths: number;
+            /** Source Uuid */
+            source_uuid: string;
         };
         /**
          * OsmFacilityItemDTO
@@ -2044,6 +2464,36 @@ export interface components {
              * @example Asha Nair
              */
             full_name: string;
+        };
+        /**
+         * ReliefAllocationDTO
+         * @description SDRF and NDRF disaster response allocations and lives saved.
+         */
+        ReliefAllocationDTO: {
+            /** Fiscal Year */
+            fiscal_year: string;
+            /**
+             * Sdrf Central Share Cr
+             * @default 0
+             */
+            sdrf_central_share_cr: number;
+            /**
+             * Sdrf State Share Cr
+             * @default 0
+             */
+            sdrf_state_share_cr: number;
+            /**
+             * Ndrf Releases Cr
+             * @default 0
+             */
+            ndrf_releases_cr: number;
+            /**
+             * Lives Saved Count
+             * @default 0
+             */
+            lives_saved_count: number;
+            /** Source Uuid */
+            source_uuid: string;
         };
         /**
          * Role
@@ -2390,6 +2840,89 @@ export interface components {
          * @enum {string}
          */
         SortMode: "urgency" | "caseload";
+        /**
+         * StateDisasterComparisonDTO
+         * @description Comparative analysis between two states or state vs national.
+         */
+        StateDisasterComparisonDTO: {
+            state1: components["schemas"]["StateLossSummary"];
+            state2: components["schemas"]["StateLossSummary"];
+            /** Comparison Period */
+            comparison_period: string;
+            /** Insights */
+            insights?: string[];
+        };
+        /** StateLossSummary */
+        StateLossSummary: {
+            /** State Name */
+            state_name: string;
+            /**
+             * Total Lives Lost
+             * @default 0
+             */
+            total_lives_lost: number;
+            /**
+             * Total Houses Damaged
+             * @default 0
+             */
+            total_houses_damaged: number;
+            /**
+             * Total Cattle Lost
+             * @default 0
+             */
+            total_cattle_lost: number;
+            /**
+             * Total Crop Area Ha
+             * @default 0
+             */
+            total_crop_area_ha: number;
+            /**
+             * Dominant Hazard Killer
+             * @default Flood / Heavy Rain
+             */
+            dominant_hazard_killer: string;
+            /**
+             * Avg Annual Deaths
+             * @default 0
+             */
+            avg_annual_deaths: number;
+        };
+        /**
+         * SusceptibilityBandBreakdown
+         * @description Distribution shares of cells across susceptibility thresholds.
+         */
+        SusceptibilityBandBreakdown: {
+            /**
+             * Very Low
+             * @description Share with S < 0.20 [0, 1].
+             * @default 0
+             */
+            very_low: number;
+            /**
+             * Low
+             * @description Share with 0.20 <= S < 0.40 [0, 1].
+             * @default 0
+             */
+            low: number;
+            /**
+             * Moderate
+             * @description Share with 0.40 <= S < 0.60 [0, 1].
+             * @default 0
+             */
+            moderate: number;
+            /**
+             * High
+             * @description Share with 0.60 <= S < 0.80 [0, 1].
+             * @default 0
+             */
+            high: number;
+            /**
+             * Very High
+             * @description Share with S >= 0.80 [0, 1].
+             * @default 0
+             */
+            very_high: number;
+        };
         /**
          * TenureType
          * @description Land tenure status for candidate relocation sites (PRD §6.8, FR-7.3).
@@ -3008,6 +3541,76 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HazardCellDetailDTO"];
+                };
+            };
+            /** @description Bad Request - Invalid parameters or malformed input format. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found - Requested resource, cell, or entity does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Validation Error - Request parameter or payload validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error - An unexpected system or database error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Service Unavailable - No valid serving version is active. Pipeline data is not ready. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    get_district_hazard_summary_hazard_summary_get: {
+        parameters: {
+            query: {
+                /** @description Admin boundary ID or LGD code (e.g. 277 for Barpeta, 98 for Dholpur). */
+                admin: number;
+                /** @description Hazard layer to summarize. */
+                hazard_type?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DistrictHazardSummaryDTO"];
                 };
             };
             /** @description Bad Request - Invalid parameters or malformed input format. */
@@ -4109,6 +4712,281 @@ export interface operations {
             };
             /** @description Internal Server Error - An unexpected system or database error occurred. */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    list_available_states_stats_states_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AvailableStatesResponse"];
+                };
+            };
+            /** @description Bad Request - Invalid parameters or malformed input format. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found - Requested resource, cell, or entity does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Validation Error - Request parameter or payload validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error - An unexpected system or database error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Service Unavailable - No valid serving version is active. Pipeline data is not ready. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    get_disaster_stats_stats_disasters_get: {
+        parameters: {
+            query?: {
+                /** @description State name (e.g. 'Assam', 'Rajasthan', 'Kerala', 'Madhya Pradesh'). */
+                state?: string;
+                /** @description Start year filter. */
+                from_year?: number;
+                /** @description End year filter. */
+                to_year?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DisasterStatsResponse"];
+                };
+            };
+            /** @description Bad Request - Invalid parameters or malformed input format. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found - Requested resource, cell, or entity does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Validation Error - Request parameter or payload validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error - An unexpected system or database error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Service Unavailable - No valid serving version is active. Pipeline data is not ready. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    compare_disaster_stats_stats_disasters_comparison_get: {
+        parameters: {
+            query?: {
+                /** @description First state to compare. */
+                state1?: string;
+                /** @description Second state to compare. */
+                state2?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StateDisasterComparisonDTO"];
+                };
+            };
+            /** @description Bad Request - Invalid parameters or malformed input format. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found - Requested resource, cell, or entity does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Validation Error - Request parameter or payload validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error - An unexpected system or database error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Service Unavailable - No valid serving version is active. Pipeline data is not ready. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    list_case_studies_stats_case_studies_get: {
+        parameters: {
+            query?: {
+                /** @description Optional case study slug filter (e.g. 'manipur-noney-landslide-2022'). */
+                slug?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DisasterCaseStudyDTO"][];
+                };
+            };
+            /** @description Bad Request - Invalid parameters or malformed input format. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found - Requested resource, cell, or entity does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Validation Error - Request parameter or payload validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error - An unexpected system or database error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Service Unavailable - No valid serving version is active. Pipeline data is not ready. */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

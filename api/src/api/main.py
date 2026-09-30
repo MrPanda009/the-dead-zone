@@ -20,6 +20,7 @@ from api.routes.plan import router as plan_router
 from api.routes.recommendations import router as recommendations_router
 from api.routes.scenario import router as scenario_router
 from api.routes.auth import router as auth_router
+from api.routes.stats import router as stats_router
 from core.errors import ErrorCode
 
 logging.basicConfig(
@@ -109,6 +110,7 @@ app.include_router(plan_router)
 app.include_router(recommendations_router)
 app.include_router(scenario_router)
 app.include_router(auth_router)
+app.include_router(stats_router)
 
 
 @app.get("/", tags=["General"])

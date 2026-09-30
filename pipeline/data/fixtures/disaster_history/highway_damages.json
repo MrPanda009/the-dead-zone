@@ -1,0 +1,51 @@
+[
+  {
+    "state_name": "Assam",
+    "reporting_period": "2024-25",
+    "damaged_length_km": 142.8,
+    "disaster_triggers": "Heavy Rain / Landslide / Flood",
+    "source_uuid": "89e8a589-1089-4f2d-9ea5-a5fa66a8ac95"
+  },
+  {
+    "state_name": "Himachal Pradesh",
+    "reporting_period": "2024-25",
+    "damaged_length_km": 368.5,
+    "disaster_triggers": "Flash Flood / Heavy Rain / Landslide",
+    "source_uuid": "89e8a589-1089-4f2d-9ea5-a5fa66a8ac95"
+  },
+  {
+    "state_name": "Uttarakhand",
+    "reporting_period": "2024-25",
+    "damaged_length_km": 215.2,
+    "disaster_triggers": "Landslide / Cloudburst / Rain",
+    "source_uuid": "89e8a589-1089-4f2d-9ea5-a5fa66a8ac95"
+  },
+  {
+    "state_name": "Kerala",
+    "reporting_period": "2024-25",
+    "damaged_length_km": 94.6,
+    "disaster_triggers": "Heavy Rain / Landslide",
+    "source_uuid": "89e8a589-1089-4f2d-9ea5-a5fa66a8ac95"
+  },
+  {
+    "state_name": "Karnataka",
+    "reporting_period": "2024-25",
+    "damaged_length_km": 82.4,
+    "disaster_triggers": "Heavy Rain / Flood / Landslide",
+    "source_uuid": "89e8a589-1089-4f2d-9ea5-a5fa66a8ac95"
+  },
+  {
+    "state_name": "Rajasthan",
+    "reporting_period": "2024-25",
+    "damaged_length_km": 54.1,
+    "disaster_triggers": "Heavy Rain / Flood",
+    "source_uuid": "89e8a589-1089-4f2d-9ea5-a5fa66a8ac95"
+  },
+  {
+    "state_name": "Madhya Pradesh",
+    "reporting_period": "2024-25",
+    "damaged_length_km": 76.3,
+    "disaster_triggers": "Heavy Rain / Flood",
+    "source_uuid": "89e8a589-1089-4f2d-9ea5-a5fa66a8ac95"
+  }
+]

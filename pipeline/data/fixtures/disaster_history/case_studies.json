@@ -1,0 +1,25 @@
+[
+  {
+    "slug": "manipur-noney-landslide-2022",
+    "title": "Tupul Railway Construction Yard Landslide, Noney (Manipur)",
+    "disaster_type": "Landslide",
+    "state_name": "Manipur",
+    "location_name": "Tupul, Noney District, Manipur",
+    "event_date": "2022-06-30",
+    "fatalities": 61,
+    "injured": 18,
+    "missing": 0,
+    "compensation_cr": 3.45,
+    "summary": "At midnight on 29-30 June 2022, a massive rotational debris slide and mudflow occurred at the railway construction camp near Tupul station on the Jiribam-Imphal railway line. The landslide blocked the Ijei river, creating an artificial dam and inundating the 107 Territorial Army company camp.",
+    "geotechnical_context": "Deep slope cutting without adequate retaining structures, high pore water pressure following continuous heavy monsoon precipitation on sheared Disang shale formations.",
+    "response_actions": [
+      { "agency": "NDRF", "action": "Mobilized 5 search and rescue teams with sniffer dogs and through-the-wall radar devices" },
+      { "agency": "Indian Army & Assam Rifles", "action": "Heavy earthmoving machinery deployed to breach the Ijei river landslide dam and prevent flash flooding downstream" },
+      { "agency": "SDRF Manipur", "action": "Evacuation of downstream habitations along the Ijei river corridor" }
+    ],
+    "source_refs": [
+      { "title": "Rajya Sabha Question No. 1290 (Casualties in Noney Landslide)", "uuid": "e8299754-fa6f-48f0-93a3-818ad3763086" },
+      { "title": "Ex-gratia and Relief Assistance for Noney Victims", "uuid": "5820fb44-2c46-4052-abb1-6885c784dc95" }
+    ]
+  }
+]

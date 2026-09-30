@@ -143,7 +143,20 @@ export const NavRail: React.FC<NavRailProps> = ({
         </Link>
       )}
 
-      {/* 5. Sensor Alerts */}
+      {/* 5. Disaster Statistics & Provenance */}
+      <Link
+        href="/stats"
+        title="Disaster History & Stats"
+        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:scale-105 cursor-pointer ${
+          pathname === '/stats'
+            ? 'bg-citron/15 text-citron border border-citron/30'
+            : 'text-text-muted hover:text-text-primary hover:bg-surface-2'
+        }`}
+      >
+        <span className="material-symbols-outlined text-xl">query_stats</span>
+      </Link>
+
+      {/* 6. Sensor Alerts */}
       <button
         onClick={onSensorAlertsClick}
         title="Sensor Alerts"

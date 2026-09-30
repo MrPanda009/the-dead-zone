@@ -22,6 +22,8 @@ from core.schemas.hazard import (
     HazardLayerLegendDTO,
     HazardLayerResponse,
     HazardLayerSummaryDTO,
+    DistrictHazardSummaryDTO,
+    SusceptibilityBandBreakdown,
 )
 from api.repositories.hazard_repo import HazardRepository
 
@@ -269,6 +271,69 @@ class HazardService:
             population=round(float(row["population"] or 0.0), 2),
             is_permanent_red_candidate=susceptibility >= PRZ_ANY_SUSCEPTIBILITY,
             drivers=drivers,
+        )
+
+    def get_district_summary(
+        self,
+        admin_identifier: int,
+        hazard_type: str = Hazard.RIVERINE_FLOOD.value,
+    ) -> DistrictHazardSummaryDTO:
+        """Rolls up district-level flood exposure metrics and decision prompts."""
+        hazard = self._validate_hazard_type(hazard_type)
+        data = self.repo.get_district_summary(admin_identifier, hazard)
+        if not data:
+            raise DataUnavailableError(
+                f"Admin boundary identifier '{admin_identifier}' not found.",
+                {"admin": admin_identifier},
+            )
+
+        admin_name = data["admin_name"]
+        hab_count = data["habitations_at_risk_count"]
+        pop_count = data["population_at_risk_sum"]
+        no_cov = data["unmeasured_cells_count"]
+        last_loss = data["last_recorded_flood_loss"]
+        is_computed = data["model_status"] == "computed"
+
+        if is_computed:
+            loss_snippet = (
+                f"Last recorded state flood loss: {last_loss['human_lives_lost']} lives, ₹{last_loss['total_damage_crores']} Cr ({last_loss['calendar_year']})."
+                if last_loss
+                else "No state flood damage records available."
+            )
+            prompt = (
+                f"{hab_count} habitations ({pop_count:,} citizens) situated in cells with flood susceptibility ≥ 0.50 in {admin_name}. "
+                f"{no_cov} cells unmeasured (no satellite coverage). {loss_snippet}"
+            )
+        else:
+            prompt = (
+                f"Empirical SAR flood susceptibility model has not been computed for {admin_name}. "
+                f"Screening based solely on historical aggregate disaster statistics."
+            )
+
+        driver_dto = (
+            FloodDriverDTO(**data["drivers_summary"])
+            if data["drivers_summary"]
+            else None
+        )
+
+        return DistrictHazardSummaryDTO(
+            admin_id=data["admin_id"],
+            admin_name=data["admin_name"],
+            lgd_code=data["lgd_code"],
+            hazard_type=hazard,
+            model_status=data["model_status"],
+            model_version=data["model_version"],
+            total_cells=data["total_cells"],
+            coverage=HazardLayerCoverageDTO(**data["coverage"]),
+            unmeasured_cells_count=no_cov,
+            band_distribution=SusceptibilityBandBreakdown(**data["band_distribution"]),
+            mean_susceptibility=data["mean_susceptibility"],
+            max_susceptibility=data["max_susceptibility"],
+            habitations_at_risk_count=hab_count,
+            population_at_risk_sum=pop_count,
+            drivers_summary=driver_dto,
+            last_recorded_flood_loss=last_loss,
+            officer_decision_prompt=prompt,
         )
 
     # ------------------------------------------------------------------
