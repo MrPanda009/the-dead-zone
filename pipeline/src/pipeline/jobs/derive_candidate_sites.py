@@ -46,7 +46,7 @@ for sub in ("core/src", "pipeline/src", "api/src"):
         sys.path.insert(0, path)
 
 from core.config import settings
-from core.domain.capacity import CandidateSitePolicy, CapacityEngine
+from core.domain.capacity import SCREENING_SITE_POLICY, CandidateSitePolicy, CapacityEngine
 from core.enums import TenureType
 from pipeline.hazard.flood.districts import DISTRICTS
 from pipeline.hazard.flood.run_district_flood import load_district_geometry
@@ -75,14 +75,7 @@ CALCULATION_VERSION = "step12-13-v1.0"
 #: CRZ additionally does not apply to these landlocked districts — Dholpur and Morena are inland
 #: on the Chambal, hundreds of kilometres from any tidal water.
 #: Forest and water-body exclusions stay ON, because tree-cover and permanent-water layers exist.
-SCREENING_POLICY = CandidateSitePolicy(
-    exclude_forest=True,
-    exclude_water_body=True,
-    exclude_protected_area=False,
-    exclude_crz_i_ii=False,
-    allow_unverified_tenure=True,
-    policy_version="site-eligibility-v1.1-screening",
-)
+SCREENING_POLICY = SCREENING_SITE_POLICY
 
 DATA_GAPS = [
     "Land tenure unverified: no cadastral source for this district.",

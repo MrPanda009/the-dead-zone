@@ -28,6 +28,14 @@ class AllocationPlanRequest(BaseSchema):
         ge=0.0,
         description="Cost penalty weight per kilometer of distance from source habitation.",
     )
+    screening_mode: bool = Field(
+        default=False,
+        description=(
+            "Screening-grade run over derived parcels. Admits sites whose tenure is unverified and "
+            "whose water/school/health capacity is unmeasured (offered at their land-only capacity). "
+            "Off by default: order-grade runs require verified tenure and a measured final capacity."
+        ),
+    )
 
 
 class AllocationAssignmentDTO(BaseSchema):
@@ -59,6 +67,10 @@ class AllocationPlanResponse(BaseSchema):
     solver_latency_ms: float
     assignments: List[AllocationAssignmentDTO] = Field(default_factory=list)
     group_split_warnings: List[str] = Field(default_factory=list)
+    screening_caveats: List[str] = Field(
+        default_factory=list,
+        description="Assumptions this run relied on (unverified tenure, provisional land-only capacity).",
+    )
     screening_grade: str = SCREENING_GRADE_NOTICE
 
 

@@ -22,7 +22,7 @@ from core.domain.allocation import (
     MinCostFlowAllocationSolver,
 )
 from api.services.site_eligibility import evaluate_row_eligibility
-from core.domain.capacity import CapacityEngine, CandidateSitePolicy
+from core.domain.capacity import SCREENING_SITE_POLICY, CapacityEngine, CandidateSitePolicy
 from core.enums import Tier
 from core.errors import InvalidParametersError
 from core.schemas.allocation import (
@@ -52,6 +52,7 @@ class AllocationService:
         site_rows: Sequence[dict[str, Any]],
         distance_rows: Sequence[dict[str, Any]],
         max_search_radius_km: float = 15.0,
+        policy: Optional[CandidateSitePolicy] = None,
     ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
         """Enforces H7 candidate-site eligibility rules before allocation (PRD §6.8, FR-7.2, FR-7.3).
         
@@ -64,7 +65,8 @@ class AllocationService:
         - not water body (missing/unknown -> rejected)
         - contiguous area >= 2 ha
         - within search radius (missing/unknown -> rejected)
-        - tenure explicitly valid (government_revenue or private; unverified/unknown -> rejected)
+        - tenure explicitly valid (government_revenue or private; unverified/unknown -> rejected,
+          unless `policy` is a screening policy that allows unverified tenure)
         """
         eligible_sites: list[dict[str, Any]] = []
         eligible_site_ids: set[int] = set()
@@ -76,7 +78,7 @@ class AllocationService:
             if s_id not in site_min_dist or dist < site_min_dist[s_id]:
                 site_min_dist[s_id] = dist
 
-        policy = replace(self.policy, search_radius_km=max_search_radius_km)
+        policy = replace(policy or self.policy, search_radius_km=max_search_radius_km)
 
         for s in site_rows:
             s_id = s.get("id")
@@ -150,7 +152,8 @@ class AllocationService:
 
         # 3. Query candidate sites within search radius
         hab_ids = [h.id for h in hab_demands]
-        active_policy = replace(self.policy, search_radius_km=request.max_search_radius_km)
+        base_policy = SCREENING_SITE_POLICY if request.screening_mode else self.policy
+        active_policy = replace(base_policy, search_radius_km=request.max_search_radius_km)
         raw_site_rows, raw_distance_rows = self.repo.get_candidate_sites_and_distances(
             habitation_ids=hab_ids,
             max_radius_m=request.max_search_radius_km * 1000.0,
@@ -161,6 +164,7 @@ class AllocationService:
             site_rows=raw_site_rows,
             distance_rows=raw_distance_rows,
             max_search_radius_km=request.max_search_radius_km,
+            policy=active_policy,
         )
 
         site_capacities: list[CandidateSiteCapacity] = [
@@ -224,6 +228,8 @@ class AllocationService:
                 "split_details": a.split_details,
             })
 
+        caveats = self._screening_caveats(result.assignments, site_rows)
+
         # 6. Persist allocation run in database
         try:
             self.repo.save_allocation_run(
@@ -246,8 +252,37 @@ class AllocationService:
             solver_latency_ms=result.solver_latency_ms,
             assignments=dto_assignments,
             group_split_warnings=result.group_split_warnings,
+            screening_caveats=caveats,
             screening_grade=SCREENING_GRADE_NOTICE,
         )
+
+    @staticmethod
+    def _screening_caveats(
+        assignments: Sequence[Any],
+        site_rows: Sequence[dict[str, Any]],
+    ) -> list[str]:
+        """Lists the assumptions the assigned sites relied on, so a screening result is never
+        mistaken for an order-grade one. Only sites that actually received households count."""
+        sites_by_id = {s["id"]: s for s in site_rows}
+        assigned_ids = {a.site_id for a in assignments}
+        provisional = sum(
+            1 for i in assigned_ids if sites_by_id.get(i, {}).get("capacity_basis") == "land_only_provisional"
+        )
+        unverified = sum(
+            1 for i in assigned_ids if str(sites_by_id.get(i, {}).get("tenure")) == "tenure_unverified"
+        )
+        caveats: list[str] = []
+        if provisional:
+            caveats.append(
+                f"{provisional} assigned site(s) use a provisional land-only capacity: water, school and "
+                "health capacity are unmeasured, so the true carrying capacity may be lower."
+            )
+        if unverified:
+            caveats.append(
+                f"{unverified} assigned site(s) have unverified land tenure; allotment requires a "
+                "cadastral check."
+            )
+        return caveats
 
     def simulate_allocation(
         self,

@@ -84,7 +84,7 @@ DISTRICTS: dict[str, DistrictConfig] = {
         census_2011_population=1693622,
         river_basin="Brahmaputra",
         s1_datetime_range="2020-06-01/2020-12-31",
-        s1_scene_target=10,
+        s1_scene_target=30,  # matches DEFAULT_OBSERVATION_CEILING so confidence can reach 1.0
     ),
     "dholpur": DistrictConfig(
         key="dholpur",

@@ -85,7 +85,28 @@ class CandidateSitePolicy:
     #: preserving the H7 invariant that a site may not be allotted without proven tenure.
     #: Plan §Step 12 sanctions this as the ONLY relaxation of "missing data is not safe".
     allow_unverified_tenure: bool = False
+    #: Screening mode. When True, a site whose lifeline capacities (water / school / health) are
+    #: unmeasured is offered to the solver at its land capacity, labelled as a provisional
+    #: land-only upper bound. Order-grade mode leaves this False so an unmeasured lifeline never
+    #: reads as unlimited capacity. `cc_final` itself is never overwritten.
+    allow_land_only_capacity: bool = False
     policy_version: str = "site-eligibility-v1.1"
+
+
+#: Policy for land with no cadastral or statutory-overlay source (derived parcels). Protected-area
+#: and CRZ layers are absent, so those exclusions are disabled and recorded per site in
+#: `data_gaps`; forest and water-body exclusions stay on because tree-cover and permanent-water
+#: layers exist. Shared by the derivation job (which stamps sites under it) and the allocation
+#: path (which must read them under the same rules), so the two cannot drift apart.
+SCREENING_SITE_POLICY = CandidateSitePolicy(
+    exclude_forest=True,
+    exclude_water_body=True,
+    exclude_protected_area=False,
+    exclude_crz_i_ii=False,
+    allow_unverified_tenure=True,
+    allow_land_only_capacity=True,
+    policy_version="site-eligibility-v1.1-screening",
+)
 
 
 @dataclass(frozen=True)

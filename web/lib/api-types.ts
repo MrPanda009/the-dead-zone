@@ -739,6 +739,12 @@ export interface components {
              * @default 1
              */
             distance_penalty_weight: number;
+            /**
+             * Screening Mode
+             * @description Screening-grade run over derived parcels. Admits sites whose tenure is unverified and whose water/school/health capacity is unmeasured (offered at their land-only capacity). Off by default: order-grade runs require verified tenure and a measured final capacity.
+             * @default false
+             */
+            screening_mode: boolean;
         };
         /**
          * AllocationPlanResponse
@@ -769,6 +775,11 @@ export interface components {
             assignments?: components["schemas"]["AllocationAssignmentDTO"][];
             /** Group Split Warnings */
             group_split_warnings?: string[];
+            /**
+             * Screening Caveats
+             * @description Assumptions this run relied on (unverified tenure, provisional land-only capacity).
+             */
+            screening_caveats?: string[];
             /**
              * Screening Grade
              * @default Screening Grade: Cell-level screening and prioritisation tool. Geotechnical investigation, hydraulic study, and community consultation required before executing relocation orders.

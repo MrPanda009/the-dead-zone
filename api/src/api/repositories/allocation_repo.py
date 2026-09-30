@@ -71,15 +71,30 @@ class AllocationRepository:
             return [], []
 
         p = policy or CandidateSitePolicy()
+
+        # Capacity the solver may rely on. `cc_final` is NULL whenever a lifeline is unmeasured;
+        # only a screening policy may fall back to the land-only figure, and the basis is
+        # reported so the result is never mistaken for a fully verified capacity.
+        if p.allow_land_only_capacity:
+            capacity_sql = "COALESCE(cs.cc_final, cs.cc_land)"
+        else:
+            capacity_sql = "cs.cc_final"
+
+        # Tenure gate mirrors CapacityEngine.evaluate_site_eligibility: unverified tenure is
+        # admitted only when the policy says so, never by default.
+        tenures = ["government_revenue", "private"]
+        if p.allow_unverified_tenure:
+            tenures.append("tenure_unverified")
+
         where_clauses = [
             "h.id = ANY(:hab_ids)",
             "ST_DWithin(h.geom_point::geography, cs.centroid::geography, :radius_m)",
-            "cs.cc_final > 0",
+            f"{capacity_sql} > 0",
             # H7 Hard Eligibility Constraints on canonical table columns parameterized from CandidateSitePolicy
             "cs.mhi_max < :max_static_mhi",
             "cs.slope_mean < :max_slope_deg",
             "cs.area_ha >= :min_area_ha",
-            "cs.tenure IN ('government_revenue', 'private')",
+            "cs.tenure = ANY(:tenures)",
         ]
         params: dict[str, Any] = {
             "hab_ids": list(habitation_ids),
@@ -87,6 +102,7 @@ class AllocationRepository:
             "max_static_mhi": p.max_static_mhi,
             "max_slope_deg": p.max_slope_deg,
             "min_area_ha": p.min_contiguous_area_ha,
+            "tenures": tenures,
         }
 
         if min_suitability is not None:
@@ -100,7 +116,8 @@ class AllocationRepository:
                 h.id as habitation_id,
                 cs.id as site_id,
                 COALESCE(cs.metadata->>'name', 'Site #' || cs.id) as site_name,
-                cs.cc_final as capacity,
+                {capacity_sql} as capacity,
+                CASE WHEN cs.cc_final IS NULL THEN 'land_only_provisional' ELSE 'final' END as capacity_basis,
                 cs.suitability,
                 cs.area_ha,
                 cs.tenure,
@@ -131,6 +148,7 @@ class AllocationRepository:
                     "id": s_id,
                     "name": r["site_name"],
                     "capacity": r["capacity"],
+                    "capacity_basis": r["capacity_basis"],
                     "suitability": r["suitability"],
                     "lat": r["site_lat"],
                     "lon": r["site_lon"],

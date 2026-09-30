@@ -115,8 +115,14 @@ def apply_migrations(
 
 
 if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description="Apply SQL migrations in numeric sequence.")
+    parser.add_argument("--url", default=None, help="Target PostgreSQL connection URL.")
+    parser.add_argument("--dir", default=None, help="Custom migrations directory.")
+    args = parser.parse_args()
+
     try:
-        apply_migrations()
+        apply_migrations(conninfo=args.url, migrations_dir=args.dir)
     except Exception as e:
         print(f"\n[ERROR] Migration failed: {e}", file=sys.stderr)
         sys.exit(1)

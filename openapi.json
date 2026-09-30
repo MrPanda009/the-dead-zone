@@ -2725,6 +2725,12 @@
             "title": "Distance Penalty Weight",
             "description": "Cost penalty weight per kilometer of distance from source habitation.",
             "default": 1.0
+          },
+          "screening_mode": {
+            "type": "boolean",
+            "title": "Screening Mode",
+            "description": "Screening-grade run over derived parcels. Admits sites whose tenure is unverified and whose water/school/health capacity is unmeasured (offered at their land-only capacity). Off by default: order-grade runs require verified tenure and a measured final capacity.",
+            "default": false
           }
         },
         "type": "object",
@@ -2783,6 +2789,14 @@
             },
             "type": "array",
             "title": "Group Split Warnings"
+          },
+          "screening_caveats": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Screening Caveats",
+            "description": "Assumptions this run relied on (unverified tenure, provisional land-only capacity)."
           },
           "screening_grade": {
             "type": "string",

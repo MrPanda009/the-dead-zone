@@ -192,8 +192,9 @@ export const RelocationWorkspace = ({
       target_tiers: [settings.targetTier],
       allow_group_splits: settings.allowGroupSplits,
       distance_penalty_weight: settings.distancePenaltyWeight,
+      screening_mode: includeScreening,
     });
-  }, [allocation, activeDistrictId, settings]);
+  }, [allocation, activeDistrictId, settings, includeScreening]);
 
   const handleSelectSite = useCallback(
     (site: CandidateSiteItem) =>

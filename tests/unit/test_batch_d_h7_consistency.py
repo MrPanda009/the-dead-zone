@@ -264,13 +264,33 @@ class TestAllocationConsistency:
         assert "cs.mhi_max < :max_static_mhi" in sql_text
         assert "cs.slope_mean < :max_slope_deg" in sql_text
         assert "cs.area_ha >= :min_area_ha" in sql_text
-        assert "cs.tenure IN ('government_revenue', 'private')" in sql_text
+        assert "cs.tenure = ANY(:tenures)" in sql_text
         assert "metadata->>'is_eligible'" not in sql_text
         assert "metadata->>'is_forest'" not in sql_text
 
         assert params["max_static_mhi"] == 0.22
         assert params["max_slope_deg"] == 11.0
         assert params["min_area_ha"] == 4.0
+        # Order-grade default: unverified tenure and unmeasured capacity never reach the solver.
+        assert params["tenures"] == ["government_revenue", "private"]
+        assert "cs.cc_final > 0" in sql_text
+        assert "cc_land" not in sql_text.split("WHERE")[1]
+
+    def test_allocation_repo_screening_policy_relaxes_tenure_and_capacity(self):
+        """A screening policy admits unverified tenure and falls back to land-only capacity."""
+        from core.domain.capacity import SCREENING_SITE_POLICY
+
+        mock_db = MagicMock()
+        mock_db.execute.return_value.mappings.return_value.fetchall.return_value = []
+
+        AllocationRepository(mock_db).get_candidate_sites_and_distances(
+            habitation_ids=[1], max_radius_m=15000.0, policy=SCREENING_SITE_POLICY
+        )
+
+        call_args = mock_db.execute.call_args
+        sql_text = str(call_args[0][0])
+        assert call_args[0][1]["tenures"] == ["government_revenue", "private", "tenure_unverified"]
+        assert "COALESCE(cs.cc_final, cs.cc_land) > 0" in sql_text
 
     def test_ineligible_sites_excluded_from_solver(self):
         """Solver must not receive any site rejected by canonical evaluate_site_eligibility."""
