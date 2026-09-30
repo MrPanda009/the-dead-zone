@@ -180,6 +180,13 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
       initialPreset.target.y,
       initialPreset.target.z,
     );
+    const onControlsStart = () => {
+      if (cameraRef.current && controlsRef.current) {
+        gsap.killTweensOf(cameraRef.current.position);
+        gsap.killTweensOf(controlsRef.current.target);
+      }
+    };
+    controls.addEventListener('start', onControlsStart);
     controlsRef.current = controls;
 
     // Lighting
@@ -264,6 +271,8 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
       window.removeEventListener('resize', handleResize);
       resizeObserver.disconnect();
       cancelAnimationFrame(animId);
+      controls.removeEventListener('start', onControlsStart);
+      controls.dispose();
       landmass.dispose();
       hexColumns.dispose();
       beacon.dispose();
@@ -332,25 +341,32 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
 
   // Smooth Camera Flight Navigation (GSAP)
   const flyTo = useCallback(
-    (target: { x: number; y: number; z: number }, cameraPos: { x: number; y: number; z: number }) => {
+    (
+      target: { x: number; y: number; z: number },
+      cameraPos: { x: number; y: number; z: number },
+      duration = 1.2,
+    ) => {
       if (!cameraRef.current || !controlsRef.current) return;
       const camera = cameraRef.current;
       const controls = controlsRef.current;
+
+      gsap.killTweensOf(camera.position);
+      gsap.killTweensOf(controls.target);
 
       gsap.to(camera.position, {
         x: cameraPos.x,
         y: cameraPos.y,
         z: cameraPos.z,
-        duration: 1.2,
-        ease: 'power3.inOut',
+        duration,
+        ease: 'power3.out',
       });
 
       gsap.to(controls.target, {
         x: target.x,
         y: target.y,
         z: target.z,
-        duration: 1.2,
-        ease: 'power3.inOut',
+        duration,
+        ease: 'power3.out',
         onUpdate: () => controls.update(),
       });
     },
@@ -362,6 +378,74 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
     () => new THREE.Vector3(0, -30, 65).normalize(),
     [],
   );
+
+  const lastPannedH3Ref = useRef<string | null>(null);
+
+  /**
+   * Smoothly pans the camera and updates the camera's centre point (controls.target)
+   * to the clicked/selected hexagon so the user can orbit and pan around it.
+   */
+  const panToCell = useCallback(
+    (h3: string) => {
+      if (!cameraRef.current || !controlsRef.current) return;
+      try {
+        const [lat, lng] = cellToLatLng(h3);
+        const { x, y } = latLngTo3D(lng, lat);
+        const targetPos = new THREE.Vector3(x, y, HEX_BASE_Z);
+
+        const camera = cameraRef.current;
+        const controls = controlsRef.current;
+
+        // If target is already at or very close to this cell, smoothly sync without flight
+        if (targetPos.distanceTo(controls.target) < 0.04) {
+          controls.target.copy(targetPos);
+          controls.update();
+          return;
+        }
+
+        const currentOffset = new THREE.Vector3().subVectors(camera.position, controls.target);
+        const currentDist = currentOffset.length();
+
+        let viewDir = currentOffset.clone().normalize();
+        if (currentOffset.lengthSq() < 1e-6 || !Number.isFinite(viewDir.x)) {
+          viewDir.copy(OBLIQUE_DIR);
+        }
+
+        // Keep a nice downward oblique angle so the user sees the hexagon's 3D relief and columns
+        if (viewDir.z < 0.28) {
+          viewDir.z = 0.36;
+          viewDir.normalize();
+        }
+
+        // Determine comfortable inspection distance:
+        // - If zoomed far out (> 5.5 units), glide in to 5.0 units for clear cell inspection.
+        // - If already zoomed in (1.5 - 5.5 units), preserve user's exact zoom distance!
+        const desiredDist = Math.max(1.5, Math.min(currentDist, 5.0));
+
+        const cameraPos = {
+          x: targetPos.x + viewDir.x * desiredDist,
+          y: targetPos.y + viewDir.y * desiredDist,
+          z: targetPos.z + viewDir.z * desiredDist,
+        };
+
+        flyTo(targetPos, cameraPos, 0.9);
+      } catch (err) {
+        console.warn('Failed to pan to cell in 3D:', err);
+      }
+    },
+    [flyTo, OBLIQUE_DIR],
+  );
+
+  // Smoothly pan camera and update centre point when selectedH3 updates externally
+  useEffect(() => {
+    if (!selectedH3) {
+      lastPannedH3Ref.current = null;
+      return;
+    }
+    if (selectedH3 === lastPannedH3Ref.current) return;
+    lastPannedH3Ref.current = selectedH3;
+    panToCell(selectedH3);
+  }, [selectedH3, panToCell]);
 
   /**
    * Frames an arbitrary world-space volume. Camera distances can no longer be
@@ -413,6 +497,7 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
   // Regional Focus Presets
   const handleSelectPreset = useCallback(
     (preset: CameraRegionPreset) => {
+      lastPannedH3Ref.current = null;
       setActivePreset(preset.id);
       flyTo(preset.target, preset.cameraPos);
     },
@@ -420,6 +505,7 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
   );
 
   const handleResetCamera = useCallback(() => {
+    lastPannedH3Ref.current = null;
     const bounds = hexColumnsRef.current?.getBounds();
     if (bounds) fitToBounds(bounds);
     else handleSelectPreset(REGIONAL_CAMERA_PRESETS.national);
@@ -527,9 +613,13 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
         if (dist > 5) return;
       }
       const hit = pickAtClient(e.clientX, e.clientY);
-      if (hit) onSelectCell?.(hit.h3);
+      if (hit) {
+        lastPannedH3Ref.current = hit.h3;
+        panToCell(hit.h3);
+        onSelectCell?.(hit.h3);
+      }
     },
-    [pickAtClient, onSelectCell],
+    [pickAtClient, onSelectCell, panToCell],
   );
 
   useEffect(

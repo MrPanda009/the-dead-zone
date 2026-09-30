@@ -1,7 +1,8 @@
 'use client';
 
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Map as MapLibreMap } from 'maplibre-gl';
+import { cellToLatLng } from 'h3-js';
 import { PathLayer } from '@deck.gl/layers';
 import { useTheme } from '@/components/providers';
 import { MAINLAND_INDIA_COORDS, ISLAND_GROUPS_COORDS } from '@/lib/geo/indiaBoundary';
@@ -112,9 +113,41 @@ export const FloodHazardMap = ({
     return new Map(forecastItems.map((item) => [item.h3, item]));
   }, [forecastItems]);
 
+  const lastPannedH3Ref = useRef<string | null>(null);
+
+  const panToCell = useCallback((h3: string) => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+    try {
+      const [lat, lng] = cellToLatLng(h3);
+      lastPannedH3Ref.current = h3;
+      map.easeTo({
+        center: [lng, lat],
+        duration: 800,
+        essential: true,
+      });
+    } catch (err) {
+      console.warn('Failed to pan 2D map to cell:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!selectedH3) {
+      lastPannedH3Ref.current = null;
+      return;
+    }
+    if (selectedH3 === lastPannedH3Ref.current) return;
+    panToCell(selectedH3);
+  }, [selectedH3, panToCell]);
+
   const handleCellClick = useCallback(
-    (cell: HazardCell | null) => onSelectCell?.(cell?.h3 ?? null),
-    [onSelectCell],
+    (cell: HazardCell | null) => {
+      if (cell) {
+        panToCell(cell.h3);
+      }
+      onSelectCell?.(cell?.h3 ?? null);
+    },
+    [onSelectCell, panToCell],
   );
 
   const handleCellHover = useCallback(
