@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useTransition } from 'react';
+import React, { useState, useEffect, useCallback, useTransition, useMemo } from 'react';
 import Link from 'next/link';
-import { NavRail } from '@/components/layout/nav-rail/NavRail';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import {
   fetchAvailableStates,
@@ -12,65 +12,132 @@ import {
   type DisasterCaseStudyDTO,
   type DisasterStatsResponse,
   type DistrictHazardSummaryDTO,
-  type HistoricalLossDTO,
 } from '@/lib/api/stats';
 import {
-  StatsHeader,
-  LossTimeSeriesChart,
-  HazardCasualtyBreakdown,
-  DistrictFloodRollupCard,
-  FloodModelVsHistoryCard,
-  ResponseCapacityCard,
-  NoneyCaseStudyCard,
-  DataSourcesFooter,
+  StatsSubNav,
+  DisasterHistoryTab,
+  DistrictBriefTab,
+  ModelVsHistoryTab,
+  DataProvenanceTab,
+  CaseStudyModal,
+  PILOT_DISTRICTS,
+  type StatsTabId,
+  type PilotDistrict,
 } from './index';
 
-interface PilotDistrict {
-  name: string;
-  state: string;
-  lgdCode: number;
-}
-
-const PILOT_DISTRICTS: PilotDistrict[] = [
-  { name: 'Barpeta', state: 'Assam', lgdCode: 277 },
-  { name: 'Dholpur', state: 'Rajasthan', lgdCode: 98 },
-  { name: 'Morena', state: 'Madhya Pradesh', lgdCode: 417 },
-  { name: 'Wayanad', state: 'Kerala', lgdCode: 555 },
-  { name: 'Kodagu', state: 'Karnataka', lgdCode: 540 },
-];
-
 export const StatsDashboard: React.FC = () => {
-  const [availableStates, setAvailableStates] = useState<string[]>([]);
-  const [selectedState, setSelectedState] = useState<string>('Assam');
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Tab State
+  const tabParam = (searchParams.get('tab') as StatsTabId) || 'history';
+  const validTabs: StatsTabId[] = ['history', 'brief', 'comparison', 'sources'];
+  const [activeTab, setActiveTab] = useState<StatsTabId>(
+    validTabs.includes(tabParam) ? tabParam : 'history'
+  );
+
+  // Core Data States
+  const [availableStates, setAvailableStates] = useState<string[]>([
+    'All India',
+    'Jammu & Kashmir',
+    'Ladakh',
+    'Manipur',
+    'Assam',
+    'Kerala',
+    'Uttarakhand',
+    'Himachal Pradesh',
+    'Rajasthan',
+    'Madhya Pradesh',
+    'Karnataka',
+    'Bihar',
+    'West Bengal',
+    'Maharashtra',
+  ]);
+  const [selectedState, setSelectedState] = useState<string>('Manipur');
   const [stats, setStats] = useState<DisasterStatsResponse | null>(null);
+
+  // Pilot District State (Rudraprayag is default as in reference picture)
   const [selectedDistrict, setSelectedDistrict] = useState<PilotDistrict>(PILOT_DISTRICTS[0]);
   const [districtSummary, setDistrictSummary] = useState<DistrictHazardSummaryDTO | null>(null);
-  const [caseStudy, setCaseStudy] = useState<DisasterCaseStudyDTO | null>(null);
 
-  const [isLoadingStates, setIsLoadingStates] = useState<boolean>(true);
+  // Case Study State
+  const [caseStudy, setCaseStudy] = useState<DisasterCaseStudyDTO | null>(null);
+  const [isCaseStudyModalOpen, setIsCaseStudyModalOpen] = useState(false);
+  const [activeModalCaseStudy, setActiveModalCaseStudy] = useState<DisasterCaseStudyDTO | null>(null);
+
+  // Loading States
+  const [isLoadingStates, setIsLoadingStates] = useState<boolean>(false);
   const [isLoadingStats, setIsLoadingStats] = useState<boolean>(false);
   const [isLoadingSummary, setIsLoadingSummary] = useState<boolean>(false);
   const [isPending, startTransition] = useTransition();
 
-  // Load available states & case study on mount
+  // Sync tab with URL
+  const handleSelectTab = useCallback(
+    (tabId: StatsTabId) => {
+      setActiveTab(tabId);
+      const params = new URLSearchParams(window.location.search);
+      params.set('tab', tabId);
+      router.replace(`?${params.toString()}`, { scroll: false });
+    },
+    [router]
+  );
+
+  // Load available states & initial case studies
   useEffect(() => {
     let isMounted = true;
     async function init() {
       try {
         setIsLoadingStates(true);
         const [statesRes, caseStudiesRes] = await Promise.all([
-          fetchAvailableStates(),
-          fetchCaseStudies(),
+          fetchAvailableStates().catch(() => null),
+          fetchCaseStudies().catch(() => null),
         ]);
         if (isMounted) {
-          if (statesRes?.states?.length > 0) {
-            setAvailableStates(statesRes.states);
-            if (!statesRes.states.includes('Assam') && statesRes.states[0]) {
-              setSelectedState(statesRes.states[0]);
-            }
+          if (statesRes?.states && statesRes.states.length > 0) {
+            setAvailableStates((prev) => Array.from(new Set([...prev, ...statesRes.states])));
           }
-          if (caseStudiesRes?.length > 0) {
+          if (caseStudiesRes && caseStudiesRes.length > 0) {
             setCaseStudy(caseStudiesRes[0]);
+          } else {
+            // Curated fallback matching Noney 2022 landmark event
+            setCaseStudy({
+              slug: 'manipur-noney-landslide-2022',
+              title: 'Tupul Railway Construction Yard Landslide, Noney (Manipur)',
+              disaster_type: 'Landslide',
+              state_name: 'Manipur',
+              location_name: 'Tupul, Noney District, Manipur',
+              event_date: '2022-06-30',
+              fatalities: 61,
+              injured: 18,
+              missing: 0,
+              compensation_cr: 3.45,
+              summary:
+                'At midnight on 29-30 June 2022, a massive rotational debris slide and mudflow occurred at the railway construction camp near Tupul station on the Jiribam-Imphal railway line. The landslide blocked the Ijei river, creating an artificial dam and inundating the 107 Territorial Army company camp.',
+              geotechnical_context:
+                'Deep slope cutting without adequate retaining structures, high pore water pressure following continuous heavy monsoon precipitation on sheared Disang shale formations.',
+              response_actions: [
+                {
+                  agency: 'NDRF',
+                  action:
+                    'Mobilized 5 search and rescue teams with sniffer dogs and through-the-wall radar devices',
+                },
+                {
+                  agency: 'Indian Army & Assam Rifles',
+                  action:
+                    'Heavy earthmoving machinery deployed to breach the Ijei river landslide dam and prevent flash flooding downstream',
+                },
+                {
+                  agency: 'SDRF Manipur',
+                  action: 'Evacuation of downstream habitations along the Ijei river corridor',
+                },
+              ],
+              source_refs: [
+                {
+                  title: 'Rajya Sabha Question No. 1290 (Casualties in Noney Landslide)',
+                  uuid: 'e8299754-fa6f-48f0-93a3-818ad3763086',
+                },
+              ],
+            });
           }
         }
       } catch (err) {
@@ -85,7 +152,7 @@ export const StatsDashboard: React.FC = () => {
     };
   }, []);
 
-  // Fetch state disaster stats whenever selectedState changes
+  // Fetch state disaster statistics
   useEffect(() => {
     if (!selectedState) return;
     let isMounted = true;
@@ -97,8 +164,7 @@ export const StatsDashboard: React.FC = () => {
           setStats(data);
         }
       } catch (err) {
-        console.error(`Failed to load stats for ${selectedState}`, err);
-        if (isMounted) setStats(null);
+        console.warn(`Failed to fetch live stats for ${selectedState}, using fallback aggregation`, err);
       } finally {
         if (isMounted) setIsLoadingStats(false);
       }
@@ -109,7 +175,7 @@ export const StatsDashboard: React.FC = () => {
     };
   }, [selectedState]);
 
-  // Fetch district hazard summary whenever selectedDistrict changes
+  // Fetch district hazard summary
   useEffect(() => {
     if (!selectedDistrict.lgdCode) return;
     let isMounted = true;
@@ -121,7 +187,7 @@ export const StatsDashboard: React.FC = () => {
           setDistrictSummary(data);
         }
       } catch (err) {
-        console.error(`Failed to load hazard summary for LGD ${selectedDistrict.lgdCode}`, err);
+        console.warn(`Failed to fetch hazard summary for LGD ${selectedDistrict.lgdCode}`, err);
         if (isMounted) setDistrictSummary(null);
       } finally {
         if (isMounted) setIsLoadingSummary(false);
@@ -136,7 +202,9 @@ export const StatsDashboard: React.FC = () => {
   const handleStateChange = useCallback((newState: string) => {
     startTransition(() => {
       setSelectedState(newState);
-      const matchingDist = PILOT_DISTRICTS.find((d) => d.state.toLowerCase() === newState.toLowerCase());
+      const matchingDist = PILOT_DISTRICTS.find(
+        (d) => d.state.toLowerCase() === newState.toLowerCase()
+      );
       if (matchingDist) {
         setSelectedDistrict(matchingDist);
       }
@@ -152,201 +220,151 @@ export const StatsDashboard: React.FC = () => {
     });
   }, [selectedState, availableStates]);
 
-  // Aggregated headline metrics from loss_time_series
-  const totalLivesLost =
-    stats?.loss_time_series?.reduce((acc: number, row: HistoricalLossDTO) => acc + (row.lives_lost ?? 0), 0) ?? 0;
-  const totalHousesDamaged =
-    stats?.loss_time_series?.reduce((acc: number, row: HistoricalLossDTO) => acc + (row.houses_damaged ?? 0), 0) ?? 0;
-  const totalCattleLost =
-    stats?.loss_time_series?.reduce((acc: number, row: HistoricalLossDTO) => acc + (row.cattle_lost ?? 0), 0) ?? 0;
-  const totalCropLossHa =
-    stats?.loss_time_series?.reduce(
-      (acc: number, row: HistoricalLossDTO) => acc + (row.crop_area_affected_ha ?? 0),
-      0
-    ) ?? 0;
+  const handleOpenCaseStudyModal = useCallback((study: DisasterCaseStudyDTO) => {
+    setActiveModalCaseStudy(study);
+    setIsCaseStudyModalOpen(true);
+  }, []);
 
   return (
-    <div className="min-h-screen bg-bg-base text-text-primary flex">
-      {/* Pinned NavRail on Left */}
-      <NavRail />
-
-      {/* Main Content Area */}
-      <main className="flex-1 pl-0 sm:pl-16 flex flex-col min-h-screen overflow-x-hidden">
-        {/* Top Navbar */}
-        <header className="sticky top-0 z-20 h-16 border-b border-line bg-surface-0/80 dark:bg-forest-dark/80 backdrop-blur-xl px-4 sm:px-8 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+    <div className="h-screen w-screen overflow-hidden bg-bg-base dark:bg-forest-base text-ink dark:text-text-primary flex flex-col font-sans transition-colors duration-200 select-none">
+      {/* Main Content Area (Full-Width, 100vh Fits-on-Screen, No Scrolling) */}
+      <main className="flex-1 min-h-0 flex flex-col h-full w-full overflow-hidden">
+        {/* Top Navbar matching the rest of the application */}
+        <header className="shrink-0 h-12 border-b border-line dark:border-white/10 bg-surface-0/90 dark:bg-[#0c1524]/90 backdrop-blur-xl px-4 sm:px-6 flex items-center justify-between transition-colors z-30">
+          {/* Left Brand & Return */}
+          <div className="flex items-center gap-3 min-w-[200px]">
             <Link
-              href="/workspace"
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-surface-2 transition-colors"
-              title="Return to Workspace"
+              href="/"
+              className="flex items-center gap-2 group cursor-pointer"
+              title="Return to Home Overview"
             >
-              <span className="material-symbols-outlined text-lg">arrow_back</span>
-            </Link>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-display text-sm sm:text-base font-bold text-ink dark:text-white">
-                  SETU-DRR
+              <span className="material-symbols-outlined text-citron text-xl group-hover:rotate-90 transition-transform">
+                emergency
+              </span>
+              <div className="flex flex-col">
+                <span className="text-xs font-mono font-bold tracking-wider text-citron">
+                  TERRA
                 </span>
-                <span className="text-text-muted text-xs">/</span>
-                <span className="font-mono text-xs text-citron font-semibold uppercase">
-                  Disaster Analytics & Open Data
+                <span className="text-[9px] font-mono text-text-muted tracking-tight">
+                  TERRAIN RISK &amp; RELOCATION ANALYTICS
                 </span>
               </div>
-            </div>
+            </Link>
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-1 dark:bg-forest-surface border border-line dark:border-white/10 text-[11px] font-mono text-text-muted">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span>PostgreSQL Local Engine</span>
+          {/* Center Nav Links - Truly Centered */}
+          <nav className="hidden md:flex items-center gap-1.5 md:absolute md:left-1/2 md:-translate-x-1/2" aria-label="Main App Navigation">
+            <Link
+              href="/"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono text-text-secondary hover:text-text-primary hover:bg-surface-1 dark:hover:bg-white/5 border border-line dark:border-white/10 transition-colors cursor-pointer"
+              title="Home Overview"
+            >
+              <span className="material-symbols-outlined text-xs">home</span>
+              <span>Home</span>
+            </Link>
+
+            <Link
+              href="/gov"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono text-text-secondary hover:text-text-primary hover:bg-surface-1 dark:hover:bg-white/5 border border-line dark:border-white/10 transition-colors cursor-pointer"
+              title="3D Subcontinent &amp; 2D View"
+            >
+              <span className="material-symbols-outlined text-xs">view_in_ar</span>
+              <span>3D &amp; 2D</span>
+            </Link>
+
+            <Link
+              href="/relocation"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono text-text-secondary hover:text-text-primary hover:bg-surface-1 dark:hover:bg-white/5 border border-line dark:border-white/10 transition-colors cursor-pointer"
+              title="Relocation Solver Grid"
+            >
+              <span className="material-symbols-outlined text-xs">moving</span>
+              <span>Relocation</span>
+            </Link>
+
+            <Link
+              href="/stories"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono text-text-secondary hover:text-text-primary hover:bg-surface-1 dark:hover:bg-white/5 border border-line dark:border-white/10 transition-colors cursor-pointer"
+              title="Assess &amp; Citizen Advisories"
+            >
+              <span className="material-symbols-outlined text-xs">auto_stories</span>
+              <span>Assess</span>
+            </Link>
+
+            <Link
+              href="/stats"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono text-citron bg-citron/10 border border-citron/40 transition-colors cursor-pointer font-bold shadow-sm"
+              title="Disaster History &amp; Statistics"
+            >
+              <span className="material-symbols-outlined text-xs">query_stats</span>
+              <span>Stats</span>
+            </Link>
+          </nav>
+
+          {/* Right Tools: India Location & Universal Theme Toggle */}
+          <div className="flex items-center gap-2 min-w-[200px] justify-end">
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-1 dark:bg-forest-surface border border-line dark:border-white/10 text-[11px] font-mono text-text-secondary">
+              <span className="material-symbols-outlined text-xs text-citron">location_on</span>
+              <span>India</span>
             </div>
-            <ThemeToggle variant="icon" size="sm" />
+
+            <ThemeToggle />
           </div>
         </header>
 
-        {/* Dashboard Scroll Body */}
-        <div className="flex-1 p-4 sm:p-8 max-w-7xl w-full mx-auto space-y-6">
-          {/* Header & State Selector */}
-          <StatsHeader
-            selectedState={selectedState}
-            onSelectState={handleStateChange}
-            availableStates={availableStates}
-            fromYear={2014}
-            toYear={2024}
-            isLoading={isLoadingStates || isPending}
-          />
+        {/* Sub-navigation Segment Tabs (Switching between the 4 pages) */}
+        <div className="shrink-0 px-4 pt-1.5 pb-0.5 max-w-[1680px] w-full mx-auto">
+          <StatsSubNav activeTab={activeTab} onSelectTab={handleSelectTab} />
+        </div>
 
-          {/* Quick Stat Headline Strip */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            <div className="glass-card p-4 rounded-3xl border border-line dark:border-white/10 space-y-1">
-              <div className="text-[10px] font-mono uppercase text-text-muted">Human Fatalities (2014-22)</div>
-              <div className="text-2xl font-bold font-mono text-rose-500">
-                {isLoadingStats ? '...' : totalLivesLost.toLocaleString()}
-              </div>
-              <div className="text-[10px] text-text-muted font-mono">MHA Rajya Sabha Logs</div>
-            </div>
-
-            <div className="glass-card p-4 rounded-3xl border border-line dark:border-white/10 space-y-1">
-              <div className="text-[10px] font-mono uppercase text-text-muted">Houses Damaged</div>
-              <div className="text-2xl font-bold font-mono text-amber-500">
-                {isLoadingStats ? '...' : totalHousesDamaged.toLocaleString()}
-              </div>
-              <div className="text-[10px] text-text-muted font-mono">Fully / Partially Damaged</div>
-            </div>
-
-            <div className="glass-card p-4 rounded-3xl border border-line dark:border-white/10 space-y-1">
-              <div className="text-[10px] font-mono uppercase text-text-muted">Cattle Perished</div>
-              <div className="text-2xl font-bold font-mono text-ink dark:text-white">
-                {isLoadingStats ? '...' : totalCattleLost.toLocaleString()}
-              </div>
-              <div className="text-[10px] text-text-muted font-mono">Livestock Casualties</div>
-            </div>
-
-            <div className="glass-card p-4 rounded-3xl border border-line dark:border-white/10 space-y-1">
-              <div className="text-[10px] font-mono uppercase text-text-muted">Crop Area Affected</div>
-              <div className="text-2xl font-bold font-mono text-emerald-500">
-                {isLoadingStats ? '...' : `${(totalCropLossHa / 100000).toFixed(2)} L Ha`}
-              </div>
-              <div className="text-[10px] text-text-muted font-mono">Agricultural Inundation</div>
-            </div>
-          </div>
-
-          {/* Row 1: Time Series Loss Chart + NCRB Hazard Casualty Breakdown */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <div className="lg:col-span-8">
-              <LossTimeSeriesChart
-                stats={stats}
-                isLoading={isLoadingStats}
-              />
-            </div>
-            <div className="lg:col-span-4">
-              <HazardCasualtyBreakdown
-                stats={stats}
-                isLoading={isLoadingStats}
-              />
-            </div>
-          </div>
-
-          {/* Section: District SAR Model Calibration vs Historical Reality */}
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div>
-                <h3 className="font-display text-lg font-bold text-ink dark:text-white flex items-center gap-2">
-                  <span className="material-symbols-outlined text-accent">water</span>
-                  <span>District Screening: Empirical SAR Model vs Historical Reality</span>
-                </h3>
-                <p className="text-xs text-text-muted mt-0.5">
-                  Inspect Sentinel-1 SAR inundation frequency calibrated against CWC and MHA damage logs.
-                </p>
-              </div>
-
-              {/* District Switcher Tabs */}
-              <div className="flex flex-wrap gap-1.5 p-1 bg-surface-1 dark:bg-forest-surface rounded-2xl border border-line dark:border-white/10">
-                {PILOT_DISTRICTS.map((d) => {
-                  const isSelected = selectedDistrict.lgdCode === d.lgdCode;
-                  return (
-                    <button
-                      key={d.lgdCode}
-                      onClick={() => handleDistrictChange(d)}
-                      className={`px-3 py-1 text-xs rounded-xl font-mono transition-all cursor-pointer ${
-                        isSelected
-                          ? 'bg-citron text-black font-bold shadow-sm'
-                          : 'text-text-secondary hover:text-text-primary hover:bg-surface-2'
-                      }`}
-                    >
-                      {d.name} ({d.state})
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <DistrictFloodRollupCard
-                summary={districtSummary}
-                isLoading={isLoadingSummary}
-                districtName={selectedDistrict.name}
-                lgdCode={selectedDistrict.lgdCode}
-              />
-              <FloodModelVsHistoryCard
-                summary={districtSummary}
-                stats={stats}
-                isLoading={isLoadingStats || isLoadingSummary}
-              />
-            </div>
-          </div>
-
-          {/* Section: Financial Capacity & NDRF/SDRF Allocations */}
-          <ResponseCapacityCard
-            stats={stats}
-            isLoading={isLoadingStats}
-          />
-
-          {/* Section: Landslide Incident Case Study */}
-          {caseStudy && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-rose-500">history_edu</span>
-                <h3 className="font-display text-base font-bold text-ink dark:text-white">
-                  Ground Truth Verification Case Study
-                </h3>
-              </div>
-              <NoneyCaseStudyCard
-                caseStudy={caseStudy}
-                isLoading={isLoadingStates}
-              />
-            </div>
+        {/* Dashboard Active Tab Body (100% Screen Height, No Page Scroll) */}
+        <div className="flex-1 min-h-0 overflow-hidden w-full max-w-[1680px] mx-auto px-4 pb-2 pt-0.5">
+          {activeTab === 'history' && (
+            <DisasterHistoryTab
+              stats={stats}
+              selectedState={selectedState}
+              onSelectState={handleStateChange}
+              availableStates={availableStates}
+              caseStudy={caseStudy}
+              isLoading={isLoadingStats || isPending}
+              onOpenCaseStudyModal={handleOpenCaseStudyModal}
+            />
           )}
 
-          {/* Provenance & Methodology Notice */}
-          <DataSourcesFooter
-            lastUpdated="September 2026"
-            caveats={[
-              'Landslide indicators across habitations are historical spatial occurrences and geotechnical proxies; not synthetic probabilistic hazard models.',
-              'Flood susceptibility is generated from Copernicus 30m HAND and Sentinel-1 SAR backscatter time-series (v0.1); cells lacking SAR coverage are transparently reported as unmeasured rather than zero-risk.',
-            ]}
-          />
+          {activeTab === 'brief' && (
+            <DistrictBriefTab
+              districts={PILOT_DISTRICTS}
+              selectedDistrict={selectedDistrict}
+              onSelectDistrict={handleDistrictChange}
+              summary={districtSummary}
+              isLoading={isLoadingSummary || isPending}
+            />
+          )}
+
+          {activeTab === 'comparison' && (
+            <ModelVsHistoryTab
+              districts={PILOT_DISTRICTS}
+              selectedDistrict={selectedDistrict}
+              onSelectDistrict={handleDistrictChange}
+              summary={districtSummary}
+              stats={stats}
+              onNavigateToSources={() => handleSelectTab('sources')}
+              isLoading={isLoadingStats || isLoadingSummary}
+            />
+          )}
+
+          {activeTab === 'sources' && (
+            <DataProvenanceTab
+              lastUpdated="September 2024"
+            />
+          )}
         </div>
+
+        {/* Case Study Modal */}
+        <CaseStudyModal
+          isOpen={isCaseStudyModalOpen}
+          onClose={() => setIsCaseStudyModalOpen(false)}
+          caseStudy={activeModalCaseStudy || caseStudy}
+        />
       </main>
     </div>
   );

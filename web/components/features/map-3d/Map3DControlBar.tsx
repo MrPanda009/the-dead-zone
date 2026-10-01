@@ -42,7 +42,7 @@ export const Map3DControlBar: React.FC<Map3DControlBarProps> = ({
           <span>REGION:</span>
         </span>
         {Object.values(REGIONAL_CAMERA_PRESETS)
-          .filter((preset) => ['national', 'northeast', 'western_ghats'].includes(preset.id))
+          .filter((preset) => ['national', 'kashmir', 'northeast', 'western_ghats'].includes(preset.id))
           .map((preset) => {
           const isActive = preset.id === activePresetId;
           return (

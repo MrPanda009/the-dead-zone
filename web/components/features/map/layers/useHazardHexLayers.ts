@@ -151,12 +151,18 @@ export function useHazardHexLayers(options: UseHazardHexLayersOptions): Layer[] 
         getHexagon: (cell) => cell.h3,
         getFillColor: (cell) => cellFillColor(cell, breaks, opacity, ramp),
         filled: true,
-        stroked: false,
+        stroked: true,
+        getLineColor: (cell) => cellFillColor(cell, breaks, 0.95, ramp),
+        getLineWidth: 1.5,
+        lineWidthUnits: 'pixels',
         extruded: false,
         pickable: true,
         onClick: handleClick,
         onHover: handleHover,
-        updateTriggers: { getFillColor: [breaksKey, opacity, ramp] },
+        updateTriggers: {
+          getFillColor: [breaksKey, opacity, ramp],
+          getLineColor: [breaksKey, ramp],
+        },
       }),
     );
 

@@ -1727,6 +1727,14 @@
             "maritime"
           ],
           1
+        ],
+        [
+          "!=",
+          [
+            "get",
+            "disputed"
+          ],
+          1
         ]
       ],
       "layout": {
@@ -1806,6 +1814,9 @@
           12,
           3
         ]
+      },
+      "layout": {
+        "visibility": "none"
       }
     },
     {

@@ -43,9 +43,10 @@ export interface NavSegmentTabsProps {
  */
 export const DEFAULT_NAV_TABS: NavTabItem[] = [
   { id: 'gov', label: '3D & 2D Map', icon: 'view_in_ar', href: '/gov' },
-  { id: 'relocation', label: 'Relocation Solver', icon: 'moving', href: '/relocation' },
-  { id: 'stories', label: 'Tourist Stories', icon: 'auto_stories', href: '/stories' },
-  { id: 'about', label: 'About TERRA', icon: 'info', href: '/about' },
+  { id: 'relocation', label: 'Relocation', icon: 'moving', href: '/relocation' },
+  { id: 'stories', label: 'Assess', icon: 'auto_stories', href: '/stories' },
+  { id: 'stats', label: 'Stats', icon: 'query_stats', href: '/stats' },
+  { id: 'about', label: 'About', icon: 'info', href: '/about' },
 ];
 
 /**

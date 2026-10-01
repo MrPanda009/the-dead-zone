@@ -15,7 +15,7 @@ import type {
   HazardType,
 } from '@/lib/api/types';
 import { normaliseConfidence } from '@/lib/map/colorScale';
-import { DEFAULT_VIEW_STATE } from '@/lib/map/constants';
+import { DEFAULT_VIEW_STATE, type RGBAColor } from '@/lib/map/constants';
 
 import { MapContainer, type MapViewState } from './MapContainer';
 import { MapErrorFallback } from './MapErrorFallback';
@@ -64,6 +64,10 @@ export interface FloodHazardMapProps {
   onForecastCellHover?: (item: ForecastAlertItem | null) => void;
   onForecastCellClick?: (item: ForecastAlertItem | null) => void;
   initialViewState?: MapViewState;
+  /** Optional custom color ramp for hexagon risk classification */
+  ramp?: RGBAColor[];
+  showTopControls?: boolean;
+  showLegend?: boolean;
   styleUrl?: string;
   className?: string;
   classNames?: {
@@ -98,6 +102,9 @@ export const FloodHazardMap = ({
   onForecastCellHover,
   onForecastCellClick,
   initialViewState = DEFAULT_VIEW_STATE,
+  ramp,
+  showTopControls = true,
+  showLegend = true,
   styleUrl,
   className = '',
   classNames = {},
@@ -140,6 +147,26 @@ export const FloodHazardMap = ({
     panToCell(selectedH3);
   }, [selectedH3, panToCell]);
 
+  // Keep camera synchronized when initialViewState coordinates change (e.g. switching pilot districts)
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !initialViewState) return;
+    map.easeTo({
+      center: [initialViewState.longitude, initialViewState.latitude],
+      zoom: initialViewState.zoom,
+      pitch: initialViewState.pitch ?? 0,
+      bearing: initialViewState.bearing ?? 0,
+      duration: 600,
+      essential: true,
+    });
+  }, [
+    initialViewState?.longitude,
+    initialViewState?.latitude,
+    initialViewState?.zoom,
+    initialViewState?.pitch,
+    initialViewState?.bearing,
+  ]);
+
   const handleCellClick = useCallback(
     (cell: HazardCell | null) => {
       if (cell) {
@@ -169,6 +196,7 @@ export const FloodHazardMap = ({
     showNoCoverage: display.showNoCoverage,
     selectedH3,
     hoveredH3,
+    ramp,
     onCellClick: handleCellClick,
     onCellHover: handleCellHover,
   });
@@ -255,21 +283,23 @@ export const FloodHazardMap = ({
         onBackgroundClick={() => onSelectCell?.(null)}
       >
         {/* Floating Top Control Bar at Map Center */}
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
-          <MapTopControlBar
-            resolution={display.resolution}
-            onResolutionChange={(resolution) => onDisplayChange?.({ resolution })}
-            opacity={display.opacity}
-            onOpacityChange={(opacity) => onDisplayChange?.({ opacity })}
-            showConfidenceHatch={display.showConfidenceHatch}
-            onConfidenceHatchChange={(showConfidenceHatch) =>
-              onDisplayChange?.({ showConfidenceHatch })
-            }
-          />
-        </div>
+        {showTopControls ? (
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
+            <MapTopControlBar
+              resolution={display.resolution}
+              onResolutionChange={(resolution) => onDisplayChange?.({ resolution })}
+              opacity={display.opacity}
+              onOpacityChange={(opacity) => onDisplayChange?.({ opacity })}
+              showConfidenceHatch={display.showConfidenceHatch}
+              onConfidenceHatchChange={(showConfidenceHatch) =>
+                onDisplayChange?.({ showConfidenceHatch })
+              }
+            />
+          </div>
+        ) : null}
 
-        {/* Floating Zoom Controls at Bottom-Right */}
-        <div className="absolute bottom-4 right-4 z-20 pointer-events-auto flex flex-col rounded-xl border border-line dark:border-[#1e2d45] bg-surface-0/95 dark:bg-[#0c1524]/92 text-ink dark:text-text-primary backdrop-blur-xl shadow-2xl overflow-hidden select-none">
+        {/* Floating Zoom Controls at Top-Right (Never covered by bottom legend, attribution, or drawers) */}
+        <div className="absolute top-16 right-4 z-30 pointer-events-auto flex flex-col rounded-xl border border-line dark:border-[#1e2d45] bg-surface-0/95 dark:bg-[#0c1524]/92 text-ink dark:text-text-primary backdrop-blur-xl shadow-2xl overflow-hidden select-none">
           <button
             type="button"
             onClick={() => mapInstanceRef.current?.zoomIn()}
@@ -291,7 +321,7 @@ export const FloodHazardMap = ({
           </button>
         </div>
 
-        {legend && coverage ? (
+        {showLegend && legend && coverage ? (
           <MapLegendPanel
             legend={legend}
             coverage={coverage}

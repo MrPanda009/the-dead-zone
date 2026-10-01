@@ -36,9 +36,9 @@ export const LANDING_STORIES: StorySectionData[] = [
     id: 'relocation-solver',
     index: '02',
     align: 'left', // Globe on right, text on left
-    badge: 'CARRYING CAPACITY & RELOCATION',
+    badge: 'RELOCATION',
     badgeTone: 'emerald',
-    title: 'Carrying Capacity & Relocation',
+    title: 'Relocation',
     subtitle: 'Multi-criteria linear programming optimization for resettlement site selection',
     description:
       'Moving endangered communities requires mathematically sound, humane planning. TERRA (Terrain-based Environmental Risk and Relocation Analytics) runs linear programming optimization against municipal binding constraints—potable water supply, power grid substations, hospital beds, and school capacity—safely matching displaced habitations to sustainable host sites without overwhelming local infrastructure.',
@@ -47,16 +47,16 @@ export const LANDING_STORIES: StorySectionData[] = [
       { value: '98.4%', label: 'Constraint Satisfaction' },
       { value: '48h', label: 'Relocation Plan Generation' },
     ],
-    actionLabel: 'Open Relocation Planner',
+    actionLabel: 'Open Relocation',
     actionHref: '/relocation',
   },
   {
     id: 'tourist-stories',
     index: '03',
     align: 'right', // Globe on left, text on right
-    badge: 'NATIONAL HAZARD MAP & TOURIST ADVISORIES',
+    badge: 'ASSESS',
     badgeTone: 'citron',
-    title: 'Tourist Hazard Advisories & Stories',
+    title: 'Assess',
     subtitle: 'Interactive Survey of India national map, pilgrimage corridors & NDRF alerts',
     description:
       'Real-time ground-truth travel intelligence and hazard advisories for pilgrims, tourists, and state disaster authorities. Features an official Survey of India map covering all 28+ States and Union Territories (including complete Jammu & Kashmir and Ladakh), live monsoon landslide warnings, high-altitude road closures, and direct 24/7 NDRF emergency helpline dispatch.',
@@ -65,7 +65,7 @@ export const LANDING_STORIES: StorySectionData[] = [
       { value: '28+', label: 'States & UTs Monitored' },
       { value: '24/7', label: 'NDRF Crisis Dispatch' },
     ],
-    actionLabel: 'Explore Tourist Advisories',
+    actionLabel: 'Explore Assess',
     actionHref: '/stories',
   },
 ];

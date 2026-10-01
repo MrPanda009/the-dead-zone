@@ -22,13 +22,11 @@ export const DEFAULT_VIEW_STATE = {
  * Seven stops for the six quantile breaks the API returns.
  */
 export const SUSCEPTIBILITY_RAMP: RGBAColor[] = [
-  [26, 90, 120, 255],
-  [31, 138, 148, 255],
-  [110, 181, 128, 255],
-  [232, 205, 96, 255],
-  [240, 150, 62, 255],
-  [222, 88, 51, 255],
-  [176, 24, 43, 255],
+  [22, 122, 139, 255], // Deep Teal / Blue (#167a8b)
+  [82, 153, 119, 255], // Sage / Forest Green (#529977)
+  [216, 186, 86, 255], // Sand Yellow / Warm Amber (#d8ba56)
+  [215, 120, 57, 255], // Terracotta / Coral Orange (#d77839)
+  [197, 70, 49, 255],  // Brick Red / Crimson (#c54631)
 ];
 
 /**
