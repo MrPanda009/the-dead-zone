@@ -36,27 +36,21 @@ export const StatsDashboard: React.FC = () => {
     validTabs.includes(tabParam) ? tabParam : 'history'
   );
 
-  // Core Data States
+  // Core Data States (Initialized with backend-supported states, updated dynamically from GET /stats/states)
   const [availableStates, setAvailableStates] = useState<string[]>([
-    'All India',
-    'Jammu & Kashmir',
-    'Ladakh',
-    'Manipur',
     'Assam',
-    'Kerala',
-    'Uttarakhand',
     'Himachal Pradesh',
-    'Rajasthan',
-    'Madhya Pradesh',
     'Karnataka',
-    'Bihar',
-    'West Bengal',
-    'Maharashtra',
+    'Kerala',
+    'Madhya Pradesh',
+    'Manipur',
+    'Rajasthan',
+    'Uttarakhand',
   ]);
-  const [selectedState, setSelectedState] = useState<string>('Manipur');
+  const [selectedState, setSelectedState] = useState<string>('Assam');
   const [stats, setStats] = useState<DisasterStatsResponse | null>(null);
 
-  // Pilot District State (Rudraprayag is default as in reference picture)
+  // Pilot District State (Barpeta, Assam is default)
   const [selectedDistrict, setSelectedDistrict] = useState<PilotDistrict>(PILOT_DISTRICTS[0]);
   const [districtSummary, setDistrictSummary] = useState<DistrictHazardSummaryDTO | null>(null);
 
@@ -94,7 +88,10 @@ export const StatsDashboard: React.FC = () => {
         ]);
         if (isMounted) {
           if (statesRes?.states && statesRes.states.length > 0) {
-            setAvailableStates((prev) => Array.from(new Set([...prev, ...statesRes.states])));
+            setAvailableStates(statesRes.states);
+            if (statesRes.default_state && !statesRes.states.includes(selectedState)) {
+              setSelectedState(statesRes.default_state);
+            }
           }
           if (caseStudiesRes && caseStudiesRes.length > 0) {
             setCaseStudy(caseStudiesRes[0]);

@@ -156,9 +156,26 @@ class HazardService:
             quantiles=DEFAULT_QUANTILES,
         )
         if stats is None:
-            raise DataUnavailableError(
-                f"No '{hazard}' cells published at resolution {res} for the requested extent.",
-                {"hazard_type": hazard, "res": res, "bbox": bbox, "admin": admin},
+            return HazardLayerResponse(
+                hazard_type=hazard,
+                res=res,
+                count=0,
+                truncated=False,
+                model_version="v0.0-uncomputed",
+                legend=HazardLayerLegendDTO(
+                    method="quantile",
+                    quantiles=list(DEFAULT_QUANTILES),
+                    breaks=[],
+                    domain=[0.0, 1.0],
+                    confidence_ceiling=1.0,
+                    prz_susceptibility_threshold=PRZ_ANY_SUSCEPTIBILITY,
+                ),
+                coverage=HazardLayerCoverageDTO(
+                    full=0,
+                    low_coverage=0,
+                    no_coverage=0,
+                ),
+                cells=[],
             )
 
         rows = self.repo.query_layer_cells(

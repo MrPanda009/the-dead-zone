@@ -3,9 +3,12 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import type { Map as MapLibreMap } from 'maplibre-gl';
+import { cellToBoundary } from 'h3-js';
 import { useTheme } from '@/components/providers';
 import { resolveBasemapStyle, registerPMTilesProtocol } from '@/lib/map/basemap';
 import { SOVEREIGN_INDIA_GEOJSON } from '@/lib/geo/indiaBoundary';
+import { apiGet } from '@/lib/api/client';
+import type { HazardCell, HazardLayerResponse } from '@/lib/api/types';
 import { generateDistrictGeoJsonHexagons, type H3DistrictGeoJsonCell } from './statsData';
 import type { PilotDistrict } from './types';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -44,13 +47,111 @@ export const DistrictHazardMap: React.FC<DistrictHazardMapProps> = ({
   const [hoveredCell, setHoveredCell] = useState<H3DistrictGeoJsonCell | null>(null);
   const [selectedH3, setSelectedH3] = useState<string | null>(null);
 
-  // Generate authentic H3 hexagons for this district
-  const hexCells = useMemo(() => {
-    return generateDistrictGeoJsonHexagons(district);
-  }, [district]);
+  // Real H3 cells fetched from backend /hazard/cells
+  const [apiCells, setApiCells] = useState<HazardCell[] | null>(null);
+  const [isLoadingCells, setIsLoadingCells] = useState<boolean>(false);
 
-  // Convert cells into standard GeoJSON FeatureCollection
+  // Fetch real H3 cells for selected district from API
+  useEffect(() => {
+    let isMounted = true;
+    const controller = new AbortController();
+
+    async function loadCells() {
+      if (!district.lgdCode) return;
+      try {
+        setIsLoadingCells(true);
+        const res = await apiGet<HazardLayerResponse>(
+          '/hazard/cells',
+          { admin: district.lgdCode, hazard_type: 'riverine_flood', limit: 20000 },
+          controller.signal
+        );
+        if (isMounted) {
+          if (res?.cells && res.cells.length > 0) {
+            setApiCells(res.cells);
+          } else {
+            setApiCells(null);
+          }
+        }
+      } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') return;
+        console.warn(`Could not load /hazard/cells for LGD ${district.lgdCode}, using fallback`, err);
+        if (isMounted) setApiCells(null);
+      } finally {
+        if (isMounted) setIsLoadingCells(false);
+      }
+    }
+
+    loadCells();
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
+  }, [district.lgdCode]);
+
+  // Convert cells into standard GeoJSON FeatureCollection (Real API cells or authentic synthetic fallback)
   const geoJsonData: GeoJSON.FeatureCollection = useMemo(() => {
+    if (apiCells && apiCells.length > 0) {
+      return {
+        type: 'FeatureCollection',
+        features: apiCells.map((c) => {
+          const rawBoundary = cellToBoundary(c.h3);
+          const polygon: [number, number][] = rawBoundary.map(([lat, lng]) => [lng, lat]);
+          polygon.push(polygon[0]);
+
+          const s = c.susceptibility ?? 0;
+          let category: 'Very High' | 'High' | 'Medium' | 'Low' | 'Very Low';
+          let color: string;
+          let label: string;
+
+          if (c.quality_flag === 'no_coverage') {
+            category = 'Low';
+            color = '#64748b';
+            label = 'Unmeasured Coverage';
+          } else if (s >= 0.80) {
+            category = 'Very High';
+            color = '#c54631'; // Brick Red
+            label = 'Active Floodplain / High Inundation';
+          } else if (s >= 0.60) {
+            category = 'High';
+            color = '#d77839'; // Terracotta Orange
+            label = 'Flood-Prone Lowland';
+          } else if (s >= 0.40) {
+            category = 'Medium';
+            color = '#d8ba56'; // Sand Yellow
+            label = 'Mid-Slope Transition';
+          } else if (s >= 0.20) {
+            category = 'Low';
+            color = '#529977'; // Sage Green
+            label = 'Elevated Terrace';
+          } else {
+            category = 'Very Low';
+            color = '#167a8b'; // Deep Teal
+            label = 'Stable High Ground';
+          }
+
+          return {
+            type: 'Feature',
+            id: c.h3,
+            properties: {
+              id: c.h3,
+              susceptibility: Math.round(s * 1000) / 1000,
+              confidence: c.confidence,
+              quality_flag: c.quality_flag,
+              category,
+              color,
+              label,
+            },
+            geometry: {
+              type: 'Polygon',
+              coordinates: [polygon],
+            },
+          };
+        }),
+      };
+    }
+
+    // Fallback to synthetic GeoJSON when API data is not present
+    const hexCells = generateDistrictGeoJsonHexagons(district);
     return {
       type: 'FeatureCollection',
       features: hexCells.map((hex) => ({
@@ -69,7 +170,7 @@ export const DistrictHazardMap: React.FC<DistrictHazardMapProps> = ({
         },
       })),
     };
-  }, [hexCells]);
+  }, [apiCells, district]);
 
   // Initialize MapLibre
   useEffect(() => {
@@ -363,8 +464,15 @@ export const DistrictHazardMap: React.FC<DistrictHazardMapProps> = ({
       {/* Floating District Badge */}
       <div className="absolute top-4 left-4 z-10 pointer-events-none">
         <div className="px-3 py-1.5 rounded-xl glass-card border border-line dark:border-white/10 text-xs font-mono font-bold text-ink dark:text-white shadow-lg flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-citron animate-pulse" />
-          <span>H3 Flood Grid: {district.name}</span>
+          <span
+            className={`w-2 h-2 rounded-full ${
+              isLoadingCells ? 'bg-amber-400 animate-ping' : 'bg-citron animate-pulse'
+            }`}
+          />
+          <span>
+            H3 Flood Grid: {district.name}
+            {apiCells && apiCells.length > 0 ? ` (${apiCells.length.toLocaleString()} cells • SAR v0.1)` : ''}
+          </span>
         </div>
       </div>
 

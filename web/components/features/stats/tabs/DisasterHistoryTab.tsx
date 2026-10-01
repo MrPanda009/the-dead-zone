@@ -150,10 +150,10 @@ export const DisasterHistoryTab: React.FC<DisasterHistoryTabProps> = ({
                       </span>
                     </div>
                     <div className="text-[11px] font-bold font-display text-ink dark:text-white truncate">
-                      Noney, Manipur (Landslide)
+                      {caseStudy ? caseStudy.title : 'Landmark Disaster Study'}
                     </div>
                     <div className="text-[9px] text-text-muted font-mono leading-none">
-                      61 fatalities • 18 injured
+                      {caseStudy ? `${caseStudy.fatalities} fatalities • ${caseStudy.state_name}` : 'Documented historical event'}
                     </div>
                     <button
                       type="button"

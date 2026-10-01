@@ -17,8 +17,18 @@ export const DistrictBriefTab: React.FC<DistrictBriefTabProps> = ({
 }) => {
   const dossierRef = useRef<HTMLDivElement>(null);
 
-  // Compute or fallback stats based on selectedDistrict
-  const highShare = selectedDistrict.highSharePct;
+  // Compute real highShare from summary.band_distribution if available
+  const computedHighShare = summary?.band_distribution
+    ? Math.round(
+        ((summary.band_distribution.high ?? 0) + (summary.band_distribution.very_high ?? 0)) * 100
+      )
+    : null;
+
+  const highShare =
+    computedHighShare !== null && summary?.model_status === 'computed'
+      ? computedHighShare
+      : selectedDistrict.highSharePct;
+
   const habitationsAtRisk = summary?.habitations_at_risk_count ?? selectedDistrict.habitationsAtRisk;
   const populationAtRisk = summary?.population_at_risk_sum ?? selectedDistrict.populationAtRisk;
   const nearestPhc = selectedDistrict.nearestPhcKm;
@@ -27,7 +37,50 @@ export const DistrictBriefTab: React.FC<DistrictBriefTabProps> = ({
     bridges: selectedDistrict.bridgesDamaged,
     schools: selectedDistrict.schoolsDamaged,
   };
-  const drivers = selectedDistrict.drivers;
+
+  // Bind drivers_summary (HAND, slope, cropland, SAR frequency) directly
+  const ds = summary?.drivers_summary;
+  const drivers = {
+    hand: {
+      label: 'HAND (low relative elevation)',
+      value: ds?.mean_hand_m != null ? `${ds.mean_hand_m.toFixed(1)}m` : `${selectedDistrict.drivers.handPct}%`,
+      // For HAND, lower elevation has higher flood susceptibility (normalized inverse scale 0-15m)
+      pct: ds?.mean_hand_m != null
+        ? Math.max(6, Math.min(100, Math.round((1 - Math.min(ds.mean_hand_m, 15) / 15) * 100)))
+        : selectedDistrict.drivers.handPct,
+      color: 'bg-teal-400',
+    },
+    slope: {
+      label: 'Slope gradient',
+      value: ds?.mean_slope_deg != null ? `${ds.mean_slope_deg.toFixed(1)}°` : `${selectedDistrict.drivers.slopePct}%`,
+      // For slope, flatter terrain (<15 deg) collects runoff and has higher pooling exposure
+      pct: ds?.mean_slope_deg != null
+        ? Math.max(6, Math.min(100, Math.round((1 - Math.min(ds.mean_slope_deg, 15) / 15) * 100)))
+        : selectedDistrict.drivers.slopePct,
+      color: 'bg-emerald-400',
+    },
+    cropland: {
+      label: 'Cropland & Inundated soils',
+      value: ds?.mean_cropland_fraction != null
+        ? `${(ds.mean_cropland_fraction * 100).toFixed(1)}%`
+        : `${selectedDistrict.drivers.croplandPct}%`,
+      pct: ds?.mean_cropland_fraction != null
+        ? Math.max(6, Math.min(100, Math.round(ds.mean_cropland_fraction * 100)))
+        : selectedDistrict.drivers.croplandPct,
+      color: 'bg-amber-400',
+    },
+    sarFrequency: {
+      label: 'SAR Inundation frequency',
+      value: ds?.mean_inundation_frequency != null
+        ? `${(ds.mean_inundation_frequency * 100).toFixed(1)}%`
+        : `${selectedDistrict.drivers.rainfallPct}%`,
+      // Empirical Sentinel-1 annual inundation frequency F [0, 1] scaled against 25% chronic ceiling
+      pct: ds?.mean_inundation_frequency != null
+        ? Math.max(6, Math.min(100, Math.round(Math.min(1, ds.mean_inundation_frequency / 0.25) * 100)))
+        : selectedDistrict.drivers.rainfallPct,
+      color: 'bg-sky-400',
+    },
+  };
 
   useGSAP(
     () => {
@@ -43,7 +96,7 @@ export const DistrictBriefTab: React.FC<DistrictBriefTabProps> = ({
         }
       );
     },
-    { scope: dossierRef, dependencies: [selectedDistrict.lgdCode] }
+    { scope: dossierRef, dependencies: [selectedDistrict.lgdCode, highShare, summary?.admin_id] }
   );
 
   // Deterministic number formatting to avoid SSR/client locale mismatch
@@ -91,12 +144,22 @@ export const DistrictBriefTab: React.FC<DistrictBriefTabProps> = ({
           </div>
 
           {/* Model Status Tag */}
-          <div className="hidden sm:flex px-2.5 py-1 rounded-xl glass-card border border-emerald-500/30 text-emerald-500 text-[10px] font-mono items-center gap-1.5">
+          <div
+            className={`hidden sm:flex px-2.5 py-1 rounded-xl glass-card border text-[10px] font-mono items-center gap-1.5 ${
+              summary?.model_status === 'not_computed'
+                ? 'border-amber-500/30 text-amber-500'
+                : 'border-emerald-500/30 text-emerald-500'
+            }`}
+          >
             <span
-              className="w-2 h-2 inline-block bg-emerald-500 animate-pulse"
+              className={`w-2 h-2 inline-block ${
+                summary?.model_status === 'not_computed' ? 'bg-amber-500' : 'bg-emerald-500 animate-pulse'
+              }`}
               style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
             />
-            <span className="font-bold">COMPUTED • TERRA V0.1</span>
+            <span className="font-bold">
+              {summary?.model_status === 'not_computed' ? 'UNCOMPUTED CORRIDOR' : 'COMPUTED • TERRA V0.1'}
+            </span>
           </div>
         </div>
       </div>
@@ -260,14 +323,14 @@ export const DistrictBriefTab: React.FC<DistrictBriefTabProps> = ({
               {/* HAND */}
               <div className="space-y-0.5">
                 <div className="flex items-center justify-between text-[11px] font-mono">
-                  <span className="text-text-secondary">HAND (low relative elevation)</span>
-                  <span className="font-bold text-ink dark:text-white">{drivers.handPct}%</span>
+                  <span className="text-text-secondary">{drivers.hand.label}</span>
+                  <span className="font-bold text-ink dark:text-white">{drivers.hand.value}</span>
                 </div>
                 <div className="h-1.5 w-full bg-surface-2 dark:bg-white/10 rounded-full overflow-hidden">
                   <div
-                    data-width={`${drivers.handPct}%`}
-                    className="driver-progress h-full bg-teal-400 rounded-full"
-                    style={{ width: `${drivers.handPct}%` }}
+                    data-width={`${drivers.hand.pct}%`}
+                    className={`driver-progress h-full ${drivers.hand.color} rounded-full`}
+                    style={{ width: `${drivers.hand.pct}%` }}
                   />
                 </div>
               </div>
@@ -275,14 +338,14 @@ export const DistrictBriefTab: React.FC<DistrictBriefTabProps> = ({
               {/* Slope */}
               <div className="space-y-0.5">
                 <div className="flex items-center justify-between text-[11px] font-mono">
-                  <span className="text-text-secondary">Slope gradient</span>
-                  <span className="font-bold text-ink dark:text-white">{drivers.slopePct}%</span>
+                  <span className="text-text-secondary">{drivers.slope.label}</span>
+                  <span className="font-bold text-ink dark:text-white">{drivers.slope.value}</span>
                 </div>
                 <div className="h-1.5 w-full bg-surface-2 dark:bg-white/10 rounded-full overflow-hidden">
                   <div
-                    data-width={`${drivers.slopePct}%`}
-                    className="driver-progress h-full bg-emerald-400 rounded-full"
-                    style={{ width: `${drivers.slopePct}%` }}
+                    data-width={`${drivers.slope.pct}%`}
+                    className={`driver-progress h-full ${drivers.slope.color} rounded-full`}
+                    style={{ width: `${drivers.slope.pct}%` }}
                   />
                 </div>
               </div>
@@ -290,29 +353,29 @@ export const DistrictBriefTab: React.FC<DistrictBriefTabProps> = ({
               {/* Cropland */}
               <div className="space-y-0.5">
                 <div className="flex items-center justify-between text-[11px] font-mono">
-                  <span className="text-text-secondary">Cropland &amp; Inundated soils</span>
-                  <span className="font-bold text-ink dark:text-white">{drivers.croplandPct}%</span>
+                  <span className="text-text-secondary">{drivers.cropland.label}</span>
+                  <span className="font-bold text-ink dark:text-white">{drivers.cropland.value}</span>
                 </div>
                 <div className="h-1.5 w-full bg-surface-2 dark:bg-white/10 rounded-full overflow-hidden">
                   <div
-                    data-width={`${drivers.croplandPct}%`}
-                    className="driver-progress h-full bg-amber-400 rounded-full"
-                    style={{ width: `${drivers.croplandPct}%` }}
+                    data-width={`${drivers.cropland.pct}%`}
+                    className={`driver-progress h-full ${drivers.cropland.color} rounded-full`}
+                    style={{ width: `${drivers.cropland.pct}%` }}
                   />
                 </div>
               </div>
 
-              {/* Rainfall */}
+              {/* SAR Inundation Frequency */}
               <div className="space-y-0.5">
                 <div className="flex items-center justify-between text-[11px] font-mono">
-                  <span className="text-text-secondary">Precipitation intensity</span>
-                  <span className="font-bold text-ink dark:text-white">{drivers.rainfallPct}%</span>
+                  <span className="text-text-secondary">{drivers.sarFrequency.label}</span>
+                  <span className="font-bold text-ink dark:text-white">{drivers.sarFrequency.value}</span>
                 </div>
                 <div className="h-1.5 w-full bg-surface-2 dark:bg-white/10 rounded-full overflow-hidden">
                   <div
-                    data-width={`${drivers.rainfallPct}%`}
-                    className="driver-progress h-full bg-sky-400 rounded-full"
-                    style={{ width: `${drivers.rainfallPct}%` }}
+                    data-width={`${drivers.sarFrequency.pct}%`}
+                    className={`driver-progress h-full ${drivers.sarFrequency.color} rounded-full`}
+                    style={{ width: `${drivers.sarFrequency.pct}%` }}
                   />
                 </div>
               </div>
@@ -321,8 +384,8 @@ export const DistrictBriefTab: React.FC<DistrictBriefTabProps> = ({
 
           {/* Footnote */}
           <div className="pt-1.5 border-t border-line dark:border-white/10 text-[9px] font-mono text-text-muted flex items-center justify-between">
-            <span>Model: TERRA v0.1 (computed)</span>
-            <span>Elevation: FABDEM 30m</span>
+            <span>Model: {summary?.model_version ?? 'TERRA v0.1 (empirical SAR)'}</span>
+            <span>Elevation: FABDEM 30m / Copernicus</span>
           </div>
         </div>
       </div>
