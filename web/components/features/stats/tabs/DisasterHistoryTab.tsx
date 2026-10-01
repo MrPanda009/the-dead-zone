@@ -45,11 +45,11 @@ export const DisasterHistoryTab: React.FC<DisasterHistoryTabProps> = ({
   const center = stateCoordinates[selectedState] ?? { lat: 24.817, lng: 93.936, zoom: 7.5 };
 
   return (
-    <div className={`h-full min-h-0 flex flex-col justify-between overflow-hidden ${classNames.root ?? ''} ${className}`}>
+    <div className={`h-full min-h-0 flex flex-col justify-between overflow-y-auto lg:overflow-hidden ${classNames.root ?? ''} ${className}`}>
       {/* Top Banner & Filter Controls (Compact & Screen-Fitted) */}
-      <div className="flex items-center justify-between gap-3 shrink-0 pb-1.5">
+      <div className="flex flex-wrap items-center justify-between gap-2.5 shrink-0 pb-1.5">
         <div>
-          <h1 className="font-display text-lg sm:text-xl font-extrabold text-ink dark:text-white tracking-tight leading-tight">
+          <h1 className="font-display text-base sm:text-lg lg:text-xl font-extrabold text-ink dark:text-white tracking-tight leading-tight">
             Disaster History &amp; Stats — {selectedState}
           </h1>
         </div>
@@ -83,10 +83,10 @@ export const DisasterHistoryTab: React.FC<DisasterHistoryTabProps> = ({
         </div>
       </div>
 
-      {/* Main 2-Column Layout Fitted to 100% Available Screen Height */}
+      {/* Main 2-Column Layout Fitted to 100% Available Screen Height on Large Screens, Naturally Stacked and Scrollable on Smaller Screens */}
       <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-3 items-stretch">
-        {/* Left Column: Interactive Loss Hexagon Map (Stays Fixed, Never Scrolls) */}
-        <div className="lg:col-span-7 h-full flex flex-col min-h-0 overflow-hidden">
+        {/* Left Column: Interactive Loss Hexagon Map */}
+        <div className="lg:col-span-7 h-[360px] sm:h-[420px] lg:h-full flex flex-col min-h-0 overflow-hidden shrink-0 lg:shrink">
           <div className="relative flex-1 min-h-0 rounded-2xl overflow-hidden border border-line dark:border-white/10 glass-card">
             <DisasterLossMap
               centerLat={center.lat}
@@ -104,8 +104,8 @@ export const DisasterHistoryTab: React.FC<DisasterHistoryTabProps> = ({
           </div>
         </div>
 
-        {/* Right Column: Graphs + Exposure + Key Insights (Scrollable data column with visible scrollbar) */}
-        <div className="lg:col-span-5 h-full flex flex-col min-h-0 gap-2.5 overflow-y-auto pr-1.5 stats-scrollbar">
+        {/* Right Column: Graphs + Exposure + Key Insights */}
+        <div className="lg:col-span-5 flex flex-col min-h-0 gap-2.5 overflow-y-auto pr-1.5 stats-scrollbar">
           {/* Better Graphs: Hexagonal Casualties Breakdown + Yearly Timeline */}
           <StatsDonutChart
             stats={stats}

@@ -50,11 +50,11 @@ export const DistrictBriefTab: React.FC<DistrictBriefTabProps> = ({
   const formatCount = (n: number) => new Intl.NumberFormat('en-US').format(n);
 
   return (
-    <div className={`h-full min-h-0 flex flex-col justify-between overflow-hidden ${classNames.root ?? ''} ${className}`}>
+    <div className={`h-full min-h-0 flex flex-col justify-between overflow-y-auto lg:overflow-hidden ${classNames.root ?? ''} ${className}`}>
       {/* Top Banner & Header Controls (Compact Screen-Fitted) */}
-      <div className="flex items-center justify-between gap-3 shrink-0 pb-1.5">
+      <div className="flex flex-wrap items-center justify-between gap-2.5 shrink-0 pb-1.5">
         <div>
-          <h1 className="font-display text-lg sm:text-xl font-extrabold text-ink dark:text-white tracking-tight leading-tight">
+          <h1 className="font-display text-base sm:text-lg lg:text-xl font-extrabold text-ink dark:text-white tracking-tight leading-tight">
             Flood Exposure / District Brief — {selectedDistrict.name}
           </h1>
         </div>
@@ -94,8 +94,8 @@ export const DistrictBriefTab: React.FC<DistrictBriefTabProps> = ({
 
       {/* Main Layout: Fixed 2D Map on Left + Scrollable Data Dossier on Right */}
       <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-3 items-stretch">
-        {/* Navigable 2D View Map Container (Pure H3 Hexagons, No Opacity/Resolution, No Legend - Stays Fixed Without Scrolling) */}
-        <div className="lg:col-span-7 h-full flex flex-col min-h-0 overflow-hidden">
+        {/* Navigable 2D View Map Container */}
+        <div className="lg:col-span-7 h-[360px] sm:h-[420px] lg:h-full flex flex-col min-h-0 overflow-hidden shrink-0 lg:shrink">
           <div className="relative flex-1 min-h-0 rounded-2xl overflow-hidden border border-line dark:border-white/10 glass-card shadow-2xl">
             <DistrictHazardMap
               district={selectedDistrict}
@@ -111,10 +111,10 @@ export const DistrictBriefTab: React.FC<DistrictBriefTabProps> = ({
           </div>
         </div>
 
-        {/* Right Side Panel: District Dossier (Scrolls ONLY if data does not fit on screen) */}
+        {/* Right Side Panel: District Dossier */}
         <div
           ref={dossierRef}
-          className="lg:col-span-5 h-full flex flex-col min-h-0 glass-card p-3.5 sm:p-4 rounded-2xl border border-line dark:border-white/10 shadow-xl overflow-y-auto pr-1.5 stats-scrollbar gap-2.5"
+          className="lg:col-span-5 flex flex-col min-h-0 glass-card p-3 sm:p-4 rounded-2xl border border-line dark:border-white/10 shadow-xl overflow-y-auto pr-1.5 stats-scrollbar gap-2.5"
         >
           {/* Dossier Header */}
           <div className="flex items-center justify-between border-b border-line dark:border-white/10 pb-2 shrink-0">

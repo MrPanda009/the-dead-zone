@@ -25,17 +25,17 @@ export const DataProvenanceTab: React.FC<DataProvenanceTabProps> = ({
   }, [datasets, searchQuery]);
 
   return (
-    <div className={`h-full min-h-0 flex flex-col justify-between overflow-hidden ${classNames.root ?? ''} ${className}`}>
+    <div className={`h-full min-h-0 flex flex-col justify-between overflow-y-auto lg:overflow-hidden ${classNames.root ?? ''} ${className}`}>
       {/* Top Banner & Search Filter (Compact Screen-Fitted) */}
-      <div className="flex items-center justify-between gap-3 shrink-0 pb-1.5">
+      <div className="flex flex-wrap items-center justify-between gap-2.5 shrink-0 pb-1.5">
         <div>
-          <h1 className="font-display text-lg sm:text-xl font-extrabold text-ink dark:text-white tracking-tight leading-tight">
+          <h1 className="font-display text-base sm:text-lg lg:text-xl font-extrabold text-ink dark:text-white tracking-tight leading-tight">
             Sources &amp; Data Provenance — {lastUpdated}
           </h1>
         </div>
 
         {/* Search & Filter Bar */}
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl glass-card border border-line dark:border-white/10 w-64">
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl glass-card border border-line dark:border-white/10 w-full sm:w-64">
           <span className="material-symbols-outlined text-text-muted text-base">search</span>
           <input
             type="text"
@@ -57,8 +57,8 @@ export const DataProvenanceTab: React.FC<DataProvenanceTabProps> = ({
       </div>
 
       {/* Authoritative Datasets Matrix Table (Scrolls cleanly inside container only, zero page scroll) */}
-      <div className="flex-1 min-h-0 glass-card rounded-2xl border border-line dark:border-white/10 overflow-hidden shadow-xl flex flex-col">
-        <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
+      <div className="flex-1 min-h-[350px] lg:min-h-0 glass-card rounded-2xl border border-line dark:border-white/10 overflow-hidden shadow-xl flex flex-col">
+        <div className="flex-1 min-h-0 overflow-auto stats-scrollbar">
           <table className="w-full text-left border-collapse text-xs font-mono">
             <thead className="sticky top-0 z-10 bg-surface-1/90 dark:bg-forest-surface/90 backdrop-blur-md">
               <tr className="border-b border-line dark:border-white/10 text-[10px] text-text-muted uppercase tracking-wider">

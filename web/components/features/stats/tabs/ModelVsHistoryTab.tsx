@@ -16,11 +16,11 @@ export const ModelVsHistoryTab: React.FC<ModelVsHistoryTabProps> = ({
   classNames = {},
 }) => {
   return (
-    <div className={`h-full min-h-0 flex flex-col justify-between overflow-hidden ${classNames.root ?? ''} ${className}`}>
+    <div className={`h-full min-h-0 flex flex-col justify-between overflow-y-auto lg:overflow-hidden ${classNames.root ?? ''} ${className}`}>
       {/* Top Banner & Selectors (Compact Screen-Fitted) */}
-      <div className="flex items-center justify-between gap-3 shrink-0 pb-1.5">
+      <div className="flex flex-wrap items-center justify-between gap-2.5 shrink-0 pb-1.5">
         <div>
-          <h1 className="font-display text-lg sm:text-xl font-extrabold text-ink dark:text-white tracking-tight leading-tight">
+          <h1 className="font-display text-base sm:text-lg lg:text-xl font-extrabold text-ink dark:text-white tracking-tight leading-tight">
             Model vs History — {selectedDistrict.name} ({selectedDistrict.state})
           </h1>
         </div>
@@ -49,10 +49,10 @@ export const ModelVsHistoryTab: React.FC<ModelVsHistoryTabProps> = ({
         </div>
       </div>
 
-      {/* Side-by-Side Dual Map & Observations Layout Fitted to 100% Screen Height */}
+      {/* Side-by-Side Dual Map & Observations Layout Fitted on Large Screens, Naturally Stacked on Smaller Screens */}
       <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-3 items-stretch">
-        {/* Left Map: Computed Flood Susceptibility (TERRA v0.1) - Fixed, Never Scrolls */}
-        <div className="lg:col-span-4 h-full flex flex-col min-h-0 overflow-hidden">
+        {/* Left Map: Computed Flood Susceptibility (TERRA v0.1) */}
+        <div className="lg:col-span-4 h-[300px] sm:h-[350px] lg:h-full flex flex-col min-h-0 overflow-hidden shrink-0 lg:shrink">
           <div className="flex items-center justify-between pb-1 px-1 shrink-0">
             <span className="text-[10px] font-mono font-bold uppercase text-citron flex items-center gap-1.5">
               <span
@@ -78,8 +78,8 @@ export const ModelVsHistoryTab: React.FC<ModelVsHistoryTabProps> = ({
           </div>
         </div>
 
-        {/* Center Column: Validation & Observations Card (Scrolls ONLY if content overflows) */}
-        <div className="lg:col-span-4 h-full flex flex-col min-h-0 glass-card p-3 sm:p-3.5 rounded-2xl border border-line dark:border-white/10 shadow-xl overflow-y-auto pr-1 stats-scrollbar gap-2">
+        {/* Center Column: Validation & Observations Card */}
+        <div className="lg:col-span-4 min-h-[280px] lg:h-full flex flex-col min-h-0 glass-card p-3 sm:p-3.5 rounded-2xl border border-line dark:border-white/10 shadow-xl overflow-y-auto pr-1 stats-scrollbar gap-2">
           {/* Header */}
           <div className="border-b border-line dark:border-white/10 pb-1.5 shrink-0">
             <div className="text-[9px] font-mono uppercase tracking-wider text-citron font-bold flex items-center gap-1">
@@ -168,8 +168,8 @@ export const ModelVsHistoryTab: React.FC<ModelVsHistoryTabProps> = ({
           </div>
         </div>
 
-        {/* Right Map: Recorded MHA / CWC Losses - Fixed, Never Scrolls */}
-        <div className="lg:col-span-4 h-full flex flex-col min-h-0 overflow-hidden">
+        {/* Right Map: Recorded MHA / CWC Losses */}
+        <div className="lg:col-span-4 h-[300px] sm:h-[350px] lg:h-full flex flex-col min-h-0 overflow-hidden shrink-0 lg:shrink">
           <div className="flex items-center justify-between pb-1 px-1 shrink-0">
             <span className="text-[10px] font-mono font-bold uppercase text-rose-500 flex items-center gap-1.5">
               <span

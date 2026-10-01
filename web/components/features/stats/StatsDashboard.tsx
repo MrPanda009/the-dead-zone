@@ -165,13 +165,13 @@ export const StatsDashboard: React.FC = () => {
   }, [selectedState, availableStates]);
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-bg-base dark:bg-forest-base text-ink dark:text-text-primary flex flex-col font-sans transition-colors duration-200 select-none">
-      {/* Main Content Area (Full-Width, 100vh Fits-on-Screen, No Scrolling) */}
+    <div className="h-dvh min-h-screen w-full overflow-hidden bg-bg-base dark:bg-forest-base text-ink dark:text-text-primary flex flex-col font-sans transition-colors duration-200 select-none">
+      {/* Main Content Area (Full-Width, Fits-on-Screen, Responsive Across Laptops) */}
       <main className="flex-1 min-h-0 flex flex-col h-full w-full overflow-hidden">
         {/* Top Navbar matching the rest of the application */}
-        <header className="shrink-0 h-12 border-b border-line dark:border-white/10 bg-surface-0/90 dark:bg-[#0c1524]/90 backdrop-blur-xl px-4 sm:px-6 flex items-center justify-between transition-colors z-30">
+        <header className="shrink-0 h-12 border-b border-line dark:border-white/10 bg-surface-0/90 dark:bg-[#0c1524]/90 backdrop-blur-xl px-3 sm:px-6 flex items-center justify-between transition-colors z-30">
           {/* Left Brand & Return */}
-          <div className="flex items-center gap-3 min-w-[200px]">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <Link
               href="/"
               className="flex items-center gap-2 group cursor-pointer"
@@ -184,15 +184,15 @@ export const StatsDashboard: React.FC = () => {
                 <span className="text-xs font-mono font-bold tracking-wider text-citron">
                   TERRA
                 </span>
-                <span className="text-[9px] font-mono text-text-muted tracking-tight">
+                <span className="text-[9px] font-mono text-text-muted tracking-tight hidden sm:inline">
                   TERRAIN RISK &amp; RELOCATION ANALYTICS
                 </span>
               </div>
             </Link>
           </div>
 
-          {/* Center Nav Links - Truly Centered */}
-          <nav className="hidden md:flex items-center gap-1.5 md:absolute md:left-1/2 md:-translate-x-1/2" aria-label="Main App Navigation">
+          {/* Center Nav Links - Truly Centered and Responsive */}
+          <nav className="hidden lg:flex items-center gap-1 xl:gap-1.5 absolute left-1/2 -translate-x-1/2" aria-label="Main App Navigation">
             <Link
               href="/"
               className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono text-text-secondary hover:text-text-primary hover:bg-surface-1 dark:hover:bg-white/5 border border-line dark:border-white/10 transition-colors cursor-pointer"
@@ -240,8 +240,8 @@ export const StatsDashboard: React.FC = () => {
           </nav>
 
           {/* Right Tools: India Location & Universal Theme Toggle */}
-          <div className="flex items-center gap-2 min-w-[200px] justify-end">
-            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-1 dark:bg-forest-surface border border-line dark:border-white/10 text-[11px] font-mono text-text-secondary">
+          <div className="flex items-center gap-2 shrink-0 justify-end">
+            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-surface-1 dark:bg-forest-surface border border-line dark:border-white/10 text-[11px] font-mono text-text-secondary">
               <span className="material-symbols-outlined text-xs text-citron">location_on</span>
               <span>India</span>
             </div>
@@ -251,12 +251,12 @@ export const StatsDashboard: React.FC = () => {
         </header>
 
         {/* Sub-navigation Segment Tabs (Switching between the 4 pages) */}
-        <div className="shrink-0 px-4 pt-1.5 pb-0.5 max-w-[1680px] w-full mx-auto">
+        <div className="shrink-0 px-2 sm:px-4 pt-1.5 pb-0.5 max-w-[1680px] w-full mx-auto overflow-x-auto no-scrollbar">
           <StatsSubNav activeTab={activeTab} onSelectTab={handleSelectTab} />
         </div>
 
-        {/* Dashboard Active Tab Body (100% Screen Height, No Page Scroll) */}
-        <div className="flex-1 min-h-0 overflow-hidden w-full max-w-[1680px] mx-auto px-4 pb-2 pt-0.5">
+        {/* Dashboard Active Tab Body (Scrollable on small laptops, fit-to-screen on desktop) */}
+        <div className="flex-1 min-h-0 overflow-y-auto lg:overflow-hidden w-full max-w-[1680px] mx-auto px-2 sm:px-4 pb-2 pt-0.5">
           {activeTab === 'history' && (
             <DisasterHistoryTab
               stats={stats}

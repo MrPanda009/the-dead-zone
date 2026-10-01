@@ -36,7 +36,7 @@ export const PublicStoriesPage: React.FC<PublicStoriesPageProps> = ({
 
   return (
     <div
-      className={`relative w-full min-h-screen lg:h-screen lg:overflow-hidden bg-bg-base text-text-primary dark:bg-[#0e261d] dark:text-cream flex flex-col justify-between p-4 sm:p-6 lg:p-8 xl:p-10 select-none transition-colors duration-300 ${className}`}
+      className={`relative w-full min-h-screen lg:h-screen overflow-y-auto lg:overflow-hidden bg-bg-base text-text-primary dark:bg-[#0e261d] dark:text-cream flex flex-col justify-between p-3 sm:p-5 lg:p-6 xl:p-8 select-none transition-colors duration-300 ${className}`}
     >
       {/* Background Subtle Ambient Vignette */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-forest-mid/25 via-bg-base to-forest-deep/15 dark:from-[#143d2c]/40 dark:via-[#0e261d] dark:to-[#081813] pointer-events-none" />
