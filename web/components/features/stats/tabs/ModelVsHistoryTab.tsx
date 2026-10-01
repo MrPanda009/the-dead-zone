@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { DistrictHazardMap } from '../DistrictHazardMap';
 import { DisasterLossMap } from '../DisasterLossMap';
 import type { ModelVsHistoryTabProps } from '../types';
@@ -11,27 +11,15 @@ export const ModelVsHistoryTab: React.FC<ModelVsHistoryTabProps> = ({
   onSelectDistrict,
   summary,
   stats,
-  onNavigateToSources,
   isLoading = false,
   className = '',
   classNames = {},
 }) => {
-  const [selectedYearRange, setSelectedYearRange] = useState('2014 - 2022');
-
   return (
     <div className={`h-full min-h-0 flex flex-col justify-between overflow-hidden ${classNames.root ?? ''} ${className}`}>
       {/* Top Banner & Selectors (Compact Screen-Fitted) */}
       <div className="flex items-center justify-between gap-3 shrink-0 pb-1.5">
         <div>
-          <div className="flex items-center gap-2">
-            <span
-              className="w-2.5 h-2.5 inline-block bg-citron shrink-0"
-              style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
-            />
-            <span className="text-[10px] font-mono uppercase tracking-widest text-citron font-bold">
-              VALIDATE. COMPARE. IMPROVE.
-            </span>
-          </div>
           <h1 className="font-display text-lg sm:text-xl font-extrabold text-ink dark:text-white tracking-tight leading-tight">
             Model vs History — {selectedDistrict.name} ({selectedDistrict.state})
           </h1>
@@ -56,23 +44,6 @@ export const ModelVsHistoryTab: React.FC<ModelVsHistoryTabProps> = ({
                   {d.name} ({d.state})
                 </option>
               ))}
-            </select>
-          </div>
-
-          {/* Year Range */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl glass-card border border-line dark:border-white/10">
-            <span className="text-[10px] font-mono text-text-muted">Years:</span>
-            <select
-              value={selectedYearRange}
-              onChange={(e) => setSelectedYearRange(e.target.value)}
-              className="bg-transparent text-xs font-mono font-bold text-ink dark:text-white pr-1 py-0.5 outline-none cursor-pointer"
-            >
-              <option value="2014 - 2022" className="bg-surface-0 dark:bg-forest-dark text-ink dark:text-white">
-                2014 – 2022
-              </option>
-              <option value="2014 - 2024" className="bg-surface-0 dark:bg-forest-dark text-ink dark:text-white">
-                2014 – 2024
-              </option>
             </select>
           </div>
         </div>
@@ -188,19 +159,12 @@ export const ModelVsHistoryTab: React.FC<ModelVsHistoryTabProps> = ({
             </div>
           </div>
 
-          {/* Bottom Methodology & Sources Banner */}
+          {/* Bottom Sources Footer */}
           <div className="pt-2 border-t border-line dark:border-white/10 flex items-center justify-between gap-2 shrink-0">
             <div className="text-[10px] text-text-muted font-mono leading-tight">
               MHA (2014-2022) • CWC • NCRB
             </div>
-            <button
-              type="button"
-              onClick={onNavigateToSources}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-surface-1 dark:bg-white/5 hover:bg-surface-2 dark:hover:bg-white/10 border border-line dark:border-white/10 text-[10px] font-mono font-bold text-citron transition-colors cursor-pointer"
-            >
-              <span>Methodology</span>
-              <span className="material-symbols-outlined text-[11px]">arrow_forward</span>
-            </button>
+            <span className="text-[10px] font-mono text-text-muted">Empirical Alignment</span>
           </div>
         </div>
 

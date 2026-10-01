@@ -29,15 +29,6 @@ export const DataProvenanceTab: React.FC<DataProvenanceTabProps> = ({
       {/* Top Banner & Search Filter (Compact Screen-Fitted) */}
       <div className="flex items-center justify-between gap-3 shrink-0 pb-1.5">
         <div>
-          <div className="flex items-center gap-2">
-            <span
-              className="w-2.5 h-2.5 inline-block bg-citron shrink-0"
-              style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
-            />
-            <span className="text-[10px] font-mono uppercase tracking-widest text-citron font-bold">
-              TRANSPARENT DATA. STRONGER DECISIONS.
-            </span>
-          </div>
           <h1 className="font-display text-lg sm:text-xl font-extrabold text-ink dark:text-white tracking-tight leading-tight">
             Sources &amp; Data Provenance — {lastUpdated}
           </h1>
@@ -84,8 +75,7 @@ export const DataProvenanceTab: React.FC<DataProvenanceTabProps> = ({
               {filteredDatasets.map((row) => (
                 <tr
                   key={row.id}
-                  onClick={() => onSelectDataset?.(row)}
-                  className="hover:bg-surface-2/40 dark:hover:bg-white/5 transition-colors cursor-pointer group"
+                  className="hover:bg-surface-2/40 dark:hover:bg-white/5 transition-colors group"
                 >
                   {/* Dataset Name & Hexagonal Icon */}
                   <td className="py-2.5 px-4 font-bold text-ink dark:text-white">

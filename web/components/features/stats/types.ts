@@ -118,7 +118,7 @@ export interface DisasterHistoryTabProps extends BaseStatsProps {
   selectedState: string;
   onSelectState: (state: string) => void;
   availableStates: string[];
-  caseStudy: DisasterCaseStudyDTO | null;
+  caseStudy?: DisasterCaseStudyDTO | null;
   isLoading?: boolean;
   onOpenCaseStudyModal?: (caseStudy: DisasterCaseStudyDTO) => void;
 }

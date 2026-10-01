@@ -207,7 +207,7 @@ export const StatsDonutChart: React.FC<StatsDonutChartProps> = ({
               key={item.id}
               onMouseEnter={() => setHoveredHazard(item.id)}
               onMouseLeave={() => setHoveredHazard(null)}
-              className={`p-1.5 rounded-xl transition-all cursor-pointer font-mono text-xs ${
+              className={`p-1.5 rounded-xl transition-all cursor-default font-mono text-xs ${
                 isHovered
                   ? 'bg-surface-2 dark:bg-white/10 scale-[1.01]'
                   : 'hover:bg-surface-1 dark:hover:bg-white/5'

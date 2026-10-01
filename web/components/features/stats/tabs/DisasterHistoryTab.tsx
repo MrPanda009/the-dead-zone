@@ -1,7 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
-import Image from 'next/image';
+import React from 'react';
 import { StatsDonutChart } from '../StatsDonutChart';
 import { DisasterLossMap } from '../DisasterLossMap';
 import { STATE_EXPOSURE_PROFILES } from '../statsData';
@@ -12,13 +11,10 @@ export const DisasterHistoryTab: React.FC<DisasterHistoryTabProps> = ({
   selectedState,
   onSelectState,
   availableStates,
-  caseStudy,
   isLoading = false,
-  onOpenCaseStudyModal,
   className = '',
   classNames = {},
 }) => {
-  const [selectedYearRange, setSelectedYearRange] = useState('2014 - 2022');
 
   const exposure =
     STATE_EXPOSURE_PROFILES[selectedState] ??
@@ -53,15 +49,6 @@ export const DisasterHistoryTab: React.FC<DisasterHistoryTabProps> = ({
       {/* Top Banner & Filter Controls (Compact & Screen-Fitted) */}
       <div className="flex items-center justify-between gap-3 shrink-0 pb-1.5">
         <div>
-          <div className="flex items-center gap-2">
-            <span
-              className="w-2.5 h-2.5 inline-block bg-citron shrink-0"
-              style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
-            />
-            <span className="text-[10px] font-mono uppercase tracking-widest text-citron font-bold">
-              PAST EVENTS. REAL IMPACT.
-            </span>
-          </div>
           <h1 className="font-display text-lg sm:text-xl font-extrabold text-ink dark:text-white tracking-tight leading-tight">
             Disaster History &amp; Stats — {selectedState}
           </h1>
@@ -82,23 +69,6 @@ export const DisasterHistoryTab: React.FC<DisasterHistoryTabProps> = ({
                   {st}
                 </option>
               ))}
-            </select>
-          </div>
-
-          {/* Year Range Dropdown */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl glass-card border border-line dark:border-white/10">
-            <span className="text-[10px] font-mono text-text-muted">Years:</span>
-            <select
-              value={selectedYearRange}
-              onChange={(e) => setSelectedYearRange(e.target.value)}
-              className="bg-transparent text-xs font-mono font-bold text-ink dark:text-white pr-1 py-0.5 outline-none cursor-pointer"
-            >
-              <option value="2014 - 2022" className="bg-surface-0 dark:bg-forest-dark text-ink dark:text-white">
-                2014 – 2022
-              </option>
-              <option value="2014 - 2024" className="bg-surface-0 dark:bg-forest-dark text-ink dark:text-white">
-                2014 – 2024
-              </option>
             </select>
           </div>
 
@@ -125,48 +95,7 @@ export const DisasterHistoryTab: React.FC<DisasterHistoryTabProps> = ({
               zoom={center.zoom ?? 7.5}
               showLegend={true}
               className="w-full h-full"
-            >
-              {/* Floating Case Study Card (Bottom Left) */}
-              <div className="absolute bottom-3 left-3 z-20 max-w-xs w-[calc(100%-1.5rem)] sm:w-auto">
-                <div className="glass-card p-2.5 sm:p-3 rounded-xl border border-line dark:border-white/20 shadow-xl flex items-center gap-2.5 backdrop-blur-xl">
-                  <div className="relative w-12 h-12 rounded-lg overflow-hidden shrink-0 border border-white/10 bg-surface-2">
-                    <Image
-                      src="/stories/east.jpg"
-                      alt="Noney Landslide"
-                      fill
-                      sizes="48px"
-                      className="object-cover"
-                    />
-                  </div>
-
-                  <div className="space-y-0.5 min-w-0">
-                    <div className="flex items-center gap-1">
-                      <span
-                        className="w-2 h-2 inline-block bg-citron"
-                        style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
-                      />
-                      <span className="text-[8px] font-mono uppercase tracking-wider text-citron font-bold">
-                        CASE STUDY
-                      </span>
-                    </div>
-                    <div className="text-[11px] font-bold font-display text-ink dark:text-white truncate">
-                      Noney, Manipur (Landslide)
-                    </div>
-                    <div className="text-[9px] text-text-muted font-mono leading-none">
-                      61 fatalities • 18 injured
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => caseStudy && onOpenCaseStudyModal?.(caseStudy)}
-                      className="text-[10px] font-mono text-citron hover:underline flex items-center gap-0.5 cursor-pointer pt-0.5"
-                    >
-                      <span>View details</span>
-                      <span className="material-symbols-outlined text-[10px]">arrow_forward</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </DisasterLossMap>
+            />
           </div>
 
           <div className="flex items-center justify-between text-[10px] font-mono text-text-muted pt-1 px-1 shrink-0">

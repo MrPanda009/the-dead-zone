@@ -54,15 +54,6 @@ export const DistrictBriefTab: React.FC<DistrictBriefTabProps> = ({
       {/* Top Banner & Header Controls (Compact Screen-Fitted) */}
       <div className="flex items-center justify-between gap-3 shrink-0 pb-1.5">
         <div>
-          <div className="flex items-center gap-2">
-            <span
-              className="w-2.5 h-2.5 inline-block bg-citron shrink-0"
-              style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
-            />
-            <span className="text-[10px] font-mono uppercase tracking-widest text-citron font-bold">
-              RISK WHERE WATER RISES.
-            </span>
-          </div>
           <h1 className="font-display text-lg sm:text-xl font-extrabold text-ink dark:text-white tracking-tight leading-tight">
             Flood Exposure / District Brief — {selectedDistrict.name}
           </h1>

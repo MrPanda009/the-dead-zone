@@ -1,15 +1,13 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useTransition, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useTransition } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import {
   fetchAvailableStates,
-  fetchCaseStudies,
   fetchDisasterStats,
   fetchDistrictHazardSummary,
-  type DisasterCaseStudyDTO,
   type DisasterStatsResponse,
   type DistrictHazardSummaryDTO,
 } from '@/lib/api/stats';
@@ -19,7 +17,6 @@ import {
   DistrictBriefTab,
   ModelVsHistoryTab,
   DataProvenanceTab,
-  CaseStudyModal,
   PILOT_DISTRICTS,
   type StatsTabId,
   type PilotDistrict,
@@ -60,11 +57,6 @@ export const StatsDashboard: React.FC = () => {
   const [selectedDistrict, setSelectedDistrict] = useState<PilotDistrict>(PILOT_DISTRICTS[0]);
   const [districtSummary, setDistrictSummary] = useState<DistrictHazardSummaryDTO | null>(null);
 
-  // Case Study State
-  const [caseStudy, setCaseStudy] = useState<DisasterCaseStudyDTO | null>(null);
-  const [isCaseStudyModalOpen, setIsCaseStudyModalOpen] = useState(false);
-  const [activeModalCaseStudy, setActiveModalCaseStudy] = useState<DisasterCaseStudyDTO | null>(null);
-
   // Loading States
   const [isLoadingStates, setIsLoadingStates] = useState<boolean>(false);
   const [isLoadingStats, setIsLoadingStats] = useState<boolean>(false);
@@ -82,66 +74,18 @@ export const StatsDashboard: React.FC = () => {
     [router]
   );
 
-  // Load available states & initial case studies
+  // Load available states
   useEffect(() => {
     let isMounted = true;
     async function init() {
       try {
         setIsLoadingStates(true);
-        const [statesRes, caseStudiesRes] = await Promise.all([
-          fetchAvailableStates().catch(() => null),
-          fetchCaseStudies().catch(() => null),
-        ]);
-        if (isMounted) {
-          if (statesRes?.states && statesRes.states.length > 0) {
-            setAvailableStates((prev) => Array.from(new Set([...prev, ...statesRes.states])));
-          }
-          if (caseStudiesRes && caseStudiesRes.length > 0) {
-            setCaseStudy(caseStudiesRes[0]);
-          } else {
-            // Curated fallback matching Noney 2022 landmark event
-            setCaseStudy({
-              slug: 'manipur-noney-landslide-2022',
-              title: 'Tupul Railway Construction Yard Landslide, Noney (Manipur)',
-              disaster_type: 'Landslide',
-              state_name: 'Manipur',
-              location_name: 'Tupul, Noney District, Manipur',
-              event_date: '2022-06-30',
-              fatalities: 61,
-              injured: 18,
-              missing: 0,
-              compensation_cr: 3.45,
-              summary:
-                'At midnight on 29-30 June 2022, a massive rotational debris slide and mudflow occurred at the railway construction camp near Tupul station on the Jiribam-Imphal railway line. The landslide blocked the Ijei river, creating an artificial dam and inundating the 107 Territorial Army company camp.',
-              geotechnical_context:
-                'Deep slope cutting without adequate retaining structures, high pore water pressure following continuous heavy monsoon precipitation on sheared Disang shale formations.',
-              response_actions: [
-                {
-                  agency: 'NDRF',
-                  action:
-                    'Mobilized 5 search and rescue teams with sniffer dogs and through-the-wall radar devices',
-                },
-                {
-                  agency: 'Indian Army & Assam Rifles',
-                  action:
-                    'Heavy earthmoving machinery deployed to breach the Ijei river landslide dam and prevent flash flooding downstream',
-                },
-                {
-                  agency: 'SDRF Manipur',
-                  action: 'Evacuation of downstream habitations along the Ijei river corridor',
-                },
-              ],
-              source_refs: [
-                {
-                  title: 'Rajya Sabha Question No. 1290 (Casualties in Noney Landslide)',
-                  uuid: 'e8299754-fa6f-48f0-93a3-818ad3763086',
-                },
-              ],
-            });
-          }
+        const statesRes = await fetchAvailableStates().catch(() => null);
+        if (isMounted && statesRes?.states && statesRes.states.length > 0) {
+          setAvailableStates((prev) => Array.from(new Set([...prev, ...statesRes.states])));
         }
       } catch (err) {
-        console.error('Failed to load initial states or case studies', err);
+        console.error('Failed to load initial states', err);
       } finally {
         if (isMounted) setIsLoadingStates(false);
       }
@@ -219,11 +163,6 @@ export const StatsDashboard: React.FC = () => {
       }
     });
   }, [selectedState, availableStates]);
-
-  const handleOpenCaseStudyModal = useCallback((study: DisasterCaseStudyDTO) => {
-    setActiveModalCaseStudy(study);
-    setIsCaseStudyModalOpen(true);
-  }, []);
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-bg-base dark:bg-forest-base text-ink dark:text-text-primary flex flex-col font-sans transition-colors duration-200 select-none">
@@ -324,9 +263,7 @@ export const StatsDashboard: React.FC = () => {
               selectedState={selectedState}
               onSelectState={handleStateChange}
               availableStates={availableStates}
-              caseStudy={caseStudy}
               isLoading={isLoadingStats || isPending}
-              onOpenCaseStudyModal={handleOpenCaseStudyModal}
             />
           )}
 
@@ -347,7 +284,6 @@ export const StatsDashboard: React.FC = () => {
               onSelectDistrict={handleDistrictChange}
               summary={districtSummary}
               stats={stats}
-              onNavigateToSources={() => handleSelectTab('sources')}
               isLoading={isLoadingStats || isLoadingSummary}
             />
           )}
@@ -358,13 +294,6 @@ export const StatsDashboard: React.FC = () => {
             />
           )}
         </div>
-
-        {/* Case Study Modal */}
-        <CaseStudyModal
-          isOpen={isCaseStudyModalOpen}
-          onClose={() => setIsCaseStudyModalOpen(false)}
-          caseStudy={activeModalCaseStudy || caseStudy}
-        />
       </main>
     </div>
   );
