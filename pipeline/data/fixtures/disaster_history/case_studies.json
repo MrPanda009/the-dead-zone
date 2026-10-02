@@ -13,13 +13,142 @@
     "summary": "At midnight on 29-30 June 2022, a massive rotational debris slide and mudflow occurred at the railway construction camp near Tupul station on the Jiribam-Imphal railway line. The landslide blocked the Ijei river, creating an artificial dam and inundating the 107 Territorial Army company camp.",
     "geotechnical_context": "Deep slope cutting without adequate retaining structures, high pore water pressure following continuous heavy monsoon precipitation on sheared Disang shale formations.",
     "response_actions": [
-      { "agency": "NDRF", "action": "Mobilized 5 search and rescue teams with sniffer dogs and through-the-wall radar devices" },
-      { "agency": "Indian Army & Assam Rifles", "action": "Heavy earthmoving machinery deployed to breach the Ijei river landslide dam and prevent flash flooding downstream" },
-      { "agency": "SDRF Manipur", "action": "Evacuation of downstream habitations along the Ijei river corridor" }
+      {
+        "agency": "NDRF",
+        "action": "Mobilized 5 search and rescue teams with sniffer dogs and through-the-wall radar devices"
+      },
+      {
+        "agency": "Indian Army & Assam Rifles",
+        "action": "Heavy earthmoving machinery deployed to breach the Ijei river landslide dam and prevent flash flooding downstream"
+      },
+      {
+        "agency": "SDRF Manipur",
+        "action": "Evacuation of downstream habitations along the Ijei river corridor"
+      }
     ],
     "source_refs": [
-      { "title": "Rajya Sabha Question No. 1290 (Casualties in Noney Landslide)", "uuid": "e8299754-fa6f-48f0-93a3-818ad3763086" },
-      { "title": "Ex-gratia and Relief Assistance for Noney Victims", "uuid": "5820fb44-2c46-4052-abb1-6885c784dc95" }
+      {
+        "title": "Rajya Sabha Question No. 1290 (Casualties in Noney Landslide)",
+        "uuid": "e8299754-fa6f-48f0-93a3-818ad3763086"
+      },
+      {
+        "title": "Ex-gratia and Relief Assistance for Noney Victims",
+        "uuid": "5820fb44-2c46-4052-abb1-6885c784dc95"
+      }
+    ]
+  },
+  {
+    "slug": "uttarakhand-kedarnath-debris-flow-2013",
+    "title": "Kedarnath & Mandakini Valley Glacial Outburst and Flash Flood, Rudraprayag",
+    "disaster_type": "Flash Flood / Debris Flow",
+    "state_name": "Uttarakhand",
+    "location_name": "Kedarnath & Mandakini Basin, Rudraprayag District, Uttarakhand",
+    "event_date": "2013-06-16",
+    "fatalities": 5700,
+    "injured": 4200,
+    "missing": 1800,
+    "compensation_cr": 1250.0,
+    "summary": "Extreme multi-day precipitation combined with the moraine-dammed Chorabari Lake breach (GLOF) unleashed a catastrophic debris torrent down the Mandakini river canyon, decimating Rambara and downstream settlements in Rudraprayag district.",
+    "geotechnical_context": "Catastrophic breach of lateral moraine dam, saturation of steep glaciated slopes (>35 deg) on High Himalayan Crystalline gneiss, hyperconcentrated debris flow transport.",
+    "response_actions": [
+      {
+        "agency": "Indian Air Force (Operation Rahat)",
+        "action": "Evacuated over 19,600 stranded pilgrims and residents using Mi-17 and ALH helicopters"
+      },
+      {
+        "agency": "NDRF & ITBP",
+        "action": "Established rope bridges and pedestrian zip-lines across severed Mandakini gorges"
+      },
+      {
+        "agency": "Border Roads Organisation",
+        "action": "Emergency Bailey bridge construction along NH-58 and NH-107 pilgrimage lifelines"
+      }
+    ],
+    "source_refs": [
+      {
+        "title": "National Institute of Disaster Management (NIDM) Kedarnath Report 2013",
+        "uuid": "c4d29e31-8f24-42b7-a37a-59423c8e1a12"
+      },
+      {
+        "title": "Wadia Institute of Himalayan Geology Geotechnical Analysis",
+        "uuid": "7a3e8109-bb11-450f-90e8-09dc37b01984"
+      }
+    ]
+  },
+  {
+    "slug": "ladakh-leh-cloudburst-debris-flow-2010",
+    "title": "Leh Cloudburst & Alluvial Fan Debris Inundation Disaster, Ladakh",
+    "disaster_type": "Cloudburst / Debris Flow",
+    "state_name": "Ladakh",
+    "location_name": "Leh Town & Choglamsar, Leh District, Ladakh",
+    "event_date": "2010-08-06",
+    "fatalities": 255,
+    "injured": 340,
+    "missing": 65,
+    "compensation_cr": 185.0,
+    "summary": "An unprecedented mesoscale convective cloudburst (>150 mm in 2 hours) struck the cold-desert terrain of Leh at midnight, generating high-velocity mudflows down normally dormant dry gullies into Choglamsar and destroying 1,400+ mud-brick homes.",
+    "geotechnical_context": "Unconsolidated Granitic morainic till and alluvial fan matrix mobilized into viscous debris slurry upon sudden saturation; near-zero infiltration capacity in barren periglacial desert.",
+    "response_actions": [
+      {
+        "agency": "Indian Army (Operation Sahayata)",
+        "action": "Mobilized 6,000 personnel, restored Leh airfield within 36 hours, and deployed field hospitals"
+      },
+      {
+        "agency": "NDRF Battalion 7",
+        "action": "Deep mud search and rescue operations across Choglamsar alluvial fan"
+      },
+      {
+        "agency": "Border Roads Organisation (Himank)",
+        "action": "Reopened Srinagar-Leh NH-1D and cleared Zojila and Khardung La passes"
+      }
+    ],
+    "source_refs": [
+      {
+        "title": "Geological Survey of India Post-Disaster Geo-Environmental Investigation",
+        "uuid": "a812e943-7f12-4211-9a70-8742c9081234"
+      },
+      {
+        "title": "National Disaster Management Authority (NDMA) Leh Report 2010",
+        "uuid": "4392ef01-5231-4cf8-8c10-38827fa01732"
+      }
+    ]
+  },
+  {
+    "slug": "jk-srinagar-jhelum-catastrophic-flood-2014",
+    "title": "Great Kashmir Floods & Jhelum Embankment Breach, Srinagar",
+    "disaster_type": "Riverine Inundation",
+    "state_name": "Jammu & Kashmir",
+    "location_name": "Srinagar City & Jhelum Basin, Jammu & Kashmir",
+    "event_date": "2014-09-07",
+    "fatalities": 284,
+    "injured": 1450,
+    "missing": 42,
+    "compensation_cr": 1450.0,
+    "summary": "Record torrential monsoon rainfall inundated the entire Jhelum river basin, overtopping flood spill channels and breaching bunds at Ram Munshi Bagh. Over 70% of Srinagar city was submerged under 3 to 5 meters of floodwaters for over two weeks.",
+    "geotechnical_context": "Piping and structural failure of earthen Jhelum flood dykes under prolonged hydrostatic head; critical loss of historical flood retention in wetlands (Anchar, Wular, Dal).",
+    "response_actions": [
+      {
+        "agency": "NDRF & Indian Armed Forces (Operation Megh Rahat)",
+        "action": "Rescued over 237,000 marooned citizens using 135 motorized boats and 80 aircraft"
+      },
+      {
+        "agency": "CWC & Irrigation and Flood Control J&K",
+        "action": "Emergency pumping and sandbag reinforcement of breaches along the Flood Spill Channel"
+      },
+      {
+        "agency": "State Health Services",
+        "action": "Dispatched emergency mobile medical teams to contain waterborne epidemic outbreaks"
+      }
+    ],
+    "source_refs": [
+      {
+        "title": "Central Water Commission (CWC) Comprehensive Flood Study of Jhelum Basin 2014",
+        "uuid": "99c10482-1209-4ee2-8a90-781923cf0912"
+      },
+      {
+        "title": "Parliamentary Standing Committee on Home Affairs 187th Report",
+        "uuid": "8120ef93-6c84-4822-b912-491209cfa321"
+      }
     ]
   }
 ]

@@ -47,5 +47,19 @@
     "damaged_length_km": 76.3,
     "disaster_triggers": "Heavy Rain / Flood",
     "source_uuid": "89e8a589-1089-4f2d-9ea5-a5fa66a8ac95"
+  },
+  {
+    "state_name": "Ladakh",
+    "reporting_period": "2024-25",
+    "damaged_length_km": 98.4,
+    "disaster_triggers": "Cloudburst / Flash Flood / Avalanche",
+    "source_uuid": "89e8a589-1089-4f2d-9ea5-a5fa66a8ac95"
+  },
+  {
+    "state_name": "Jammu & Kashmir",
+    "reporting_period": "2024-25",
+    "damaged_length_km": 184.6,
+    "disaster_triggers": "Landslide / Heavy Rain / Rockfall",
+    "source_uuid": "89e8a589-1089-4f2d-9ea5-a5fa66a8ac95"
   }
 ]

@@ -61,5 +61,32 @@
     "ndrf_releases_cr": 862.5,
     "lives_saved_count": 5280,
     "source_uuid": "6054657b-2834-4ce9-ae48-3c73709110f7"
+  },
+  {
+    "state_name": "Uttarakhand",
+    "fiscal_year": "2023-24",
+    "sdrf_central_share_cr": 852.0,
+    "sdrf_state_share_cr": 94.6,
+    "ndrf_releases_cr": 415.0,
+    "lives_saved_count": 6240,
+    "source_uuid": "6054657b-2834-4ce9-ae48-3c73709110f7"
+  },
+  {
+    "state_name": "Ladakh",
+    "fiscal_year": "2023-24",
+    "sdrf_central_share_cr": 42.0,
+    "sdrf_state_share_cr": 4.6,
+    "ndrf_releases_cr": 18.5,
+    "lives_saved_count": 420,
+    "source_uuid": "6054657b-2834-4ce9-ae48-3c73709110f7"
+  },
+  {
+    "state_name": "Jammu & Kashmir",
+    "fiscal_year": "2023-24",
+    "sdrf_central_share_cr": 480.0,
+    "sdrf_state_share_cr": 53.3,
+    "ndrf_releases_cr": 192.4,
+    "lives_saved_count": 3850,
+    "source_uuid": "6054657b-2834-4ce9-ae48-3c73709110f7"
   }
 ]

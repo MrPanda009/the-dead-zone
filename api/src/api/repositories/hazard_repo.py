@@ -261,6 +261,36 @@ class HazardRepository:
             .first()
         )
 
+        # Query last recorded flood loss for state
+        state_mapping = {
+            "barpeta": "Assam",
+            "dholpur": "Rajasthan",
+            "morena": "Madhya Pradesh",
+            "wayanad": "Kerala",
+            "kodagu": "Karnataka",
+            "rudraprayag": "Uttarakhand",
+            "leh": "Ladakh",
+            "srinagar": "Jammu & Kashmir",
+        }
+        state_name = state_mapping.get(admin_name.lower(), admin_name)
+        cwc_query = text("""
+            SELECT calendar_year, human_lives_lost, houses_damaged_count, total_damage_crores
+            FROM cwc_flood_damage_record
+            WHERE lower(state_name) = lower(:state_name)
+            ORDER BY calendar_year DESC LIMIT 1;
+        """)
+        cwc_row = self.db.execute(cwc_query, {"state_name": state_name}).mappings().first()
+        last_loss = (
+            {
+                "calendar_year": int(cwc_row["calendar_year"]),
+                "human_lives_lost": int(cwc_row["human_lives_lost"] or 0),
+                "houses_damaged_count": int(cwc_row["houses_damaged_count"] or 0),
+                "total_damage_crores": float(cwc_row["total_damage_crores"] or 0.0),
+            }
+            if cwc_row
+            else None
+        )
+
         total_cells = int(cell_stats["total_cells"] or 0) if cell_stats else 0
         if total_cells == 0:
             return {
@@ -285,7 +315,7 @@ class HazardRepository:
                 "habitations_at_risk_count": 0,
                 "population_at_risk_sum": 0,
                 "drivers_summary": None,
-                "last_recorded_flood_loss": None,
+                "last_recorded_flood_loss": last_loss,
             }
 
         # Query habitations at risk (cells with susceptibility >= 0.50)
@@ -334,32 +364,7 @@ class HazardRepository:
                     ),
                 }
 
-        # Query last recorded flood loss for state
-        state_mapping = {
-            "barpeta": "Assam",
-            "dholpur": "Rajasthan",
-            "morena": "Madhya Pradesh",
-            "wayanad": "Kerala",
-            "kodagu": "Karnataka",
-        }
-        state_name = state_mapping.get(admin_name.lower(), admin_name)
-        cwc_query = text("""
-            SELECT calendar_year, human_lives_lost, houses_damaged_count, total_damage_crores
-            FROM cwc_flood_damage_record
-            WHERE lower(state_name) = lower(:state_name)
-            ORDER BY calendar_year DESC LIMIT 1;
-        """)
-        cwc_row = self.db.execute(cwc_query, {"state_name": state_name}).mappings().first()
-        last_loss = (
-            {
-                "calendar_year": int(cwc_row["calendar_year"]),
-                "human_lives_lost": int(cwc_row["human_lives_lost"] or 0),
-                "houses_damaged_count": int(cwc_row["houses_damaged_count"] or 0),
-                "total_damage_crores": float(cwc_row["total_damage_crores"] or 0.0),
-            }
-            if cwc_row
-            else None
-        )
+
 
         model_version_str = str(cell_stats["model_version"] or "")
         is_modeled = "flood-susceptibility" in model_version_str

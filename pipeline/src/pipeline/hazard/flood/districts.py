@@ -120,6 +120,43 @@ DISTRICTS: dict[str, DistrictConfig] = {
         census_2011_population=817420,
         river_basin="Kabini (Cauvery)",
     ),
+    "rudraprayag": DistrictConfig(
+        key="rudraprayag",
+        name="Rudraprayag",
+        state="Uttarakhand",
+        lgd_code=55,
+        census_code_2011=58,
+        bbox_wgs84=[78.8163, 30.2170, 79.3572, 30.8067],
+        processing_crs="EPSG:32644",  # WGS 84 / UTM Zone 44N
+        census_2011_population=242285,
+        river_basin="Alaknanda / Mandakini",
+        s1_datetime_range="2023-06-15/2023-10-31",
+    ),
+    "srinagar": DistrictConfig(
+        key="srinagar",
+        name="Srinagar",
+        state="Jammu & Kashmir",
+        lgd_code=12,
+        census_code_2011=10,
+        bbox_wgs84=[74.6657, 33.9789, 75.1937, 34.3468],
+        processing_crs="EPSG:32643",  # WGS 84 / UTM Zone 43N
+        census_2011_population=1236829,
+        river_basin="Jhelum",
+        s1_datetime_range="2023-06-01/2023-10-31",
+    ),
+    "leh": DistrictConfig(
+        key="leh",
+        name="Leh",
+        shapefile_district_name="Leh (ladakh)",
+        state="Ladakh",
+        lgd_code=9,
+        census_code_2011=3,
+        bbox_wgs84=[76.8000, 33.8000, 78.2000, 34.6000],  # Active Indus valley corridor
+        processing_crs="EPSG:32643",  # WGS 84 / UTM Zone 43N
+        census_2011_population=133487,
+        river_basin="Indus / Zanskar",
+        s1_datetime_range="2023-06-01/2023-09-30",
+    ),
 }
 
 
