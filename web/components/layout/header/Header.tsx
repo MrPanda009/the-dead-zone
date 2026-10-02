@@ -9,7 +9,6 @@ import { NavSegmentTabs, NavTabItem, DEFAULT_NAV_TABS } from './NavSegmentTabs';
 import { PortalAccessButton } from './PortalAccessButton';
 
 import { useAuth } from '@/lib/hooks/useAuth';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 export interface HeaderProps {
   /** Tonal treatment. 'login' sits the dock a shade deeper against the globe. */
@@ -129,7 +128,6 @@ export const Header: React.FC<HeaderProps> = ({
               disableAnimation={!animate}
             />
           )}
-          <ThemeToggle />
           {isAuthenticated && (
             <button
               type="button"
