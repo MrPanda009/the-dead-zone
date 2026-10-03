@@ -167,26 +167,51 @@ class AlertsRepository:
         return [dict(r) for r in rows], total_cells, total_pop
 
     def get_latest_forecast_cycle(self, admin_id: Optional[int] = None) -> Optional[datetime]:
-        """Returns the latest forecast cycle timestamp persisted in hazard_dynamic, if any."""
+        """Returns the latest forecast cycle timestamp persisted in hazard_dynamic, falling back to pipeline_run.
+        
+        Enforces a 12-hour freshness window to avoid resurfacing stale or historical forecast cycles.
+        """
         if admin_id is not None:
             query = text("""
-                SELECT MAX(hd.forecast_cycle_at) as max_cycle
-                FROM hazard_dynamic hd
-                JOIN grid_cell g ON hd.h3 = g.h3
-                LEFT JOIN admin_boundary a ON g.admin_id = a.id
-                LEFT JOIN pipeline_run pr ON hd.pipeline_run_id = pr.id
-                WHERE hd.forecast_cycle_at IS NOT NULL
-                  AND (g.admin_id = :admin_id OR a.lgd_code = :admin_id)
-                  AND (hd.pipeline_run_id IS NULL OR pr.status IN ('READY', 'COMPLETED'));
+                SELECT COALESCE(
+                    (SELECT MAX(hd.forecast_cycle_at)
+                     FROM hazard_dynamic hd
+                     JOIN grid_cell g ON hd.h3 = g.h3
+                     LEFT JOIN admin_boundary a ON g.admin_id = a.id
+                     LEFT JOIN pipeline_run pr ON hd.pipeline_run_id = pr.id
+                     WHERE hd.forecast_cycle_at IS NOT NULL
+                       AND hd.forecast_cycle_at >= NOW() - INTERVAL '12 hours'
+                       AND (g.admin_id = :admin_id OR a.lgd_code = :admin_id)
+                       AND (hd.pipeline_run_id IS NULL OR pr.status IN ('READY', 'COMPLETED'))),
+                    (SELECT MAX(s.valid_at)
+                     FROM pipeline_run pr
+                     JOIN source_snapshot s ON pr.source_snapshot_id = s.id
+                     WHERE pr.run_type = 'forecast_pipeline'
+                       AND pr.status = 'READY'
+                       AND pr.completed_at >= NOW() - INTERVAL '12 hours'
+                       AND (
+                           CAST(s.metadata->>'admin_id' AS int) = :admin_id 
+                           OR CAST(s.metadata->>'lgd_code' AS int) = :admin_id
+                       ))
+                ) as max_cycle;
             """)
             row = self.db.execute(query, {"admin_id": int(admin_id)}).mappings().first()
         else:
             query = text("""
-                SELECT MAX(hd.forecast_cycle_at) as max_cycle
-                FROM hazard_dynamic hd
-                LEFT JOIN pipeline_run pr ON hd.pipeline_run_id = pr.id
-                WHERE hd.forecast_cycle_at IS NOT NULL
-                  AND (hd.pipeline_run_id IS NULL OR pr.status IN ('READY', 'COMPLETED'));
+                SELECT COALESCE(
+                    (SELECT MAX(hd.forecast_cycle_at)
+                     FROM hazard_dynamic hd
+                     LEFT JOIN pipeline_run pr ON hd.pipeline_run_id = pr.id
+                     WHERE hd.forecast_cycle_at IS NOT NULL
+                       AND hd.forecast_cycle_at >= NOW() - INTERVAL '12 hours'
+                       AND (hd.pipeline_run_id IS NULL OR pr.status IN ('READY', 'COMPLETED'))),
+                    (SELECT MAX(s.valid_at)
+                     FROM pipeline_run pr
+                     JOIN source_snapshot s ON pr.source_snapshot_id = s.id
+                     WHERE pr.run_type = 'forecast_pipeline'
+                       AND pr.status = 'READY'
+                       AND pr.completed_at >= NOW() - INTERVAL '12 hours')
+                ) as max_cycle;
             """)
             row = self.db.execute(query).mappings().first()
         max_val = row["max_cycle"] if row and row.get("max_cycle") else None
@@ -208,23 +233,52 @@ class AlertsRepository:
     ) -> tuple[list[dict[str, Any]], int, int]:
         """Queries H3 cells predicted to cross MHI >= 0.75 within forecast horizon (max 72h).
         
+        Supports both District-scoped queries and National Operations views.
+        In National Operations mode (admin_id is None and forecast_cycle_at is None),
+        dynamically evaluates each district against its respective latest cycle within the 12h freshness window,
+        preventing cross-district timestamp skew from dropping active alerts.
+        
         Returns:
             (records, total_forecast_cells, total_exposed_population)
         """
         target_cycle = forecast_cycle_at
-        if target_cycle is None:
+        if target_cycle is None and admin_id is not None:
             target_cycle = self.get_latest_forecast_cycle(admin_id=admin_id)
-
-        if target_cycle is None:
-            return [], 0, 0
+            if target_cycle is None:
+                return [], 0, 0
 
         params: dict[str, Any] = {
-            "target_cycle": target_cycle,
             "min_mhi": float(min_mhi),
             "horizon_hours": int(horizon_hours),
             "limit": limit,
             "offset": offset,
         }
+
+        # If a specific target cycle is requested (either user-provided or district-scoped)
+        if target_cycle is not None:
+            params["target_cycle"] = target_cycle
+            cycle_filter = "forecast_cycle_at = :target_cycle"
+            district_cte = ""
+            join_district_cte = ""
+        else:
+            # National View without explicit cycle: dynamically join each district's latest cycle
+            district_cte = """
+                district_latest_cycles AS (
+                    SELECT g.admin_id, MAX(hd.forecast_cycle_at) AS latest_cycle_at
+                    FROM hazard_dynamic hd
+                    JOIN grid_cell g ON hd.h3 = g.h3
+                    LEFT JOIN pipeline_run pr ON hd.pipeline_run_id = pr.id
+                    WHERE hd.forecast_cycle_at IS NOT NULL
+                      AND hd.forecast_cycle_at >= NOW() - INTERVAL '12 hours'
+                      AND (hd.pipeline_run_id IS NULL OR pr.status IN ('READY', 'COMPLETED'))
+                    GROUP BY g.admin_id
+                ),
+            """
+            join_district_cte = """
+                JOIN grid_cell g_dlc ON hd.h3 = g_dlc.h3
+                JOIN district_latest_cycles dlc ON g_dlc.admin_id = dlc.admin_id AND hd.forecast_cycle_at = dlc.latest_cycle_at
+            """
+            cycle_filter = "hd.forecast_cycle_at >= NOW() - INTERVAL '12 hours'"
 
         outer_where = ""
         if admin_id is not None:
@@ -232,7 +286,8 @@ class AlertsRepository:
             params["admin_id"] = int(admin_id)
 
         sql = f"""
-            WITH deduplicated_hazard_forecasts AS (
+            WITH {district_cte}
+            deduplicated_hazard_forecasts AS (
                 SELECT DISTINCT ON (hd.h3, hd.valid_at)
                     hd.h3,
                     hd.valid_at,
@@ -240,8 +295,9 @@ class AlertsRepository:
                     hd.source,
                     ROUND(EXTRACT(EPOCH FROM (hd.valid_at - hd.forecast_cycle_at)) / 3600.0)::int AS horizon_hours
                 FROM hazard_dynamic hd
+                {join_district_cte}
                 LEFT JOIN pipeline_run pr ON hd.pipeline_run_id = pr.id
-                WHERE forecast_cycle_at = :target_cycle
+                WHERE {cycle_filter}
                   AND hd.valid_at > hd.forecast_cycle_at
                   AND hd.valid_at <= hd.forecast_cycle_at + (:horizon_hours * INTERVAL '1 hour')
                   AND (hd.pipeline_run_id IS NULL OR pr.status IN ('READY', 'COMPLETED'))
