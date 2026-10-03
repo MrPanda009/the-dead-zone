@@ -19,6 +19,7 @@ import {
   StorySection,
 } from '@/components/features/landing';
 import { AtmosphericMist } from '@/components/features/mist';
+import { PterodactylFlyby } from '@/components/features/pterodactyl';
 
 export default function HomePage() {
   const [isAutoRotating, setIsAutoRotating] = useState(true);
@@ -213,6 +214,16 @@ export default function HomePage() {
         position={hoveredHotspot ? hoveredHotspot.position : null}
         onViewPlan={(spot) => {
           showToast(`Dead Zone Risk Analysis Loaded: ${spot.name}`);
+        }}
+      />
+
+      {/* Easter Egg: Flying pixel-art pterodactyl */}
+      <PterodactylFlyby
+        pixelScale={1}
+        onEarthDropped={(cause) => {
+          if (cause === 'click') {
+            showToast('🦕 You startled the pterodactyl! Earth dropped!');
+          }
         }}
       />
 

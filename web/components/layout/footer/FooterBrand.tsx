@@ -2,13 +2,19 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export interface FooterBrandProps {
   /** Optional custom className */
   className?: string;
+  /** Optional custom emblem slot (defaults to pterodactyl icon) */
+  emblem?: React.ReactNode;
 }
 
-export const FooterBrand: React.FC<FooterBrandProps> = ({ className = '' }) => {
+export const FooterBrand: React.FC<FooterBrandProps> = ({
+  className = '',
+  emblem,
+}) => {
   return (
     <div className={`flex flex-col items-start gap-1.5 ${className}`}>
       <Link
@@ -16,9 +22,17 @@ export const FooterBrand: React.FC<FooterBrandProps> = ({ className = '' }) => {
         className="flex items-center gap-2.5 group transition-transform active:scale-95"
       >
         {/* Emblem Crest */}
-        <div className="w-7 h-7 rounded-md bg-surface-1 dark:bg-forest-surface border border-line dark:border-white/15 flex items-center justify-center font-serif font-black text-xs text-ochre shadow-xs">
-          T
-        </div>
+        {emblem ?? (
+          <div className="w-7 h-7 rounded-md bg-surface-1 dark:bg-forest-surface border border-line dark:border-white/15 flex items-center justify-center shadow-xs overflow-hidden p-0.5 group-hover:border-accent/40 transition-colors">
+            <Image
+              src="/icon.png"
+              alt="TERRA Pterodactyl Emblem"
+              width={24}
+              height={24}
+              className="w-full h-full object-contain [image-rendering:pixelated]"
+            />
+          </div>
+        )}
         <div className="flex items-baseline gap-2">
           <span className="font-display font-bold text-sm tracking-tight text-ink dark:text-text-primary group-hover:text-accent transition-colors">
             TERRA
