@@ -20,6 +20,8 @@ export interface GovWorkspaceHeaderProps {
   homeHref?: string;
   storiesHref?: string;
   officerId?: string;
+  selectedAdmin?: number | null;
+  onAdminChange?: (admin: number | null) => void;
   onToggleCollapse?: () => void;
   className?: string;
 }
@@ -32,6 +34,8 @@ export const GovWorkspaceHeader: React.FC<GovWorkspaceHeaderProps> = ({
   homeHref = '/',
   storiesHref = '/stories',
   officerId = 'NDRF-OFFICER-894',
+  selectedAdmin,
+  onAdminChange,
   onToggleCollapse,
   className = '',
 }) => {
@@ -97,6 +101,28 @@ export const GovWorkspaceHeader: React.FC<GovWorkspaceHeaderProps> = ({
           <span className="px-2.5 py-0.5 rounded-full border border-[#00e5ff] text-[#00e5ff] bg-[#00e5ff]/10 font-mono text-[10px] font-bold tracking-wider uppercase shadow-[0_0_8px_rgba(0,229,255,0.2)]">
             {HAZARD_LABELS[hazardType] ?? hazardType}
           </span>
+        </div>
+
+        {/* District Jurisdiction Selector */}
+        <div className="hidden md:flex items-center ml-2 border-l border-line dark:border-white/10 pl-2">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-surface-1 dark:bg-[#070d18] border border-line dark:border-white/10 text-xs font-mono">
+            <span className="material-symbols-outlined text-sm text-citron">near_me</span>
+            <select
+              value={selectedAdmin ?? ''}
+              onChange={(e) => onAdminChange?.(e.target.value ? Number(e.target.value) : null)}
+              className="bg-transparent text-ink dark:text-text-primary text-xs font-mono font-medium outline-none cursor-pointer pr-1"
+              aria-label="Select target district jurisdiction"
+            >
+              <option value="" className="bg-surface-0 dark:bg-[#0c1524]">National (All Districts)</option>
+              <option value="12" className="bg-surface-0 dark:bg-[#0c1524]">Srinagar (Jammu & Kashmir)</option>
+              <option value="55" className="bg-surface-0 dark:bg-[#0c1524]">Rudraprayag (Uttarakhand)</option>
+              <option value="277" className="bg-surface-0 dark:bg-[#0c1524]">Barpeta (Assam)</option>
+              <option value="555" className="bg-surface-0 dark:bg-[#0c1524]">Wayanad (Kerala)</option>
+              <option value="417" className="bg-surface-0 dark:bg-[#0c1524]">Morena (Madhya Pradesh)</option>
+              <option value="98" className="bg-surface-0 dark:bg-[#0c1524]">Dholpur (Rajasthan)</option>
+              <option value="540" className="bg-surface-0 dark:bg-[#0c1524]">Kodagu (Karnataka)</option>
+            </select>
+          </div>
         </div>
       </div>
 

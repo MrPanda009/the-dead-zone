@@ -48,10 +48,14 @@ logger = logging.getLogger("load_healthcare")
 
 # Target pilot districts and their standard LGD codes
 DISTRICT_CONFIGS: dict[str, dict[str, Any]] = {
-    "barpeta": {"name": "Barpeta", "lgd": 303, "state": "Assam", "is_hilly": False},
+    "barpeta": {"name": "Barpeta", "lgd": 277, "state": "Assam", "is_hilly": False},
     "wayanad": {"name": "Wayanad", "lgd": 555, "state": "Kerala", "is_hilly": True},
     "morena": {"name": "Morena", "lgd": 417, "state": "Madhya Pradesh", "is_hilly": False},
     "dholpur": {"name": "Dholpur", "lgd": 98, "state": "Rajasthan", "is_hilly": False},
+    "rudraprayag": {"name": "Rudraprayag", "lgd": 55, "state": "Uttarakhand", "is_hilly": True},
+    "srinagar": {"name": "Srinagar", "lgd": 12, "state": "Jammu & Kashmir", "is_hilly": True},
+    "kodagu": {"name": "Kodagu", "lgd": 540, "state": "Karnataka", "is_hilly": True},
+    "leh": {"name": "Leh", "lgd": 9, "state": "Ladakh", "is_hilly": True},
 }
 
 

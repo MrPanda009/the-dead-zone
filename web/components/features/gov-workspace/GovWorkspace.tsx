@@ -23,8 +23,13 @@ import type { HazardType } from '@/lib/api/types';
 import type { FloodHazardMapDisplayState } from '@/components/features/map/FloodHazardMap';
 import {
   DEFAULT_CONFIDENCE_HATCH_THRESHOLD,
+  DEFAULT_VIEW_STATE,
   SOURCE_RESOLUTION,
 } from '@/lib/map/constants';
+import {
+  resolveDistrictViewport,
+  resolveDefaultHazardType,
+} from '@/lib/map/districtHazardDefaults';
 import Link from 'next/link';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { GovWorkspaceHeader } from './GovWorkspaceHeader';
@@ -61,6 +66,7 @@ export const GovWorkspace: React.FC<GovWorkspaceProps> = ({
 }) => {
   const { user, isLoading: authLoading, isAuthenticated, logout } = useAuth();
   const [viewMode, setViewMode] = useState<'3d' | 'gis'>(initialViewMode);
+  const [selectedDistrictAdmin, setSelectedDistrictAdmin] = useState<number | null>(admin ?? null);
   const [selectedH3, setSelectedH3] = useState<string | null>(null);
   const [hoveredH3, setHoveredH3] = useState<string | null>(null);
   const [display, setDisplay] = useState<FloodHazardMapDisplayState>(DEFAULT_DISPLAY);
@@ -71,13 +77,42 @@ export const GovWorkspace: React.FC<GovWorkspaceProps> = ({
   // operations account (no jurisdiction) leaves `admin` undefined, so the hazard
   // layer returns every district and the map frames the whole loaded grid.
   const effectiveAdmin =
-    user?.jurisdiction?.lgd_code ?? user?.jurisdiction?.admin_id ?? admin;
+    selectedDistrictAdmin ??
+    user?.jurisdiction?.lgd_code ??
+    user?.jurisdiction?.admin_id ??
+    undefined;
 
   // The layer follows the jurisdiction (Wayanad opens on landslide) until the officer picks one.
   const { hazardType, selectHazardType } = useDistrictHazardType({
     admin: effectiveAdmin,
     initialHazardType,
   });
+
+  const handleDistrictChange = useCallback((nextAdmin: number | null) => {
+    setSelectedDistrictAdmin(nextAdmin);
+    setSelectedH3(null);
+    setHoveredH3(null);
+    if (nextAdmin != null) {
+      const defHazard = resolveDefaultHazardType(nextAdmin);
+      selectHazardType(defHazard);
+    }
+  }, [selectHazardType]);
+
+  const targetViewport = useMemo(
+    () => resolveDistrictViewport(effectiveAdmin),
+    [effectiveAdmin],
+  );
+
+  const mapInitialViewState = useMemo(() => {
+    if (!targetViewport) return DEFAULT_VIEW_STATE;
+    return {
+      longitude: targetViewport.longitude,
+      latitude: targetViewport.latitude,
+      zoom: targetViewport.zoom,
+      pitch: 0,
+      bearing: 0,
+    };
+  }, [targetViewport]);
 
   const { data, cells, isLoading, error, refetch } = useHazardLayer({
     hazardType,
@@ -280,6 +315,8 @@ export const GovWorkspace: React.FC<GovWorkspaceProps> = ({
           hazardType={hazardType}
           isLoading={isLoading}
           officerId={officerId}
+          selectedAdmin={selectedDistrictAdmin}
+          onAdminChange={handleDistrictChange}
         />
       }
       left={
@@ -319,6 +356,8 @@ export const GovWorkspace: React.FC<GovWorkspaceProps> = ({
               isLoading={isLoading}
               errorMessage={error?.message ?? null}
               forecastItems={forecast.items}
+              selectedAdmin={effectiveAdmin}
+              onSelectDistrict={handleDistrictChange}
               className="w-full h-full"
             />
           ) : (
@@ -340,6 +379,7 @@ export const GovWorkspace: React.FC<GovWorkspaceProps> = ({
               onDisplayChange={handleDisplayChange}
               forecastItems={forecast.items}
               showForecastOverlay={true}
+              initialViewState={mapInitialViewState}
               onForecastCellHover={(item) => setHoveredH3(item?.h3 ?? null)}
               onForecastCellClick={(item) => setSelectedH3(item?.h3 ?? null)}
             />

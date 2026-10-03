@@ -68,7 +68,7 @@ export const DistrictFloodRollupCard: React.FC<DistrictFloodRollupCardProps> = (
             <span>No Empirical SAR Flood Model for {districtName}</span>
           </div>
           <p className="text-[11px] leading-relaxed opacity-90">
-            A calibrated Sentinel-1 SAR and hydrodynamic model is published for Dholpur, Morena, and Barpeta. For {districtName}, hazard screening relies on historical disaster tallies and terrain slope proxies.
+            A calibrated Sentinel-1 SAR and hydrodynamic model is published for Dholpur, Morena, Barpeta, Rudraprayag, and Srinagar. For {districtName}, hazard screening relies on historical disaster tallies and terrain slope proxies.
           </p>
         </div>
       ) : (

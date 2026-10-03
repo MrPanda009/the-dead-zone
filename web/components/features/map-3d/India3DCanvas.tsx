@@ -47,6 +47,8 @@ export interface India3DCanvasProps {
   isLoading?: boolean;
   errorMessage?: string | null;
   forecastItems?: ForecastAlertItem[];
+  selectedAdmin?: number | null;
+  onSelectDistrict?: (adminId: number | null) => void;
   className?: string;
 }
 
@@ -62,6 +64,8 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
   onResolutionChange,
   isLoading = false,
   forecastItems,
+  selectedAdmin,
+  onSelectDistrict,
   className = '',
 }) => {
   const { resolvedTheme } = useTheme();
@@ -482,17 +486,28 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
     [flyTo, OBLIQUE_DIR],
   );
 
-  // Frame a newly loaded grid once on initial load, but NEVER reset the camera when toggling resolution
+  // Re-frame the camera when switching district jurisdiction or on initial grid load
   useEffect(() => {
     if (cells.length === 0) return;
-    if (framedGridRef.current) return;
+    const gridKey = `${selectedAdmin ?? 'all'}-${cells.length}`;
+    if (framedGridRef.current === gridKey) return;
+
+    if (selectedAdmin === 55 || selectedAdmin === 192) {
+      setActivePreset('rudraprayag');
+    } else if (selectedAdmin === 12 || selectedAdmin === 193) {
+      setActivePreset('srinagar');
+    } else if (selectedAdmin === 277 || selectedAdmin === 303 || selectedAdmin === 186 || selectedAdmin === 191) {
+      setActivePreset('northeast');
+    } else if (selectedAdmin === 555 || selectedAdmin === 178) {
+      setActivePreset('western_ghats');
+    }
 
     const bounds = hexColumnsRef.current?.getBounds();
     if (!bounds) return;
 
-    framedGridRef.current = 'framed';
+    framedGridRef.current = gridKey;
     fitToBounds(bounds);
-  }, [cells, fitToBounds]);
+  }, [cells, selectedAdmin, fitToBounds]);
 
   // Regional Focus Presets
   const handleSelectPreset = useCallback(
@@ -500,8 +515,23 @@ export const India3DCanvas: React.FC<India3DCanvasProps> = ({
       lastPannedH3Ref.current = null;
       setActivePreset(preset.id);
       flyTo(preset.target, preset.cameraPos);
+
+      if (onSelectDistrict) {
+        const adminMap: Record<string, number | null> = {
+          national: null,
+          rudraprayag: 55,
+          srinagar: 12,
+          kashmir: 12,
+          himalayas: 55,
+          northeast: 277,
+          western_ghats: 555,
+        };
+        if (preset.id in adminMap) {
+          onSelectDistrict(adminMap[preset.id]);
+        }
+      }
     },
-    [flyTo],
+    [flyTo, onSelectDistrict],
   );
 
   const handleResetCamera = useCallback(() => {

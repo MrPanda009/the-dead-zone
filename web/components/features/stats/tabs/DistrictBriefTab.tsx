@@ -24,13 +24,18 @@ export const DistrictBriefTab: React.FC<DistrictBriefTabProps> = ({
       )
     : null;
 
+  const isComputed = summary?.model_status === 'computed';
   const highShare =
-    computedHighShare !== null && summary?.model_status === 'computed'
+    computedHighShare !== null && isComputed
       ? computedHighShare
       : selectedDistrict.highSharePct;
 
-  const habitationsAtRisk = summary?.habitations_at_risk_count ?? selectedDistrict.habitationsAtRisk;
-  const populationAtRisk = summary?.population_at_risk_sum ?? selectedDistrict.populationAtRisk;
+  const habitationsAtRisk = isComputed
+    ? (summary?.habitations_at_risk_count ?? 0)
+    : selectedDistrict.habitationsAtRisk;
+  const populationAtRisk = isComputed
+    ? (summary?.population_at_risk_sum ?? 0)
+    : selectedDistrict.populationAtRisk;
   const nearestPhc = selectedDistrict.nearestPhcKm;
   const infrastructure = {
     highways: selectedDistrict.highwaysDamaged,

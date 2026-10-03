@@ -2319,6 +2319,20 @@ export const REGIONAL_CAMERA_PRESETS: Record<string, CameraRegionPreset> = {
     target: { x: 0, y: 2, z: 0 },
     cameraPos: { x: 0, y: -28, z: 65 },
   },
+  rudraprayag: {
+    id: 'rudraprayag',
+    label: 'Rudraprayag',
+    stateOrZone: 'Uttarakhand (Kedarnath Valley)',
+    target: { x: -2.26, y: 18.68, z: 1.5 },
+    cameraPos: { x: -2.26, y: 8.5, z: 18 },
+  },
+  srinagar: {
+    id: 'srinagar',
+    label: 'Srinagar',
+    stateOrZone: 'Jammu & Kashmir (Jhelum Basin)',
+    target: { x: -11.54, y: 27.80, z: 1.5 },
+    cameraPos: { x: -11.54, y: 16.5, z: 18 },
+  },
   himalayas: {
     id: 'himalayas',
     label: 'Himalayan Arc',

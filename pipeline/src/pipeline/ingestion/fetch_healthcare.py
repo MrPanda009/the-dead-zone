@@ -37,10 +37,15 @@ DISTRICT_ALIASES: dict[str, str] = {
     "barpeta": "barpeta",
     "wayanad": "wayanad",
     "morena": "morena",
+    "rudraprayag": "rudraprayag",
+    "srinagar": "srinagar",
+    "kodagu": "kodagu",
+    "leh": "leh ladakh",
+    "ladakh": "leh ladakh",
 }
 
 # Terrain classification for IPHS normative capacity
-HILLY_TRIBAL_DISTRICTS = {"wayanad"}
+HILLY_TRIBAL_DISTRICTS = {"wayanad", "rudraprayag", "srinagar", "kodagu", "leh"}
 
 # IPHS Normative Population Standards
 # Primary Health Centres (PHC): 20k (hilly/tribal) / 30k (plains)
@@ -149,6 +154,27 @@ def get_norm_population(facility_type: str, district_slug: str) -> int:
     return tier_norms.get(norm_type, 5000)
 
 
+def _normalize_coord(val: Any, min_val: float, max_val: float, expected_prefix_len: int = 2) -> Optional[float]:
+    """Validates and normalizes coordinates, repairing missing decimal points from legacy records."""
+    try:
+        f = float(str(val).strip())
+    except (ValueError, TypeError):
+        return None
+    if min_val <= f <= max_val:
+        return f
+    s = str(val).strip().replace(".", "")
+    if len(s) > expected_prefix_len:
+        try:
+            prefix = float(s[:expected_prefix_len])
+            if min_val <= prefix <= max_val:
+                candidate = float(s[:expected_prefix_len] + "." + s[expected_prefix_len:])
+                if min_val <= candidate <= max_val:
+                    return candidate
+        except (ValueError, TypeError):
+            pass
+    return None
+
+
 def parse_and_filter_facilities(
     csv_path: Path,
     district_slug: str,
@@ -182,14 +208,10 @@ def parse_and_filter_facilities(
             notional_raw = (row.get("NOTIONAL_PHYSICAL") or "").strip().lower()
             is_physical = notional_raw == "physical" or notional_raw == ""
 
-            # Coordinates validation
-            try:
-                lat = float((row.get("Latitude") or "").strip())
-                lon = float((row.get("Longitude") or "").strip())
-            except (ValueError, TypeError):
-                continue
-
-            if not (-90.0 <= lat <= 90.0 and -180.0 <= lon <= 180.0 and lat != 0.0 and lon != 0.0):
+            # Coordinates validation with legacy integer decimal recovery
+            lat = _normalize_coord(row.get("Latitude"), 6.0, 38.0)
+            lon = _normalize_coord(row.get("Longitude"), 68.0, 98.0)
+            if lat is None or lon is None or lat == 0.0 or lon == 0.0:
                 continue
 
             name = (row.get("Facility Name") or "").strip()
