@@ -10,6 +10,7 @@ export const LossTimeSeriesChart: React.FC<LossTimeSeriesChartProps> = ({
   stats,
   isLoading = false,
   selectedMetric = 'lives',
+  compact = false,
   onMetricChange,
   className = '',
   classNames = {},
@@ -70,10 +71,10 @@ export const LossTimeSeriesChart: React.FC<LossTimeSeriesChartProps> = ({
       ref={containerRef}
       className={`glass-card p-5 sm:p-6 rounded-3xl border border-line dark:border-white/10 space-y-5 ${classNames.root ?? ''} ${className}`}
     >
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className={compact ? 'flex flex-col gap-2' : 'flex flex-col sm:flex-row sm:items-center justify-between gap-3'}>
         <div>
-          <div className="flex items-center gap-2">
-            <h2 className="font-display text-lg font-bold text-ink dark:text-white">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className={`font-display font-bold text-ink dark:text-white ${compact ? 'text-sm' : 'text-lg'}`}>
               Annual Disaster Impact Time-Series
             </h2>
             <span className="px-2 py-0.5 rounded text-[10px] font-mono font-medium bg-surface-2 dark:bg-white/10 text-text-secondary">
@@ -86,7 +87,7 @@ export const LossTimeSeriesChart: React.FC<LossTimeSeriesChartProps> = ({
         </div>
 
         {/* Metric Selector Toggles */}
-        <div className="flex items-center gap-1 bg-surface-1 dark:bg-forest-surface p-1 rounded-2xl border border-line dark:border-white/10 shrink-0">
+        <div className={`flex items-center gap-1 bg-surface-1 dark:bg-forest-surface p-1 rounded-2xl border border-line dark:border-white/10 ${compact ? 'flex-wrap' : 'shrink-0'}`}>
           {(['lives', 'houses', 'cattle', 'crop'] as const).map((m) => {
             const isSelected = metric === m;
             return (
@@ -110,15 +111,15 @@ export const LossTimeSeriesChart: React.FC<LossTimeSeriesChartProps> = ({
       {records.length === 0 ? (
         <div className="h-56 flex flex-col items-center justify-center text-center p-6 border border-dashed border-line dark:border-white/10 rounded-2xl">
           <span className="material-symbols-outlined text-3xl text-text-muted mb-1">history_toggle_off</span>
-          <span className="text-xs font-semibold text-text-secondary">No recorded loss data published</span>
+          <span className="text-xs font-semibold text-text-secondary">No MHA loss series loaded</span>
           <span className="text-[11px] text-text-muted mt-0.5 max-w-sm">
-            Official annual reports for this state are not published in the central open data archive for the requested years.
+            No MHA annual records are loaded for this state and period.
           </span>
         </div>
       ) : (
         <div className="space-y-2">
           {/* Chart Viewport */}
-          <div className="h-52 flex items-end gap-2 sm:gap-3 pt-6 px-1 relative">
+          <div className={`${compact ? 'h-40' : 'h-52'} flex items-end gap-2 sm:gap-3 pt-6 px-1 relative`}>
             {records.map((r, i) => {
               const val = getMetricValue(r);
               const heightPct = Math.max(6, Math.round((val / maxValue) * 100));

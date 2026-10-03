@@ -65,7 +65,7 @@ export const NoneyCaseStudyCard: React.FC<NoneyCaseStudyCardProps> = ({
               {caseStudy.title}
             </h3>
             <span className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-rose-500/15 text-rose-500 border border-rose-500/30">
-              Verified Case Study
+              Documented case study
             </span>
           </div>
           <p className="text-xs text-text-muted">
@@ -119,7 +119,7 @@ export const NoneyCaseStudyCard: React.FC<NoneyCaseStudyCardProps> = ({
         {actions.length > 0 && (
           <div className="p-3.5 rounded-2xl bg-surface-1 dark:bg-forest-surface border border-line dark:border-white/10 space-y-2">
             <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-500">
-              <span className="material-symbols-outlined text-sm">verified_user</span>
+              <span className="material-symbols-outlined text-sm">groups</span>
               <span>Multi-Agency Rescue Operations</span>
             </div>
             <ul className="space-y-1.5 text-[11px] text-text-secondary">
