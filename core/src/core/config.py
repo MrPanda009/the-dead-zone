@@ -127,6 +127,10 @@ class Settings(BaseSettings):
         default=["gov.in", "nic.in"],
         description="Whitelisted email domains granted GOVERNMENT_OFFICIAL role on Google registration.",
     )
+    GOOGLE_OFFICIAL_EMAILS: list[str] = Field(
+        default=["sabitasinha57@gmail.com"],
+        description="Explicit email addresses granted GOVERNMENT_OFFICIAL role on Google registration.",
+    )
 
     # Login Rate Limiting (Batch E)
     LOGIN_RATE_LIMIT_ENABLED: bool = Field(

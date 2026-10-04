@@ -123,6 +123,21 @@ class TestGoogleAuthService:
         assert user.role == Role.GOVERNMENT_OFFICIAL.value
         assert user.auth_provider == "google"
 
+    def test_explicit_whitelisted_email_provisions_official(self, in_memory_db, fresh_rate_limiter):
+        """Explicitly whitelisted tester email auto-provisions as GOVERNMENT_OFFICIAL."""
+        claims = create_mock_claims(email="sabitasinha57@gmail.com", sub="sub-sabita-123")
+        service = GoogleAuthService(
+            in_memory_db,
+            token_verifier=lambda token, aud: claims,
+            rate_limiter=fresh_rate_limiter,
+        )
+
+        user, _ = service.authenticate_google_token("dummy.jwt.token")
+
+        assert user.email == "sabitasinha57@gmail.com"
+        assert user.role == Role.GOVERNMENT_OFFICIAL.value
+        assert user.auth_provider == "google"
+
     def test_existing_account_linking(self, in_memory_db, fresh_rate_limiter):
         """If user already exists by verified email, links google_sub rather than duplicating."""
         # Pre-seed existing user (e.g. created previously)
@@ -280,3 +295,46 @@ class TestGoogleAuthApiIntegration:
         assert res.status_code == 401
         body = res.json()
         assert body["error"]["code"] == "UNAUTHENTICATED"
+
+    def test_government_official_vs_civilian_role_permissions(self, client, monkeypatch):
+        """Verifies that Google auth assigns GOVERNMENT_OFFICIAL with privileged access, while civilians are restricted."""
+        from core.domain.authorization import has_permission, Permission
+
+        # 1. Official Google login (@wayanad.gov.in)
+        official_claims = create_mock_claims(
+            email="disaster.mgmt@kerala.gov.in",
+            sub="google-sub-official-1",
+        )
+        monkeypatch.setattr(
+            "api.services.google_auth_service.default_google_token_verifier",
+            lambda raw_token, client_id: official_claims,
+        )
+        res_official = client.post("/auth/google", json={"id_token": "official.token"})
+        assert res_official.status_code == 200
+        official_user = res_official.json()
+        assert official_user["role"] == "GOVERNMENT_OFFICIAL"
+
+        # Verify role has all privileged permissions
+        assert has_permission(official_user["role"], Permission.SCENARIO_RUN) is True
+        assert has_permission(official_user["role"], Permission.ALLOCATION_RUN) is True
+        assert has_permission(official_user["role"], Permission.CAPACITY_RECOMPUTE) is True
+
+        # 2. Civilian Google login (@gmail.com)
+        civilian_claims = create_mock_claims(
+            email="random.citizen@gmail.com",
+            sub="google-sub-civilian-1",
+        )
+        monkeypatch.setattr(
+            "api.services.google_auth_service.default_google_token_verifier",
+            lambda raw_token, client_id: civilian_claims,
+        )
+        res_civilian = client.post("/auth/google", json={"id_token": "civilian.token"})
+        assert res_civilian.status_code == 200
+        civilian_user = res_civilian.json()
+        assert civilian_user["role"] == "CIVILIAN"
+
+        # Verify civilian has NONE of the privileged permissions
+        assert has_permission(civilian_user["role"], Permission.SCENARIO_RUN) is False
+        assert has_permission(civilian_user["role"], Permission.ALLOCATION_RUN) is False
+        assert has_permission(civilian_user["role"], Permission.CAPACITY_RECOMPUTE) is False
+

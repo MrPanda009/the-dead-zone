@@ -132,11 +132,11 @@ class GoogleAuthService:
                 logger.info(f"Linking existing account '{email}' (User {user.id}) to Google sub '{google_sub}'")
                 user = self.repo.link_google_account(user.id, google_sub, avatar_url)
             else:
-                # Determine role based on government domain whitelist
+                # Determine role based on government domain whitelist or explicit official email whitelist
                 domain = email.split("@")[-1]
-                is_official = any(
-                    domain == d or domain.endswith("." + d)
-                    for d in settings.GOOGLE_OFFICIAL_DOMAINS
+                is_official = (
+                    any(domain == d or domain.endswith("." + d) for d in settings.GOOGLE_OFFICIAL_DOMAINS)
+                    or email in settings.GOOGLE_OFFICIAL_EMAILS
                 )
                 assigned_role = Role.GOVERNMENT_OFFICIAL.value if is_official else Role.CIVILIAN.value
 
