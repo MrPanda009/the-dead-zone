@@ -598,17 +598,26 @@ def start_forecast_scheduler(
     run_once: bool = False,
     dry_run: bool = False,
     force_enabled: bool = False,
-) -> Optional[ForecastLifecycleResult]:
-    """Starts the APScheduler runner for periodic Wayanad forecast ingestion.
+    district_keys: Optional[list[str]] = None,
+    live: bool = False,
+) -> Optional[Any]:
+    """Starts the APScheduler runner for periodic forecast ingestion across districts.
 
     Options:
         blocking: If True, uses BlockingScheduler (for standalone CLI daemon worker).
         run_once: If True, immediately executes one lifecycle run and exits.
         dry_run: If True, executes without deleting records during retention.
         force_enabled: Overrides `settings.FORECAST_SCHEDULER_ENABLED = False`.
+        district_keys: Optional list of district keys to restrict execution to.
+        live: If True, triggers live Open-Meteo HTTP calls instead of demo fixtures.
     """
+    from pipeline.jobs.run_district_forecast import run_all_districts
+
     if run_once:
         logger.info("Executing single manual forecast lifecycle run (--run-once)...")
+        if district_keys is not None or district_keys == []:
+            return run_all_districts(district_keys=district_keys, live=live, dry_run=dry_run)
+        # Default single-district backward compatibility
         return run_wayanad_forecast_lifecycle(dry_run=dry_run)
 
     is_enabled = settings.FORECAST_SCHEDULER_ENABLED or force_enabled
@@ -619,29 +628,32 @@ def start_forecast_scheduler(
         )
         return None
 
-    # Imported lazily: only the long-running daemon needs APScheduler. Keeping it at module
-    # scope would make `import pipeline.jobs` (and therefore every other job) depend on it.
     from apscheduler.schedulers.background import BackgroundScheduler
     from apscheduler.schedulers.blocking import BlockingScheduler
     from apscheduler.triggers.cron import CronTrigger
 
     cron_expr = settings.FORECAST_SCHEDULE_CRON
     logger.info(
-        f"Initializing Wayanad Forecast APScheduler: cron='{cron_expr}' (UTC), "
-        f"retention={settings.FORECAST_RETENTION_RUNS}, dry_run={dry_run}..."
+        f"Initializing Multi-District Forecast APScheduler: cron='{cron_expr}' (UTC), "
+        f"dry_run={dry_run}..."
     )
 
     scheduler = BlockingScheduler(timezone="UTC") if blocking else BackgroundScheduler(timezone="UTC")
 
+    target_job = (
+        (lambda: run_all_districts(district_keys=district_keys, live=live, dry_run=dry_run))
+        if district_keys is not None
+        else (lambda: run_wayanad_forecast_lifecycle(dry_run=dry_run))
+    )
+
     scheduler.add_job(
-        run_wayanad_forecast_lifecycle,
+        target_job,
         trigger=CronTrigger.from_crontab(cron_expr, timezone="UTC"),
-        id="wayanad_forecast_lifecycle_job",
-        name="Wayanad ECMWF Live Forecast Pipeline",
+        id="multi_district_forecast_lifecycle_job",
+        name="SETU Multi-District Live Forecast Pipeline",
         max_instances=1,
         coalesce=True,
         misfire_grace_time=3600,
-        kwargs={"dry_run": dry_run},
     )
 
     def _shutdown_handler(signum, frame):
@@ -662,7 +674,7 @@ def start_forecast_scheduler(
 
 def main() -> None:
     """CLI entrypoint for operational forecast scheduling and lifecycle management."""
-    parser = argparse.ArgumentParser(description="SETU-DRR Phase B8 Live Forecast Scheduler & Runner")
+    parser = argparse.ArgumentParser(description="SETU-DRR Live Forecast Scheduler & Runner (Route 1)")
     parser.add_argument(
         "--run-once",
         action="store_true",
@@ -683,6 +695,22 @@ def main() -> None:
         action="store_true",
         help="Start the persistent APScheduler daemon worker.",
     )
+    parser.add_argument(
+        "--all",
+        action="store_true",
+        help="Execute for all registered districts.",
+    )
+    parser.add_argument(
+        "--district",
+        type=str,
+        default=None,
+        help="Execute for a specific district (e.g. wayanad, barpeta, rudraprayag, srinagar, dholpur, morena, kodagu).",
+    )
+    parser.add_argument(
+        "--live",
+        action="store_true",
+        help="Execute live HTTP calls to Open-Meteo instead of offline fixtures.",
+    )
 
     args = parser.parse_args()
 
@@ -691,14 +719,43 @@ def main() -> None:
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     )
 
+    districts = None
+    if args.all:
+        from pipeline.hazard.forecast_config import FORECAST_DISTRICTS
+        districts = list(FORECAST_DISTRICTS.keys())
+    elif args.district:
+        districts = [args.district.strip().lower()]
+
     if args.run_once:
-        res = start_forecast_scheduler(run_once=True, dry_run=args.dry_run)
-        print(f"Run Outcome: {res.status if res else 'NO_RESULT'}")
+        res = start_forecast_scheduler(
+            run_once=True,
+            dry_run=args.dry_run,
+            district_keys=districts,
+            live=args.live,
+        )
+        if isinstance(res, list):
+            print("\nMulti-District Execution Completed:")
+            for item in res:
+                print(f"  {item.district:<14} [{item.status}] cells: {item.cells_total} danger: {item.cells_above_threshold}")
+        elif res:
+            print(f"Run Outcome: {getattr(res, 'status', 'SUCCESS')}")
     elif args.daemon or args.force_enable:
-        start_forecast_scheduler(blocking=True, dry_run=args.dry_run, force_enabled=True)
+        start_forecast_scheduler(
+            blocking=True,
+            dry_run=args.dry_run,
+            force_enabled=True,
+            district_keys=districts,
+            live=args.live,
+        )
     else:
-        start_forecast_scheduler(blocking=True, dry_run=args.dry_run)
+        start_forecast_scheduler(
+            blocking=True,
+            dry_run=args.dry_run,
+            district_keys=districts,
+            live=args.live,
+        )
 
 
 if __name__ == "__main__":
     main()
+
