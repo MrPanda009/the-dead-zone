@@ -3,10 +3,14 @@
 import React, { useState } from 'react';
 import { ZoneId, REGIONAL_STORIES } from './storyData';
 import { StoriesHeaderCoordinates } from './StoriesHeaderCoordinates';
-import { ZoneTickSelector } from './ZoneTickSelector';
 import { IndiaStoriesMap } from './IndiaStoriesMap';
-import { DistrictRiskModal } from './DistrictRiskModal';
 import { TouristDistrictCard } from './TouristDistrictCard';
+import { DistrictDropdown } from './DistrictDropdown';
+import { SafeTravelRadarCard } from './SafeTravelRadarCard';
+import { TouristWeatherStrip } from './TouristWeatherStrip';
+import { MapLegendOverlay } from './MapLegendOverlay';
+import { DistrictRiskModal } from './DistrictRiskModal';
+import { OfflineTouristPassModal } from './OfflineTouristPassModal';
 
 export interface PublicStoriesPageProps {
   /** Target link for returning to landing page / overview (default '/') */
@@ -28,21 +32,22 @@ export const PublicStoriesPage: React.FC<PublicStoriesPageProps> = ({
   onSwitchToGovPortal,
   className = '',
 }) => {
-  // Default to Wayanad (supported backend pilot district)
-  const [selectedZone, setSelectedZone] = useState<ZoneId>('Wayanad');
+  // Default to Kodagu as showcased in the design reference
+  const [selectedZone, setSelectedZone] = useState<ZoneId>('Kodagu');
   const [isRiskModalOpen, setIsRiskModalOpen] = useState(false);
+  const [isOfflinePassOpen, setIsOfflinePassOpen] = useState(false);
 
-  const activeStory = REGIONAL_STORIES[selectedZone] || REGIONAL_STORIES.Wayanad;
+  const activeStory = REGIONAL_STORIES[selectedZone] || REGIONAL_STORIES.Kodagu;
 
   return (
     <div
-      className={`relative w-full min-h-screen lg:h-screen overflow-y-auto lg:overflow-hidden bg-bg-base text-text-primary dark:bg-[#0e261d] dark:text-cream flex flex-col justify-between p-3 sm:p-5 lg:p-6 xl:p-8 select-none transition-colors duration-300 ${className}`}
+      className={`relative w-full min-h-screen lg:h-screen lg:max-h-screen lg:overflow-hidden bg-bg-base text-ink dark:bg-[#05140e] dark:text-cream flex flex-col justify-between p-2.5 sm:p-3 lg:p-4 select-none transition-colors duration-300 overflow-x-hidden ${className}`}
     >
-      {/* Background Subtle Ambient Vignette */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-forest-mid/25 via-bg-base to-forest-deep/15 dark:from-[#143d2c]/40 dark:via-[#0e261d] dark:to-[#081813] pointer-events-none" />
+      {/* Background Subtle Ambient Vignette matching reference picture */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-emerald-500/5 via-bg-base to-forest-deep/10 dark:from-[#0d2a1f]/40 dark:via-[#061710] dark:to-[#030c08] pointer-events-none" />
 
-      {/* 1. TOP HEADER: Navigation & Coordinates Readout */}
-      <div className="relative z-20 w-full mb-2">
+      {/* 1. TOP HEADER: Navigation, Page Title & Coordinates Readout */}
+      <div className="relative z-20 w-full mb-1 sm:mb-2 shrink-0">
         <StoriesHeaderCoordinates
           latitude={activeStory.coordinates.display.lat}
           longitude={activeStory.coordinates.display.lng}
@@ -53,73 +58,63 @@ export const PublicStoriesPage: React.FC<PublicStoriesPageProps> = ({
         />
       </div>
 
-      {/* 2. MAIN INTERACTION CANVAS: Left Card + Center Map + Right Zone Selector */}
-      <div className="relative z-10 flex-1 w-full grid grid-cols-1 md:grid-cols-12 items-center gap-4 lg:gap-6 min-h-0">
-        {/* Left Column: Tourist District Card & Live Advisory */}
-        <div className="hidden md:flex md:col-span-5 lg:col-span-4 h-full flex-col justify-center pl-1 lg:pl-2">
+      {/* 2. MAIN INTERACTION CANVAS: Balanced 3-Column Layout matching screenshot */}
+      <div className="relative z-10 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 items-start gap-3 lg:gap-4 min-h-0 my-auto">
+        {/* Left Column (Cols 1-4): TERRA Tourist Hazard Advisory Card */}
+        <div className="col-span-1 lg:col-span-4 flex flex-col justify-start items-center lg:items-start w-full">
           <TouristDistrictCard
             zone={selectedZone}
             onOpenDetails={() => setIsRiskModalOpen(true)}
+            onOpenOfflinePass={() => setIsOfflinePassOpen(true)}
           />
         </div>
 
-        {/* Center Column: Interactive India Map with Region Cutout */}
-        <div className="col-span-1 md:col-span-5 lg:col-span-6 h-full w-full flex items-center justify-center relative">
-          <IndiaStoriesMap
-            selectedZone={selectedZone}
-            onSelectZone={(zone) => setSelectedZone(zone)}
-            onOpenSlideshow={() => setIsRiskModalOpen(true)}
-          />
+        {/* Center Column (Cols 5-8): India Map with Legend on top */}
+        <div className="col-span-1 lg:col-span-4 h-full w-full flex flex-col items-center justify-center relative min-h-[340px] lg:min-h-0">
+          {/* Map Legend Overlay (Matching Reference Image) */}
+          <div className="mb-2 z-10 shrink-0">
+            <MapLegendOverlay />
+          </div>
+
+          {/* India Map Component (Kept Untouched as per instructions) */}
+          <div className="w-full flex-1 flex items-center justify-center relative min-h-0">
+            <IndiaStoriesMap
+              selectedZone={selectedZone}
+              onSelectZone={(zone) => setSelectedZone(zone)}
+              onOpenSlideshow={() => setIsRiskModalOpen(true)}
+            />
+          </div>
         </div>
 
-        {/* Right Column: Zone Tick Ruler Selector */}
-        <div className="hidden md:flex md:col-span-2 lg:col-span-2 h-full flex-col justify-center items-end pr-2 lg:pr-4">
-          <ZoneTickSelector
+        {/* Right Column (Cols 9-12): Dropdown + 72h Radar + 5-Day Weather */}
+        <div className="col-span-1 lg:col-span-4 flex flex-col gap-2.5 sm:gap-3 justify-start w-full">
+          {/* 1. Choose District Dropdown Menu (Aligned with Left Advisory Box) */}
+          <DistrictDropdown
             selectedZone={selectedZone}
             onSelectZone={(zone) => setSelectedZone(zone)}
           />
+
+          {/* 2. Live Travel Status & 72-Hour Safe Travel Window Radar */}
+          <SafeTravelRadarCard zone={selectedZone} />
+
+          {/* 3. 5-Day Forecast Weather Card */}
+          <TouristWeatherStrip zone={selectedZone} />
         </div>
       </div>
 
-      {/* Mobile/Tablet Fallback: District Selector and Tourist District Card */}
-      <div className="md:hidden relative z-20 flex flex-col gap-3 pt-3 border-t border-line dark:border-white/10">
-        <div className="flex flex-wrap items-center justify-center gap-1.5">
-          {(['North', 'West', 'Central', 'East', 'Kodagu', 'South'] as ZoneId[]).map((zone) => (
-            <button
-              key={zone}
-              type="button"
-              onClick={() => setSelectedZone(zone)}
-              className={`px-2.5 py-1 text-xs rounded-xl font-mono transition-colors ${
-                selectedZone === zone
-                  ? 'bg-citron text-[#06100c] font-bold shadow'
-                  : 'bg-surface-1 dark:bg-white/10 text-ink-muted dark:text-cream/60'
-              }`}
-            >
-              {zone === 'North'
-                ? 'Joshimath'
-                : zone === 'West'
-                ? 'Kachchh'
-                : zone === 'Central'
-                ? 'Satpura'
-                : zone === 'East'
-                ? 'Barpeta'
-                : zone === 'Kodagu'
-                ? 'Kodagu'
-                : 'Wayanad'}
-            </button>
-          ))}
-        </div>
-        <TouristDistrictCard
-          zone={selectedZone}
-          onOpenDetails={() => setIsRiskModalOpen(true)}
-        />
-      </div>
-
-      {/* 3. LIVE DISTRICT RISK ASSESSMENT MODAL */}
+      {/* 3. MODALS */}
+      {/* Deep Scientific Risk Assessment Modal */}
       <DistrictRiskModal
         isOpen={isRiskModalOpen}
         zone={selectedZone}
         onClose={() => setIsRiskModalOpen(false)}
+      />
+
+      {/* Feature 5: One-Click Offline Tourist Emergency Pass Modal */}
+      <OfflineTouristPassModal
+        isOpen={isOfflinePassOpen}
+        zone={selectedZone}
+        onClose={() => setIsOfflinePassOpen(false)}
       />
     </div>
   );

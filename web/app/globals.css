@@ -821,3 +821,29 @@ html.light .stats-scrollbar::-webkit-scrollbar-thumb:hover {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* Offline Tourist Emergency Pass Print Rules */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #offline-emergency-pass-print,
+  #offline-emergency-pass-print * {
+    visibility: visible;
+  }
+  #offline-emergency-pass-print {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-shadow: none !important;
+    border: 1px solid #71717a !important;
+    border-radius: 16px !important;
+    page-break-inside: avoid;
+  }
+  @page {
+    size: A4 portrait;
+    margin: 0.8cm;
+  }
+}
