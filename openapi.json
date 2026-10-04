@@ -482,6 +482,24 @@
             "description": "Optional susceptibility floor. Left at 0.0 the response still includes hard-zero and no-coverage cells, which the map must distinguish."
           },
           {
+            "name": "regime",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/HazardRegime"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by hazard regime: 'floodplain', 'char_belt', or 'channel'.",
+              "title": "Regime"
+            },
+            "description": "Filter by hazard regime: 'floodplain', 'char_belt', or 'channel'."
+          },
+          {
             "name": "limit",
             "in": "query",
             "required": false,
@@ -700,6 +718,103 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DistrictHazardSummaryDTO"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid parameters or malformed input format.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found - Requested resource, cell, or entity does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error - Request parameter or payload validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error - An unexpected system or database error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable - No valid serving version is active. Pipeline data is not ready.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hazard/validation": {
+      "get": {
+        "tags": [
+          "Hazard Layers"
+        ],
+        "summary": "Get independent historical validation metrics for a district",
+        "description": "Returns independent historical agreement metrics against ISRO NDEM, INDOFLOODS gauges, and CWC/MHA loss context. Districts without measured validation report `status: 'not_validated'`.",
+        "operationId": "get_hazard_validation_hazard_validation_get",
+        "parameters": [
+          {
+            "name": "admin",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Admin boundary ID or LGD code (e.g. 277 for Barpeta, 98 for Dholpur).",
+              "title": "Admin"
+            },
+            "description": "Admin boundary ID or LGD code (e.g. 277 for Barpeta, 98 for Dholpur)."
+          },
+          {
+            "name": "hazard_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Hazard layer to validate.",
+              "default": "riverine_flood",
+              "title": "Hazard Type"
+            },
+            "description": "Hazard layer to validate."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FloodValidationDTO"
                 }
               }
             }
@@ -4211,10 +4326,11 @@
         "enum": [
           "full",
           "low_coverage",
-          "no_coverage"
+          "no_coverage",
+          "channel_excluded"
         ],
         "title": "CoverageFlag",
-        "description": "Zonal coverage class for an aggregated H3 cell (Step 10 \u00a710.3).\n\nCRITICAL RENDERING RULE:\nA NO_COVERAGE cell carries susceptibility 0.0 because `apply_quality_flags()` fills\nNaN with zero \u2014 not because it was measured as safe. It must never be drawn with the\nsame treatment as a genuine FR-3.17 hard-zero cell."
+        "description": "Zonal coverage class for an aggregated H3 cell (Step 10 \u00a710.3).\n\nCRITICAL RENDERING RULE:\nA NO_COVERAGE cell carries susceptibility 0.0 because `apply_quality_flags()` fills\nNaN with zero \u2014 not because it was measured as safe. It must never be drawn with the\nsame treatment as a genuine FR-3.17 hard-zero cell.\n\nA CHANNEL_EXCLUDED cell is active river channel (flood model v0.2 regime split). It carries\nsusceptibility 0.0 only because the column is NOT NULL; it is not terrestrial land, so it is\nleft out of quantile breaks, band shares, habitation averages and triage."
       },
       "CwcFloodDamageDTO": {
         "properties": {
@@ -4580,6 +4696,14 @@
                 "type": "null"
               }
             ]
+          },
+          "regime_summary": {
+            "items": {
+              "$ref": "#/components/schemas/RegimeSummaryDTO"
+            },
+            "type": "array",
+            "title": "Regime Summary",
+            "description": "Cells, population and mean susceptibility per hazard regime."
           },
           "last_recorded_flood_loss": {
             "anyOf": [
@@ -5023,6 +5147,89 @@
             "title": "Hard Zero Fraction",
             "description": "Fraction excluded by FR-3.17 hard-zero screening."
           },
+          "mean_anomalous_frequency": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mean Anomalous Frequency",
+            "description": "Model v0.2 frequency input: max(0, SAR frequency - JRC occurrence), in [0, 1]."
+          },
+          "jrc_occurrence_mean": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jrc Occurrence Mean",
+            "description": "JRC long-term water occurrence, cell mean in [0, 1]."
+          },
+          "baseline_water_fraction": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Baseline Water Fraction",
+            "description": "Cell fraction with JRC occurrence >= 40 % (seasonal baseline water)."
+          },
+          "hazard_regime": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HazardRegime"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "floodplain | char_belt | channel."
+          },
+          "dist_tributary_m": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dist Tributary M",
+            "description": "Metres to the nearest major tributary (floodplain score input)."
+          },
+          "dist_mainstem_m": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dist Mainstem M",
+            "description": "Metres to the nearest mainstem channel (char-belt score input)."
+          },
+          "sar_instability": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sar Instability",
+            "description": "Wet/dry flip-flop proxy 4F(1-F) in [0, 1] from the SAR frequency (char-belt score input)."
+          },
           "observation_ceiling": {
             "type": "integer",
             "title": "Observation Ceiling",
@@ -5033,6 +5240,376 @@
         "type": "object",
         "title": "FloodDriverDTO",
         "description": "Physical drivers behind a flood susceptibility score (hazard_static_flood)."
+      },
+      "FloodValidationDTO": {
+        "properties": {
+          "district": {
+            "type": "string",
+            "title": "District"
+          },
+          "admin_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admin Id"
+          },
+          "lgd_code": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lgd Code"
+          },
+          "model_version": {
+            "type": "string",
+            "title": "Model Version",
+            "default": "flood-susceptibility-v0.1"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "'validated' if independent reference evaluation exists, else 'not_validated'"
+          },
+          "generated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generated At"
+          },
+          "reference_name": {
+            "type": "string",
+            "title": "Reference Name",
+            "default": ""
+          },
+          "reference_years": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Reference Years"
+          },
+          "n_cells": {
+            "type": "integer",
+            "title": "N Cells",
+            "default": 0
+          },
+          "prevalence": {
+            "type": "number",
+            "title": "Prevalence",
+            "default": 0.0
+          },
+          "roc_auc": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Roc Auc"
+          },
+          "roc_auc_ci95": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Roc Auc Ci95"
+          },
+          "pr_auc": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pr Auc"
+          },
+          "pr_auc_prevalence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pr Auc Prevalence"
+          },
+          "spearman_frequency": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spearman Frequency"
+          },
+          "baseline_hand_auc": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Baseline Hand Auc"
+          },
+          "baseline_frequency_auc": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Baseline Frequency Auc"
+          },
+          "baseline_anomalous_frequency_auc": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Baseline Anomalous Frequency Auc"
+          },
+          "baseline_dist_mainstem_auc": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Baseline Dist Mainstem Auc"
+          },
+          "baseline_dist_tributary_auc": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Baseline Dist Tributary Auc"
+          },
+          "baseline_dist_any_river_auc": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Baseline Dist Any River Auc"
+          },
+          "baseline_distance_to_river_auc": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Baseline Distance To River Auc"
+          },
+          "by_regime": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "By Regime"
+          },
+          "evaluation_domain": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evaluation Domain",
+            "description": "Hazard regimes and filters defining the headline cells."
+          },
+          "imbalance": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Imbalance",
+            "description": "n_pos / n_neg / n_blocks and the low-negative-count warning."
+          },
+          "baseline_ci95": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Baseline Ci95",
+            "description": "Block-bootstrap CIs: auc, spearman and auc_model_minus (paired) per predictor."
+          },
+          "per_year": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Per Year",
+            "description": "Agreement per NDEM year; role marks in_sample / temporal_holdout years."
+          },
+          "sensitivity": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sensitivity"
+          },
+          "year_matched_auc": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year Matched Auc"
+          },
+          "year_matched_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year Matched Year"
+          },
+          "pre2015_auc": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pre2015 Auc"
+          },
+          "losses_context": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Losses Context"
+          },
+          "gauges": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gauges"
+          },
+          "caveat_text": {
+            "type": "string",
+            "title": "Caveat Text",
+            "default": ""
+          },
+          "markdown_report": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Markdown Report"
+          }
+        },
+        "type": "object",
+        "required": [
+          "district",
+          "status"
+        ],
+        "title": "FloodValidationDTO",
+        "description": "Validation response DTO matching Phase 5 (\u00a78) contract."
       },
       "ForecastAlertItem": {
         "properties": {
@@ -5717,6 +6294,17 @@
             ],
             "title": "Hard Zero Fraction",
             "description": "Fraction of cell excluded by FR-3.17 (HAND > 30m OR slope > 15deg)."
+          },
+          "hazard_regime": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HazardRegime"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "floodplain | char_belt | channel. Char-belt scores understate exposure; show the regime."
           }
         },
         "type": "object",
@@ -5806,6 +6394,16 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/FloodDriverDTO"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "regime_context": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RegimeContextDTO"
               },
               {
                 "type": "null"
@@ -5914,6 +6512,13 @@
             "type": "integer",
             "minimum": 0.0,
             "title": "No Coverage",
+            "default": 0
+          },
+          "channel_excluded": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Channel Excluded",
+            "description": "Active-channel cells, left out of terrestrial statistics.",
             "default": 0
           }
         },
@@ -6086,6 +6691,16 @@
         ],
         "title": "HazardLayerSummaryDTO",
         "description": "One available static hazard layer (GET /hazard/layers)."
+      },
+      "HazardRegime": {
+        "type": "string",
+        "enum": [
+          "floodplain",
+          "char_belt",
+          "channel"
+        ],
+        "title": "HazardRegime",
+        "description": "Flood hazard regime of an H3 cell (flood model v0.2, Phase 2).\n\nCHAR_BELT cells are river sandbar islands: highly exposed, but their water is partly\nnormal river presence, so v0.2 susceptibility there reads lower than the exposure.\nRender the regime alongside the score instead of letting the score stand alone."
       },
       "HighwayDisasterDamageDTO": {
         "properties": {
@@ -6613,6 +7228,90 @@
         ],
         "title": "ReadinessResponse",
         "description": "Health check readiness response envelope."
+      },
+      "RegimeContextDTO": {
+        "properties": {
+          "regime": {
+            "$ref": "#/components/schemas/HazardRegime"
+          },
+          "headline": {
+            "type": "string",
+            "title": "Headline",
+            "description": "One-line label for the regime banner."
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "Plain-language explanation of the regime's physical hazard."
+          },
+          "primary_hazards": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Primary Hazards",
+            "description": "Dominant hazard mechanisms."
+          },
+          "scoring_basis": {
+            "type": "string",
+            "title": "Scoring Basis",
+            "description": "Formula family that produced this cell's susceptibility."
+          },
+          "key_drivers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Key Drivers",
+            "description": "FloodDriverDTO field names that matter most for this regime, in display order."
+          }
+        },
+        "type": "object",
+        "required": [
+          "regime",
+          "headline",
+          "description",
+          "scoring_basis"
+        ],
+        "title": "RegimeContextDTO",
+        "description": "What a cell's hazard regime means, so the dossier explains the score instead of just showing it."
+      },
+      "RegimeSummaryDTO": {
+        "properties": {
+          "regime": {
+            "$ref": "#/components/schemas/HazardRegime"
+          },
+          "cell_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Cell Count"
+          },
+          "population": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Population",
+            "default": 0
+          },
+          "mean_susceptibility": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mean Susceptibility",
+            "description": "None for the channel regime, which is excluded from scoring."
+          }
+        },
+        "type": "object",
+        "required": [
+          "regime",
+          "cell_count"
+        ],
+        "title": "RegimeSummaryDTO",
+        "description": "Per-regime roll-up inside a district summary."
       },
       "RegisterRequest": {
         "properties": {

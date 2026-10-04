@@ -6,11 +6,13 @@ import gsap from 'gsap';
 
 import { Button } from '@/components/ui/Button';
 import { usePrefersReducedMotion } from '@/lib/hooks/usePrefersReducedMotion';
-import type { HazardLayerCoverage, HazardLayerLegend } from '@/lib/api/types';
+import type { HazardLayerCoverage, HazardLayerLegend, HazardRegime } from '@/lib/api/types';
+import type { RegimeVisibility } from '@/lib/map/constants';
 
 import { ConfidenceHatchKey } from './ConfidenceHatchKey';
 import { CoverageLegend } from './CoverageLegend';
 import { QuantileLegend } from './QuantileLegend';
+import { RegimeLegend } from './RegimeLegend';
 
 export interface MapLegendPanelProps {
   legend: HazardLayerLegend;
@@ -18,6 +20,8 @@ export interface MapLegendPanelProps {
   /** Cells currently drawn with the confidence hatch. */
   hatchedCount?: number;
   confidenceThreshold: number;
+  visibleRegimes?: RegimeVisibility;
+  onVisibleRegimesChange?: (regime: HazardRegime, show: boolean) => void;
   title?: string;
   defaultCollapsed?: boolean;
   className?: string;
@@ -37,6 +41,8 @@ export const MapLegendPanel = ({
   coverage,
   hatchedCount,
   confidenceThreshold,
+  visibleRegimes,
+  onVisibleRegimesChange,
   title = 'Legend',
   defaultCollapsed = false,
   className = '',
@@ -105,6 +111,10 @@ export const MapLegendPanel = ({
               domain={legend.domain as number[]}
               quantiles={legend.quantiles}
               description="Classed on quantiles — the scores cluster too tightly for an even ramp."
+            />
+            <RegimeLegend
+              visibleRegimes={visibleRegimes}
+              onVisibleRegimesChange={onVisibleRegimesChange}
             />
             <CoverageLegend coverage={coverage} />
             <ConfidenceHatchKey

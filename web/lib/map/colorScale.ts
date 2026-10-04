@@ -9,13 +9,16 @@
 
 import type { CoverageFlag, HazardCell } from '@/lib/api/types';
 import {
+  CHANNEL_COLOR,
+  CHANNEL_OUTLINE_COLOR,
+  CHAR_BELT_RAMP,
   HARD_ZERO_COLOR,
   SUSCEPTIBILITY_RAMP,
   type RGBAColor,
 } from './constants';
 
 /** How a cell should be drawn, resolved from its score and coverage provenance. */
-export type CellRenderClass = 'measured' | 'hard_zero' | 'no_coverage';
+export type CellRenderClass = 'measured' | 'hard_zero' | 'no_coverage' | 'channel';
 
 export interface ClassifiedBreak {
   /** Inclusive lower bound of the class. */
@@ -44,6 +47,14 @@ export function susceptibilityColor(
 }
 
 /**
+ * True when the cell carries a real terrestrial score: not unobserved and not river channel.
+ * Use it wherever a count, ranking or hatch must skip cells whose 0.00 is a placeholder.
+ */
+export function isScoredCell(cell: { quality_flag: CoverageFlag }): boolean {
+  return cell.quality_flag !== 'no_coverage' && cell.quality_flag !== 'channel_excluded';
+}
+
+/**
  * Decides how a cell is drawn.
  *
  * The critical case: `susceptibility === 0` means "safe" only when the cell was observed.
@@ -57,12 +68,13 @@ export function renderClassFor(cell: {
   hard_zero_fraction: number | null;
 }): CellRenderClass {
   if (cell.quality_flag === 'no_coverage') return 'no_coverage';
+  if (cell.quality_flag === 'channel_excluded') return 'channel';
   if (cell.susceptibility <= 0 && (cell.hard_zero_fraction ?? 0) > 0) return 'hard_zero';
   if (cell.susceptibility <= 0) return 'no_coverage';
   return 'measured';
 }
 
-/** Resolves the final fill colour for a cell, honouring an opacity multiplier in [0,1]. */
+/** Resolves the final fill colour for a cell, honouring an opacity multiplier in [0,1] and regime differentiation. */
 export function cellFillColor(
   cell: HazardCell,
   breaks: readonly number[],
@@ -70,11 +82,35 @@ export function cellFillColor(
   ramp: readonly RGBAColor[] = SUSCEPTIBILITY_RAMP,
 ): RGBAColor {
   const renderClass = renderClassFor(cell);
-  const base =
-    renderClass === 'hard_zero'
-      ? HARD_ZERO_COLOR
-      : susceptibilityColor(cell.susceptibility, breaks, ramp);
+  if (renderClass === 'channel' || cell.hazard_regime === 'channel') {
+    return [CHANNEL_COLOR[0], CHANNEL_COLOR[1], CHANNEL_COLOR[2], Math.round(CHANNEL_COLOR[3] * clamp01(opacity))];
+  }
+  if (renderClass === 'hard_zero') {
+    return [HARD_ZERO_COLOR[0], HARD_ZERO_COLOR[1], HARD_ZERO_COLOR[2], Math.round(HARD_ZERO_COLOR[3] * clamp01(opacity))];
+  }
+
+  // Active char belt: amber/orange/rose erosion ramp
+  const activeRamp = cell.hazard_regime === 'char_belt' ? CHAR_BELT_RAMP : ramp;
+  const base = susceptibilityColor(cell.susceptibility, breaks, activeRamp);
   return [base[0], base[1], base[2], Math.round(base[3] * clamp01(opacity))];
+}
+
+/** Resolves the boundary line colour for a cell, honouring regime differentiation. */
+export function cellLineColor(
+  cell: HazardCell,
+  breaks: readonly number[],
+  opacity = 0.95,
+  ramp: readonly RGBAColor[] = SUSCEPTIBILITY_RAMP,
+): RGBAColor {
+  if (cell.quality_flag === 'channel_excluded' || cell.hazard_regime === 'channel') {
+    return [
+      CHANNEL_OUTLINE_COLOR[0],
+      CHANNEL_OUTLINE_COLOR[1],
+      CHANNEL_OUTLINE_COLOR[2],
+      Math.round(CHANNEL_OUTLINE_COLOR[3] * clamp01(opacity)),
+    ];
+  }
+  return cellFillColor(cell, breaks, opacity, ramp);
 }
 
 /** Builds legend rows from the API's breaks, so legend and map can never disagree. */

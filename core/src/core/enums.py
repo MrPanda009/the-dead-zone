@@ -23,10 +23,27 @@ class CoverageFlag(StrEnum):
     A NO_COVERAGE cell carries susceptibility 0.0 because `apply_quality_flags()` fills
     NaN with zero — not because it was measured as safe. It must never be drawn with the
     same treatment as a genuine FR-3.17 hard-zero cell.
+
+    A CHANNEL_EXCLUDED cell is active river channel (flood model v0.2 regime split). It carries
+    susceptibility 0.0 only because the column is NOT NULL; it is not terrestrial land, so it is
+    left out of quantile breaks, band shares, habitation averages and triage.
     """
     FULL = "full"
     LOW_COVERAGE = "low_coverage"
     NO_COVERAGE = "no_coverage"
+    CHANNEL_EXCLUDED = "channel_excluded"
+
+
+class HazardRegime(StrEnum):
+    """Flood hazard regime of an H3 cell (flood model v0.2, Phase 2).
+
+    CHAR_BELT cells are river sandbar islands: highly exposed, but their water is partly
+    normal river presence, so v0.2 susceptibility there reads lower than the exposure.
+    Render the regime alongside the score instead of letting the score stand alone.
+    """
+    FLOODPLAIN = "floodplain"
+    CHAR_BELT = "char_belt"
+    CHANNEL = "channel"
 
 
 class ZoneClass(StrEnum):

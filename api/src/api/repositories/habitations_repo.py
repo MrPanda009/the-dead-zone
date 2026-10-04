@@ -344,7 +344,7 @@ class HabitationsRepository:
                 AVG(hs.susceptibility) AS susceptibility
             FROM habitation h
             JOIN grid_cell gc ON (gc.habitation_id = h.id OR ST_Contains(gc.geom, h.geom_point))
-            JOIN hazard_static hs ON gc.h3 = hs.h3
+            JOIN hazard_static hs ON gc.h3 = hs.h3 AND hs.quality_flag <> 'channel_excluded'
             WHERE h.id = ANY(:hab_ids)
             GROUP BY h.id, hs.hazard_type;
         """)

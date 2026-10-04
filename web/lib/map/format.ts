@@ -36,3 +36,9 @@ export function formatH3(h3: string): string {
   const trimmed = h3.replace(/f+$/i, '');
   return trimmed.length > 0 ? trimmed : h3;
 }
+
+/** Metres below 1 km, kilometres above, so river distances stay readable. */
+export function formatDistance(metres: number | null | undefined): string {
+  if (metres === null || metres === undefined || Number.isNaN(metres)) return '—';
+  return metres < 1000 ? `${Math.round(metres)} m` : `${(metres / 1000).toFixed(1)} km`;
+}

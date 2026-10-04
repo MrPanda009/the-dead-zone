@@ -39,3 +39,9 @@ export type { DriverBreakdownSkeletonProps } from './DriverBreakdownSkeleton';
 
 export { FiltersAndRulesBox } from './FiltersAndRulesBox';
 export type { FiltersAndRulesBoxProps } from './FiltersAndRulesBox';
+
+export { RegimeContextBanner } from './RegimeContextBanner';
+export type { RegimeContextBannerProps } from './RegimeContextBanner';
+
+export { RegimeHazardTag } from './RegimeHazardTag';
+export type { RegimeHazardTagProps } from './RegimeHazardTag';

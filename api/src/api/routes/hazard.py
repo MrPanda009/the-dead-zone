@@ -18,12 +18,13 @@ from sqlalchemy.orm import Session
 from api.dependencies import get_db
 from api.routes.common import error_responses
 from api.services.hazard_service import HazardService
-from core.enums import Hazard
+from core.enums import Hazard, HazardRegime
 from core.schemas.hazard import (
     HazardCellDetailDTO,
     HazardLayerResponse,
     HazardLayerSummaryDTO,
     DistrictHazardSummaryDTO,
+    FloodValidationDTO,
 )
 
 router = APIRouter(
@@ -81,6 +82,10 @@ def get_hazard_cells(
             "hard-zero and no-coverage cells, which the map must distinguish."
         ),
     ),
+    regime: Optional[HazardRegime] = Query(
+        None,
+        description="Filter by hazard regime: 'floodplain', 'char_belt', or 'channel'.",
+    ),
     limit: int = Query(20000, ge=1, le=30000, description="Maximum cells to return."),
     db: Session = Depends(get_db),
 ) -> HazardLayerResponse:
@@ -90,6 +95,7 @@ def get_hazard_cells(
         bbox=bbox,
         admin=admin,
         min_susceptibility=min_susceptibility,
+        regime=regime,
         limit=limit,
     )
 
@@ -132,3 +138,21 @@ def get_district_hazard_summary(
     db: Session = Depends(get_db),
 ) -> DistrictHazardSummaryDTO:
     return HazardService(db).get_district_summary(admin, hazard_type=hazard_type)
+
+
+@router.get(
+    "/validation",
+    response_model=FloodValidationDTO,
+    summary="Get independent historical validation metrics for a district",
+    description=(
+        "Returns independent historical agreement metrics against ISRO NDEM, INDOFLOODS gauges, "
+        "and CWC/MHA loss context. Districts without measured validation report `status: 'not_validated'`."
+    ),
+)
+def get_hazard_validation(
+    admin: int = Query(..., description="Admin boundary ID or LGD code (e.g. 277 for Barpeta, 98 for Dholpur)."),
+    hazard_type: str = Query(Hazard.RIVERINE_FLOOD.value, description="Hazard layer to validate."),
+    db: Session = Depends(get_db),
+) -> FloodValidationDTO:
+    return HazardService(db).get_validation_summary(admin, hazard_type=hazard_type)
+

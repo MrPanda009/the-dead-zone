@@ -12,3 +12,6 @@ export type { LegendSwatchProps, LegendSwatchShape } from './LegendSwatch';
 
 export { QuantileLegend } from './QuantileLegend';
 export type { QuantileLegendProps } from './QuantileLegend';
+
+export { RegimeLegend } from './RegimeLegend';
+export type { RegimeLegendProps } from './RegimeLegend';

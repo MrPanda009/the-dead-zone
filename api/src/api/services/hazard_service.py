@@ -1,11 +1,14 @@
 """Service layer for static hazard layers consumed by the vector map."""
 
+import json
+import logging
 from typing import Optional
 
 from sqlalchemy.orm import Session
 
 from core.constants import PRZ_ANY_SUSCEPTIBILITY
-from core.enums import Hazard, CoverageFlag
+from core.config import REPO_ROOT
+from core.enums import Hazard, CoverageFlag, HazardRegime
 from core.errors import (
     DataUnavailableError,
     InvalidBboxError,
@@ -24,8 +27,11 @@ from core.schemas.hazard import (
     HazardLayerSummaryDTO,
     DistrictHazardSummaryDTO,
     SusceptibilityBandBreakdown,
+    FloodValidationDTO,
+    RegimeSummaryDTO,
 )
 from api.repositories.hazard_repo import HazardRepository
+from api.services.regime_context import regime_context_for
 
 # Class breaks are sampled here rather than at even value intervals. See
 # HazardLayerLegendDTO for why a linear ramp fails on this distribution.
@@ -36,6 +42,9 @@ ALLOWED_RESOLUTIONS: tuple[int, ...] = (6, 7, 8, 9)
 MAX_BBOX_AREA_SQ_DEG: float = 5.0
 
 MAX_CELL_LIMIT: int = 30000
+
+
+logger = logging.getLogger(__name__)
 
 
 class HazardService:
@@ -128,6 +137,7 @@ class HazardService:
         bbox: Optional[str] = None,
         admin: Optional[int] = None,
         min_susceptibility: float = 0.0,
+        regime: Optional[HazardRegime] = None,
         limit: int = 20000,
     ) -> HazardLayerResponse:
         """Returns every hazard cell in the viewport plus the legend needed to colour them."""
@@ -153,12 +163,13 @@ class HazardService:
             max_lon=max_lon,
             max_lat=max_lat,
             admin=admin,
+            regime=regime.value if regime else None,
             quantiles=DEFAULT_QUANTILES,
         )
         if stats is None:
             raise DataUnavailableError(
                 f"No '{hazard}' cells published at resolution {res} for the requested extent.",
-                {"hazard_type": hazard, "res": res, "bbox": bbox, "admin": admin},
+                {"hazard_type": hazard, "res": res, "bbox": bbox, "admin": admin, "regime": regime.value if regime else None},
             )
 
         rows = self.repo.query_layer_cells(
@@ -170,6 +181,7 @@ class HazardService:
             max_lat=max_lat,
             admin=admin,
             min_susceptibility=min_susceptibility,
+            regime=regime.value if regime else None,
             limit=clamped_limit,
         )
 
@@ -184,6 +196,7 @@ class HazardService:
                     if r["hard_zero_fraction"] is not None
                     else None
                 ),
+                hazard_regime=r.get("hazard_regime"),
             )
             for r in rows
         ]
@@ -208,6 +221,7 @@ class HazardService:
             full=int(stats["full_count"] or 0),
             low_coverage=int(stats["low_coverage_count"] or 0),
             no_coverage=int(stats["no_coverage_count"] or 0),
+            channel_excluded=int(stats["channel_excluded_count"] or 0),
         )
 
         return HazardLayerResponse(
@@ -253,6 +267,13 @@ class HazardService:
             max_susceptibility=self._opt_round(row["max_susceptibility"], 4),
             valid_pixel_fraction=self._opt_round(row["valid_pixel_fraction"], 4),
             hard_zero_fraction=self._opt_round(row["hard_zero_fraction"], 4),
+            mean_anomalous_frequency=self._opt_round(row.get("mean_anomalous_frequency"), 4),
+            jrc_occurrence_mean=self._opt_round(row.get("jrc_occurrence_mean"), 4),
+            baseline_water_fraction=self._opt_round(row.get("baseline_water_fraction"), 4),
+            hazard_regime=row.get("hazard_regime"),
+            dist_tributary_m=self._opt_round(row.get("dist_tributary_m"), 0),
+            dist_mainstem_m=self._opt_round(row.get("dist_mainstem_m"), 0),
+            sar_instability=self._sar_instability(row.get("mean_inundation_frequency")),
             observation_ceiling=int(row["observation_ceiling"] or 30),
         )
 
@@ -271,6 +292,7 @@ class HazardService:
             population=round(float(row["population"] or 0.0), 2),
             is_permanent_red_candidate=susceptibility >= PRZ_ANY_SUSCEPTIBILITY,
             drivers=drivers,
+            regime_context=regime_context_for(row.get("hazard_regime")),
         )
 
     def get_district_summary(
@@ -332,6 +354,7 @@ class HazardService:
             habitations_at_risk_count=hab_count,
             population_at_risk_sum=pop_count,
             drivers_summary=driver_dto,
+            regime_summary=[RegimeSummaryDTO(**r) for r in data.get("regime_summary", [])],
             last_recorded_flood_loss=last_loss,
             officer_decision_prompt=prompt,
         )
@@ -349,5 +372,121 @@ class HazardService:
             return CoverageFlag.LOW_COVERAGE
 
     @staticmethod
+    def _sar_instability(frequency: Optional[float]) -> Optional[float]:
+        """4F(1-F); mirrors pipeline `sar_instability_from_frequency`, which scores char-belt cells."""
+        if frequency is None:
+            return None
+        f = min(1.0, max(0.0, float(frequency)))
+        return round(4.0 * f * (1.0 - f), 4)
+
+    @staticmethod
     def _opt_round(value: Optional[float], digits: int) -> Optional[float]:
         return round(float(value), digits) if value is not None else None
+
+    def get_validation_summary(
+        self, admin: int, hazard_type: str = Hazard.RIVERINE_FLOOD.value
+    ) -> FloodValidationDTO:
+        """Retrieves measured historical flood validation summary for an admin district."""
+        boundary = self.repo.get_admin_boundary(admin)
+        admin_id = boundary["id"] if boundary else admin
+        lgd_code = boundary["lgd_code"] if boundary else None
+        name = boundary["name"].lower() if boundary else str(admin).lower()
+
+        DISTRICT_NAME_MAP = {
+            "barpeta": "barpeta",
+            "dholpur": "dholpur",
+            "dhaulpur": "dholpur",
+            "morena": "morena",
+            "wayanad": "wayanad",
+            "rudraprayag": "rudraprayag",
+            "kodagu": "kodagu",
+            "srinagar": "srinagar",
+            "leh": "leh",
+        }
+        dist_slug = DISTRICT_NAME_MAP.get(name, name)
+
+        candidate_paths = [
+            REPO_ROOT / "data" / "processed" / "flood_validation" / dist_slug / "metrics.json",
+            REPO_ROOT / "tests" / "fixtures" / "flood_validation" / f"baseline_{dist_slug}.json",
+        ]
+
+        metrics_file = next((p for p in candidate_paths if p.exists()), None)
+        if not metrics_file:
+            return FloodValidationDTO(
+                district=dist_slug,
+                admin_id=admin_id,
+                lgd_code=lgd_code,
+                model_version="flood-susceptibility-v0.1",
+                status="not_validated",
+                caveat_text=f"Independent historical validation has not yet been computed for {boundary['name'] if boundary else dist_slug}.",
+            )
+
+        try:
+            payload = json.loads(metrics_file.read_text(encoding="utf-8"))
+            spatial = payload.get("spatial", {})
+            auc_dict = spatial.get("auc", {})
+            pr_dict = spatial.get("pr_auc", {})
+            sp_dict = spatial.get("spearman_frequency", {})
+            ci95_block = spatial.get("ci95", {})
+            ci95 = ci95_block.get("auc_model")
+            year_matched = spatial.get("year_matched", {})
+            pre2015 = spatial.get("pre2015_subset", {})
+            ndem_refs = payload.get("references", {}).get("ndem", {})
+
+            md_file = metrics_file.parent / "report.md"
+            markdown_content = md_file.read_text(encoding="utf-8") if md_file.exists() else None
+
+            return FloodValidationDTO(
+                district=payload.get("district", dist_slug),
+                admin_id=admin_id,
+                lgd_code=lgd_code,
+                model_version=payload.get("model_version", "flood-susceptibility-v0.1"),
+                status="validated",
+                generated_at=payload.get("generated_at"),
+                reference_name="ISRO NDEM Historical Flood Inundation",
+                reference_years=ndem_refs.get("years", []),
+                n_cells=spatial.get("n_cells", 0),
+                prevalence=spatial.get("prevalence", 0.0),
+                roc_auc=auc_dict.get("model"),
+                roc_auc_ci95=ci95,
+                pr_auc=pr_dict.get("model"),
+                pr_auc_prevalence=spatial.get("prevalence", 0.0),
+                spearman_frequency=sp_dict.get("model"),
+                baseline_hand_auc=auc_dict.get("hand_only"),
+                baseline_frequency_auc=auc_dict.get("frequency_only"),
+                baseline_anomalous_frequency_auc=auc_dict.get("anomalous_frequency_only"),
+                baseline_dist_mainstem_auc=auc_dict.get("dist_mainstem"),
+                baseline_dist_tributary_auc=auc_dict.get("dist_tributary"),
+                baseline_dist_any_river_auc=auc_dict.get("dist_any_river"),
+                baseline_distance_to_river_auc=auc_dict.get("distance_to_river"),
+                by_regime=spatial.get("by_regime"),
+                evaluation_domain=spatial.get("evaluation_domain"),
+                imbalance=spatial.get("imbalance"),
+                baseline_ci95={
+                    k: ci95_block[k] for k in ("auc", "spearman", "auc_model_minus", "n_blocks") if k in ci95_block
+                } or None,
+                per_year=spatial.get("per_year"),
+                sensitivity=spatial.get("sensitivity"),
+                year_matched_auc=year_matched.get("auc"),
+                year_matched_year=year_matched.get("year"),
+                pre2015_auc=pre2015.get("auc"),
+                losses_context=payload.get("losses_context"),
+                gauges=payload.get("gauges"),
+                caveat_text=(
+                    "Agreement measures spatial alignment with independent historical flood extents "
+                    "(ISRO NDEM). It does not claim hydrodynamic depth prediction, operational calibration, "
+                    "or cross-validation ground truth."
+                ),
+                markdown_report=markdown_content,
+            )
+        except Exception:
+            logger.exception("Failed to build validation payload from %s", metrics_file)
+            return FloodValidationDTO(
+                district=dist_slug,
+                admin_id=admin_id,
+                lgd_code=lgd_code,
+                model_version="flood-susceptibility-v0.1",
+                status="not_validated",
+                caveat_text="Validation results could not be read for this district.",
+            )
+

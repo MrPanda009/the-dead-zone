@@ -34,8 +34,10 @@ from .water_mask import (
 )
 from .permanent_water import (
     generate_permanent_water_mask,
+    generate_baseline_water_mask,
     filter_permanent_water,
     stream_jrc_occurrence,
+    calculate_anomalous_flood_frequency,
 )
 from .frequency_stack import (
     create_master_grid,
@@ -62,10 +64,13 @@ __all__ = [
     "save_raster_geotiff",
     "DEFAULT_VV_WATER_THRESHOLD_DB",
     "generate_permanent_water_mask",
+    "generate_baseline_water_mask",
     "filter_permanent_water",
     "stream_jrc_occurrence",
+    "calculate_anomalous_flood_frequency",
     "create_master_grid",
     "process_scene_inundation",
     "accumulate_inundation_stack",
     "calculate_inundation_frequency",
 ]
+

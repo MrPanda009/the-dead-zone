@@ -166,6 +166,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/hazard/validation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get independent historical validation metrics for a district
+         * @description Returns independent historical agreement metrics against ISRO NDEM, INDOFLOODS gauges, and CWC/MHA loss context. Districts without measured validation report `status: 'not_validated'`.
+         */
+        get: operations["get_hazard_validation_hazard_validation_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/habitations": {
         parameters: {
             query?: never;
@@ -1329,9 +1349,13 @@ export interface components {
          *     A NO_COVERAGE cell carries susceptibility 0.0 because `apply_quality_flags()` fills
          *     NaN with zero — not because it was measured as safe. It must never be drawn with the
          *     same treatment as a genuine FR-3.17 hard-zero cell.
+         *
+         *     A CHANNEL_EXCLUDED cell is active river channel (flood model v0.2 regime split). It carries
+         *     susceptibility 0.0 only because the column is NOT NULL; it is not terrestrial land, so it is
+         *     left out of quantile breaks, band shares, habitation averages and triage.
          * @enum {string}
          */
-        CoverageFlag: "full" | "low_coverage" | "no_coverage";
+        CoverageFlag: "full" | "low_coverage" | "no_coverage" | "channel_excluded";
         /**
          * CwcFloodDamageDTO
          * @description CWC recorded flood losses and economic damages.
@@ -1544,6 +1568,11 @@ export interface components {
              */
             population_at_risk_sum: number;
             drivers_summary?: components["schemas"]["FloodDriverDTO"] | null;
+            /**
+             * Regime Summary
+             * @description Cells, population and mean susceptibility per hazard regime.
+             */
+            regime_summary?: components["schemas"]["RegimeSummaryDTO"][];
             /** Last Recorded Flood Loss */
             last_recorded_flood_loss?: {
                 [key: string]: unknown;
@@ -1783,11 +1812,165 @@ export interface components {
              */
             hard_zero_fraction?: number | null;
             /**
+             * Mean Anomalous Frequency
+             * @description Model v0.2 frequency input: max(0, SAR frequency - JRC occurrence), in [0, 1].
+             */
+            mean_anomalous_frequency?: number | null;
+            /**
+             * Jrc Occurrence Mean
+             * @description JRC long-term water occurrence, cell mean in [0, 1].
+             */
+            jrc_occurrence_mean?: number | null;
+            /**
+             * Baseline Water Fraction
+             * @description Cell fraction with JRC occurrence >= 40 % (seasonal baseline water).
+             */
+            baseline_water_fraction?: number | null;
+            /** @description floodplain | char_belt | channel. */
+            hazard_regime?: components["schemas"]["HazardRegime"] | null;
+            /**
+             * Dist Tributary M
+             * @description Metres to the nearest major tributary (floodplain score input).
+             */
+            dist_tributary_m?: number | null;
+            /**
+             * Dist Mainstem M
+             * @description Metres to the nearest mainstem channel (char-belt score input).
+             */
+            dist_mainstem_m?: number | null;
+            /**
+             * Sar Instability
+             * @description Wet/dry flip-flop proxy 4F(1-F) in [0, 1] from the SAR frequency (char-belt score input).
+             */
+            sar_instability?: number | null;
+            /**
              * Observation Ceiling
              * @description Denominator in confidence = min(1, n_valid / ceiling).
              * @default 30
              */
             observation_ceiling: number;
+        };
+        /**
+         * FloodValidationDTO
+         * @description Validation response DTO matching Phase 5 (§8) contract.
+         */
+        FloodValidationDTO: {
+            /** District */
+            district: string;
+            /** Admin Id */
+            admin_id?: number | null;
+            /** Lgd Code */
+            lgd_code?: number | null;
+            /**
+             * Model Version
+             * @default flood-susceptibility-v0.1
+             */
+            model_version: string;
+            /**
+             * Status
+             * @description 'validated' if independent reference evaluation exists, else 'not_validated'
+             */
+            status: string;
+            /** Generated At */
+            generated_at?: string | null;
+            /**
+             * Reference Name
+             * @default
+             */
+            reference_name: string;
+            /** Reference Years */
+            reference_years?: number[];
+            /**
+             * N Cells
+             * @default 0
+             */
+            n_cells: number;
+            /**
+             * Prevalence
+             * @default 0
+             */
+            prevalence: number;
+            /** Roc Auc */
+            roc_auc?: number | null;
+            /** Roc Auc Ci95 */
+            roc_auc_ci95?: number[] | null;
+            /** Pr Auc */
+            pr_auc?: number | null;
+            /** Pr Auc Prevalence */
+            pr_auc_prevalence?: number | null;
+            /** Spearman Frequency */
+            spearman_frequency?: number | null;
+            /** Baseline Hand Auc */
+            baseline_hand_auc?: number | null;
+            /** Baseline Frequency Auc */
+            baseline_frequency_auc?: number | null;
+            /** Baseline Anomalous Frequency Auc */
+            baseline_anomalous_frequency_auc?: number | null;
+            /** Baseline Dist Mainstem Auc */
+            baseline_dist_mainstem_auc?: number | null;
+            /** Baseline Dist Tributary Auc */
+            baseline_dist_tributary_auc?: number | null;
+            /** Baseline Dist Any River Auc */
+            baseline_dist_any_river_auc?: number | null;
+            /** Baseline Distance To River Auc */
+            baseline_distance_to_river_auc?: number | null;
+            /** By Regime */
+            by_regime?: {
+                [key: string]: unknown;
+            }[] | null;
+            /**
+             * Evaluation Domain
+             * @description Hazard regimes and filters defining the headline cells.
+             */
+            evaluation_domain?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Imbalance
+             * @description n_pos / n_neg / n_blocks and the low-negative-count warning.
+             */
+            imbalance?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Baseline Ci95
+             * @description Block-bootstrap CIs: auc, spearman and auc_model_minus (paired) per predictor.
+             */
+            baseline_ci95?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Per Year
+             * @description Agreement per NDEM year; role marks in_sample / temporal_holdout years.
+             */
+            per_year?: {
+                [key: string]: unknown;
+            }[] | null;
+            /** Sensitivity */
+            sensitivity?: {
+                [key: string]: unknown;
+            } | null;
+            /** Year Matched Auc */
+            year_matched_auc?: number | null;
+            /** Year Matched Year */
+            year_matched_year?: number | null;
+            /** Pre2015 Auc */
+            pre2015_auc?: number | null;
+            /** Losses Context */
+            losses_context?: {
+                [key: string]: unknown;
+            } | null;
+            /** Gauges */
+            gauges?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Caveat Text
+             * @default
+             */
+            caveat_text: string;
+            /** Markdown Report */
+            markdown_report?: string | null;
         };
         /**
          * ForecastAlertItem
@@ -2129,6 +2312,8 @@ export interface components {
              * @description Fraction of cell excluded by FR-3.17 (HAND > 30m OR slope > 15deg).
              */
             hard_zero_fraction?: number | null;
+            /** @description floodplain | char_belt | channel. Char-belt scores understate exposure; show the regime. */
+            hazard_regime?: components["schemas"]["HazardRegime"] | null;
         };
         /**
          * HazardCellDetailDTO
@@ -2174,6 +2359,7 @@ export interface components {
              */
             is_permanent_red_candidate: boolean;
             drivers?: components["schemas"]["FloodDriverDTO"] | null;
+            regime_context?: components["schemas"]["RegimeContextDTO"] | null;
             /**
              * Screening Grade
              * @default Screening Grade: Cell-level screening and prioritisation tool. Geotechnical investigation, hydraulic study, and community consultation required before executing relocation orders.
@@ -2233,6 +2419,12 @@ export interface components {
              * @default 0
              */
             no_coverage: number;
+            /**
+             * Channel Excluded
+             * @description Active-channel cells, left out of terrestrial statistics.
+             * @default 0
+             */
+            channel_excluded: number;
         };
         /**
          * HazardLayerLegendDTO
@@ -2340,6 +2532,16 @@ export interface components {
             /** Confidence Ceiling */
             confidence_ceiling: number;
         };
+        /**
+         * HazardRegime
+         * @description Flood hazard regime of an H3 cell (flood model v0.2, Phase 2).
+         *
+         *     CHAR_BELT cells are river sandbar islands: highly exposed, but their water is partly
+         *     normal river presence, so v0.2 susceptibility there reads lower than the exposure.
+         *     Render the regime alongside the score instead of letting the score stand alone.
+         * @enum {string}
+         */
+        HazardRegime: "floodplain" | "char_belt" | "channel";
         /**
          * HighwayDisasterDamageDTO
          * @description Damaged National Highways reported to MoRTH.
@@ -2679,6 +2881,57 @@ export interface components {
              * @description Error message if check failed.
              */
             error?: unknown;
+        };
+        /**
+         * RegimeContextDTO
+         * @description What a cell's hazard regime means, so the dossier explains the score instead of just showing it.
+         */
+        RegimeContextDTO: {
+            regime: components["schemas"]["HazardRegime"];
+            /**
+             * Headline
+             * @description One-line label for the regime banner.
+             */
+            headline: string;
+            /**
+             * Description
+             * @description Plain-language explanation of the regime's physical hazard.
+             */
+            description: string;
+            /**
+             * Primary Hazards
+             * @description Dominant hazard mechanisms.
+             */
+            primary_hazards?: string[];
+            /**
+             * Scoring Basis
+             * @description Formula family that produced this cell's susceptibility.
+             */
+            scoring_basis: string;
+            /**
+             * Key Drivers
+             * @description FloodDriverDTO field names that matter most for this regime, in display order.
+             */
+            key_drivers?: string[];
+        };
+        /**
+         * RegimeSummaryDTO
+         * @description Per-regime roll-up inside a district summary.
+         */
+        RegimeSummaryDTO: {
+            regime: components["schemas"]["HazardRegime"];
+            /** Cell Count */
+            cell_count: number;
+            /**
+             * Population
+             * @default 0
+             */
+            population: number;
+            /**
+             * Mean Susceptibility
+             * @description None for the channel regime, which is excluded from scoring.
+             */
+            mean_susceptibility?: number | null;
         };
         /**
          * RegisterRequest
@@ -3783,6 +4036,8 @@ export interface operations {
                 admin?: number | null;
                 /** @description Optional susceptibility floor. Left at 0.0 the response still includes hard-zero and no-coverage cells, which the map must distinguish. */
                 min_susceptibility?: number;
+                /** @description Filter by hazard regime: 'floodplain', 'char_belt', or 'channel'. */
+                regime?: components["schemas"]["HazardRegime"] | null;
                 /** @description Maximum cells to return. */
                 limit?: number;
             };
@@ -3940,6 +4195,76 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DistrictHazardSummaryDTO"];
+                };
+            };
+            /** @description Bad Request - Invalid parameters or malformed input format. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found - Requested resource, cell, or entity does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Validation Error - Request parameter or payload validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error - An unexpected system or database error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Service Unavailable - No valid serving version is active. Pipeline data is not ready. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    get_hazard_validation_hazard_validation_get: {
+        parameters: {
+            query: {
+                /** @description Admin boundary ID or LGD code (e.g. 277 for Barpeta, 98 for Dholpur). */
+                admin: number;
+                /** @description Hazard layer to validate. */
+                hazard_type?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FloodValidationDTO"];
                 };
             };
             /** @description Bad Request - Invalid parameters or malformed input format. */

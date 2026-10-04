@@ -12,7 +12,7 @@ while its MHI row does not exist. These schemas serve the raw per-hazard layer d
 from typing import Any, Dict, List, Optional
 from pydantic import Field
 
-from core.enums import CoverageFlag
+from core.enums import CoverageFlag, HazardRegime
 from core.schemas.common import BaseSchema, SCREENING_GRADE_NOTICE
 
 
@@ -45,6 +45,35 @@ class HazardCellDTO(BaseSchema):
         ge=0.0,
         le=1.0,
         description="Fraction of cell excluded by FR-3.17 (HAND > 30m OR slope > 15deg).",
+    )
+    hazard_regime: Optional[HazardRegime] = Field(
+        default=None,
+        description="floodplain | char_belt | channel. Char-belt scores understate exposure; show the regime.",
+    )
+
+
+class RegimeContextDTO(BaseSchema):
+    """What a cell's hazard regime means, so the dossier explains the score instead of just showing it."""
+
+    regime: HazardRegime
+    headline: str = Field(description="One-line label for the regime banner.")
+    description: str = Field(description="Plain-language explanation of the regime's physical hazard.")
+    primary_hazards: List[str] = Field(default_factory=list, description="Dominant hazard mechanisms.")
+    scoring_basis: str = Field(description="Formula family that produced this cell's susceptibility.")
+    key_drivers: List[str] = Field(
+        default_factory=list,
+        description="FloodDriverDTO field names that matter most for this regime, in display order.",
+    )
+
+
+class RegimeSummaryDTO(BaseSchema):
+    """Per-regime roll-up inside a district summary."""
+
+    regime: HazardRegime
+    cell_count: int = Field(ge=0)
+    population: int = Field(default=0, ge=0)
+    mean_susceptibility: Optional[float] = Field(
+        default=None, description="None for the channel regime, which is excluded from scoring."
     )
 
 
@@ -80,6 +109,9 @@ class HazardLayerCoverageDTO(BaseSchema):
     full: int = Field(default=0, ge=0)
     low_coverage: int = Field(default=0, ge=0)
     no_coverage: int = Field(default=0, ge=0)
+    channel_excluded: int = Field(
+        default=0, ge=0, description="Active-channel cells, left out of terrestrial statistics."
+    )
 
 
 class HazardLayerResponse(BaseSchema):
@@ -132,6 +164,29 @@ class FloodDriverDTO(BaseSchema):
     hard_zero_fraction: Optional[float] = Field(
         default=None, description="Fraction excluded by FR-3.17 hard-zero screening."
     )
+    mean_anomalous_frequency: Optional[float] = Field(
+        default=None,
+        description="Model v0.2 frequency input: max(0, SAR frequency - JRC occurrence), in [0, 1].",
+    )
+    jrc_occurrence_mean: Optional[float] = Field(
+        default=None, description="JRC long-term water occurrence, cell mean in [0, 1]."
+    )
+    baseline_water_fraction: Optional[float] = Field(
+        default=None, description="Cell fraction with JRC occurrence >= 40 % (seasonal baseline water)."
+    )
+    hazard_regime: Optional[HazardRegime] = Field(
+        default=None, description="floodplain | char_belt | channel."
+    )
+    dist_tributary_m: Optional[float] = Field(
+        default=None, description="Metres to the nearest major tributary (floodplain score input)."
+    )
+    dist_mainstem_m: Optional[float] = Field(
+        default=None, description="Metres to the nearest mainstem channel (char-belt score input)."
+    )
+    sar_instability: Optional[float] = Field(
+        default=None,
+        description="Wet/dry flip-flop proxy 4F(1-F) in [0, 1] from the SAR frequency (char-belt score input).",
+    )
     observation_ceiling: int = Field(
         default=30, description="Denominator in confidence = min(1, n_valid / ceiling)."
     )
@@ -158,6 +213,7 @@ class HazardCellDetailDTO(BaseSchema):
         default=False, description="susceptibility >= PRZ_ANY_SUSCEPTIBILITY (FR-3.9)."
     )
     drivers: Optional[FloodDriverDTO] = None
+    regime_context: Optional[RegimeContextDTO] = None
     screening_grade: str = Field(default=SCREENING_GRADE_NOTICE)
 
 
@@ -197,6 +253,63 @@ class DistrictHazardSummaryDTO(BaseSchema):
     habitations_at_risk_count: int = 0
     population_at_risk_sum: int = 0
     drivers_summary: Optional[FloodDriverDTO] = None
+    regime_summary: List[RegimeSummaryDTO] = Field(
+        default_factory=list,
+        description="Cells, population and mean susceptibility per hazard regime.",
+    )
     last_recorded_flood_loss: Optional[dict[str, Any]] = None
     officer_decision_prompt: str = ""
     screening_grade: str = Field(default=SCREENING_GRADE_NOTICE)
+
+
+class FloodValidationDTO(BaseSchema):
+    """Validation response DTO matching Phase 5 (§8) contract."""
+
+    district: str
+    admin_id: Optional[int] = None
+    lgd_code: Optional[int] = None
+    model_version: str = "flood-susceptibility-v0.1"
+    status: str = Field(
+        ...,
+        description="'validated' if independent reference evaluation exists, else 'not_validated'",
+    )
+    generated_at: Optional[str] = None
+    reference_name: str = ""
+    reference_years: list[int] = Field(default_factory=list)
+    n_cells: int = 0
+    prevalence: float = 0.0
+    roc_auc: Optional[float] = None
+    roc_auc_ci95: Optional[list[float]] = None
+    pr_auc: Optional[float] = None
+    pr_auc_prevalence: Optional[float] = None
+    spearman_frequency: Optional[float] = None
+    baseline_hand_auc: Optional[float] = None
+    baseline_frequency_auc: Optional[float] = None
+    baseline_anomalous_frequency_auc: Optional[float] = None
+    baseline_dist_mainstem_auc: Optional[float] = None
+    baseline_dist_tributary_auc: Optional[float] = None
+    baseline_dist_any_river_auc: Optional[float] = None
+    baseline_distance_to_river_auc: Optional[float] = None
+    by_regime: Optional[list[dict[str, Any]]] = None
+    evaluation_domain: Optional[dict[str, Any]] = Field(
+        default=None, description="Hazard regimes and filters defining the headline cells."
+    )
+    imbalance: Optional[dict[str, Any]] = Field(
+        default=None, description="n_pos / n_neg / n_blocks and the low-negative-count warning."
+    )
+    baseline_ci95: Optional[dict[str, Any]] = Field(
+        default=None,
+        description="Block-bootstrap CIs: auc, spearman and auc_model_minus (paired) per predictor.",
+    )
+    per_year: Optional[list[dict[str, Any]]] = Field(
+        default=None, description="Agreement per NDEM year; role marks in_sample / temporal_holdout years."
+    )
+    sensitivity: Optional[dict[str, Any]] = None
+    year_matched_auc: Optional[float] = None
+    year_matched_year: Optional[int] = None
+    pre2015_auc: Optional[float] = None
+    losses_context: Optional[dict[str, Any]] = None
+    gauges: Optional[dict[str, Any]] = None
+    caveat_text: str = ""
+    markdown_report: Optional[str] = None
+

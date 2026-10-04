@@ -5,6 +5,7 @@ import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { getResolution } from 'h3-js';
 import type { HazardCell, ForecastAlertItem } from '@/lib/api/types';
+import { isScoredCell } from '@/lib/map/colorScale';
 
 export interface Hex3DTooltipProps {
   cell: HazardCell | null;
@@ -38,7 +39,7 @@ export const Hex3DTooltip: React.FC<Hex3DTooltipProps> = ({
   if (!cell || !position) return null;
 
   const isPrz =
-    cell.quality_flag !== 'no_coverage' && cell.susceptibility >= przThreshold;
+    isScoredCell(cell) && cell.susceptibility >= przThreshold;
 
   const hasLiveForecast = Boolean(forecastItem);
 
@@ -79,7 +80,7 @@ export const Hex3DTooltip: React.FC<Hex3DTooltipProps> = ({
         <div>
           <div className="text-[10px] text-text-muted">Susceptibility</div>
           <div className="font-mono text-sm font-bold text-text-primary">
-            {cell.quality_flag === 'no_coverage'
+            {!isScoredCell(cell)
               ? 'N/A'
               : cell.susceptibility.toFixed(3)}
           </div>

@@ -25,3 +25,9 @@ export type { CoverageStatusPillProps } from './StatusPill';
 
 export * from './status-pill';
 export * from './toast';
+
+export { RegimeChip } from './RegimeChip';
+export type { RegimeChipProps, RegimeChipSize } from './RegimeChip';
+
+export { FilterChip } from './FilterChip';
+export type { FilterChipProps } from './FilterChip';

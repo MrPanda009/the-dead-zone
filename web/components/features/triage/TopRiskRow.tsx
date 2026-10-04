@@ -4,6 +4,7 @@ import { useRef } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 
+import { RegimeChip } from '@/components/common/RegimeChip';
 import { usePrefersReducedMotion } from '@/lib/hooks/usePrefersReducedMotion';
 import type { HazardCell } from '@/lib/api/types';
 import { rgbaToCss, susceptibilityColor } from '@/lib/map/colorScale';
@@ -16,6 +17,8 @@ export interface TopRiskRowProps {
   isSelected?: boolean;
   /** Marks the row as at or above the PRZ threshold. */
   isPrzCandidate?: boolean;
+  /** Shows the cell's regime as an icon chip before the score. */
+  showRegime?: boolean;
   onSelect?: (h3: string) => void;
   onHover?: (h3: string | null) => void;
   className?: string;
@@ -38,6 +41,7 @@ export const TopRiskRow = ({
   breaks,
   isSelected = false,
   isPrzCandidate = false,
+  showRegime = true,
   onSelect,
   onHover,
   className = '',
@@ -100,6 +104,9 @@ export const TopRiskRow = ({
       >
         {formatH3(cell.h3)}
       </span>
+      {showRegime && cell.hazard_regime ? (
+        <RegimeChip regime={cell.hazard_regime} showLabel={false} className="shrink-0" />
+      ) : null}
       {isPrzCandidate ? (
         <span className="shrink-0 rounded-md border border-red-500/60 bg-red-500/10 px-1.5 py-0.2 text-[9px] font-mono font-bold tracking-wider uppercase text-red-600 dark:text-red-400">
           PRZ

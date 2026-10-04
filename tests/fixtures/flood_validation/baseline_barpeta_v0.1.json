@@ -1,0 +1,1007 @@
+{
+  "district": "barpeta",
+  "model_version": "flood-susceptibility-v0.1",
+  "generated_at": "2026-10-04T18:52:06.845542+00:00",
+  "references": {
+    "ndem": {
+      "years": [
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2006,
+        2007,
+        2008,
+        2009,
+        2010,
+        2011,
+        2012,
+        2013,
+        2020,
+        2021
+      ],
+      "years_with_coverage": {
+        "1998": 2354,
+        "1999": 2354,
+        "2000": 2354,
+        "2001": 2354,
+        "2002": 2354,
+        "2003": 2354,
+        "2004": 2354,
+        "2005": 2354,
+        "2006": 2354,
+        "2007": 2354,
+        "2008": 2354,
+        "2009": 2354,
+        "2010": 2354,
+        "2011": 2354,
+        "2012": 2354,
+        "2013": 2354,
+        "2021": 2354,
+        "2020": 963
+      },
+      "coverage_basis": {
+        "annual_composite": "state-wide annual composite; every evaluated cell treated as observed",
+        "event_layer": "concave-hull observation footprint (see reference_footprints)"
+      },
+      "polygons": 179689,
+      "gridcode_audit": {
+        "n_polygons": 197953,
+        "n_flood_polygons": 179689,
+        "background_gridcode": "0.0 (dropped; present in 2011\u20132013 only)",
+        "by_year": {
+          "1998": {
+            "NaN": {
+              "n": 4860,
+              "area_km2": 5611.98
+            }
+          },
+          "1999": {
+            "NaN": {
+              "n": 9584,
+              "area_km2": 2125.15
+            }
+          },
+          "2000": {
+            "NaN": {
+              "n": 8780,
+              "area_km2": 2959.78
+            }
+          },
+          "2001": {
+            "NaN": {
+              "n": 2520,
+              "area_km2": 2197.74
+            }
+          },
+          "2002": {
+            "NaN": {
+              "n": 13964,
+              "area_km2": 7019.62
+            }
+          },
+          "2003": {
+            "NaN": {
+              "n": 26712,
+              "area_km2": 5774.82
+            }
+          },
+          "2004": {
+            "NaN": {
+              "n": 6080,
+              "area_km2": 7502.29
+            }
+          },
+          "2005": {
+            "NaN": {
+              "n": 11604,
+              "area_km2": 1859.01
+            }
+          },
+          "2006": {
+            "NaN": {
+              "n": 8428,
+              "area_km2": 2077.83
+            }
+          },
+          "2007": {
+            "NaN": {
+              "n": 8816,
+              "area_km2": 6902.08
+            }
+          },
+          "2008": {
+            "NaN": {
+              "n": 5976,
+              "area_km2": 2110.97
+            }
+          },
+          "2009": {
+            "NaN": {
+              "n": 3024,
+              "area_km2": 582.1
+            }
+          },
+          "2010": {
+            "NaN": {
+              "n": 3968,
+              "area_km2": 1082.88
+            }
+          },
+          "2011": {
+            "0.0": {
+              "n": 2100,
+              "area_km2": 50.45
+            },
+            "1.0": {
+              "n": 8476,
+              "area_km2": 1752.11
+            }
+          },
+          "2012": {
+            "0.0": {
+              "n": 10768,
+              "area_km2": 184.12
+            },
+            "1.0": {
+              "n": 41772,
+              "area_km2": 8564.48
+            }
+          },
+          "2013": {
+            "0.0": {
+              "n": 5396,
+              "area_km2": 612.11
+            },
+            "1.0": {
+              "n": 5864,
+              "area_km2": 3991.38
+            }
+          },
+          "2021": {
+            "1.0": {
+              "n": 9261,
+              "area_km2": 1219.11
+            }
+          }
+        }
+      },
+      "licence": "Government Open Data License (GODL) / NRSC Data Sharing Policy"
+    },
+    "rivers": {
+      "osm_pbf": {
+        "path": "data/raw/osm/north-eastern-zone-latest.osm.pbf",
+        "bytes": 109716035,
+        "sha256": "142f8c0948848e32055a60c7af2324f34a6d6275f457c174b9e25ab43fca4044",
+        "modified_utc": "2026-10-04T10:02:57.365343+00:00"
+      },
+      "osm_licence": "ODbL 1.0 \u2014 \u00a9 OpenStreetMap contributors (via Geofabrik)",
+      "hydrorivers": {
+        "path": "data/raw/hydrorivers/HydroRIVERS_v10_as_shp/HydroRIVERS_v10_as.shp",
+        "bytes": 207445068,
+        "sha256": "827e03a8e419b9578d5f246bcce1c93de1a0bd561a9f572fe84606c5d36d31fa",
+        "modified_utc": "2026-10-04T10:00:24.313373+00:00"
+      },
+      "hydrorivers_citation": "Lehner & Grill (2013), HydroSHEDS / HydroRIVERS v1.0",
+      "mainstem_names": [
+        "Brahmaputra",
+        "Brahmaputra River"
+      ],
+      "min_tributary_upstream_km2": 50.0,
+      "status": "evaluated",
+      "river_class_counts": {
+        "tributary": 175,
+        "minor": 100,
+        "mainstem": 3
+      }
+    }
+  },
+  "reference_footprints": {
+    "2020": {
+      "method": "concave_hull",
+      "ratio": 0.3,
+      "buffer_m": 2000.0,
+      "min_overlap": 0.5,
+      "source": "NDEM_AS_Floods_Inundation_2020_barpeta.parquet",
+      "cells_in_footprint": 1420,
+      "cells_total": 2948,
+      "max_lat": 26.4107,
+      "gridcode_audit": {
+        "n_polygons": 35714,
+        "gridcode_distribution": {
+          "NaN": 20340,
+          "1.0": 15374
+        },
+        "gridcode_varies_within_event": false,
+        "interpretation": "gridcode is constant within each acquisition date (NaN or 1.0 by source format); every polygon is a mapped flood extent"
+      }
+    }
+  },
+  "spatial": {
+    "evaluation_domain": {
+      "hazard_regimes": [
+        "floodplain"
+      ],
+      "strict_baseline_water_filter": false,
+      "flood_fraction_threshold": 0.1
+    },
+    "n_cells": 2354,
+    "n_excluded_non_full": 8,
+    "n_excluded_permanent_water": 142,
+    "n_excluded_outside_domain": 444,
+    "prevalence": 0.9345794392523364,
+    "imbalance": {
+      "n_cells": 2354,
+      "n_pos": 2200,
+      "n_neg": 154,
+      "prevalence": 0.9345794392523364,
+      "n_blocks": 19,
+      "low_negative_count_warning": false
+    },
+    "spearman_frequency": {
+      "model": 0.4339166151131313,
+      "hand_only": 0.4235003159709763,
+      "frequency_only": 0.46753552835993134,
+      "dist_mainstem": 0.12365310057341376,
+      "dist_tributary": 0.10777104079451091,
+      "dist_any_river": 0.05738439021101469,
+      "distance_to_river": -0.04922147399716068
+    },
+    "spearman_within_flooded_cells": 0.5225571750448297,
+    "auc": {
+      "model": 0.44404958677685946,
+      "hand_only": 0.6124099763872491,
+      "frequency_only": 0.4313429752066116,
+      "dist_mainstem": 0.31374557260920893,
+      "dist_tributary": 0.6715968122786304,
+      "dist_any_river": 0.6075029515938607,
+      "distance_to_river": 0.23277154663518299,
+      "random": 0.5166735537190082
+    },
+    "pr_auc": {
+      "model": 0.9157040313641338,
+      "hand_only": 0.9602525211497053,
+      "frequency_only": 0.8976165406450072,
+      "dist_mainstem": 0.8887703883190368,
+      "dist_tributary": 0.9636662511769098,
+      "dist_any_river": 0.9572093418011814,
+      "distance_to_river": 0.8867314351483311,
+      "random": 0.9428449950080593
+    },
+    "ci95": {
+      "auc_model": [
+        0.3267458754116744,
+        0.5942713941572921
+      ],
+      "auc": {
+        "model": [
+          0.3267458754116744,
+          0.5942713941572921
+        ],
+        "hand_only": [
+          0.5412343995482403,
+          0.6709976773685797
+        ],
+        "frequency_only": [
+          0.29456211858351344,
+          0.6414449087364394
+        ],
+        "dist_mainstem": [
+          0.1539864106106389,
+          0.5302166072646314
+        ],
+        "dist_tributary": [
+          0.5305700934776733,
+          0.7783922260448435
+        ],
+        "dist_any_river": [
+          0.47379618707318444,
+          0.6996043445419112
+        ],
+        "distance_to_river": [
+          0.14178503347591595,
+          0.3341481992027253
+        ]
+      },
+      "spearman": {
+        "model": [
+          0.2837559214972412,
+          0.547638382781009
+        ],
+        "hand_only": [
+          0.34959644743975715,
+          0.47613224870900667
+        ],
+        "frequency_only": [
+          0.2609261951088458,
+          0.6078639920377138
+        ],
+        "dist_mainstem": [
+          -0.17076155094026946,
+          0.3253770122327292
+        ],
+        "dist_tributary": [
+          -0.11627388315392935,
+          0.3118748854636344
+        ],
+        "dist_any_river": [
+          -0.16449125620821206,
+          0.22820620748098833
+        ],
+        "distance_to_river": [
+          -0.27606938287919325,
+          0.1793654769327056
+        ]
+      },
+      "auc_model_minus": {
+        "hand_only": [
+          -0.2419741021663671,
+          -0.06228661843123057
+        ],
+        "frequency_only": [
+          -0.062207584497458245,
+          0.06471055868516637
+        ],
+        "dist_mainstem": [
+          0.034625225821086014,
+          0.24774851074116494
+        ],
+        "dist_tributary": [
+          -0.4308883471912079,
+          -0.0018507774157703206
+        ],
+        "dist_any_river": [
+          -0.33545887692114545,
+          0.015928467268580514
+        ],
+        "distance_to_river": [
+          0.02982705455552366,
+          0.34946204170947526
+        ]
+      },
+      "n_blocks": 19,
+      "n_bootstraps": 500
+    },
+    "thresholds": {
+      "all_positive": {
+        "precision": 0.9345794392523364,
+        "recall": 1.0,
+        "f1": 0.966183574879227,
+        "balanced_accuracy": 0.5,
+        "mcc": 0.0,
+        "n_flagged": 2354,
+        "flagged_pct": 1.0
+      },
+      "0.2": {
+        "precision": 0.9345516362090948,
+        "recall": 0.9995454545454545,
+        "f1": 0.965956512189765,
+        "balanced_accuracy": 0.49977272727272726,
+        "mcc": -0.005454287879145478,
+        "n_flagged": 2353,
+        "flagged_pct": 0.9995751911639762
+      },
+      "0.3": {
+        "precision": 0.9357876712328768,
+        "recall": 0.9936363636363637,
+        "f1": 0.9638447971781305,
+        "balanced_accuracy": 0.5098051948051948,
+        "mcc": 0.055665389363145946,
+        "n_flagged": 2336,
+        "flagged_pct": 0.9923534409515717
+      },
+      "0.4": {
+        "precision": 0.9346504559270516,
+        "recall": 0.8386363636363636,
+        "f1": 0.8840440824149497,
+        "balanced_accuracy": 0.5004870129870129,
+        "mcc": 0.0006546013046981579,
+        "n_flagged": 1974,
+        "flagged_pct": 0.8385726423109601
+      },
+      "0.5": {
+        "precision": 0.9055258467023173,
+        "recall": 0.2309090909090909,
+        "f1": 0.3679826149945672,
+        "balanced_accuracy": 0.4433766233766234,
+        "mcc": -0.06572428726550045,
+        "n_flagged": 561,
+        "flagged_pct": 0.2383177570093458
+      },
+      "0.6": {
+        "precision": 0.8367346938775511,
+        "recall": 0.018636363636363635,
+        "f1": 0.03646064917741218,
+        "balanced_accuracy": 0.48334415584415585,
+        "mcc": -0.057694556627968734,
+        "n_flagged": 49,
+        "flagged_pct": 0.020815632965165677
+      },
+      "0.7": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "balanced_accuracy": 0.5,
+        "mcc": 0.0,
+        "n_flagged": 0,
+        "flagged_pct": 0.0
+      },
+      "0.8": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "balanced_accuracy": 0.5,
+        "mcc": 0.0,
+        "n_flagged": 0,
+        "flagged_pct": 0.0
+      }
+    },
+    "by_confidence_tercile": [
+      {
+        "tier": "Tercile 1",
+        "range": [
+          0.22664164006710052,
+          0.4646192789077759
+        ],
+        "cell_count": 785,
+        "mean_stratify_value": 0.31994179982668275,
+        "prevalence": 0.9719745222929936,
+        "roc_auc": 0.5611223638746575,
+        "pr_auc": 0.9724462718588618
+      },
+      {
+        "tier": "Tercile 2",
+        "range": [
+          0.46462130546569824,
+          0.46666666865348816
+        ],
+        "cell_count": 784,
+        "mean_stratify_value": 0.4663434147986831,
+        "prevalence": 0.9094387755102041,
+        "roc_auc": 0.37239989727989253,
+        "pr_auc": 0.8704063534688937
+      },
+      {
+        "tier": "Tercile 3",
+        "range": [
+          0.46666666865348816,
+          0.5078004002571106
+        ],
+        "cell_count": 785,
+        "mean_stratify_value": 0.4799147879621785,
+        "prevalence": 0.9222929936305733,
+        "roc_auc": 0.5135404401775202,
+        "pr_auc": 0.9113905993592707
+      }
+    ],
+    "by_region_block": [
+      {
+        "region": "north",
+        "cell_count": 1177,
+        "prevalence": 0.9617672047578589,
+        "roc_auc": 0.6635257165292501,
+        "pr_auc": 0.9762913488091081
+      },
+      {
+        "region": "south",
+        "cell_count": 1177,
+        "prevalence": 0.907391673746814,
+        "roc_auc": 0.40243273889289766,
+        "pr_auc": 0.8799910876096955
+      }
+    ],
+    "by_regime": [
+      {
+        "regime": "floodplain",
+        "in_headline": true,
+        "cell_count": 2368,
+        "share_pct": 80.3,
+        "population": 1621955.0,
+        "mean_susceptibility": 0.4593,
+        "mean_confidence": 0.4218,
+        "eval_cell_count": 2354,
+        "eval_n_neg": 154,
+        "ndem_prevalence": 0.9346,
+        "roc_auc": 0.44404958677685946,
+        "spearman": 0.4339166151131313
+      },
+      {
+        "regime": "char_belt",
+        "in_headline": false,
+        "cell_count": 554,
+        "share_pct": 18.8,
+        "population": 241456.0,
+        "mean_susceptibility": 0.7148,
+        "mean_confidence": 0.4462,
+        "eval_cell_count": 444,
+        "eval_n_neg": 342,
+        "ndem_prevalence": 0.2297,
+        "roc_auc": 0.3795436303176241,
+        "spearman": -0.1627858992328673
+      },
+      {
+        "regime": "channel",
+        "in_headline": false,
+        "cell_count": 26,
+        "share_pct": 0.9,
+        "population": 3823.0,
+        "mean_susceptibility": 0.6843,
+        "mean_confidence": 0.43,
+        "eval_cell_count": 0,
+        "eval_n_neg": 0,
+        "ndem_prevalence": null,
+        "roc_auc": null,
+        "spearman": null
+      }
+    ],
+    "per_year": [
+      {
+        "year": 1998,
+        "role": "pre_sentinel1",
+        "source": "annual_composite",
+        "n_cells": 2354,
+        "n_pos": 1474,
+        "n_neg": 880,
+        "prevalence": 0.6261682242990654,
+        "auc": {
+          "model": 0.6715014802022943,
+          "hand_only": 0.6465951492537314,
+          "frequency_only": 0.6794382940668557,
+          "dist_mainstem": 0.6916966047859874,
+          "dist_tributary": 0.4956310904156902
+        },
+        "auc_model_ci95": [
+          0.5847045971683544,
+          0.7131952821924988
+        ]
+      },
+      {
+        "year": 1999,
+        "role": "pre_sentinel1",
+        "source": "annual_composite",
+        "n_cells": 2354,
+        "n_pos": 959,
+        "n_neg": 1395,
+        "prevalence": 0.40739167374681395,
+        "auc": {
+          "model": 0.6931817417336608,
+          "hand_only": 0.661216320764237,
+          "frequency_only": 0.712325039897444,
+          "dist_mainstem": 0.5622833671573959,
+          "dist_tributary": 0.50764124816397
+        },
+        "auc_model_ci95": [
+          0.6307964021321241,
+          0.7319197321703629
+        ]
+      },
+      {
+        "year": 2000,
+        "role": "pre_sentinel1",
+        "source": "annual_composite",
+        "n_cells": 2354,
+        "n_pos": 1080,
+        "n_neg": 1274,
+        "prevalence": 0.45879354290569246,
+        "auc": {
+          "model": 0.7152116402116402,
+          "hand_only": 0.6764822809465667,
+          "frequency_only": 0.7413883074597359,
+          "dist_mainstem": 0.6402530670387814,
+          "dist_tributary": 0.5367397813826384
+        },
+        "auc_model_ci95": [
+          0.6675984898295892,
+          0.7449332064462245
+        ]
+      },
+      {
+        "year": 2001,
+        "role": "pre_sentinel1",
+        "source": "annual_composite",
+        "n_cells": 2354,
+        "n_pos": 508,
+        "n_neg": 1846,
+        "prevalence": 0.21580288870008496,
+        "auc": {
+          "model": 0.6731590329377842,
+          "hand_only": 0.5883875329505805,
+          "frequency_only": 0.7000516119125413,
+          "dist_mainstem": 0.7642103377381186,
+          "dist_tributary": 0.6025968043268698
+        },
+        "auc_model_ci95": [
+          0.5915166944365855,
+          0.7294078293160015
+        ]
+      },
+      {
+        "year": 2002,
+        "role": "pre_sentinel1",
+        "source": "annual_composite",
+        "n_cells": 2354,
+        "n_pos": 1920,
+        "n_neg": 434,
+        "prevalence": 0.8156329651656754,
+        "auc": {
+          "model": 0.6107886904761906,
+          "hand_only": 0.6680899577572965,
+          "frequency_only": 0.6259648617511521,
+          "dist_mainstem": 0.5152559763824884,
+          "dist_tributary": 0.5324536770353303
+        },
+        "auc_model_ci95": [
+          0.5129595569778977,
+          0.6825231080989711
+        ]
+      },
+      {
+        "year": 2003,
+        "role": "pre_sentinel1",
+        "source": "annual_composite",
+        "n_cells": 2354,
+        "n_pos": 1793,
+        "n_neg": 561,
+        "prevalence": 0.7616822429906542,
+        "auc": {
+          "model": 0.6278029134890786,
+          "hand_only": 0.6661546736019358,
+          "frequency_only": 0.6415133918496669,
+          "dist_mainstem": 0.5543199787647148,
+          "dist_tributary": 0.536098493547396
+        },
+        "auc_model_ci95": [
+          0.5647599278580477,
+          0.6790817981539542
+        ]
+      },
+      {
+        "year": 2004,
+        "role": "pre_sentinel1",
+        "source": "annual_composite",
+        "n_cells": 2354,
+        "n_pos": 1655,
+        "n_neg": 699,
+        "prevalence": 0.7030586236193713,
+        "auc": {
+          "model": 0.6071876526241631,
+          "hand_only": 0.6550039115006763,
+          "frequency_only": 0.6311381386443301,
+          "dist_mainstem": 0.4404678241250989,
+          "dist_tributary": 0.6168181562784988
+        },
+        "auc_model_ci95": [
+          0.515925950353027,
+          0.6857246395130716
+        ]
+      },
+      {
+        "year": 2005,
+        "role": "pre_sentinel1",
+        "source": "annual_composite",
+        "n_cells": 2354,
+        "n_pos": 989,
+        "n_neg": 1365,
+        "prevalence": 0.4201359388275276,
+        "auc": {
+          "model": 0.6946929039952296,
+          "hand_only": 0.6842246395330318,
+          "frequency_only": 0.7165116649444254,
+          "dist_mainstem": 0.5340037111523461,
+          "dist_tributary": 0.5329036989299881
+        },
+        "auc_model_ci95": [
+          0.6439905369272607,
+          0.7315034807534798
+        ]
+      },
+      {
+        "year": 2006,
+        "role": "pre_sentinel1",
+        "source": "annual_composite",
+        "n_cells": 2354,
+        "n_pos": 759,
+        "n_neg": 1595,
+        "prevalence": 0.32242990654205606,
+        "auc": {
+          "model": 0.6732625422825778,
+          "hand_only": 0.6579152572474094,
+          "frequency_only": 0.6891405536900971,
+          "dist_mainstem": 0.4469389272305996,
+          "dist_tributary": 0.5623518819102845
+        },
+        "auc_model_ci95": [
+          0.5975617026385383,
+          0.729196469314122
+        ]
+      },
+      {
+        "year": 2007,
+        "role": "pre_sentinel1",
+        "source": "annual_composite",
+        "n_cells": 2354,
+        "n_pos": 1696,
+        "n_neg": 658,
+        "prevalence": 0.7204757858963466,
+        "auc": {
+          "model": 0.5999607515627687,
+          "hand_only": 0.6499706980845329,
+          "frequency_only": 0.6160660520731778,
+          "dist_mainstem": 0.4486454808740035,
+          "dist_tributary": 0.6072172320353272
+        },
+        "auc_model_ci95": [
+          0.5137171971960767,
+          0.6801906058038346
+        ]
+      },
+      {
+        "year": 2008,
+        "role": "pre_sentinel1",
+        "source": "annual_composite",
+        "n_cells": 2354,
+        "n_pos": 914,
+        "n_neg": 1440,
+        "prevalence": 0.3882752761257434,
+        "auc": {
+          "model": 0.6913156455142232,
+          "hand_only": 0.6891624118648189,
+          "frequency_only": 0.7043193836615609,
+          "dist_mainstem": 0.5111050328227571,
+          "dist_tributary": 0.5263645757354729
+        },
+        "auc_model_ci95": [
+          0.6283758994641768,
+          0.7328790274759236
+        ]
+      },
+      {
+        "year": 2009,
+        "role": "pre_sentinel1",
+        "source": "annual_composite",
+        "n_cells": 2354,
+        "n_pos": 312,
+        "n_neg": 2042,
+        "prevalence": 0.13254035683942225,
+        "auc": {
+          "model": 0.7508240412868229,
+          "hand_only": 0.7273302317988899,
+          "frequency_only": 0.7446790476908008,
+          "dist_mainstem": 0.6494057485120168,
+          "dist_tributary": 0.5381444787664181
+        },
+        "auc_model_ci95": [
+          0.6843405796467454,
+          0.8027200678102221
+        ]
+      },
+      {
+        "year": 2010,
+        "role": "pre_sentinel1",
+        "source": "annual_composite",
+        "n_cells": 2354,
+        "n_pos": 462,
+        "n_neg": 1892,
+        "prevalence": 0.19626168224299065,
+        "auc": {
+          "model": 0.7018455469829677,
+          "hand_only": 0.6872826345606473,
+          "frequency_only": 0.6992669064550673,
+          "dist_mainstem": 0.6432747133064258,
+          "dist_tributary": 0.531449346988459
+        },
+        "auc_model_ci95": [
+          0.6401964887108916,
+          0.7521572906300599
+        ]
+      },
+      {
+        "year": 2011,
+        "role": "pre_sentinel1",
+        "source": "annual_composite",
+        "n_cells": 2354,
+        "n_pos": 348,
+        "n_neg": 2006,
+        "prevalence": 0.14783347493627869,
+        "auc": {
+          "model": 0.7273309382198234,
+          "hand_only": 0.6954108937555151,
+          "frequency_only": 0.747236738061677,
+          "dist_mainstem": 0.5695857828812413,
+          "dist_tributary": 0.5291381602319478
+        },
+        "auc_model_ci95": [
+          0.6628529848315827,
+          0.7814789679978325
+        ]
+      },
+      {
+        "year": 2012,
+        "role": "pre_sentinel1",
+        "source": "annual_composite",
+        "n_cells": 2354,
+        "n_pos": 1164,
+        "n_neg": 1190,
+        "prevalence": 0.49447748513169076,
+        "auc": {
+          "model": 0.6894322677524618,
+          "hand_only": 0.6905130093274423,
+          "frequency_only": 0.7201926131277252,
+          "dist_mainstem": 0.5407786826070634,
+          "dist_tributary": 0.5051207080770452
+        },
+        "auc_model_ci95": [
+          0.6190184783213982,
+          0.7418549648471486
+        ]
+      },
+      {
+        "year": 2013,
+        "role": "pre_sentinel1",
+        "source": "annual_composite",
+        "n_cells": 2354,
+        "n_pos": 1193,
+        "n_neg": 1161,
+        "prevalence": 0.5067969413763806,
+        "auc": {
+          "model": 0.6304786823510385,
+          "hand_only": 0.6719710802246525,
+          "frequency_only": 0.5919774625597352,
+          "dist_mainstem": 0.36833582056685815,
+          "dist_tributary": 0.6050020468235249
+        },
+        "auc_model_ci95": [
+          0.5671007090783122,
+          0.6957763581676906
+        ]
+      },
+      {
+        "year": 2020,
+        "role": "in_sample",
+        "source": "event_layer",
+        "n_cells": 963,
+        "n_pos": 457,
+        "n_neg": 506,
+        "prevalence": 0.4745586708203531,
+        "auc": {
+          "model": 0.5670509682497125,
+          "hand_only": 0.6068577507546207,
+          "frequency_only": 0.5362520649363005,
+          "dist_mainstem": 0.49855995018206034,
+          "dist_tributary": 0.3938730853391685
+        },
+        "auc_model_ci95": [
+          0.5074018295974285,
+          0.6165867505242357
+        ]
+      },
+      {
+        "year": 2021,
+        "role": "temporal_holdout",
+        "source": "annual_composite",
+        "n_cells": 2354,
+        "n_pos": 1143,
+        "n_neg": 1211,
+        "prevalence": 0.48555649957519115,
+        "auc": {
+          "model": 0.6294278244121219,
+          "hand_only": 0.6138575163653676,
+          "frequency_only": 0.6311154747275088,
+          "dist_mainstem": 0.5850052702949704,
+          "dist_tributary": 0.5420875858725752
+        },
+        "auc_model_ci95": [
+          0.5300014410756448,
+          0.7011158668819685
+        ]
+      }
+    ],
+    "pre2015_subset": {
+      "auc": 0.4301904357152976
+    },
+    "year_matched": {
+      "year": 2020,
+      "auc": 0.5670509682497125,
+      "auc_ci95": [
+        0.5074018295974285,
+        0.6165867505242357
+      ],
+      "auc_baselines": {
+        "hand_only": 0.6068577507546207,
+        "frequency_only": 0.5362520649363005,
+        "dist_mainstem": 0.49855995018206034,
+        "dist_tributary": 0.3938730853391685
+      },
+      "prevalence_in_footprint": 0.4745586708203531,
+      "cells_in_footprint": 963,
+      "in_sample": true
+    },
+    "sensitivity": {
+      "strict_baseline_water_filter": {
+        "description": "headline cells with JRC>=40% water covering <= 1% of the cell",
+        "n_cells": 1960,
+        "n_neg": 79,
+        "auc_model": 0.6303003384948754
+      },
+      "all_regimes": {
+        "description": "all quality-filtered cells regardless of hazard regime",
+        "n_cells": 2798,
+        "n_neg": 496,
+        "auc_model": 0.16753401670356774
+      }
+    },
+    "diagnostics": {
+      "spearman_lat_vs_model": -0.36052540395857174,
+      "spearman_lat_vs_reference": -0.07435397549295863
+    }
+  },
+  "gauges": {
+    "status": "gap_documented",
+    "n_stations": 0,
+    "spearman": null,
+    "finding": "INDOFLOODS published dataset contains 0 stations in Assam. All Brahmaputra basin CWC gauges were omitted in the source publication.",
+    "temporal_check": {
+      "status": "evaluated",
+      "n_in_event_scenes": 10,
+      "n_out_of_event_scenes": 20,
+      "mean_in_event_fraction": 0.30406802520972076,
+      "mean_out_of_event_fraction": 0.03879977673498954,
+      "fraction_lift": 0.26526824847473124,
+      "mann_whitney_u": 200.0,
+      "p_value": 6.004720542203108e-06,
+      "in_event_dates": [
+        "2020-06-26",
+        "2020-07-03",
+        "2020-07-15",
+        "2020-07-19",
+        "2020-07-21",
+        "2020-07-26",
+        "2020-08-01",
+        "2020-08-08",
+        "2020-08-15",
+        "2020-10-02"
+      ],
+      "out_of_event_dates": [
+        "2020-06-02",
+        "2020-06-09",
+        "2020-06-19",
+        "2020-08-20",
+        "2020-08-30",
+        "2020-09-06",
+        "2020-09-13",
+        "2020-09-20",
+        "2020-10-07",
+        "2020-10-17",
+        "2020-10-24",
+        "2020-10-31",
+        "2020-11-07",
+        "2020-11-12",
+        "2020-11-22",
+        "2020-11-29",
+        "2020-12-06",
+        "2020-12-13",
+        "2020-12-18",
+        "2020-12-28"
+      ]
+    },
+    "reach_check": null
+  },
+  "losses_context": {
+    "stack_year": 2020,
+    "series_n": 5,
+    "percentile": 60.0,
+    "flag": "typical",
+    "status": "in_series",
+    "state": "Assam",
+    "primary_source": "CWC",
+    "data_source_type": "neon_database",
+    "metric_evaluated": "total_damage_crores",
+    "benchmark_year": 2020,
+    "benchmark_value": 2680.0,
+    "finding": "SAR stack year 2020 is directly covered in the CWC flood damage series for Assam (2016\u20132021, n=5 years). Total flood damage of \u20b92,680.0 Cr ranks at the 60.0th percentile (typical)."
+  }
+}

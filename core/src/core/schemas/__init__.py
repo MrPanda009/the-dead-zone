@@ -29,6 +29,9 @@ from core.schemas.hazard import (
     HazardCellDetailDTO,
     SusceptibilityBandBreakdown,
     DistrictHazardSummaryDTO,
+    FloodValidationDTO,
+    RegimeContextDTO,
+    RegimeSummaryDTO,
 )
 from core.schemas.stats import (
     HistoricalLossDTO,

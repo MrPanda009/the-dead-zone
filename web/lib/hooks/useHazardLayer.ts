@@ -55,7 +55,6 @@ export function useHazardLayer(options: UseHazardLayerOptions = {}): UseHazardLa
   const bboxKey = bbox ? bbox.join(',') : '';
   const requestKey = [
     hazardType,
-    resolution,
     bboxKey,
     admin ?? '',
     minSusceptibility ?? '',
@@ -69,12 +68,14 @@ export function useHazardLayer(options: UseHazardLayerOptions = {}): UseHazardLa
     const controller = new AbortController();
 
     async function load() {
-      // 1. Try requesting the exact requested resolution from the backend
+      // Always fetch the published resolution: a coarser stored layer (e.g. a stray r7
+      // terrain-only set for another district) would otherwise be returned as a success
+      // and suppress the roll-up for this one.
       try {
-        const directData = await fetchHazardLayer(
+        const data = await fetchHazardLayer(
           {
             hazardType,
-            res: resolution,
+            res: SOURCE_RESOLUTION,
             bbox,
             admin,
             minSusceptibility,
@@ -83,45 +84,9 @@ export function useHazardLayer(options: UseHazardLayerOptions = {}): UseHazardLa
           controller.signal,
         );
         if (controller.signal.aborted) return;
-        setState({ key: requestKey, data: directData, error: null });
+        setState({ key: requestKey, data, error: null });
       } catch (cause) {
         if (controller.signal.aborted) return;
-        // If the requested resolution was not 8 and backend returned DATA_UNAVAILABLE or 404,
-        // fall back to fetching SOURCE_RESOLUTION (8) and roll up in memory.
-        const isDataUnavailable =
-          cause instanceof ApiError &&
-          (cause.code === 'DATA_UNAVAILABLE' || cause.status === 404 || cause.status === 422);
-
-        if (resolution !== SOURCE_RESOLUTION && isDataUnavailable) {
-          try {
-            const fallbackData = await fetchHazardLayer(
-              {
-                hazardType,
-                res: SOURCE_RESOLUTION,
-                bbox,
-                admin,
-                minSusceptibility,
-                limit,
-              },
-              controller.signal,
-            );
-            if (controller.signal.aborted) return;
-            setState({ key: requestKey, data: fallbackData, error: null });
-            return;
-          } catch (fallbackCause) {
-            if (controller.signal.aborted) return;
-            setState({
-              key: requestKey,
-              data: null,
-              error:
-                fallbackCause instanceof ApiError
-                  ? fallbackCause
-                  : new ApiError('Unexpected error loading the hazard layer.', 0),
-            });
-            return;
-          }
-        }
-
         setState({
           key: requestKey,
           data: null,
@@ -138,7 +103,7 @@ export function useHazardLayer(options: UseHazardLayerOptions = {}): UseHazardLa
     return () => controller.abort();
     // `bbox` is an array literal at most call sites; `bboxKey` is its stable identity.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [requestKey, enabled, hazardType, resolution, bboxKey, admin, minSusceptibility, limit]);
+  }, [requestKey, enabled, hazardType, bboxKey, admin, minSusceptibility, limit]);
 
   const isCurrent = state?.key === requestKey;
   const rawData = isCurrent ? state.data : null;

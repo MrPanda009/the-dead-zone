@@ -8,7 +8,7 @@
 
 import { cellToParent } from 'h3-js';
 
-import type { CoverageFlag, HazardCell } from '@/lib/api/types';
+import type { CoverageFlag, HazardCell, HazardRegime } from '@/lib/api/types';
 
 /**
  * How child scores combine into a parent.
@@ -31,9 +31,23 @@ export interface RollupOptions {
  * parent cannot honestly claim full coverage, and if all are blind it stays `no_coverage`.
  */
 function combineFlags(flags: CoverageFlag[]): CoverageFlag {
-  if (flags.every((f) => f === 'no_coverage')) return 'no_coverage';
-  if (flags.every((f) => f === 'full')) return 'full';
+  // River channel is not land: it neither degrades nor improves the parent's coverage.
+  if (flags.every((f) => f === 'channel_excluded')) return 'channel_excluded';
+  const land = flags.filter((f) => f !== 'channel_excluded');
+  if (land.every((f) => f === 'no_coverage')) return 'no_coverage';
+  if (land.every((f) => f === 'full')) return 'full';
   return 'low_coverage';
+}
+
+/** Most common non-null child regime; a parent is `channel` only when every child is. */
+function combineRegimes(regimes: (HazardRegime | null | undefined)[]): HazardRegime | null {
+  const known = regimes.filter((r): r is HazardRegime => Boolean(r));
+  if (known.length === 0) return null;
+  const land = known.filter((r) => r !== 'channel');
+  const pool = land.length > 0 ? land : known;
+  const counts = new Map<HazardRegime, number>();
+  for (const regime of pool) counts.set(regime, (counts.get(regime) ?? 0) + 1);
+  return [...counts.entries()].sort((a, b) => b[1] - a[1])[0][0];
 }
 
 export function rollupHazardCells(cells: HazardCell[], options: RollupOptions): HazardCell[] {
@@ -48,6 +62,7 @@ export function rollupHazardCells(cells: HazardCell[], options: RollupOptions): 
       confidences: number[];
       hardZeroes: number[];
       flags: CoverageFlag[];
+      regimes: (HazardRegime | null | undefined)[];
     }
   >();
 
@@ -55,12 +70,13 @@ export function rollupHazardCells(cells: HazardCell[], options: RollupOptions): 
     const parent = cellToParent(cell.h3, targetResolution);
     let group = groups.get(parent);
     if (!group) {
-      group = { susceptibilities: [], confidences: [], hardZeroes: [], flags: [] };
+      group = { susceptibilities: [], confidences: [], hardZeroes: [], flags: [], regimes: [] };
       groups.set(parent, group);
     }
     group.susceptibilities.push(cell.susceptibility);
     group.confidences.push(cell.confidence);
     group.flags.push(cell.quality_flag);
+    group.regimes.push(cell.hazard_regime);
     if (cell.hard_zero_fraction !== null) group.hardZeroes.push(cell.hard_zero_fraction);
   }
 
@@ -68,7 +84,9 @@ export function rollupHazardCells(cells: HazardCell[], options: RollupOptions): 
   for (const [h3, group] of groups) {
     // Unobserved children contribute no score; averaging their filled zeros would drag
     // a real parent score toward "safe".
-    const measured = group.susceptibilities.filter((_, i) => group.flags[i] !== 'no_coverage');
+    const measured = group.susceptibilities.filter(
+      (_, i) => group.flags[i] !== 'no_coverage' && group.flags[i] !== 'channel_excluded',
+    );
     const pool = measured.length > 0 ? measured : group.susceptibilities;
 
     rolled.push({
@@ -77,6 +95,7 @@ export function rollupHazardCells(cells: HazardCell[], options: RollupOptions): 
       confidence: mean(group.confidences),
       quality_flag: combineFlags(group.flags),
       hard_zero_fraction: group.hardZeroes.length > 0 ? mean(group.hardZeroes) : null,
+      hazard_regime: combineRegimes(group.regimes),
     });
   }
 

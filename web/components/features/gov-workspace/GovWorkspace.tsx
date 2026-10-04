@@ -1,5 +1,6 @@
 'use client';
 
+import { isScoredCell } from '@/lib/map/colorScale';
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import {
@@ -23,6 +24,7 @@ import type { HazardType } from '@/lib/api/types';
 import type { FloodHazardMapDisplayState } from '@/components/features/map/FloodHazardMap';
 import {
   DEFAULT_CONFIDENCE_HATCH_THRESHOLD,
+  DEFAULT_REGIME_VISIBILITY,
   SOURCE_RESOLUTION,
 } from '@/lib/map/constants';
 import Link from 'next/link';
@@ -49,6 +51,7 @@ const DEFAULT_DISPLAY: FloodHazardMapDisplayState = {
   confidenceThreshold: DEFAULT_CONFIDENCE_HATCH_THRESHOLD,
   showHardZero: true,
   showNoCoverage: true,
+  visibleRegimes: DEFAULT_REGIME_VISIBILITY,
   resolution: SOURCE_RESOLUTION,
 };
 
@@ -173,7 +176,7 @@ export const GovWorkspace: React.FC<GovWorkspaceProps> = ({
     const ceiling = data.legend.confidence_ceiling ?? 1;
     return cells.filter(
       (cell) =>
-        cell.quality_flag !== 'no_coverage' &&
+        isScoredCell(cell) &&
         cell.confidence / ceiling < display.confidenceThreshold,
     ).length;
   }, [cells, data?.legend, display.confidenceThreshold, display.showConfidenceHatch]);

@@ -9,6 +9,7 @@ import type { HazardType, ForecastAlertItem, HazardCell } from '@/lib/api/types'
 import { hasFloodDriverData } from '@/lib/map/drivers';
 
 import { CoverageNotice } from './CoverageNotice';
+import { RegimeContextBanner } from './RegimeContextBanner';
 import { DossierEmptyState } from './DossierEmptyState';
 import { DossierHeader } from './DossierHeader';
 import { DossierSkeleton } from './DossierSkeleton';
@@ -159,6 +160,8 @@ export const CellDossier: React.FC<CellDossierProps> = ({
 
       <CoverageNotice flag={detail.quality_flag} />
 
+      {detail.regime_context ? <RegimeContextBanner context={detail.regime_context} /> : null}
+
       {/* Information Box with Susceptibility, Confidence, and Live Forecast */}
       <CellMetricsBox
         detail={detail}
@@ -175,7 +178,12 @@ export const CellDossier: React.FC<CellDossierProps> = ({
       />
 
       {detail.drivers && hasFloodDriverData(detail.drivers) ? (
-        <DriverBreakdown drivers={detail.drivers} />
+        <DriverBreakdown
+          drivers={detail.drivers}
+          regime={detail.regime_context?.regime ?? detail.drivers.hazard_regime ?? null}
+          keyDrivers={detail.regime_context?.key_drivers}
+          includeSecondary={detail.regime_context?.regime !== 'channel'}
+        />
       ) : (
         <TerrainDriversSection
           h3={detail.h3}

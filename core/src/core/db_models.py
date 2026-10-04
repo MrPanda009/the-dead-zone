@@ -223,6 +223,12 @@ class HazardStaticFlood(Base):
     min_hand_m: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     mean_slope_deg: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     mean_cropland_fraction: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    hazard_regime: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    mean_anomalous_frequency: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    jrc_occurrence_mean: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    baseline_water_fraction: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    dist_tributary_m: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    dist_mainstem_m: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     observation_ceiling: Mapped[int] = mapped_column(SmallInteger, default=30, nullable=False)
     model_version: Mapped[str] = mapped_column(
         String, default="flood-susceptibility-v0.1", nullable=False

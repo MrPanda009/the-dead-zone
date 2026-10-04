@@ -32,7 +32,7 @@ def test_barpeta_is_a_registered_district_with_its_pilot_values():
     assert cfg.lgd_code == 277
     assert cfg.bbox_wgs84 == [90.70, 26.05, 91.45, 26.75]
     assert cfg.processing_crs == "EPSG:32645"
-    assert cfg.s1_scene_target == 10
+    assert cfg.s1_scene_target == 30
 
 
 @pytest.mark.parametrize("key", sorted(DISTRICTS))

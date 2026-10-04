@@ -17,7 +17,12 @@ import {
   rgbaToCss,
   type CellRenderClass,
 } from './colorScale';
-import { HARD_ZERO_COLOR, NO_COVERAGE_OUTLINE_COLOR } from './constants';
+import {
+  CHANNEL_COLOR,
+  CHANNEL_OUTLINE_COLOR,
+  HARD_ZERO_COLOR,
+  NO_COVERAGE_OUTLINE_COLOR,
+} from './constants';
 
 /** Properties stored on every feature; read back by the hover tooltip and paint expressions. */
 export interface DistrictCellProperties {
@@ -48,6 +53,9 @@ function featureFor(cell: HazardCell, legend: HazardLayerLegend): DistrictCellFe
     // Unobserved: outline only. A filled, low-ramp colour here would read as "safest".
     fill = TRANSPARENT;
     outline = rgbaToCss(NO_COVERAGE_OUTLINE_COLOR);
+  } else if (render === 'channel') {
+    fill = rgbaToCss(CHANNEL_COLOR);
+    outline = rgbaToCss(CHANNEL_OUTLINE_COLOR);
   } else if (render === 'hard_zero') {
     fill = rgbaToCss(HARD_ZERO_COLOR);
     outline = rgbaToCss(HARD_ZERO_COLOR);

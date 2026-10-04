@@ -3,12 +3,22 @@
 import { useMemo } from 'react';
 import type { Layer, PickingInfo } from '@deck.gl/core';
 import { H3HexagonLayer } from '@deck.gl/geo-layers';
-import { PolygonLayer } from '@deck.gl/layers';
-import { FillStyleExtension, type FillStyleExtensionProps } from '@deck.gl/extensions';
+import { PathLayer, PolygonLayer } from '@deck.gl/layers';
+import {
+  FillStyleExtension,
+  PathStyleExtension,
+  type FillStyleExtensionProps,
+  type PathStyleExtensionProps,
+} from '@deck.gl/extensions';
 import { cellToBoundary } from 'h3-js';
 
 import type { HazardCell } from '@/lib/api/types';
 import {
+  CHANNEL_COLOR,
+  CHANNEL_OUTLINE_COLOR,
+  CHAR_BELT_BOUNDARY_COLOR,
+  CHAR_BELT_BOUNDARY_DASH,
+  DEFAULT_REGIME_VISIBILITY,
   HARD_ZERO_COLOR,
   HOVER_OUTLINE_COLOR,
   LOW_CONFIDENCE_HATCH_COLOR,
@@ -16,13 +26,17 @@ import {
   SELECTED_OUTLINE_COLOR,
   SUSCEPTIBILITY_RAMP,
   type RGBAColor,
+  type RegimeVisibility,
 } from '@/lib/map/constants';
 import {
   cellFillColor,
+  cellLineColor,
+  isScoredCell,
   normaliseConfidence,
   renderClassFor,
 } from '@/lib/map/colorScale';
 import { createHatchAtlas, HATCH_PATTERN_NAME } from '@/lib/map/hatchPattern';
+import { regimeBoundaryPaths, type BoundaryPath } from '@/lib/map/regimeBoundary';
 
 export interface UseHazardHexLayersOptions {
   cells: HazardCell[];
@@ -39,6 +53,10 @@ export interface UseHazardHexLayersOptions {
   showNoCoverage?: boolean;
   /** Hides cells that are safe by FR-3.17 construction. */
   showHardZero?: boolean;
+  /** Per-regime visibility. Cells without a regime are always drawn. */
+  visibleRegimes?: RegimeVisibility;
+  /** Dashed outline around the char-belt corridor. */
+  showCharBoundary?: boolean;
   selectedH3?: string | null;
   hoveredH3?: string | null;
   ramp?: RGBAColor[];
@@ -49,13 +67,13 @@ export interface UseHazardHexLayersOptions {
 /**
  * Builds the deck.gl layer stack for a hazard layer.
  *
- * Cells are split into three visually distinct groups rather than one ramp, because
- * `susceptibility === 0` carries three different meanings in this dataset:
- *   - measured    → the quantile ramp
+ * Cells are split into four visually distinct groups rather than one ramp, because
+ * `susceptibility === 0` carries different meanings in this dataset:
+ *   - measured    → the quantile ramp (char-belt cells use their own amber ramp)
  *   - hard_zero   → safe by FR-3.17 construction, off-ramp neutral fill
  *   - no_coverage → never observed, outline only and never filled
- * Collapsing the last two would paint the pipeline's blind cells as the safest ground
- * in the district.
+ *   - channel     → active river channel, slate fill; a placeholder score, not "safe"
+ * Collapsing these would paint blind cells and rivers as the safest ground in the district.
  */
 export function useHazardHexLayers(options: UseHazardHexLayersOptions): Layer[] {
   const {
@@ -67,6 +85,8 @@ export function useHazardHexLayers(options: UseHazardHexLayersOptions): Layer[] 
     confidenceThreshold = 0.5,
     showNoCoverage = true,
     showHardZero = true,
+    visibleRegimes = DEFAULT_REGIME_VISIBILITY,
+    showCharBoundary = true,
     selectedH3 = null,
     hoveredH3 = null,
     ramp = SUSCEPTIBILITY_RAMP,
@@ -74,36 +94,50 @@ export function useHazardHexLayers(options: UseHazardHexLayersOptions): Layer[] 
     onCellHover,
   } = options;
 
-  const { measured, hardZero, noCoverage } = useMemo(() => {
+  // Hidden regimes are dropped up front so every layer below, hatch and boundary included,
+  // agrees on what is on screen.
+  const shownCells = useMemo(
+    () => cells.filter((cell) => !cell.hazard_regime || visibleRegimes[cell.hazard_regime] !== false),
+    [cells, visibleRegimes],
+  );
+
+  const { measured, hardZero, noCoverage, channel } = useMemo(() => {
     const groups = {
       measured: [] as HazardCell[],
       hardZero: [] as HazardCell[],
       noCoverage: [] as HazardCell[],
+      channel: [] as HazardCell[],
     };
-    for (const cell of cells) {
+    for (const cell of shownCells) {
       const renderClass = renderClassFor(cell);
       if (renderClass === 'measured') groups.measured.push(cell);
       else if (renderClass === 'hard_zero') groups.hardZero.push(cell);
+      else if (renderClass === 'channel') groups.channel.push(cell);
       else groups.noCoverage.push(cell);
     }
     return groups;
-  }, [cells]);
+  }, [shownCells]);
+
+  const charBoundary = useMemo<BoundaryPath[]>(
+    () => (showCharBoundary ? regimeBoundaryPaths(shownCells, 'char_belt') : []),
+    [shownCells, showCharBoundary],
+  );
 
   // Only the cells that actually fall below the threshold get geometry built for them;
   // on a well-observed layer this list is empty and the layer is skipped entirely.
   const lowConfidencePolygons = useMemo(() => {
     if (!showConfidenceHatch) return [];
-    return cells
+    return shownCells
       .filter(
         (cell) =>
-          cell.quality_flag !== 'no_coverage' &&
+          isScoredCell(cell) &&
           normaliseConfidence(cell.confidence, confidenceCeiling) < confidenceThreshold,
       )
       .map((cell) => ({
         h3: cell.h3,
         polygon: cellToBoundary(cell.h3, true),
       }));
-  }, [cells, confidenceCeiling, confidenceThreshold, showConfidenceHatch]);
+  }, [shownCells, confidenceCeiling, confidenceThreshold, showConfidenceHatch]);
 
   const hatch = useMemo(() => createHatchAtlas(), []);
 
@@ -118,6 +152,33 @@ export function useHazardHexLayers(options: UseHazardHexLayersOptions): Layer[] 
     const handleHover = (info: PickingInfo) => {
       onCellHover?.((info.object as HazardCell | undefined) ?? null);
     };
+
+    // 0. Active river channel. Drawn beneath everything so land cells always sit above it.
+    if (channel.length > 0) {
+      layers.push(
+        new H3HexagonLayer<HazardCell>({
+          id: 'hazard-hex-channel',
+          data: channel,
+          getHexagon: (cell) => cell.h3,
+          getFillColor: [
+            CHANNEL_COLOR[0],
+            CHANNEL_COLOR[1],
+            CHANNEL_COLOR[2],
+            Math.round(CHANNEL_COLOR[3] * opacity),
+          ],
+          filled: true,
+          stroked: true,
+          getLineColor: CHANNEL_OUTLINE_COLOR,
+          getLineWidth: 1,
+          lineWidthUnits: 'pixels',
+          extruded: false,
+          pickable: true,
+          onClick: handleClick,
+          onHover: handleHover,
+          updateTriggers: { getFillColor: [opacity] },
+        }),
+      );
+    }
 
     // 1. Cells safe by construction (FR-3.17). Drawn first so measured cells sit above.
     if (showHardZero && hardZero.length > 0) {
@@ -152,7 +213,7 @@ export function useHazardHexLayers(options: UseHazardHexLayersOptions): Layer[] 
         getFillColor: (cell) => cellFillColor(cell, breaks, opacity, ramp),
         filled: true,
         stroked: true,
-        getLineColor: (cell) => cellFillColor(cell, breaks, 0.95, ramp),
+        getLineColor: (cell) => cellLineColor(cell, breaks, 0.95, ramp),
         getLineWidth: 1.5,
         lineWidthUnits: 'pixels',
         extruded: false,
@@ -215,6 +276,26 @@ export function useHazardHexLayers(options: UseHazardHexLayersOptions): Layer[] 
       );
     }
 
+    // 4b. Dashed outline tracing the char-belt corridor. Dash needs PathLayer; an H3 layer's
+    //     stroke is always solid.
+    if (charBoundary.length > 0) {
+      layers.push(
+        new PathLayer<BoundaryPath, PathStyleExtensionProps<BoundaryPath>>({
+          id: 'hazard-char-belt-boundary',
+          data: charBoundary,
+          getPath: (path) => path,
+          getColor: CHAR_BELT_BOUNDARY_COLOR,
+          getWidth: 2,
+          widthUnits: 'pixels',
+          widthMinPixels: 1.5,
+          getDashArray: CHAR_BELT_BOUNDARY_DASH,
+          dashJustified: true,
+          pickable: false,
+          extensions: [new PathStyleExtension({ dash: true })],
+        }),
+      );
+    }
+
     // 5. Hover and selection outlines, drawn last so they are never occluded.
     const outlined = [
       { id: 'hazard-hex-hover', h3: hoveredH3, color: HOVER_OUTLINE_COLOR, width: 1.5 },
@@ -246,6 +327,8 @@ export function useHazardHexLayers(options: UseHazardHexLayersOptions): Layer[] 
     measured,
     hardZero,
     noCoverage,
+    channel,
+    charBoundary,
     lowConfidencePolygons,
     hatch,
     breaksKey,

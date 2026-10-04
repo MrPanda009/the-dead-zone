@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { CoverageStatusPill } from '@/components/common/StatusPill';
+import { RegimeChip } from '@/components/common/RegimeChip';
 import type { HazardCell, ForecastAlertItem } from '@/lib/api/types';
 import { normaliseConfidence, renderClassFor } from '@/lib/map/colorScale';
 import { formatH3, formatPercent, formatScore } from '@/lib/map/format';
@@ -25,6 +26,7 @@ export interface HexTooltipProps {
 const RENDER_CLASS_COPY: Record<string, string> = {
   hard_zero: 'Safe by terrain — excluded by the HAND/slope rule.',
   no_coverage: 'Not observed. The 0.00 is a fill, not a measurement.',
+  channel: 'Active river channel. Not land, so it is not scored.',
 };
 
 /** Cursor-following readout for the hovered hexagon, including live forecast MHI. */
@@ -54,6 +56,7 @@ export const HexTooltip: React.FC<HexTooltipProps> = ({
       <div className={['flex items-center justify-between gap-2', classNames.header ?? ''].join(' ')}>
         <span className="font-mono text-[10px] text-ink-faint">{formatH3(cell.h3)}</span>
         <div className="flex items-center gap-1">
+          {cell.hazard_regime ? <RegimeChip regime={cell.hazard_regime} /> : null}
           {forecastItem ? (
             <span className="flex items-center gap-1 rounded bg-crimson/20 border border-crimson/40 px-1 py-0.2 text-[9px] font-mono font-bold text-crimson animate-pulse">
               LIVE FCST

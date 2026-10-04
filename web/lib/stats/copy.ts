@@ -10,11 +10,18 @@
  * `DistrictHazardSummaryDTO.model_version`.
  */
 
+import {
+  REGIME_DESCRIPTIONS,
+  REGIME_ICONS,
+  REGIME_LABELS as MAP_REGIME_LABELS,
+  REGIME_ORDER,
+} from '@/lib/map/constants';
+
 export const FLOOD_MODEL_NAME = 'SETU-DRR flood susceptibility';
 
 /** What the riverine flood layer is built from. Keep in step with `susceptibility.py`. */
 export const FLOOD_MODEL_INPUTS =
-  'Sentinel-1 SAR inundation frequency + Copernicus GLO-30 HAND';
+  'Sentinel-1 SAR inundation frequency (beyond normal river water) + Copernicus GLO-30 HAND, scored per hazard regime';
 
 export const NOT_VALIDATED_TITLE = 'Not yet validated';
 
@@ -39,3 +46,51 @@ export const COMPARISON_CAVEATS: readonly string[] = [
 
 /** Neutral snapshot label for datasets whose ingest date is not recorded in the database. */
 export const SNAPSHOT_LABEL = 'Snapshot';
+
+/** Validation panel wording. Numbers are never written here: they come from the API. */
+export const VALIDATION_COPY = {
+  baselinesTitle: 'Model vs baselines',
+  baselinesUnit: 'ROC-AUC, 95% CI',
+  baselinesFootnote:
+    'Each baseline is compared with the model on the same resampled spatial blocks. ' +
+    '"Similar" means the interval of the difference includes zero.',
+  verdict: {
+    model: 'Model',
+    better_than_model: 'Above model',
+    worse_than_model: 'Below model',
+    indistinguishable: 'Similar',
+    unknown: 'No interval',
+  },
+  regimesTitle: 'Hazard regimes',
+  regimesUnit: 'All published cells',
+  regimesHeadline: 'Headline',
+  charNote: (people: string) =>
+    `${people} people live in char-belt cells. Char water is partly normal river presence, so ` +
+    'their susceptibility reads lower than their exposure — read the score together with the regime.',
+  lowSample: (nNeg: number, nBlocks: number | null) =>
+    `Only ${nNeg} not-flooded cells${nBlocks ? ` across ${nBlocks} spatial blocks` : ''}. ` +
+    'The aggregate ROC-AUC rests on few negatives; per-year results are more informative.',
+  inSample: 'In-sample: same year as the SAR stack the model is built from',
+  holdout: 'Later year, not used to build the model',
+  rankAgreement: 'Rank agreement with NDEM flood frequency',
+} as const;
+
+/** Display names for validation baselines, keyed by the predictor names in metrics.json. */
+export const BASELINE_LABELS: Record<string, { label: string; source: string }> = {
+  model: { label: 'Susceptibility model', source: 'SETU flood layer' },
+  hand_only: { label: 'HAND only', source: 'ASF GLO-30 HAND' },
+  frequency_only: { label: 'SAR frequency only', source: 'Sentinel-1 stack' },
+  anomalous_frequency_only: { label: 'Anomalous frequency only', source: 'Sentinel-1 − JRC occurrence' },
+  dist_tributary: { label: 'Distance to tributaries', source: 'OSM + HydroRIVERS' },
+  dist_any_river: { label: 'Distance to any river', source: 'OSM waterways' },
+  dist_mainstem: { label: 'Distance to Brahmaputra', source: 'OSM mainstem' },
+};
+
+/** Regime display data for validation cards, derived from the map constants (single source). */
+export const REGIME_LABELS: Record<string, { label: string; icon: string; description: string }> =
+  Object.fromEntries(
+    REGIME_ORDER.map((regime) => [
+      regime,
+      { label: MAP_REGIME_LABELS[regime], icon: REGIME_ICONS[regime], description: REGIME_DESCRIPTIONS[regime] },
+    ]),
+  );

@@ -32,5 +32,6 @@ dev = [
 pythonpath = ["core/src", "api/src", "pipeline/src", "."]
 markers = [
     "db: mark test as requiring a PostgreSQL/PostGIS database",
+    "validation: mark test as requiring raw/external validation reference data",
 ]
 

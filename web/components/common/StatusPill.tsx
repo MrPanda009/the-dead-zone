@@ -16,6 +16,7 @@ const FLAG_VARIANTS: Record<CoverageFlag, BadgeVariant> = {
   full: 'safe',
   low_coverage: 'warning',
   no_coverage: 'unknown',
+  channel_excluded: 'info',
 };
 
 /**

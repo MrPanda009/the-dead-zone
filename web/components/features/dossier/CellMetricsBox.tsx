@@ -5,6 +5,7 @@ import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { MetricCard } from '@/components/common/MetricCard';
 import type { HazardCellDetail, ForecastAlertItem } from '@/lib/api/types';
+import { isScoredCell } from '@/lib/map/colorScale';
 
 export interface CellMetricsBoxProps {
   /** The static hazard cell detail dossier */
@@ -68,7 +69,7 @@ export const CellMetricsBox: React.FC<CellMetricsBoxProps> = ({
   );
 
   const scoreVariant =
-    detail.quality_flag === 'no_coverage'
+    !isScoredCell(detail)
       ? 'default'
       : detail.susceptibility >= przThreshold
         ? 'critical'
@@ -162,6 +163,8 @@ export const CellMetricsBox: React.FC<CellMetricsBoxProps> = ({
             description={
               detail.quality_flag === 'no_coverage'
                 ? 'Filled, not measured.'
+                : detail.quality_flag === 'channel_excluded'
+                  ? 'River channel, not scored.'
                 : hasLiveForecast
                   ? `Static Baseline · PRZ ≥ ${przThreshold.toFixed(2)}`
                   : `PRZ threshold ${przThreshold.toFixed(2)}`

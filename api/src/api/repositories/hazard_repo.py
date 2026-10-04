@@ -23,6 +23,7 @@ class HazardRepository:
         max_lat: Optional[float] = None,
         admin: Optional[int] = None,
         min_susceptibility: float = 0.0,
+        regime: Optional[str] = None,
         limit: int = 20000,
     ) -> list[dict[str, Any]]:
         """Returns hazard cells for a viewport, ordered by descending susceptibility.
@@ -60,6 +61,10 @@ class HazardRepository:
             conditions.append("h.susceptibility >= :min_susceptibility")
             params["min_susceptibility"] = min_susceptibility
 
+        if regime is not None:
+            conditions.append("f.hazard_regime = :regime")
+            params["regime"] = regime
+
         where_clause = " AND ".join(conditions)
 
         query = text(f"""
@@ -69,7 +74,8 @@ class HazardRepository:
                 h.confidence,
                 h.quality_flag,
                 h.model_version,
-                f.hard_zero_fraction
+                f.hard_zero_fraction,
+                f.hazard_regime
             FROM hazard_static h
             JOIN grid_cell g ON g.h3 = h.h3
             {admin_join}
@@ -90,6 +96,7 @@ class HazardRepository:
         max_lon: Optional[float] = None,
         max_lat: Optional[float] = None,
         admin: Optional[int] = None,
+        regime: Optional[str] = None,
         quantiles: Optional[list[float]] = None,
     ) -> Optional[dict[str, Any]]:
         """Computes quantile class breaks and the confidence ceiling over the same population.
@@ -124,6 +131,15 @@ class HazardRepository:
             conditions.append("(g.admin_id = :admin OR a.lgd_code = :admin)")
             params["admin"] = admin
 
+        regime_join = ""
+        if regime is not None:
+            regime_join = "LEFT JOIN hazard_static_flood f ON f.h3 = h.h3"
+            conditions.append("f.hazard_regime = :regime")
+            params["regime"] = regime
+        if regime != "channel":
+            # Channel cells carry a placeholder 0.0; they must not skew breaks, domain or the mean.
+            conditions.append("h.quality_flag <> 'channel_excluded'")
+
         where_clause = " AND ".join(conditions)
 
         query = text(f"""
@@ -137,11 +153,13 @@ class HazardRepository:
                 COUNT(*) FILTER (WHERE h.quality_flag = 'full') AS full_count,
                 COUNT(*) FILTER (WHERE h.quality_flag = 'low_coverage') AS low_coverage_count,
                 COUNT(*) FILTER (WHERE h.quality_flag = 'no_coverage') AS no_coverage_count,
+                COUNT(*) FILTER (WHERE h.quality_flag = 'channel_excluded') AS channel_excluded_count,
                 percentile_cont(CAST(:quantiles AS double precision[]))
                     WITHIN GROUP (ORDER BY h.susceptibility) AS breaks
             FROM hazard_static h
             JOIN grid_cell g ON g.h3 = h.h3
             {admin_join}
+            {regime_join}
             WHERE {where_clause};
         """)
 
@@ -192,6 +210,12 @@ class HazardRepository:
                 f.min_hand_m,
                 f.mean_slope_deg,
                 f.mean_cropland_fraction,
+                f.mean_anomalous_frequency,
+                f.jrc_occurrence_mean,
+                f.baseline_water_fraction,
+                f.hazard_regime,
+                f.dist_tributary_m,
+                f.dist_mainstem_m,
                 f.observation_ceiling
             FROM hazard_static h
             JOIN grid_cell g ON g.h3 = h.h3
@@ -235,19 +259,21 @@ class HazardRepository:
         lgd_code = int(admin_row["lgd_code"]) if admin_row["lgd_code"] is not None else None
 
         # Check if cells exist for this hazard_type in this admin
-        cell_stats_query = text("""
+        land = "h.quality_flag <> 'channel_excluded'"
+        cell_stats_query = text(f"""
             SELECT
-                COUNT(*) AS total_cells,
+                COUNT(*) FILTER (WHERE {land}) AS total_cells,
+                COUNT(*) FILTER (WHERE h.quality_flag = 'channel_excluded') AS channel_count,
                 COUNT(*) FILTER (WHERE h.quality_flag = 'full') AS full_count,
                 COUNT(*) FILTER (WHERE h.quality_flag = 'low_coverage') AS low_coverage_count,
                 COUNT(*) FILTER (WHERE h.quality_flag = 'no_coverage') AS no_coverage_count,
-                COUNT(*) FILTER (WHERE h.susceptibility < 0.20) AS band_very_low,
-                COUNT(*) FILTER (WHERE h.susceptibility >= 0.20 AND h.susceptibility < 0.40) AS band_low,
-                COUNT(*) FILTER (WHERE h.susceptibility >= 0.40 AND h.susceptibility < 0.60) AS band_moderate,
-                COUNT(*) FILTER (WHERE h.susceptibility >= 0.60 AND h.susceptibility < 0.80) AS band_high,
-                COUNT(*) FILTER (WHERE h.susceptibility >= 0.80) AS band_very_high,
-                AVG(h.susceptibility) AS mean_susceptibility,
-                MAX(h.susceptibility) AS max_susceptibility,
+                COUNT(*) FILTER (WHERE {land} AND h.susceptibility < 0.20) AS band_very_low,
+                COUNT(*) FILTER (WHERE {land} AND h.susceptibility >= 0.20 AND h.susceptibility < 0.40) AS band_low,
+                COUNT(*) FILTER (WHERE {land} AND h.susceptibility >= 0.40 AND h.susceptibility < 0.60) AS band_moderate,
+                COUNT(*) FILTER (WHERE {land} AND h.susceptibility >= 0.60 AND h.susceptibility < 0.80) AS band_high,
+                COUNT(*) FILTER (WHERE {land} AND h.susceptibility >= 0.80) AS band_very_high,
+                AVG(h.susceptibility) FILTER (WHERE {land}) AS mean_susceptibility,
+                MAX(h.susceptibility) FILTER (WHERE {land}) AS max_susceptibility,
                 MAX(h.model_version) AS model_version
             FROM hazard_static h
             JOIN grid_cell g ON g.h3 = h.h3
@@ -271,7 +297,7 @@ class HazardRepository:
                 "model_status": "not_computed",
                 "model_version": None,
                 "total_cells": 0,
-                "coverage": {"full": 0, "low_coverage": 0, "no_coverage": 0},
+                "coverage": {"full": 0, "low_coverage": 0, "no_coverage": 0, "channel_excluded": 0},
                 "unmeasured_cells_count": 0,
                 "band_distribution": {
                     "very_low": 0.0,
@@ -285,6 +311,7 @@ class HazardRepository:
                 "habitations_at_risk_count": 0,
                 "population_at_risk_sum": 0,
                 "drivers_summary": None,
+                "regime_summary": [],
                 "last_recorded_flood_loss": None,
             }
 
@@ -376,6 +403,7 @@ class HazardRepository:
                 "full": int(cell_stats["full_count"] or 0),
                 "low_coverage": int(cell_stats["low_coverage_count"] or 0),
                 "no_coverage": int(cell_stats["no_coverage_count"] or 0),
+                "channel_excluded": int(cell_stats["channel_count"] or 0),
             },
             "unmeasured_cells_count": int(cell_stats["no_coverage_count"] or 0),
             "band_distribution": {
@@ -390,5 +418,63 @@ class HazardRepository:
             "habitations_at_risk_count": hab_at_risk,
             "population_at_risk_sum": pop_at_risk,
             "drivers_summary": driver_stats,
+            "regime_summary": self._regime_summary(admin_id, hazard_type),
             "last_recorded_flood_loss": last_loss,
         }
+
+    def _regime_summary(self, admin_id: int, hazard_type: str) -> list[dict[str, Any]]:
+        """Cells, population and mean susceptibility per hazard regime (flood layers only)."""
+        if hazard_type != "riverine_flood":
+            return []
+        rows = self.db.execute(
+            text("""
+                SELECT
+                    f.hazard_regime AS regime,
+                    COUNT(*) AS cell_count,
+                    COALESCE(SUM(g.population), 0) AS population,
+                    AVG(h.susceptibility) FILTER (WHERE h.quality_flag <> 'channel_excluded')
+                        AS mean_susceptibility
+                FROM hazard_static h
+                JOIN grid_cell g ON g.h3 = h.h3
+                JOIN hazard_static_flood f ON f.h3 = h.h3
+                WHERE g.admin_id = :admin_id
+                  AND h.hazard_type = :hazard_type
+                  AND f.hazard_regime IS NOT NULL
+                GROUP BY f.hazard_regime
+                ORDER BY cell_count DESC;
+            """),
+            {"admin_id": admin_id, "hazard_type": hazard_type},
+        ).mappings().all()
+        return [
+            {
+                "regime": r["regime"],
+                "cell_count": int(r["cell_count"]),
+                "population": int(round(float(r["population"] or 0))),
+                "mean_susceptibility": (
+                    None if r["regime"] == "channel" or r["mean_susceptibility"] is None
+                    else round(float(r["mean_susceptibility"]), 4)
+                ),
+            }
+            for r in rows
+        ]
+
+    def get_admin_boundary(self, admin: int) -> Optional[dict[str, Any]]:
+        """Resolves an admin boundary by id or lgd_code."""
+        sql = text(
+            """
+            SELECT id, name, lgd_code, level
+            FROM admin_boundary
+            WHERE id = :admin OR lgd_code = :admin
+            LIMIT 1
+            """
+        )
+        row = self.db.execute(sql, {"admin": admin}).fetchone()
+        if not row:
+            return None
+        return {
+            "id": row[0],
+            "name": row[1],
+            "lgd_code": row[2],
+            "level": row[3],
+        }
+

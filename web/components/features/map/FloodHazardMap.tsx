@@ -14,8 +14,13 @@ import type {
   HazardLayerLegend,
   HazardType,
 } from '@/lib/api/types';
-import { normaliseConfidence } from '@/lib/map/colorScale';
-import { DEFAULT_VIEW_STATE, type RGBAColor } from '@/lib/map/constants';
+import { isScoredCell, normaliseConfidence } from '@/lib/map/colorScale';
+import {
+  DEFAULT_REGIME_VISIBILITY,
+  DEFAULT_VIEW_STATE,
+  type RGBAColor,
+  type RegimeVisibility,
+} from '@/lib/map/constants';
 
 import { MapContainer, type MapViewState } from './MapContainer';
 import { MapErrorFallback } from './MapErrorFallback';
@@ -33,6 +38,8 @@ export interface FloodHazardMapDisplayState {
   confidenceThreshold: number;
   showHardZero: boolean;
   showNoCoverage: boolean;
+  /** Per-regime visibility; omitted means every regime is shown. */
+  visibleRegimes?: RegimeVisibility;
   resolution: number;
 }
 
@@ -194,6 +201,7 @@ export const FloodHazardMap = ({
     confidenceThreshold: display.confidenceThreshold,
     showHardZero: display.showHardZero,
     showNoCoverage: display.showNoCoverage,
+    visibleRegimes: display.visibleRegimes,
     selectedH3,
     hoveredH3,
     ramp,
@@ -262,7 +270,7 @@ export const FloodHazardMap = ({
     if (!display.showConfidenceHatch || !legend) return 0;
     return cells.filter(
       (cell) =>
-        cell.quality_flag !== 'no_coverage' &&
+        isScoredCell(cell) &&
         normaliseConfidence(cell.confidence, confidenceCeiling) < display.confidenceThreshold,
     ).length;
   }, [cells, confidenceCeiling, display.confidenceThreshold, display.showConfidenceHatch, legend]);
@@ -327,6 +335,15 @@ export const FloodHazardMap = ({
             coverage={coverage}
             hatchedCount={hatchedCount}
             confidenceThreshold={display.confidenceThreshold}
+            visibleRegimes={display.visibleRegimes ?? DEFAULT_REGIME_VISIBILITY}
+            onVisibleRegimesChange={(regime, show) =>
+              onDisplayChange?.({
+                visibleRegimes: {
+                  ...(display.visibleRegimes ?? DEFAULT_REGIME_VISIBILITY),
+                  [regime]: show,
+                },
+              })
+            }
             defaultCollapsed={true}
           />
         ) : null}

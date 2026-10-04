@@ -1,14 +1,18 @@
 'use client';
 
-import { useMemo, useRef } from 'react';
+import { useRef, useState } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 
 import { EmptyState } from '@/components/common/EmptyState';
-import { SectionHeader } from '@/components/common/SectionHeader';
+import { FilterChip } from '@/components/common/FilterChip';
 import { usePrefersReducedMotion } from '@/lib/hooks/usePrefersReducedMotion';
+import { useRankedCells, type RegimeFilter } from '@/lib/hooks/useRankedCells';
 import type { HazardCell } from '@/lib/api/types';
 
+import { RegimeComparabilityNote } from './RegimeComparabilityNote';
+import { RegimeFilterBar } from './RegimeFilterBar';
+import { TopRiskGroupHeader } from './TopRiskGroupHeader';
 import { TopRiskRow } from './TopRiskRow';
 
 export interface TopRiskListProps {
@@ -17,16 +21,23 @@ export interface TopRiskListProps {
   przThreshold: number;
   title?: string;
   description?: string;
-  /** Rows to render. */
+  /** Rows to render (per regime when grouped). */
   limit?: number;
   selectedH3?: string | null;
   onSelect?: (h3: string) => void;
   onHover?: (h3: string | null) => void;
+  /** Shows the regime filter chips and the group-by toggle. */
+  showRegimeControls?: boolean;
+  /** Controlled regime filter. Omit to let the list manage it. */
+  regime?: RegimeFilter;
+  onRegimeChange?: (next: RegimeFilter) => void;
+  defaultGroupByRegime?: boolean;
   className?: string;
   classNames?: {
     root?: string;
     header?: string;
     list?: string;
+    controls?: string;
   };
   animation?: {
     disabled?: boolean;
@@ -36,10 +47,10 @@ export interface TopRiskListProps {
 }
 
 /**
- * Highest-scoring cells in the current layer.
+ * Highest-scoring cells in the current layer, filterable and groupable by hazard regime.
  *
- * Unobserved cells are excluded: a `no_coverage` cell has no score to rank, and letting a
- * filled zero sit in a hazard ranking would be actively misleading.
+ * Unobserved and channel cells are excluded: they carry a placeholder 0.00, not a score, and
+ * letting that sit in a hazard ranking would be actively misleading.
  */
 export const TopRiskList = ({
   cells,
@@ -51,24 +62,31 @@ export const TopRiskList = ({
   selectedH3 = null,
   onSelect,
   onHover,
+  showRegimeControls = true,
+  regime: controlledRegime,
+  onRegimeChange,
+  defaultGroupByRegime = false,
   className = '',
   classNames = {},
   animation = {},
 }: TopRiskListProps) => {
   const rootRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = usePrefersReducedMotion();
+  const [internalRegime, setInternalRegime] = useState<RegimeFilter>('all');
+  const [groupByRegime, setGroupByRegime] = useState(defaultGroupByRegime);
+
+  const regime = controlledRegime ?? internalRegime;
+  const handleRegimeChange = (next: RegimeFilter) => {
+    setInternalRegime(next);
+    onRegimeChange?.(next);
+  };
 
   const { disabled: animationDisabled = false, stagger = 0.02, duration = 0.3 } = animation;
   const animate = !animationDisabled && !prefersReducedMotion;
 
-  const ranked = useMemo(
-    () =>
-      cells
-        .filter((cell) => cell.quality_flag !== 'no_coverage')
-        .sort((a, b) => b.susceptibility - a.susceptibility)
-        .slice(0, limit),
-    [cells, limit],
-  );
+  const { ranked, groups, counts, isMixed } = useRankedCells({ cells, regime, groupByRegime, limit });
+  const hasRegimes = counts.floodplain + counts.char_belt > 0;
+  const controls = showRegimeControls && hasRegimes;
 
   useGSAP(
     () => {
@@ -76,14 +94,7 @@ export const TopRiskList = ({
       gsap.fromTo(
         '[data-risk-row]',
         { y: 6, opacity: 0 },
-        {
-          y: 0,
-          opacity: 1,
-          duration,
-          stagger,
-          ease: 'power2.out',
-          clearProps: 'opacity,transform',
-        }
+        { y: 0, opacity: 1, duration, stagger, ease: 'power2.out', clearProps: 'opacity,transform' },
       );
     },
     { scope: rootRef, dependencies: [ranked, animate, duration, stagger] },
@@ -102,21 +113,40 @@ export const TopRiskList = ({
           {description ?? `Top ${ranked.length} of ${cells.length.toLocaleString()} cells`}
         </span>
       </div>
+
+      {controls ? (
+        <div className={['flex flex-col gap-1.5', classNames.controls ?? ''].join(' ')}>
+          <RegimeFilterBar selected={regime} onChange={handleRegimeChange} counts={counts} />
+          <FilterChip
+            label="Group by regime"
+            active={groupByRegime}
+            onToggle={() => setGroupByRegime((value) => !value)}
+            className="self-start"
+          />
+          {isMixed ? <RegimeComparabilityNote /> : null}
+        </div>
+      ) : null}
+
       {ranked.length === 0 ? (
         <EmptyState title="No ranked cells" description="No measured cells in the current layer." />
       ) : (
         <div className={['flex flex-col gap-0.5', classNames.list ?? ''].join(' ')}>
-          {ranked.map((cell, index) => (
-            <TopRiskRow
-              key={cell.h3}
-              cell={cell}
-              rank={index + 1}
-              breaks={breaks}
-              isSelected={cell.h3 === selectedH3}
-              isPrzCandidate={cell.susceptibility >= przThreshold}
-              onSelect={onSelect}
-              onHover={onHover}
-            />
+          {groups.map((group) => (
+            <div key={group.regime ?? 'none'} className="flex flex-col gap-0.5">
+              {groupByRegime ? <TopRiskGroupHeader regime={group.regime} count={group.rows.length} /> : null}
+              {group.rows.map(({ cell, rank }) => (
+                <TopRiskRow
+                  key={cell.h3}
+                  cell={cell}
+                  rank={rank}
+                  breaks={breaks}
+                  isSelected={cell.h3 === selectedH3}
+                  isPrzCandidate={cell.susceptibility >= przThreshold}
+                  onSelect={onSelect}
+                  onHover={onHover}
+                />
+              ))}
+            </div>
           ))}
         </div>
       )}

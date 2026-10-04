@@ -19,6 +19,8 @@ from .aoi import require_bbox
 # Default Google Cloud Storage bucket URL for JRC GSW v1.5 (1984–2024)
 JRC_BASE_URL = "https://storage.googleapis.com/water-world/download2024/VER1-5"
 DEFAULT_PERMANENT_OCCURRENCE_THRESHOLD_PCT = 80.0
+DEFAULT_SEASONAL_WATER_THRESHOLD_PCT = 40.0
+
 
 
 def get_jrc_tile_id(lon: float, lat: float) -> str:
@@ -138,3 +140,71 @@ def filter_permanent_water(water_mask: np.ndarray, permanent_mask: np.ndarray) -
     is_perm_water = permanent_mask & (filtered == 1)
     filtered[is_perm_water] = 0
     return filtered
+
+
+def generate_baseline_water_mask(
+    reference_shape: tuple[int, int],
+    reference_transform: rasterio.Affine,
+    reference_crs: rasterio.crs.CRS | str,
+    bbox_wgs84: list[float] | None = None,
+    occurrence_threshold_pct: float = DEFAULT_SEASONAL_WATER_THRESHOLD_PCT,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Generate a seasonal / quasi-channel water baseline mask from JRC GSW.
+
+    Per Barpeta Flood Validation Analysis (§3 Priority 1):
+    Derives a seasonal water baseline (e.g. JRC occurrence > 40-50%) to separate
+    active Brahmaputra river channels and perennial water bodies from intermittent
+    terrestrial floodplains.
+
+    Args:
+        reference_shape: (height, width) of target SAR grid.
+        reference_transform: Affine transform of target SAR grid.
+        reference_crs: CRS of target SAR grid.
+        bbox_wgs84: Bounding box in EPSG:4326.
+        occurrence_threshold_pct: Minimum water occurrence % to classify as baseline water.
+
+    Returns:
+        Tuple of (baseline_water_mask, reprojected_occurrence_pct).
+    """
+    return generate_permanent_water_mask(
+        reference_shape=reference_shape,
+        reference_transform=reference_transform,
+        reference_crs=reference_crs,
+        bbox_wgs84=bbox_wgs84,
+        occurrence_threshold_pct=occurrence_threshold_pct,
+    )
+
+
+def calculate_anomalous_flood_frequency(
+    frequency: np.ndarray,
+    occurrence_pct: np.ndarray,
+    baseline_threshold_pct: float = DEFAULT_SEASONAL_WATER_THRESHOLD_PCT,
+    mode: str = "excess",
+) -> np.ndarray:
+    """Compute anomalous flood frequency in excess of JRC baseline water.
+
+    Per Priority 1 (§3): Measure flood frequency as inundation in excess of normal
+    dry-season / historical baseline water extent rather than raw SAR water occurrence.
+
+    Args:
+        frequency: Raw SAR inundation frequency in [0.0, 1.0].
+        occurrence_pct: JRC water occurrence percentage in [0, 100].
+        baseline_threshold_pct: Threshold above which water is treated as baseline channel.
+        mode: 'excess' (frequency - baseline_freq clipped to >=0) or 'mask' (zeroing baseline channels).
+
+    Returns:
+        Anomalous flood frequency array in [0.0, 1.0].
+    """
+    occ = occurrence_pct.astype(np.float32)
+    # JRC encodes nodata as 255; leave those pixels' frequency untouched rather than
+    # reading them as 100 % water and zeroing them.
+    occ_norm = np.where(occ <= 100.0, np.clip(occ / 100.0, 0.0, 1.0), np.nan)
+    anom = frequency.copy()
+    if mode == "excess":
+        valid = np.isfinite(frequency) & np.isfinite(occ_norm)
+        anom[valid] = np.maximum(0.0, frequency[valid] - occ_norm[valid])
+    elif mode == "mask":
+        is_baseline = (occ >= baseline_threshold_pct) & (occ <= 100.0)
+        anom[is_baseline] = 0.0
+    return anom
+

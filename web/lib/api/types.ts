@@ -7,7 +7,7 @@
  */
 
 /** Coverage provenance for an aggregated H3 cell (Step 10 §10.3). */
-export type CoverageFlag = 'full' | 'low_coverage' | 'no_coverage';
+export type CoverageFlag = 'full' | 'low_coverage' | 'no_coverage' | 'channel_excluded';
 
 export type HazardType =
   | 'landslide'
@@ -16,6 +16,8 @@ export type HazardType =
   | 'riverine_flood'
   | 'coastal_erosion'
   | 'cloudburst';
+
+export type HazardRegime = 'floodplain' | 'char_belt' | 'channel';
 
 /**
  * One hexagon of a hazard layer.
@@ -32,6 +34,8 @@ export interface HazardCell {
   quality_flag: CoverageFlag;
   /** Fraction of the cell excluded by FR-3.17 (HAND > 30 m OR slope > 15°). */
   hard_zero_fraction: number | null;
+  /** Physical hazard regime: floodplain | char_belt | channel. */
+  hazard_regime?: HazardRegime | null;
 }
 
 export interface HazardLayerLegend {
@@ -50,6 +54,8 @@ export interface HazardLayerCoverage {
   full: number;
   low_coverage: number;
   no_coverage: number;
+  /** Active-channel cells, left out of terrestrial statistics. */
+  channel_excluded?: number;
 }
 
 export interface HazardLayerResponse {
@@ -85,7 +91,37 @@ export interface FloodDrivers {
   max_susceptibility: number | null;
   valid_pixel_fraction: number | null;
   hard_zero_fraction: number | null;
+  mean_anomalous_frequency?: number | null;
+  jrc_occurrence_mean?: number | null;
+  baseline_water_fraction?: number | null;
+  hazard_regime?: HazardRegime | null;
+  /** Metres to the nearest major tributary (floodplain score input). */
+  dist_tributary_m?: number | null;
+  /** Metres to the nearest mainstem channel (char-belt score input). */
+  dist_mainstem_m?: number | null;
+  /** Wet/dry flip-flop proxy 4F(1-F) in [0, 1] (char-belt score input). */
+  sar_instability?: number | null;
   observation_ceiling: number;
+}
+
+/** What a cell's hazard regime means, so the dossier can explain the score. */
+export interface RegimeContext {
+  regime: HazardRegime;
+  headline: string;
+  description: string;
+  primary_hazards: string[];
+  scoring_basis: string;
+  /** `FloodDrivers` field names that matter most for this regime, in display order. */
+  key_drivers: string[];
+}
+
+/** Cells, population and mean susceptibility for one regime of a district. */
+export interface RegimeSummary {
+  regime: HazardRegime;
+  cell_count: number;
+  population: number;
+  /** Null for the channel regime, which is excluded from scoring. */
+  mean_susceptibility: number | null;
 }
 
 export interface HazardCellDetail {
@@ -103,6 +139,7 @@ export interface HazardCellDetail {
   population: number;
   is_permanent_red_candidate: boolean;
   drivers: FloodDrivers | null;
+  regime_context?: RegimeContext | null;
   screening_grade: string;
 }
 

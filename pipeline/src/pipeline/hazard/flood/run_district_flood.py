@@ -40,7 +40,12 @@ try:
         calculate_inundation_frequency,
         create_master_grid,
     )
-    from .permanent_water import generate_permanent_water_mask
+    from .rivers import load_cell_river_distances
+    from .permanent_water import (
+        calculate_anomalous_flood_frequency,
+        generate_baseline_water_mask,
+        generate_permanent_water_mask,
+    )
     from .cropland import generate_cropland_fraction
     from .stac import query_sentinel1_rtc, subsample_scenes_evenly
     from .water_mask import save_raster_geotiff, DEFAULT_VV_WATER_THRESHOLD_DB
@@ -54,6 +59,14 @@ try:
     )
     from .susceptibility import (
         combine_susceptibility,
+        DEFAULT_CHAR_WEIGHTS,
+        DEFAULT_FLOODPLAIN_WEIGHTS,
+        DEFAULT_MAINSTEM_DISTANCE_SCALE_M,
+        DEFAULT_TRIBUTARY_DISTANCE_SCALE_M,
+        DEFAULT_REGIME_CHANNEL_OCCURRENCE,
+        DEFAULT_REGIME_CHAR_OCCURRENCE,
+        DEFAULT_REGIME_CHAR_SAR_FREQUENCY,
+        MODEL_VARIANTS,
         compute_confidence,
         normalize_hand_percentile,
         DEFAULT_HAND_CLIP_PERCENTILE,
@@ -80,7 +93,12 @@ except ImportError:  # pragma: no cover - script executed as a file
         calculate_inundation_frequency,
         create_master_grid,
     )
-    from permanent_water import generate_permanent_water_mask  # type: ignore
+    from rivers import load_cell_river_distances  # type: ignore
+    from permanent_water import (  # type: ignore
+        calculate_anomalous_flood_frequency,
+        generate_baseline_water_mask,
+        generate_permanent_water_mask,
+    )
     from cropland import generate_cropland_fraction  # type: ignore
     from stac import query_sentinel1_rtc, subsample_scenes_evenly  # type: ignore
     from water_mask import save_raster_geotiff, DEFAULT_VV_WATER_THRESHOLD_DB  # type: ignore
@@ -94,6 +112,14 @@ except ImportError:  # pragma: no cover - script executed as a file
     )
     from susceptibility import (  # type: ignore
         combine_susceptibility,
+        DEFAULT_CHAR_WEIGHTS,
+        DEFAULT_FLOODPLAIN_WEIGHTS,
+        DEFAULT_MAINSTEM_DISTANCE_SCALE_M,
+        DEFAULT_TRIBUTARY_DISTANCE_SCALE_M,
+        DEFAULT_REGIME_CHANNEL_OCCURRENCE,
+        DEFAULT_REGIME_CHAR_OCCURRENCE,
+        DEFAULT_REGIME_CHAR_SAR_FREQUENCY,
+        MODEL_VARIANTS,
         compute_confidence,
         normalize_hand_percentile,
         DEFAULT_HAND_CLIP_PERCENTILE,
@@ -241,6 +267,54 @@ def build_frequency_layers(
     return meta
 
 
+def _raster_matches_grid(path: Path, transform: rasterio.Affine, shape: tuple[int, int]) -> bool:
+    if not path.exists():
+        return False
+    with rasterio.open(path) as src:
+        return src.shape == tuple(shape) and src.transform.almost_equals(transform)
+
+
+def build_baseline_water_layers(
+    cfg: DistrictConfig,
+    master_transform: rasterio.Affine,
+    master_shape: tuple[int, int],
+    resolution_m: float,
+) -> dict:
+    """Step 5.1: JRC long-term occurrence + seasonal baseline-water mask on the master grid.
+
+    Both rasters feed model v0.2 (anomalous frequency) and the hazard-regime split, so
+    they are written as first-class interim outputs for every variant.
+    """
+    interim = _interim_dir(cfg)
+    occ_tif = interim / f"{cfg.file_prefix}_jrc_occurrence_pct.tif"
+    bw_tif = interim / f"{cfg.file_prefix}_jrc_baseline_water.tif"
+    threshold_pct = MODEL_VARIANTS["v0.2"]["baseline_occurrence_threshold_pct"]
+
+    if _raster_matches_grid(occ_tif, master_transform, master_shape) and \
+            _raster_matches_grid(bw_tif, master_transform, master_shape):
+        print(f"  [cache] Reusing JRC occurrence / baseline-water layers for {cfg.name}")
+        with rasterio.open(bw_tif) as src:
+            baseline_px = int(np.sum(src.read(1) == 1))
+    else:
+        print(f"\n[Step 5.1] JRC occurrence + baseline water (>= {threshold_pct:.0f}%) ({cfg.name})...")
+        baseline_mask, occurrence = generate_baseline_water_mask(
+            reference_shape=master_shape,
+            reference_transform=master_transform,
+            reference_crs=cfg.processing_crs,
+            bbox_wgs84=cfg.bbox_wgs84,
+            occurrence_threshold_pct=threshold_pct,
+        )
+        save_raster_geotiff(occ_tif, occurrence.astype(np.uint8), master_transform,
+                            cfg.processing_crs, nodata=255, dtype="uint8")
+        save_raster_geotiff(bw_tif, baseline_mask.astype(np.uint8), master_transform,
+                            cfg.processing_crs, nodata=255, dtype="uint8")
+        baseline_px = int(np.sum(baseline_mask))
+
+    baseline_km2 = baseline_px * (resolution_m ** 2) / 1e6
+    print(f"  [+] Baseline water (JRC >= {threshold_pct:.0f}%): {baseline_km2:.2f} km2")
+    return {"baseline_occurrence_threshold_pct": threshold_pct, "baseline_water_km2": round(baseline_km2, 4)}
+
+
 # ---------------------------------------------------------------------------
 # Stage 2 — Terrain / HAND (Step 8)
 # ---------------------------------------------------------------------------
@@ -302,7 +376,8 @@ def build_terrain_layers(
 # ---------------------------------------------------------------------------
 # Stage 3 — Susceptibility combination (Step 9)
 # ---------------------------------------------------------------------------
-def build_susceptibility_layers(cfg: DistrictConfig) -> dict:
+def build_susceptibility_layers(cfg: DistrictConfig, model_variant: str = "v0.2") -> dict:
+    variant = MODEL_VARIANTS[model_variant]
     interim = _interim_dir(cfg)
     susc_tif = interim / f"{cfg.file_prefix}_flood_susceptibility.tif"
     conf_tif = interim / f"{cfg.file_prefix}_confidence.tif"
@@ -317,7 +392,20 @@ def build_susceptibility_layers(cfg: DistrictConfig) -> dict:
     hard_zero_raw, _, _ = _read(interim / f"{cfg.file_prefix}_hard_zero_mask.tif")
     eligible_mask = hard_zero_raw == 0
 
-    print(f"\n[Step 9] Combining F + HAND -> susceptibility ({cfg.name})...")
+    if variant["frequency_input"] == "anomalous":
+        occurrence, _, _ = _read(interim / f"{cfg.file_prefix}_jrc_occurrence_pct.tif")
+        frequency = calculate_anomalous_flood_frequency(
+            frequency,
+            occurrence,
+            baseline_threshold_pct=variant["baseline_occurrence_threshold_pct"],
+            mode=variant["anomalous_mode"],
+        )
+        save_raster_geotiff(interim / f"{cfg.file_prefix}_anomalous_frequency.tif", frequency,
+                            transform, crs, nodata=np.nan, dtype="float32")
+        print(f"  [+] Anomalous frequency ({variant['anomalous_mode']}): "
+              f"mean={float(np.nanmean(frequency)):.4f}")
+
+    print(f"\n[Step 9] Combining F + HAND -> susceptibility ({cfg.name}, {model_variant})...")
     hand_normalized, p_clip = normalize_hand_percentile(
         hand_m, eligible_mask, clip_percentile=DEFAULT_HAND_CLIP_PERCENTILE
     )
@@ -328,6 +416,8 @@ def build_susceptibility_layers(cfg: DistrictConfig) -> dict:
         w_freq=DEFAULT_W_FREQ,
         w_hand=DEFAULT_W_HAND,
     )
+    save_raster_geotiff(interim / f"{cfg.file_prefix}_hand_normalized.tif", hand_normalized,
+                        transform, crs, nodata=np.nan, dtype="float32")
     confidence = compute_confidence(
         valid_observation_count=valid_obs,
         eligible_mask=eligible_mask,
@@ -339,6 +429,7 @@ def build_susceptibility_layers(cfg: DistrictConfig) -> dict:
 
     finite = np.isfinite(susceptibility)
     summary = {
+        "model_variant": model_variant,
         "hand_clip_p99_m": round(float(p_clip), 2),
         "mean_susceptibility": round(float(np.nanmean(susceptibility)), 4),
         "max_susceptibility": round(float(np.nanmax(susceptibility)), 4),
@@ -385,13 +476,30 @@ def ensure_population_raster(cfg: DistrictConfig) -> Path | None:
 # ---------------------------------------------------------------------------
 # Stage 5 — H3 aggregation (Step 10)
 # ---------------------------------------------------------------------------
+def _archive_previous_version(parquet_path: Path, new_model_version: str) -> None:
+    """Keep the outgoing model's parquet as ``..._<variant>.parquet`` before overwriting it."""
+    if not parquet_path.exists():
+        return
+    import pyarrow.parquet as pq
+    old = pq.read_table(parquet_path, columns=["model_version"]).column(0)
+    old_version = str(old[0]) if len(old) else ""
+    if not old_version or old_version == new_model_version:
+        return
+    old_variant = old_version.rsplit("-", 1)[-1]
+    archive = parquet_path.with_name(f"{parquet_path.stem}_{old_variant}.parquet")
+    import shutil
+    shutil.copy2(parquet_path, archive)
+    print(f"  [+] Archived {old_version} -> {archive.name}")
+
+
 def aggregate_to_h3(
     cfg: DistrictConfig,
     resolution_m: float,
     with_population: bool,
+    model_version: str = "flood-susceptibility-v0.2",
 ) -> gpd.GeoDataFrame:
     interim = _interim_dir(cfg)
-    print(f"\n[Step 10] Polyfilling {cfg.name} at H3 res {DEFAULT_H3_RESOLUTION}...")
+    print(f"\n[Step 10] Polyfilling {cfg.name} at H3 res {DEFAULT_H3_RESOLUTION} ({model_version})...")
     cells = polyfill_reporting_aoi(cfg.bbox_wgs84, resolution=DEFAULT_H3_RESOLUTION)
     cells_gdf = h3_cells_to_geodataframe(cells)
 
@@ -417,6 +525,30 @@ def aggregate_to_h3(
         "cropland": interim / f"{cfg.file_prefix}_cropland_fraction.tif",
         "hard_zero": interim / f"{cfg.file_prefix}_hard_zero_mask.tif",
     }
+    pw_path = interim / f"{cfg.file_prefix}_jrc_permanent_water.tif"
+    if not pw_path.exists():
+        pw_path = interim / f"{cfg.file_prefix}_permanent_water.tif"
+    if pw_path.exists():
+        raster_paths["permanent_water"] = pw_path
+
+    bw_path = interim / f"{cfg.file_prefix}_jrc_baseline_water.tif"
+    if not bw_path.exists():
+        bw_path = interim / f"{cfg.file_prefix}_baseline_water.tif"
+    if bw_path.exists():
+        raster_paths["baseline_water"] = bw_path
+
+    occ_path = interim / f"{cfg.file_prefix}_jrc_occurrence_pct.tif"
+    if occ_path.exists():
+        raster_paths["jrc_occurrence"] = occ_path
+
+    anom_path = interim / f"{cfg.file_prefix}_anomalous_frequency.tif"
+    if model_version.endswith("v0.2") and anom_path.exists():
+        raster_paths["anomalous_frequency"] = anom_path
+
+    hn_path = interim / f"{cfg.file_prefix}_hand_normalized.tif"
+    if model_version.endswith("v0.2") and hn_path.exists():
+        raster_paths["hand_normalized"] = hn_path
+
     if with_population:
         pop_path = ensure_population_raster(cfg)
         if pop_path is not None:
@@ -429,18 +561,29 @@ def aggregate_to_h3(
         target_crs=cfg.processing_crs,
         pixel_res_m=resolution_m,
     )
+    river_dists = load_cell_river_distances(
+        stats_raw, cfg.key, cfg.bbox_wgs84, cfg.processing_crs, repo_root=REPO_ROOT,
+    )
+    if river_dists is not None:
+        for col in ("dist_mainstem_m", "dist_tributary_m", "dist_any_river_m"):
+            stats_raw[col] = river_dists[col].to_numpy().astype("float32")
     stats_gdf = apply_quality_flags(
         stats_raw,
         min_valid_fraction=DEFAULT_MIN_VALID_PIXEL_FRACTION,
-        model_version=DISTRICT_MODEL_VERSION,
+        model_version=model_version,
         hazard_type=DEFAULT_HAZARD_TYPE,
     )
     q_counts = stats_gdf["quality_flag"].value_counts().to_dict()
     print(f"  [+] Quality flags: {q_counts}")
+    if "hazard_regime" in stats_gdf.columns:
+        print(f"  [+] Hazard regimes: {stats_gdf['hazard_regime'].value_counts().to_dict()}")
     print(f"  [+] Susceptibility mean={stats_gdf['susceptibility'].mean():.4f} "
           f"max={stats_gdf['susceptibility'].max():.4f}")
 
-    parquet_path = _processed_dir(cfg) / "flood_susceptibility_h3_res8.parquet"
+    processed_dir = _processed_dir(cfg)
+    parquet_path = processed_dir / "flood_susceptibility_h3_res8.parquet"
+    _archive_previous_version(parquet_path, model_version)
+
     export_parquet(stats_gdf, parquet_path)
     print(f"  [+] GeoParquet -> {parquet_path} ({len(stats_gdf)} rows)")
     return stats_gdf
@@ -454,6 +597,7 @@ def load_database(
     stats_gdf: gpd.GeoDataFrame,
     conninfo: str | None = None,
     admin_geom_wkt: str | None = None,
+    model_version: str = DISTRICT_MODEL_VERSION,
 ) -> dict:
     import psycopg
 
@@ -500,7 +644,7 @@ def load_database(
                 VALUES ('HAZARD_STATIC', 'READY', 'run-district-flood', %s, %s)
                 RETURNING id;
                 """,
-                (cfg.processing_crs, DISTRICT_MODEL_VERSION),
+                (cfg.processing_crs, model_version),
             )
             pipeline_run_id = cur.fetchone()[0]
             print(f"  [+] pipeline_run: {pipeline_run_id}")
@@ -532,7 +676,7 @@ def load_database(
                 (
                     int(row["h3_int"]), DEFAULT_HAZARD_TYPE,
                     float(row["susceptibility"]), float(row["confidence"]),
-                    str(row["quality_flag"]), DISTRICT_MODEL_VERSION, pipeline_run_id,
+                    str(row["quality_flag"]), model_version, pipeline_run_id,
                 )
                 for _, row in stats_gdf.iterrows()
             ]
@@ -563,7 +707,13 @@ def load_database(
                     _nullable_float(row["min_hand"]),
                     _nullable_float(row["mean_slope"]),
                     _nullable_float(row["mean_cropland_fraction"]),
-                    DEFAULT_OBSERVATION_CEILING, DISTRICT_MODEL_VERSION, pipeline_run_id,
+                    _nullable_float(row.get("mean_anomalous_frequency")),
+                    _nullable_float(row.get("jrc_occurrence_mean")),
+                    _nullable_float(row.get("baseline_water_fraction")),
+                    row.get("hazard_regime") or None,
+                    _nullable_float(row.get("dist_tributary_m")),
+                    _nullable_float(row.get("dist_mainstem_m")),
+                    DEFAULT_OBSERVATION_CEILING, model_version, pipeline_run_id,
                 )
                 for _, row in stats_gdf.iterrows()
             ]
@@ -571,8 +721,11 @@ def load_database(
                 """
                 INSERT INTO hazard_static_flood (h3, max_susceptibility, valid_pixel_fraction,
                     hard_zero_fraction, mean_inundation_frequency, mean_hand_m, min_hand_m,
-                    mean_slope_deg, mean_cropland_fraction, observation_ceiling, model_version, pipeline_run_id)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    mean_slope_deg, mean_cropland_fraction, mean_anomalous_frequency,
+                    jrc_occurrence_mean, baseline_water_fraction, hazard_regime,
+                    dist_tributary_m, dist_mainstem_m,
+                    observation_ceiling, model_version, pipeline_run_id)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (h3) DO UPDATE SET
                     max_susceptibility = EXCLUDED.max_susceptibility,
                     valid_pixel_fraction = EXCLUDED.valid_pixel_fraction,
@@ -581,6 +734,12 @@ def load_database(
                     mean_hand_m = EXCLUDED.mean_hand_m, min_hand_m = EXCLUDED.min_hand_m,
                     mean_slope_deg = EXCLUDED.mean_slope_deg,
                     mean_cropland_fraction = EXCLUDED.mean_cropland_fraction,
+                    mean_anomalous_frequency = EXCLUDED.mean_anomalous_frequency,
+                    jrc_occurrence_mean = EXCLUDED.jrc_occurrence_mean,
+                    baseline_water_fraction = EXCLUDED.baseline_water_fraction,
+                    hazard_regime = EXCLUDED.hazard_regime,
+                    dist_tributary_m = EXCLUDED.dist_tributary_m,
+                    dist_mainstem_m = EXCLUDED.dist_mainstem_m,
                     observation_ceiling = EXCLUDED.observation_ceiling,
                     model_version = EXCLUDED.model_version,
                     pipeline_run_id = EXCLUDED.pipeline_run_id;
@@ -613,8 +772,28 @@ def load_database(
     return result
 
 
+def _git_sha() -> str | None:
+    import subprocess
+    try:
+        sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=REPO_ROOT, capture_output=True,
+                             text=True, check=True).stdout.strip()
+        dirty = subprocess.run(["git", "status", "--porcelain", "--", "pipeline"], cwd=REPO_ROOT,
+                               capture_output=True, text=True, check=True).stdout.strip()
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    return f"{sha}-dirty" if dirty else sha
+
+
 def write_metadata(cfg: DistrictConfig, resolution_m: float, freq_meta: dict,
-                   susc_summary: dict, db_result: dict | None, n_cells: int) -> Path:
+                   susc_summary: dict, db_result: dict | None, n_cells: int,
+                   model_version: str = DISTRICT_MODEL_VERSION,
+                   baseline_meta: dict | None = None,
+                   regime_counts: dict | None = None) -> Path:
+    model_variant = susc_summary.get("model_variant", "v0.1")
+    variant = MODEL_VARIANTS[model_variant]
+    frequency_term = (
+        "F_anom = max(0, F - JRC_occurrence)" if variant["frequency_input"] == "anomalous" else "F (raw SAR)"
+    )
     meta = {
         "pipeline": "run_district_flood (Steps 5-10)",
         "district": cfg.name,
@@ -627,7 +806,9 @@ def write_metadata(cfg: DistrictConfig, resolution_m: float, freq_meta: dict,
         "master_grid_resolution_m": resolution_m,
         "h3_resolution": DEFAULT_H3_RESOLUTION,
         "hazard_type": DEFAULT_HAZARD_TYPE,
-        "model_version": DISTRICT_MODEL_VERSION,
+        "model_version": model_version,
+        "model_variant": model_variant,
+        "git_sha": _git_sha(),
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "h3_cells": n_cells,
         "sentinel1": {
@@ -642,6 +823,10 @@ def write_metadata(cfg: DistrictConfig, resolution_m: float, freq_meta: dict,
             "source": JRC_ATTRIBUTION,
             "occurrence_threshold_pct": OCCURRENCE_THRESHOLD_PCT,
         },
+        "baseline_water": {
+            "source": JRC_ATTRIBUTION,
+            **(baseline_meta or {}),
+        },
         "hand": {
             "source": "ASF GLO-30 HAND v1/2021 (derived from Copernicus GLO-30)",
             "hard_zero_hand_m": DEFAULT_HARD_ZERO_HAND_THRESHOLD_M,
@@ -651,7 +836,26 @@ def write_metadata(cfg: DistrictConfig, resolution_m: float, freq_meta: dict,
         },
         "combination": {
             "formula": "S_f = w_F * F + w_H * H_hand",
+            "frequency_term": frequency_term,
             "w_F": DEFAULT_W_FREQ, "w_H": DEFAULT_W_HAND,
+            "variant_parameters": variant,
+        },
+        "regime_scoring": {
+            "floodplain": "S = w_H*H_hand + w_A*F_anom + w_T*D_tributary (cell means; scaled by 1 - hard_zero_fraction)",
+            "floodplain_weights": DEFAULT_FLOODPLAIN_WEIGHTS,
+            "tributary_distance_scale_m": DEFAULT_TRIBUTARY_DISTANCE_SCALE_M,
+            "char_belt": "S = w_I*4F(1-F) + w_B*JRC_occurrence + w_M*D_mainstem",
+            "char_weights": DEFAULT_CHAR_WEIGHTS,
+            "mainstem_distance_scale_m": DEFAULT_MAINSTEM_DISTANCE_SCALE_M,
+            "channel": "excluded: susceptibility 0.0, confidence 0.0, quality_flag 'channel_excluded'",
+        },
+        "hazard_regime": {
+            "inputs": "JRC long-term occurrence (cell mean) + raw SAR frequency (cell mean)",
+            "channel": f"occurrence >= {DEFAULT_REGIME_CHANNEL_OCCURRENCE}",
+            "char_belt": (f"occurrence >= {DEFAULT_REGIME_CHAR_OCCURRENCE} "
+                          f"OR SAR frequency >= {DEFAULT_REGIME_CHAR_SAR_FREQUENCY} (and not channel)"),
+            "floodplain": "otherwise",
+            "cell_counts": regime_counts,
         },
         "confidence": {"formula": f"min(1, n_valid / {DEFAULT_OBSERVATION_CEILING})"},
         "results_summary": {**freq_meta, **susc_summary},
@@ -673,10 +877,12 @@ def write_metadata(cfg: DistrictConfig, resolution_m: float, freq_meta: dict,
 
 
 def run_district(cfg: DistrictConfig, resolution_m: float, threshold_db: float,
-                 do_db: bool, with_population: bool, s1_decimation: int) -> dict:
+                 do_db: bool, with_population: bool, s1_decimation: int,
+                 model_variant: str = "v0.2") -> dict:
     t0 = time.time()
+    model_version = f"flood-susceptibility-{model_variant}"
     print("=" * 78)
-    print(f"SETU-DRR flood susceptibility (Steps 5-10) — {cfg.name}, {cfg.state}")
+    print(f"SETU-DRR flood susceptibility (Steps 5-10) — {cfg.name}, {cfg.state} [{model_version}]")
     print(f"bbox={cfg.bbox_wgs84}  crs={cfg.processing_crs}  res={resolution_m}m")
     print("=" * 78)
 
@@ -690,9 +896,10 @@ def run_district(cfg: DistrictConfig, resolution_m: float, threshold_db: float,
 
     freq_meta = build_frequency_layers(cfg, master_transform, master_shape, resolution_m,
                                        threshold_db, s1_decimation)
+    baseline_meta = build_baseline_water_layers(cfg, master_transform, master_shape, resolution_m)
     build_terrain_layers(cfg, master_transform, master_shape, resolution_m)
-    susc_summary = build_susceptibility_layers(cfg)
-    stats_gdf = aggregate_to_h3(cfg, resolution_m, with_population)
+    susc_summary = build_susceptibility_layers(cfg, model_variant)
+    stats_gdf = aggregate_to_h3(cfg, resolution_m, with_population, model_version=model_version)
 
     db_result = None
     if do_db:
@@ -700,8 +907,13 @@ def run_district(cfg: DistrictConfig, resolution_m: float, threshold_db: float,
             admin_wkt = load_district_geometry(cfg).wkt
         except Exception:
             admin_wkt = None
-        db_result = load_database(cfg, stats_gdf, admin_geom_wkt=admin_wkt)
-    write_metadata(cfg, resolution_m, freq_meta, susc_summary, db_result, len(stats_gdf))
+        db_result = load_database(cfg, stats_gdf, admin_geom_wkt=admin_wkt, model_version=model_version)
+    regime_counts = (
+        {str(k): int(v) for k, v in stats_gdf["hazard_regime"].value_counts().items()}
+        if "hazard_regime" in stats_gdf.columns else None
+    )
+    write_metadata(cfg, resolution_m, freq_meta, susc_summary, db_result, len(stats_gdf),
+                   model_version=model_version, baseline_meta=baseline_meta, regime_counts=regime_counts)
 
     print(f"\n{cfg.name} complete in {time.time() - t0:.0f}s")
     return {"district": cfg.name, "h3_cells": len(stats_gdf), "db": db_result}
@@ -713,6 +925,8 @@ def main() -> None:
     parser.add_argument("--resolution", type=float, default=10.0, help="Master grid resolution in metres")
     parser.add_argument("--threshold-db", type=float, default=DEFAULT_VV_WATER_THRESHOLD_DB,
                         help="VV backscatter water threshold in dB")
+    parser.add_argument("--model-variant", choices=["v0.1", "v0.2"], default="v0.2",
+                        help="Model variant to generate ('v0.1' legacy or 'v0.2' with baseline water and regimes)")
     parser.add_argument("--no-db", action="store_true", help="Skip the PostgreSQL load")
     parser.add_argument("--no-population", action="store_true", help="Skip the WorldPop exposure raster")
     parser.add_argument("--s1-decimation", type=int, default=4,
@@ -730,6 +944,7 @@ def main() -> None:
             do_db=not args.no_db,
             with_population=not args.no_population,
             s1_decimation=args.s1_decimation,
+            model_variant=args.model_variant,
         ))
 
     print("\n" + "=" * 78)

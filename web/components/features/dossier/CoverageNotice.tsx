@@ -14,6 +14,7 @@ const VARIANT_CLASSES: Record<CoverageFlag, string> = {
   full: 'border-safe/35 bg-safe/8 text-ink-muted',
   low_coverage: 'border-warning/40 bg-warning/10 text-warning',
   no_coverage: 'border-ink-faint/50 bg-surface-2 text-ink-muted',
+  channel_excluded: 'border-sky-500/35 bg-sky-500/10 text-ink-muted',
 };
 
 /**

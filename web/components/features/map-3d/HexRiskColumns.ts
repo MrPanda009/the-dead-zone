@@ -3,8 +3,9 @@ import { getResolution, gridDisk, latLngToCell } from 'h3-js';
 import gsap from 'gsap';
 import type { HazardCell } from '@/lib/api/types';
 import { world3DToLatLng } from '@/lib/geo/indiaBoundary';
-import { classIndexFor, renderClassFor } from '@/lib/map/colorScale';
+import { classIndexFor, isScoredCell, renderClassFor } from '@/lib/map/colorScale';
 import {
+  CHANNEL_COLOR,
   HARD_ZERO_COLOR,
   SUSCEPTIBILITY_RAMP,
   type RGBAColor,
@@ -71,13 +72,18 @@ export function getHexCellVisuals(
   ramp: readonly RGBAColor[] = SUSCEPTIBILITY_RAMP,
 ): HexCellVisuals {
   const isPrz =
-    cell.quality_flag !== 'no_coverage' && cell.susceptibility >= przThreshold;
+    isScoredCell(cell) && cell.susceptibility >= przThreshold;
 
   const renderClass = renderClassFor(cell);
 
   if (renderClass === 'no_coverage') {
     // Never observed — must not read as the safest ground in the district.
     return { color: isDark ? 0x2e3d38 : 0xb4c1b9, heightRatio: 0.25, isPrz: false };
+  }
+
+  if (renderClass === 'channel') {
+    // River, not land: flat, cool-toned, never ranked.
+    return { color: rgbaToHex(CHANNEL_COLOR), heightRatio: 0.15, isPrz: false };
   }
 
   if (renderClass === 'hard_zero') {

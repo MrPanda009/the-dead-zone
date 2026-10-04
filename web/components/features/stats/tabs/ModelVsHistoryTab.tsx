@@ -3,6 +3,7 @@
 import React from 'react';
 
 import { FLOOD_MODEL_INPUTS } from '@/lib/stats/copy';
+import { useHazardValidation } from '@/lib/hooks/useHazardValidation';
 
 import { DistrictMapPanel } from '../DistrictMapPanel';
 import { DistrictPicker } from '../DistrictPicker';
@@ -12,12 +13,15 @@ import { ModelStatusBadge } from './brief/ModelStatusBadge';
 import { ComparisonColumnHeader } from './comparison/ComparisonColumnHeader';
 import { RecordedLossesPanel } from './comparison/RecordedLossesPanel';
 import { ValidationStatusCard } from './comparison/ValidationStatusCard';
+import { ValidationResultDetails } from './comparison/ValidationResultDetails';
 
 /**
  * Computed flood susceptibility next to recorded state-level losses.
  *
- * Nothing here scores agreement. The centre card says "Not yet validated" unless a measured
- * result is passed through `validationSlot`.
+ * Implements Phase 5 (§8) product surface:
+ * Reads `GET /hazard/validation?admin=...` and renders measured agreement metrics
+ * (reference, years, n cells, ROC-AUC with CI, prevalence, caveat text).
+ * If the endpoint returns 'not_validated', the card displays 'Not yet validated'.
  */
 export const ModelVsHistoryTab: React.FC<ModelVsHistoryTabProps> = ({
   districts,
@@ -32,6 +36,13 @@ export const ModelVsHistoryTab: React.FC<ModelVsHistoryTabProps> = ({
 }) => {
   const version = layer.data?.model_version ?? summary.data?.model_version ?? null;
   const notComputed = summary.data?.model_status === 'not_computed';
+  const validation = useHazardValidation(selectedDistrict.lgdCode);
+
+  const activeValidationSlot =
+    validationSlot ??
+    (validation.data && validation.data.status === 'validated' ? (
+      <ValidationResultDetails data={validation.data} />
+    ) : undefined);
 
   return (
     <div
@@ -67,7 +78,7 @@ export const ModelVsHistoryTab: React.FC<ModelVsHistoryTabProps> = ({
 
         <ValidationStatusCard
           className="lg:col-span-4"
-          validationSlot={validationSlot}
+          validationSlot={activeValidationSlot}
           apiCaveats={stats.data?.data_caveats ?? []}
         />
 
