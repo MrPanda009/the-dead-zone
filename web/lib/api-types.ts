@@ -346,6 +346,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/alerts/forecast/trigger": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Trigger an immediate multi-district forecast ingestion cycle
+         * @description Dispatches an asynchronous Route 1 forecast ingestion run across specified or all operational districts. Returns HTTP 202 Accepted immediately. Concurrency locks prevent duplicate overlapping runs.
+         */
+        post: operations["trigger_forecast_cycle_alerts_forecast_trigger_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/alerts/forecast/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get multi-district forecast telemetry, scheduler health, and per-district states
+         * @description Retrieves real-time operational status for all 7 registered districts, including latest forecast cycle timestamps, active danger cell counts, weather state (CLEAR vs ALERT_ACTIVE vs STALE), and scheduler health.
+         */
+        get: operations["get_forecast_pipeline_status_alerts_forecast_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/plan/allocate": {
         parameters: {
             query?: never;
@@ -440,6 +480,26 @@ export interface paths {
          * @description Executes a pure, stateless scenario evaluation over habitation baselines. Allows decision-makers to adjust hazard weights w_h and loss history amplifier gamma, recomputing priority scores, rank deltas, and triage tier shifts. Optionally simulates min-cost flow relocation allocation without modifying database records. Requires authenticated user with 'scenario.run' permission (Government Official) and authorized jurisdiction scope.
          */
         post: operations["evaluate_scenario_scenario_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/google": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Authenticate with Google Identity Services ID token
+         * @description Verifies a Google OpenID Connect ID token, auto-provisions or links user identity, and sets a secure HTTP-only session cookie. Returns safe user identity and bearer access token.
+         */
+        post: operations["login_with_google_auth_google_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1331,6 +1391,32 @@ export interface components {
             data_caveats?: string[];
         };
         /**
+         * DistrictForecastStatus
+         * @description Real-time operational weather and forecast status for a registered district.
+         */
+        DistrictForecastStatus: {
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            /** Admin Id */
+            admin_id: number;
+            /** Lgd Code */
+            lgd_code: number;
+            /** Last Cycle At */
+            last_cycle_at?: string | null;
+            /**
+             * Danger Cells
+             * @default 0
+             */
+            danger_cells: number;
+            /**
+             * Weather State
+             * @description Operational alert state: 'CLEAR', 'ALERT_ACTIVE', 'STALE', or 'NO_DATA'
+             */
+            weather_state: string;
+        };
+        /**
          * DistrictHazardSummaryDTO
          * @description District-level rollup for officer decision support (GET /hazard/summary).
          */
@@ -1697,6 +1783,90 @@ export interface components {
             horizon_hours: number;
             /** Items */
             items?: components["schemas"]["ForecastAlertItem"][];
+        };
+        /**
+         * ForecastPipelineStatusResponse
+         * @description System-wide telemetry and scheduler health for multi-district live forecasts.
+         */
+        ForecastPipelineStatusResponse: {
+            /** Scheduler Enabled */
+            scheduler_enabled: boolean;
+            /** Schedule Cron */
+            schedule_cron: string;
+            /** Is Run In Progress */
+            is_run_in_progress: boolean;
+            /** Global Latest Cycle At */
+            global_latest_cycle_at?: string | null;
+            /** Districts */
+            districts?: components["schemas"]["DistrictForecastStatus"][];
+        };
+        /**
+         * ForecastTriggerRequest
+         * @description Payload to trigger an on-demand forecast ingestion cycle.
+         */
+        ForecastTriggerRequest: {
+            /**
+             * District
+             * @description Target district slug (e.g. 'wayanad', 'barpeta') or null for all operational districts.
+             */
+            district?: string | null;
+            /**
+             * Live
+             * @description Fetch live Open-Meteo ECMWF IFS HRES data (False uses mock/offline data).
+             * @default true
+             */
+            live: boolean;
+            /**
+             * Dry Run
+             * @description Simulate calculations and envelope detection without persisting database modifications.
+             * @default false
+             */
+            dry_run: boolean;
+        };
+        /**
+         * ForecastTriggerResponse
+         * @description Asynchronous acknowledgement for an enqueued forecast ingestion cycle.
+         */
+        ForecastTriggerResponse: {
+            /**
+             * Status
+             * @description Trigger status ('ACCEPTED', 'REJECTED')
+             * @default ACCEPTED
+             */
+            status: string;
+            /**
+             * Message
+             * @description Operational outcome message
+             */
+            message: string;
+            /**
+             * Run Id
+             * @description Unique UUID string identifying the background run
+             */
+            run_id: string;
+            /**
+             * Target Districts
+             * @description List of district slugs targeted in this cycle
+             */
+            target_districts: string[];
+            /**
+             * Enqueued At
+             * Format: date-time
+             * @description Timestamp when the execution task was enqueued
+             */
+            enqueued_at: string;
+        };
+        /**
+         * GoogleLoginRequest
+         * @description Request payload for Google Identity Services authentication.
+         */
+        GoogleLoginRequest: {
+            /**
+             * Id Token
+             * @description OpenID Connect ID token (JWT) returned by Google Identity Services.
+             * @example eyJhbGciOiJSUzI1NiIs...
+             */
+            id_token: string;
         };
         /**
          * HabitationListItem
@@ -2966,6 +3136,17 @@ export interface components {
              */
             is_active: boolean;
             /**
+             * Avatar Url
+             * @description User avatar image URL.
+             */
+            avatar_url?: string | null;
+            /**
+             * Auth Provider
+             * @description Authentication provider used (google, local).
+             * @default google
+             */
+            auth_provider: string;
+            /**
              * Created At
              * Format: date-time
              * @description Account creation timestamp.
@@ -4219,6 +4400,104 @@ export interface operations {
             };
         };
     };
+    trigger_forecast_cycle_alerts_forecast_trigger_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ForecastTriggerRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ForecastTriggerResponse"];
+                };
+            };
+            /** @description Bad Request - Invalid parameters or malformed input format. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Validation Error - Request parameter or payload validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error - An unexpected system or database error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Service Unavailable - No valid serving version is active. Pipeline data is not ready. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    get_forecast_pipeline_status_alerts_forecast_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ForecastPipelineStatusResponse"];
+                };
+            };
+            /** @description Internal Server Error - An unexpected system or database error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Service Unavailable - No valid serving version is active. Pipeline data is not ready. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     generate_allocation_plan_plan_allocate_post: {
         parameters: {
             query?: never;
@@ -4525,6 +4804,84 @@ export interface operations {
             };
             /** @description Service Unavailable - No valid serving version is active. Pipeline data is not ready. */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    login_with_google_auth_google_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoogleLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserResponse"];
+                };
+            };
+            /** @description Bad Request - Invalid parameters or malformed input format. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unauthenticated - Missing, invalid, expired, or revoked session cookie. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden - Insufficient permissions or role. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Validation Error - Request parameter or payload validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too Many Requests - Rate limit exceeded. Please try again later. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error - An unexpected system or database error occurred. */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

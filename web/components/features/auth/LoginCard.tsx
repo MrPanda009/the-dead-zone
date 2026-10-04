@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import Script from 'next/script';
 import { useRouter } from 'next/navigation';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useTheme } from '@/components/providers';
 import { ApiError } from '@/lib/api/client';
 
 export interface LoginCardProps {
@@ -57,13 +59,16 @@ export const LoginCard: React.FC<LoginCardProps> = ({
   className = '',
 }) => {
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
+  const { resolvedTheme } = useTheme();
   const containerRef = useRef<HTMLDivElement>(null);
   const submitBtnRef = useRef<HTMLButtonElement>(null);
+  const googleBtnRef = useRef<HTMLDivElement>(null);
 
   const [email, setEmail] = useState<string>('gov@setu.gov.in');
   const [password, setPassword] = useState<string>('DemoOfficer123!');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isGoogleSubmitting, setIsGoogleSubmitting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useGSAP(() => {
@@ -74,6 +79,92 @@ export const LoginCard: React.FC<LoginCardProps> = ({
       { x: 0, opacity: 1, scale: 1, duration: 0.6, ease: 'power3.out' }
     );
   }, { scope: containerRef });
+
+  const handleGoogleSuccess = useCallback(
+    async (idToken: string) => {
+      setIsGoogleSubmitting(true);
+      setErrorMessage(null);
+      try {
+        const user = await loginWithGoogle(idToken);
+        onLoginSuccess?.(user.role);
+
+        if (user.role === 'GOVERNMENT_OFFICIAL' || user.role === 'SYSTEM_ADMIN') {
+          router.push(govHref);
+        } else {
+          router.push(citizenHref);
+        }
+      } catch (err) {
+        if (err instanceof ApiError) {
+          if (err.status === 401) {
+            setErrorMessage('Google token verification failed. Please ensure your Google email is verified.');
+          } else if (err.status === 403) {
+            setErrorMessage('Your account is deactivated. Please contact an administrator.');
+          } else {
+            setErrorMessage(err.message || 'Google authentication failed.');
+          }
+        } else {
+          setErrorMessage('Unable to reach authentication service.');
+        }
+
+        if (containerRef.current) {
+          gsap.fromTo(
+            containerRef.current,
+            { x: -8 },
+            { x: 8, duration: 0.08, repeat: 4, yoyo: true, ease: 'sine.inOut' }
+          );
+        }
+      } finally {
+        setIsGoogleSubmitting(false);
+      }
+    },
+    [citizenHref, govHref, loginWithGoogle, onLoginSuccess, router],
+  );
+
+  const initGoogleButton = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    const google = (window as unknown as {
+      google?: {
+        accounts?: {
+          id?: {
+            initialize: (config: Record<string, unknown>) => void;
+            renderButton: (parent: HTMLElement, options: Record<string, unknown>) => void;
+          };
+        };
+      };
+    })?.google;
+
+    if (google?.accounts?.id && googleBtnRef.current) {
+      const clientId =
+        process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
+        '152789341851-s03pjajoa86gqa0ir5ansl3tim2b9595.apps.googleusercontent.com';
+
+      google.accounts.id.initialize({
+        client_id: clientId,
+        callback: (response: { credential?: string }) => {
+          if (response?.credential) {
+            handleGoogleSuccess(response.credential);
+          }
+        },
+      });
+
+      // Clear previous button contents before re-rendering (e.g. on theme switch)
+      googleBtnRef.current.innerHTML = '';
+
+      google.accounts.id.renderButton(googleBtnRef.current, {
+        type: 'standard',
+        theme: resolvedTheme === 'dark' ? 'filled_black' : 'outline',
+        size: 'large',
+        text: 'continue_with',
+        shape: 'pill',
+        width: 320,
+        logo_alignment: 'left',
+      });
+    }
+  }, [handleGoogleSuccess, resolvedTheme]);
+
+  useEffect(() => {
+    initGoogleButton();
+  }, [initGoogleButton]);
 
   const applyPreset = (preset: DemoAccountPreset) => {
     setEmail(preset.email);
@@ -92,7 +183,7 @@ export const LoginCard: React.FC<LoginCardProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return;
+    if (isSubmitting || isGoogleSubmitting) return;
 
     setErrorMessage(null);
     setIsSubmitting(true);
@@ -139,6 +230,12 @@ export const LoginCard: React.FC<LoginCardProps> = ({
       ref={containerRef}
       className={`w-full max-w-xl p-5 sm:p-6 lg:p-7 xl:p-8 rounded-[24px] bg-surface-0/95 dark:bg-forest-surface/95 border border-line dark:border-white/15 shadow-2xl relative z-20 backdrop-blur-2xl transition-colors duration-200 ${className}`}
     >
+      <Script
+        src="https://accounts.google.com/gsi/client"
+        strategy="afterInteractive"
+        onLoad={initGoogleButton}
+      />
+
       {/* Top Header Pill */}
       <div className="flex items-center justify-between mb-3.5 sm:mb-4.5">
         <span className="pill-badge px-2.5 sm:px-3 py-1 rounded-full text-[10px] sm:text-[11px] font-mono font-semibold text-accent-emerald-bright border border-accent-emerald/30 bg-accent-emerald/10 flex items-center gap-2 shadow-xs">
@@ -162,6 +259,39 @@ export const LoginCard: React.FC<LoginCardProps> = ({
         <p className="text-xs sm:text-xs xl:text-sm text-text-secondary mt-1 sm:mt-1.5 leading-relaxed font-sans">
           Official portal for disaster response officials, district administrators, and public safety teams.
         </p>
+      </div>
+
+      {/* Google OAuth Single Sign-On */}
+      <div className="mb-4 sm:mb-5">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[10px] font-mono uppercase tracking-wider text-text-muted">
+            Instant Single Sign-On
+          </span>
+          <span className="text-[10px] font-mono text-accent-emerald-bright flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-accent-emerald-bright animate-pulse" />
+            Verified OIDC
+          </span>
+        </div>
+
+        <div className="p-3 sm:p-3.5 rounded-xl bg-surface-1/90 dark:bg-forest-deep/60 border border-line dark:border-white/10 flex flex-col items-center justify-center transition-all duration-200 shadow-xs">
+          <div ref={googleBtnRef} className="flex justify-center min-h-[44px] w-full" />
+          {isGoogleSubmitting && (
+            <div className="flex items-center gap-2 text-xs font-mono text-accent-emerald-bright mt-2 animate-pulse">
+              <span className="w-3.5 h-3.5 border-2 border-accent-emerald-bright border-t-transparent rounded-full animate-spin" />
+              <span>Verifying Google identity…</span>
+            </div>
+          )}
+        </div>
+
+        {/* Subtle Divider */}
+        <div className="relative my-4 flex items-center justify-center">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-line dark:border-white/10" />
+          </div>
+          <span className="relative bg-surface-0/95 dark:bg-forest-surface/95 px-3 text-[10px] font-mono uppercase tracking-wider text-text-muted">
+            Or Use Account Credentials
+          </span>
+        </div>
       </div>
 
       {/* Demo Quick-Fill Presets */}
