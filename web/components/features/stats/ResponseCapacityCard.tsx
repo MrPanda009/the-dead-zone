@@ -17,7 +17,9 @@ export const ResponseCapacityCard: React.FC<ResponseCapacityCardProps> = ({
   useGSAP(
     () => {
       if (!containerRef.current || isLoading) return;
-      gsap.from(containerRef.current.querySelectorAll('.animate-tile'), {
+      const tiles = containerRef.current.querySelectorAll('.animate-tile');
+      if (tiles.length === 0) return;
+      gsap.from(tiles, {
         opacity: 0,
         y: 10,
         duration: 0.35,
@@ -87,7 +89,7 @@ export const ResponseCapacityCard: React.FC<ResponseCapacityCardProps> = ({
           <div className="text-xl font-bold font-mono text-ink dark:text-white mt-1">
             {latestRelief && latestRelief.ndrf_releases_cr !== null && latestRelief.ndrf_releases_cr !== undefined
               ? `₹${latestRelief.ndrf_releases_cr.toFixed(1)} Cr`
-              : '₹0.0 Cr'}
+              : 'N/A'}
           </div>
           <div className="text-[10px] text-text-muted font-mono mt-0.5">
             {latestRelief ? `${latestRelief.lives_saved_count ?? 0} Lives Saved Logged` : 'Severe Calamity Release'}

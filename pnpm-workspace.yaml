@@ -6,3 +6,7 @@ allowBuilds:
   '@vaadin/vaadin-usage-statistics': false
   sharp: false
   unrs-resolver: false
+
+minimumReleaseAgeExclude:
+  - 'mdast-util-find-and-replace@3.0.3'
+

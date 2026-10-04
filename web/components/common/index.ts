@@ -5,6 +5,9 @@ export type { EmptyStateProps } from './EmptyState';
 export { ErrorState } from './ErrorState';
 export type { ErrorStateProps } from './ErrorState';
 
+export { HexMarker } from './HexMarker';
+export type { HexMarkerProps, HexMarkerSize } from './HexMarker';
+
 export { MetricCard } from './MetricCard';
 export type { MetricCardProps, MetricCardVariant } from './MetricCard';
 

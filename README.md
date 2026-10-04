@@ -397,12 +397,15 @@ The default layer per district lives in `web/lib/map/districtHazardDefaults.ts`.
 # 1. Baseline: boundary, H3 grid, synthetic hazard/MHI, habitations, candidate sites
 uv run python pipeline/src/pipeline/jobs/seed_pilot_data.py
 
-# 2. Live ECMWF forecast: one cycle, then exit (writes hazard_dynamic + mhi_snapshot.mhi_fcst)
-uv run python -m pipeline.jobs.scheduler --run-once
-#    add --dry-run to skip retention pruning
+# 2. Live ECMWF forecast: Route 1 sparse peak-envelope across all districts or single district
+uv run python -m pipeline.jobs.run_district_forecast --all               # evaluate all 7 registered districts
+uv run python -m pipeline.jobs.run_district_forecast --district wayanad # or single district
+#    Add --live to make live Open-Meteo HTTP calls; add --dry-run to simulate without writes.
 
-# 3. Or keep it running on FORECAST_SCHEDULE_CRON (default every 6h)
-uv run python -m pipeline.jobs.scheduler --daemon        # or set FORECAST_SCHEDULER_ENABLED=true
+# 3. Or run the scheduler across all districts on FORECAST_SCHEDULE_CRON (default every 6h)
+uv run python -m pipeline.jobs.scheduler --all --run-once               # run once across all districts
+uv run python -m pipeline.jobs.scheduler --all --daemon                 # keep running on 6h cron
+
 
 # 4. Real flood susceptibility + measured confidence (Sentinel-1 x HAND), ~4 min, needs network.
 #    Replaces only the riverine_flood layer; landslide and flash_flood have no real pipeline.

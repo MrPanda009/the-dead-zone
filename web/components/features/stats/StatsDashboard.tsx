@@ -1,69 +1,68 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useTransition } from 'react';
-import Link from 'next/link';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
-import {
-  fetchAvailableStates,
-  fetchDisasterStats,
-  fetchDistrictHazardSummary,
-  type DisasterStatsResponse,
-  type DistrictHazardSummaryDTO,
-} from '@/lib/api/stats';
-import {
-  StatsSubNav,
-  DisasterHistoryTab,
-  DistrictBriefTab,
-  ModelVsHistoryTab,
-  DataProvenanceTab,
-  PILOT_DISTRICTS,
-  type StatsTabId,
-  type PilotDistrict,
-} from './index';
+import React, { useCallback, useState, useTransition } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 
+import { useDisasterStats } from '@/lib/hooks/useDisasterStats';
+import { useDistrictHazardSummary } from '@/lib/hooks/useDistrictHazardSummary';
+import { useHazardLayer } from '@/lib/hooks/useHazardLayer';
+import { useStatsAvailableStates } from '@/lib/hooks/useStatsAvailableStates';
+
+import { STATS_DISTRICTS } from './statsDistricts';
+import { StatsSubNav } from './StatsSubNav';
+import { StatsTopBar } from './StatsTopBar';
+import { DataProvenanceTab } from './tabs/DataProvenanceTab';
+import { DisasterHistoryTab } from './tabs/DisasterHistoryTab';
+import { DistrictBriefTab } from './tabs/DistrictBriefTab';
+import { ModelVsHistoryTab } from './tabs/ModelVsHistoryTab';
+import type { StatsDistrict, StatsTabId } from './types';
+
+const VALID_TABS: readonly StatsTabId[] = ['history', 'brief', 'comparison', 'sources'];
+
+/** States offered before (or without) the API list. A state with no records shows an empty state. */
+const DEFAULT_STATES: readonly string[] = [
+  'All India',
+  'Jammu & Kashmir',
+  'Ladakh',
+  'Manipur',
+  'Assam',
+  'Kerala',
+  'Uttarakhand',
+  'Himachal Pradesh',
+  'Rajasthan',
+  'Madhya Pradesh',
+  'Karnataka',
+  'Bihar',
+  'West Bengal',
+  'Maharashtra',
+];
+
+/**
+ * Orchestrates the Stats screens: owns tab, state and district selection and every request.
+ * Tabs receive resources as props and never fetch. A failed request is passed down as an
+ * error; no tab substitutes default numbers.
+ */
 export const StatsDashboard: React.FC = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
-
-  // Tab State
-  const tabParam = (searchParams.get('tab') as StatsTabId) || 'history';
-  const validTabs: StatsTabId[] = ['history', 'brief', 'comparison', 'sources'];
-  const [activeTab, setActiveTab] = useState<StatsTabId>(
-    validTabs.includes(tabParam) ? tabParam : 'history'
-  );
-
-  // Core Data States
-  const [availableStates, setAvailableStates] = useState<string[]>([
-    'All India',
-    'Jammu & Kashmir',
-    'Ladakh',
-    'Manipur',
-    'Assam',
-    'Kerala',
-    'Uttarakhand',
-    'Himachal Pradesh',
-    'Rajasthan',
-    'Madhya Pradesh',
-    'Karnataka',
-    'Bihar',
-    'West Bengal',
-    'Maharashtra',
-  ]);
-  const [selectedState, setSelectedState] = useState<string>('Manipur');
-  const [stats, setStats] = useState<DisasterStatsResponse | null>(null);
-
-  // Pilot District State (Rudraprayag is default as in reference picture)
-  const [selectedDistrict, setSelectedDistrict] = useState<PilotDistrict>(PILOT_DISTRICTS[0]);
-  const [districtSummary, setDistrictSummary] = useState<DistrictHazardSummaryDTO | null>(null);
-
-  // Loading States
-  const [isLoadingStates, setIsLoadingStates] = useState<boolean>(false);
-  const [isLoadingStats, setIsLoadingStats] = useState<boolean>(false);
-  const [isLoadingSummary, setIsLoadingSummary] = useState<boolean>(false);
   const [isPending, startTransition] = useTransition();
 
-  // Sync tab with URL
+  const tabParam = searchParams.get('tab') as StatsTabId | null;
+  const [activeTab, setActiveTab] = useState<StatsTabId>(
+    tabParam && VALID_TABS.includes(tabParam) ? tabParam : 'history',
+  );
+  const [selectedState, setSelectedState] = useState<string>('Manipur');
+  const [selectedDistrict, setSelectedDistrict] = useState<StatsDistrict>(STATS_DISTRICTS[0]);
+
+  const availableStates = useStatsAvailableStates(DEFAULT_STATES);
+  const needsDistrict = activeTab === 'brief' || activeTab === 'comparison';
+
+  // History uses the state picked on that tab; Model vs History always uses the district's own state.
+  const historyStats = useDisasterStats(selectedState, { enabled: activeTab === 'history' });
+  const districtStats = useDisasterStats(selectedDistrict.state, { enabled: activeTab === 'comparison' });
+  const summary = useDistrictHazardSummary(selectedDistrict.lgdCode, { enabled: needsDistrict });
+  const layer = useHazardLayer({ admin: selectedDistrict.lgdCode, enabled: needsDistrict });
+
   const handleSelectTab = useCallback(
     (tabId: StatsTabId) => {
       setActiveTab(tabId);
@@ -71,228 +70,73 @@ export const StatsDashboard: React.FC = () => {
       params.set('tab', tabId);
       router.replace(`?${params.toString()}`, { scroll: false });
     },
-    [router]
+    [router],
   );
 
-  // Load available states
-  useEffect(() => {
-    let isMounted = true;
-    async function init() {
-      try {
-        setIsLoadingStates(true);
-        const statesRes = await fetchAvailableStates().catch(() => null);
-        if (isMounted && statesRes?.states && statesRes.states.length > 0) {
-          setAvailableStates((prev) => Array.from(new Set([...prev, ...statesRes.states])));
-        }
-      } catch (err) {
-        console.error('Failed to load initial states', err);
-      } finally {
-        if (isMounted) setIsLoadingStates(false);
-      }
-    }
-    init();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  // Fetch state disaster statistics
-  useEffect(() => {
-    if (!selectedState) return;
-    let isMounted = true;
-    async function loadStats() {
-      try {
-        setIsLoadingStats(true);
-        const data = await fetchDisasterStats({ state: selectedState, from_year: 2014, to_year: 2024 });
-        if (isMounted) {
-          setStats(data);
-        }
-      } catch (err) {
-        console.warn(`Failed to fetch live stats for ${selectedState}, using fallback aggregation`, err);
-      } finally {
-        if (isMounted) setIsLoadingStats(false);
-      }
-    }
-    loadStats();
-    return () => {
-      isMounted = false;
-    };
-  }, [selectedState]);
-
-  // Fetch district hazard summary
-  useEffect(() => {
-    if (!selectedDistrict.lgdCode) return;
-    let isMounted = true;
-    async function loadSummary() {
-      try {
-        setIsLoadingSummary(true);
-        const data = await fetchDistrictHazardSummary(selectedDistrict.lgdCode);
-        if (isMounted) {
-          setDistrictSummary(data);
-        }
-      } catch (err) {
-        console.warn(`Failed to fetch hazard summary for LGD ${selectedDistrict.lgdCode}`, err);
-        if (isMounted) setDistrictSummary(null);
-      } finally {
-        if (isMounted) setIsLoadingSummary(false);
-      }
-    }
-    loadSummary();
-    return () => {
-      isMounted = false;
-    };
-  }, [selectedDistrict]);
-
-  const handleStateChange = useCallback((newState: string) => {
+  const handleStateChange = useCallback((nextState: string) => {
     startTransition(() => {
-      setSelectedState(newState);
-      const matchingDist = PILOT_DISTRICTS.find(
-        (d) => d.state.toLowerCase() === newState.toLowerCase()
-      );
-      if (matchingDist) {
-        setSelectedDistrict(matchingDist);
-      }
+      setSelectedState(nextState);
+      const match = STATS_DISTRICTS.find((d) => d.state.toLowerCase() === nextState.toLowerCase());
+      if (match) setSelectedDistrict(match);
     });
   }, []);
 
-  const handleDistrictChange = useCallback((district: PilotDistrict) => {
-    startTransition(() => {
-      setSelectedDistrict(district);
-      if (district.state !== selectedState && availableStates.includes(district.state)) {
-        setSelectedState(district.state);
-      }
-    });
-  }, [selectedState, availableStates]);
+  const handleDistrictChange = useCallback(
+    (district: StatsDistrict) => {
+      startTransition(() => {
+        setSelectedDistrict(district);
+        if (district.state !== selectedState && availableStates.includes(district.state)) {
+          setSelectedState(district.state);
+        }
+      });
+    },
+    [selectedState, availableStates],
+  );
 
   return (
-    <div className="h-dvh min-h-screen w-full overflow-hidden bg-bg-base dark:bg-forest-base text-ink dark:text-text-primary flex flex-col font-sans transition-colors duration-200 select-none">
-      {/* Main Content Area (Full-Width, Fits-on-Screen, Responsive Across Laptops) */}
+    <div
+      aria-busy={isPending}
+      className="h-dvh min-h-screen w-full overflow-hidden bg-bg-base dark:bg-forest-base text-ink dark:text-text-primary flex flex-col font-sans transition-colors duration-200 select-none"
+    >
       <main className="flex-1 min-h-0 flex flex-col h-full w-full overflow-hidden">
-        {/* Top Navbar matching the rest of the application */}
-        <header className="shrink-0 h-12 border-b border-line dark:border-white/10 bg-surface-0/90 dark:bg-[#0c1524]/90 backdrop-blur-xl px-3 sm:px-6 flex items-center justify-between transition-colors z-30">
-          {/* Left Brand & Return */}
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            <Link
-              href="/"
-              className="flex items-center gap-2 group cursor-pointer"
-              title="Return to Home Overview"
-            >
-              <span className="material-symbols-outlined text-citron text-xl group-hover:rotate-90 transition-transform">
-                emergency
-              </span>
-              <div className="flex flex-col">
-                <span className="text-xs font-mono font-bold tracking-wider text-citron">
-                  TERRA
-                </span>
-                <span className="text-[9px] font-mono text-text-muted tracking-tight hidden sm:inline">
-                  TERRAIN RISK &amp; RELOCATION ANALYTICS
-                </span>
-              </div>
-            </Link>
-          </div>
+        <StatsTopBar />
 
-          {/* Center Nav Links - Truly Centered and Responsive */}
-          <nav className="hidden lg:flex items-center gap-1 xl:gap-1.5 absolute left-1/2 -translate-x-1/2" aria-label="Main App Navigation">
-            <Link
-              href="/"
-              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono text-text-secondary hover:text-text-primary hover:bg-surface-1 dark:hover:bg-white/5 border border-line dark:border-white/10 transition-colors cursor-pointer"
-              title="Home Overview"
-            >
-              <span className="material-symbols-outlined text-xs">home</span>
-              <span>Home</span>
-            </Link>
-
-            <Link
-              href="/gov"
-              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono text-text-secondary hover:text-text-primary hover:bg-surface-1 dark:hover:bg-white/5 border border-line dark:border-white/10 transition-colors cursor-pointer"
-              title="3D Subcontinent &amp; 2D View"
-            >
-              <span className="material-symbols-outlined text-xs">view_in_ar</span>
-              <span>3D &amp; 2D</span>
-            </Link>
-
-            <Link
-              href="/relocation"
-              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono text-text-secondary hover:text-text-primary hover:bg-surface-1 dark:hover:bg-white/5 border border-line dark:border-white/10 transition-colors cursor-pointer"
-              title="Relocation Solver Grid"
-            >
-              <span className="material-symbols-outlined text-xs">moving</span>
-              <span>Relocation</span>
-            </Link>
-
-            <Link
-              href="/stories"
-              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono text-text-secondary hover:text-text-primary hover:bg-surface-1 dark:hover:bg-white/5 border border-line dark:border-white/10 transition-colors cursor-pointer"
-              title="Assess &amp; Citizen Advisories"
-            >
-              <span className="material-symbols-outlined text-xs">auto_stories</span>
-              <span>Assess</span>
-            </Link>
-
-            <Link
-              href="/stats"
-              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono text-citron bg-citron/10 border border-citron/40 transition-colors cursor-pointer font-bold shadow-sm"
-              title="Disaster History &amp; Statistics"
-            >
-              <span className="material-symbols-outlined text-xs">query_stats</span>
-              <span>Stats</span>
-            </Link>
-          </nav>
-
-          {/* Right Tools: India Location & Universal Theme Toggle */}
-          <div className="flex items-center gap-2 shrink-0 justify-end">
-            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-surface-1 dark:bg-forest-surface border border-line dark:border-white/10 text-[11px] font-mono text-text-secondary">
-              <span className="material-symbols-outlined text-xs text-citron">location_on</span>
-              <span>India</span>
-            </div>
-
-            <ThemeToggle />
-          </div>
-        </header>
-
-        {/* Sub-navigation Segment Tabs (Switching between the 4 pages) */}
         <div className="shrink-0 px-2 sm:px-4 pt-1.5 pb-0.5 max-w-[1680px] w-full mx-auto overflow-x-auto no-scrollbar">
           <StatsSubNav activeTab={activeTab} onSelectTab={handleSelectTab} />
         </div>
 
-        {/* Dashboard Active Tab Body (Scrollable on small laptops, fit-to-screen on desktop) */}
         <div className="flex-1 min-h-0 overflow-y-auto lg:overflow-hidden w-full max-w-[1680px] mx-auto px-2 sm:px-4 pb-2 pt-0.5">
           {activeTab === 'history' && (
             <DisasterHistoryTab
-              stats={stats}
+              stats={historyStats}
               selectedState={selectedState}
               onSelectState={handleStateChange}
               availableStates={availableStates}
-              isLoading={isLoadingStats || isPending}
             />
           )}
 
           {activeTab === 'brief' && (
             <DistrictBriefTab
-              districts={PILOT_DISTRICTS}
+              districts={STATS_DISTRICTS}
               selectedDistrict={selectedDistrict}
               onSelectDistrict={handleDistrictChange}
-              summary={districtSummary}
-              isLoading={isLoadingSummary || isPending}
+              summary={summary}
+              layer={layer}
             />
           )}
 
           {activeTab === 'comparison' && (
             <ModelVsHistoryTab
-              districts={PILOT_DISTRICTS}
+              districts={STATS_DISTRICTS}
               selectedDistrict={selectedDistrict}
               onSelectDistrict={handleDistrictChange}
-              summary={districtSummary}
-              stats={stats}
-              isLoading={isLoadingStats || isLoadingSummary}
+              summary={summary}
+              layer={layer}
+              stats={districtStats}
             />
           )}
 
-          {activeTab === 'sources' && (
-            <DataProvenanceTab
-              lastUpdated="September 2024"
-            />
-          )}
+          {activeTab === 'sources' && <DataProvenanceTab />}
         </div>
       </main>
     </div>

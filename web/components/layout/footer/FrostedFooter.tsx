@@ -8,6 +8,8 @@ import { FooterTelemetry } from './FooterTelemetry';
 export interface FrostedFooterProps {
   /** Optional custom className */
   className?: string;
+  /** Optional custom emblem for brand (defaults to pterodactyl icon) */
+  brandEmblem?: React.ReactNode;
   /** Granular classNames */
   classNames?: {
     container?: string;
@@ -18,6 +20,7 @@ export interface FrostedFooterProps {
 
 export const FrostedFooter: React.FC<FrostedFooterProps> = ({
   className = '',
+  brandEmblem,
   classNames = {},
 }) => {
   return (
@@ -39,7 +42,7 @@ export const FrostedFooter: React.FC<FrostedFooterProps> = ({
             classNames.topRow ?? ''
           }`}
         >
-          <FooterBrand />
+          <FooterBrand emblem={brandEmblem} />
           <FooterTelemetry />
         </div>
 

@@ -5,18 +5,58 @@ Endpoints:
 - GET /alerts/forecast
 """
 
+import logging
 import uuid
+from datetime import datetime, timezone
 from typing import Optional
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from api.dependencies import get_db, require_serving_version
 from api.routes.common import error_responses
 from api.services.alerts_service import AlertsService
 from core.constants import FORECAST_HORIZON_HOURS
-from core.schemas.alerts import ActiveAlertsResponse, ForecastAlertsResponse
+from core.schemas.alerts import (
+    ActiveAlertsResponse,
+    ForecastAlertsResponse,
+    ForecastPipelineStatusResponse,
+    ForecastTriggerRequest,
+    ForecastTriggerResponse,
+)
+from pipeline.hazard.forecast_config import FORECAST_DISTRICTS
+
+logger = logging.getLogger("setu_api.alerts_router")
+
+# Concurrency & debounce guards
+_RUN_IN_PROGRESS = False
+_LAST_RUN_STARTED_AT: Optional[datetime] = None
+
+
+def _execute_forecast_background_task(
+    run_id: str,
+    target_districts: list[str],
+    live: bool,
+    dry_run: bool,
+) -> None:
+    """Worker function executed inside FastAPI BackgroundTasks."""
+    global _RUN_IN_PROGRESS
+    try:
+        logger.info(
+            f"[Run {run_id}] Background forecast cycle started for {target_districts} (live={live}, dry_run={dry_run})."
+        )
+        from pipeline.jobs.run_district_forecast import run_all_districts
+        results = run_all_districts(district_keys=target_districts, live=live, dry_run=dry_run)
+        logger.info(
+            f"[Run {run_id}] Background forecast cycle completed successfully across {len(results)} district(s)."
+        )
+    except Exception as exc:
+        logger.exception(f"[Run {run_id}] Background forecast cycle encountered an unhandled error: {exc}")
+    finally:
+        _RUN_IN_PROGRESS = False
+
 
 router = APIRouter(prefix="/alerts", tags=["Dynamic Alerts & Forecasts"])
+
 
 
 @router.get(
@@ -117,3 +157,88 @@ def get_forecast_alerts(
         limit=limit,
         offset=offset,
     )
+
+
+@router.post(
+    "/forecast/trigger",
+    response_model=ForecastTriggerResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    responses=error_responses(400, 409, 422, 500, 503),
+    summary="Trigger an immediate multi-district forecast ingestion cycle",
+    description=(
+        "Dispatches an asynchronous Route 1 forecast ingestion run across specified or all operational districts. "
+        "Returns HTTP 202 Accepted immediately. Concurrency locks prevent duplicate overlapping runs."
+    ),
+)
+def trigger_forecast_cycle(
+    payload: ForecastTriggerRequest,
+    background_tasks: BackgroundTasks,
+    _sv: uuid.UUID = Depends(require_serving_version),
+) -> ForecastTriggerResponse:
+    global _RUN_IN_PROGRESS, _LAST_RUN_STARTED_AT
+
+    # Check and self-heal zombie lock if running for > 10 minutes
+    now = datetime.now(timezone.utc)
+    if _RUN_IN_PROGRESS and _LAST_RUN_STARTED_AT:
+        if (now - _LAST_RUN_STARTED_AT).total_seconds() > 600:
+            logger.warning("Resetting stale forecast run lock (exceeded 10 minutes timeout).")
+            _RUN_IN_PROGRESS = False
+
+    if _RUN_IN_PROGRESS:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A forecast ingestion cycle is currently executing in the background. Please retry shortly.",
+        )
+
+    # Validate target districts
+    if payload.district:
+        target_slug = payload.district.strip().lower()
+        if target_slug not in FORECAST_DISTRICTS:
+            valid_keys = ", ".join(FORECAST_DISTRICTS.keys())
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Unknown district '{payload.district}'. Registered districts: {valid_keys}",
+            )
+        target_districts = [target_slug]
+    else:
+        target_districts = list(FORECAST_DISTRICTS.keys())
+
+    run_id = str(uuid.uuid4())
+    _RUN_IN_PROGRESS = True
+    _LAST_RUN_STARTED_AT = now
+
+    background_tasks.add_task(
+        _execute_forecast_background_task,
+        run_id=run_id,
+        target_districts=target_districts,
+        live=payload.live,
+        dry_run=payload.dry_run,
+    )
+
+    return ForecastTriggerResponse(
+        status="ACCEPTED",
+        message=f"Forecast ingestion dispatched for {len(target_districts)} district(s).",
+        run_id=run_id,
+        target_districts=target_districts,
+        enqueued_at=now,
+    )
+
+
+@router.get(
+    "/forecast/status",
+    response_model=ForecastPipelineStatusResponse,
+    responses=error_responses(500, 503),
+    summary="Get multi-district forecast telemetry, scheduler health, and per-district states",
+    description=(
+        "Retrieves real-time operational status for all 7 registered districts, including latest forecast cycle timestamps, "
+        "active danger cell counts, weather state (CLEAR vs ALERT_ACTIVE vs STALE), and scheduler health."
+    ),
+)
+def get_forecast_pipeline_status(
+    db: Session = Depends(get_db),
+    _sv: uuid.UUID = Depends(require_serving_version),
+) -> ForecastPipelineStatusResponse:
+    global _RUN_IN_PROGRESS
+    service = AlertsService(db)
+    return service.get_forecast_pipeline_status(is_run_in_progress=_RUN_IN_PROGRESS)
+

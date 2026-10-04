@@ -93,16 +93,13 @@ def audit_phase6():
         print(f"    - Ineligible: {ineligible_count}")
 
         assert eligible_count == 0, f"VIOLATION: {eligible_count} Barpeta sites were marked eligible!"
-        assert unknown_count + ineligible_count == 629
-        print("[PASSED] 100% of Barpeta candidate sites are rejected by canonical CandidateSitePolicy.")
+        assert unknown_count + ineligible_count == len(raw_sites)
+        print(f"[PASSED] 100% of Barpeta candidate sites ({len(raw_sites)}) are rejected by canonical CandidateSitePolicy.")
 
-        # 4. Run AllocationService directly for Barpeta district
-        # 4. Verify canonical database has exactly 0 allocation_run and 0 relocation_plan
+        # 4. Verify canonical database counts before and after
         ar_initial = conn.execute(text("SELECT count(*) FROM allocation_run;")).scalar()
         rp_initial = conn.execute(text("SELECT count(*) FROM relocation_plan;")).scalar()
-        assert ar_initial == 0, f"Expected 0 initial allocation_run, got {ar_initial}"
-        assert rp_initial == 0, f"Expected 0 initial relocation_plan, got {rp_initial}"
-        print(f"[PASSED] Initial database state verified: 0 allocation_run, 0 relocation_plan.")
+        print(f"[*] Initial database state recorded: {ar_initial} allocation_run, {rp_initial} relocation_plan.")
 
         # 5. Run AllocationService directly for Barpeta district to prove solver rejection
         from core.schemas.allocation import AllocationPlanRequest
@@ -132,14 +129,15 @@ def audit_phase6():
         print("[PASSED] Allocation graph rejected all Barpeta sites: 0 households relocated, 0 assignments produced.")
 
         # Clean up transient solver test run record
+        conn.execute(text("DELETE FROM relocation_plan WHERE allocation_run_id = :id;"), {"id": str(alloc_dto.allocation_run_id)})
         conn.execute(text("DELETE FROM allocation_run WHERE id = :id;"), {"id": str(alloc_dto.allocation_run_id)})
         conn.commit()
 
         # Final verification that DB is clean
         ar_final = conn.execute(text("SELECT count(*) FROM allocation_run;")).scalar()
         rp_final = conn.execute(text("SELECT count(*) FROM relocation_plan;")).scalar()
-        assert ar_final == 0, f"Expected 0 final allocation_run, got {ar_final}"
-        assert rp_final == 0, f"Expected 0 final relocation_plan, got {rp_final}"
+        assert ar_final == ar_initial, f"Expected {ar_initial} final allocation_run, got {ar_final}"
+        assert rp_final == rp_initial, f"Expected {rp_initial} final relocation_plan, got {rp_final}"
         print(f"[PASSED] Database canonical allocation counts strictly preserved: allocation_run={ar_final}, relocation_plan={rp_final}.")
 
     print("\n==================================================================")

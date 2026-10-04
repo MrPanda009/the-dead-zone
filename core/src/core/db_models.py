@@ -514,7 +514,10 @@ class AppUser(Base):
         PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     email: Mapped[str] = mapped_column(String, unique=True, nullable=False, index=True)
-    password_hash: Mapped[str] = mapped_column(String, nullable=False)
+    password_hash: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    google_sub: Mapped[Optional[str]] = mapped_column(String, unique=True, nullable=True, index=True)
+    avatar_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    auth_provider: Mapped[str] = mapped_column(String, default="google", nullable=False)
     full_name: Mapped[str] = mapped_column(String, nullable=False)
     role: Mapped[str] = mapped_column(String, nullable=False, index=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)

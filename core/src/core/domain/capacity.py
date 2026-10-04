@@ -90,7 +90,12 @@ class CandidateSitePolicy:
     #: land-only upper bound. Order-grade mode leaves this False so an unmeasured lifeline never
     #: reads as unlimited capacity. `cc_final` itself is never overwritten.
     allow_land_only_capacity: bool = False
-    policy_version: str = "site-eligibility-v1.1"
+    #: Screening mode. When True, candidate sites whose multi-hazard index (MHI) is unmeasured
+    #: (honest data gap) are admitted for exploratory screening only, stamped with mandatory
+    #: hazard verification caveats. Order-grade mode leaves this False so unmeasured hazard is
+    #: never assumed safe.
+    allow_unmeasured_hazard: bool = False
+    policy_version: str = "site-eligibility-v1.2"
 
 
 #: Policy for land with no cadastral or statutory-overlay source (derived parcels). Protected-area
@@ -105,7 +110,8 @@ SCREENING_SITE_POLICY = CandidateSitePolicy(
     exclude_crz_i_ii=False,
     allow_unverified_tenure=True,
     allow_land_only_capacity=True,
-    policy_version="site-eligibility-v1.1-screening",
+    allow_unmeasured_hazard=True,
+    policy_version="site-eligibility-v1.2-screening",
 )
 
 
@@ -376,7 +382,8 @@ class CapacityEngine:
 
         # Check missing values explicitly (Audit Requirement 9: Missing data != safe)
         if active_mhi is None:
-            rejection_reasons.append("Multi-hazard index (MHI) data is missing or unverified")
+            if not p.allow_unmeasured_hazard:
+                rejection_reasons.append("Multi-hazard index (MHI) data is missing or unverified")
         elif active_mhi >= p.max_static_mhi:
             rejection_reasons.append(f"Static MHI {active_mhi:.2f} >= threshold {p.max_static_mhi:.2f}")
 
@@ -421,25 +428,29 @@ class CapacityEngine:
         # missing data still rejects — the audit invariant is unchanged.
         if p.exclude_forest:
             if is_forest is None:
-                rejection_reasons.append("Forest exclusion status is missing or unverified")
+                if not p.allow_unmeasured_hazard:
+                    rejection_reasons.append("Forest exclusion status is missing or unverified")
             elif is_forest:
                 rejection_reasons.append("Site overlaps designated forest land")
 
         if p.exclude_protected_area:
             if is_protected_area is None:
-                rejection_reasons.append("Protected area status is missing or unverified")
+                if not p.allow_unmeasured_hazard:
+                    rejection_reasons.append("Protected area status is missing or unverified")
             elif is_protected_area:
                 rejection_reasons.append("Site overlaps protected ecological area / sanctuary")
 
         if p.exclude_crz_i_ii:
             if is_crz is None:
-                rejection_reasons.append("Coastal Regulation Zone (CRZ) status is missing or unverified")
+                if not p.allow_unmeasured_hazard:
+                    rejection_reasons.append("Coastal Regulation Zone (CRZ) status is missing or unverified")
             elif is_crz:
                 rejection_reasons.append("Site overlaps Coastal Regulation Zone (CRZ-I/II)")
 
         if p.exclude_water_body:
             if is_water_body is None:
-                rejection_reasons.append("Surface water body status is missing or unverified")
+                if not p.allow_unmeasured_hazard:
+                    rejection_reasons.append("Surface water body status is missing or unverified")
             elif is_water_body:
                 rejection_reasons.append("Site overlaps surface water body")
 

@@ -3,6 +3,7 @@
 import React from 'react';
 import { ThemeProvider, AuthProvider } from '@/components/providers';
 import { RouteTransitionProvider } from '@/components/layout/transition';
+import { ChatAssistantWidget } from '@/components/features/chat';
 
 export interface AppProvidersProps {
   children: React.ReactNode;
@@ -18,7 +19,10 @@ export interface AppProvidersProps {
 export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => (
   <ThemeProvider defaultTheme="light">
     <AuthProvider>
-      <RouteTransitionProvider>{children}</RouteTransitionProvider>
+      <RouteTransitionProvider>
+        {children}
+        <ChatAssistantWidget />
+      </RouteTransitionProvider>
     </AuthProvider>
   </ThemeProvider>
 );
