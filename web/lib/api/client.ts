@@ -2,8 +2,21 @@
 
 import type { ApiErrorEnvelope } from './types';
 
+export function getApiBaseUrl(): string {
+  if (process.env.NEXT_PUBLIC_API_BASE_URL) {
+    return process.env.NEXT_PUBLIC_API_BASE_URL.replace(/\/$/, '');
+  }
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    if (host === 'localhost' || host === '127.0.0.1') {
+      return 'http://localhost:8000';
+    }
+  }
+  return 'https://the-dead-zone.onrender.com';
+}
+
 export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, '') || 'https://the-dead-zone.onrender.com';
+  process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, '') || 'http://localhost:8000';
 
 /** Error carrying the machine-readable code and request id from the API envelope. */
 export class ApiError extends Error {
@@ -30,10 +43,8 @@ export class ApiError extends Error {
 
 function buildUrl(path: string, params?: Record<string, string | number | undefined>): string {
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  const base = API_BASE_URL.startsWith('http')
-    ? API_BASE_URL
-    : (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000') + API_BASE_URL;
-  const url = new URL(`${base.replace(/\/$/, '')}${cleanPath}`);
+  const base = getApiBaseUrl();
+  const url = new URL(`${base}${cleanPath}`);
   if (params) {
     for (const [key, value] of Object.entries(params)) {
       if (value !== undefined && value !== null && value !== '') {

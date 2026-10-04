@@ -26,8 +26,10 @@ from core.h3_utils import h3_to_str
 from core.schemas.alerts import (
     ActiveAlertItem,
     ActiveAlertsResponse,
+    DistrictForecastStatus,
     ForecastAlertItem,
     ForecastAlertsResponse,
+    ForecastPipelineStatusResponse,
 )
 
 logger = logging.getLogger("setu_api.alerts_service")
@@ -199,4 +201,51 @@ class AlertsService:
             horizon_hours=horizon_hours,
             items=items,
         )
+
+    def get_forecast_pipeline_status(self, is_run_in_progress: bool = False) -> ForecastPipelineStatusResponse:
+        """Compiles health, freshness, and active alert telemetry across all registered districts."""
+        from pipeline.hazard.forecast_config import FORECAST_DISTRICTS
+
+        global_cycle = self.repo.get_latest_forecast_cycle()
+        now_utc = datetime.now(timezone.utc)
+        districts_status: list[DistrictForecastStatus] = []
+
+        for key, cfg in FORECAST_DISTRICTS.items():
+            district_cycle = self.repo.get_latest_forecast_cycle(admin_id=cfg.admin_id)
+            # Query for danger cells predicted to cross threshold
+            _, danger_count, _ = self.repo.query_forecast_alerts(
+                admin_id=cfg.admin_id,
+                min_mhi=ACTIVE_ALERT_MHI_LIVE,
+                limit=1,
+            )
+
+            if danger_count > 0:
+                weather_state = "ALERT_ACTIVE"
+            elif district_cycle is not None:
+                # Check 12h freshness
+                age_hours = (now_utc - district_cycle).total_seconds() / 3600.0
+                weather_state = "STALE" if age_hours > 12.0 else "CLEAR"
+            else:
+                weather_state = "NO_DATA"
+
+            districts_status.append(
+                DistrictForecastStatus(
+                    key=key,
+                    name=cfg.name,
+                    admin_id=cfg.admin_id,
+                    lgd_code=cfg.lgd_code,
+                    last_cycle_at=district_cycle,
+                    danger_cells=danger_count,
+                    weather_state=weather_state,
+                )
+            )
+
+        return ForecastPipelineStatusResponse(
+            scheduler_enabled=settings.FORECAST_SCHEDULER_ENABLED,
+            schedule_cron=settings.FORECAST_SCHEDULE_CRON,
+            is_run_in_progress=is_run_in_progress,
+            global_latest_cycle_at=global_cycle,
+            districts=districts_status,
+        )
+
 

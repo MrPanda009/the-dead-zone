@@ -86,12 +86,20 @@ class AllocationRepository:
         if p.allow_unverified_tenure:
             tenures.append("tenure_unverified")
 
+        # Hazard constraint: order-grade requires verified safe MHI (< max_static_mhi).
+        # Screening policy with allow_unmeasured_hazard admits sites where MHI is unmeasured,
+        # never assuming safe (MHI remains NULL in database) but stamping screening caveats.
+        if p.allow_unmeasured_hazard:
+            hazard_sql = "(cs.mhi_max IS NULL OR cs.mhi_max < :max_static_mhi)"
+        else:
+            hazard_sql = "cs.mhi_max < :max_static_mhi"
+
         where_clauses = [
             "h.id = ANY(:hab_ids)",
             "ST_DWithin(h.geom_point::geography, cs.centroid::geography, :radius_m)",
             f"{capacity_sql} > 0",
             # H7 Hard Eligibility Constraints on canonical table columns parameterized from CandidateSitePolicy
-            "cs.mhi_max < :max_static_mhi",
+            hazard_sql,
             "cs.slope_mean < :max_slope_deg",
             "cs.area_ha >= :min_area_ha",
             "cs.tenure = ANY(:tenures)",
@@ -118,6 +126,7 @@ class AllocationRepository:
                 COALESCE(cs.metadata->>'name', 'Site #' || cs.id) as site_name,
                 {capacity_sql} as capacity,
                 CASE WHEN cs.cc_final IS NULL THEN 'land_only_provisional' ELSE 'final' END as capacity_basis,
+                CASE WHEN cs.mhi_max IS NULL THEN 'unmeasured' ELSE 'measured' END as hazard_basis,
                 cs.suitability,
                 cs.area_ha,
                 cs.tenure,

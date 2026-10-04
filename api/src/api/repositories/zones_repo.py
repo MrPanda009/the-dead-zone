@@ -68,7 +68,8 @@ class ZonesRepository:
             lateral_sql = """
                 SELECT mhi_static, mhi_live, mhi_fcst, dominant_hazard, zone_class
                 FROM mhi_snapshot
-                WHERE h3 = g.h3 AND valid_at = :snapshot_time
+                WHERE h3 = g.h3 AND valid_at <= :snapshot_time
+                ORDER BY valid_at DESC
                 LIMIT 1
             """
             params["snapshot_time"] = valid_at
