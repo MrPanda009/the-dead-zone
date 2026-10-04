@@ -128,6 +128,24 @@ class Settings(BaseSettings):
         description="SameSite cookie policy (lax, strict, none).",
     )
 
+    # Google OAuth 2.0 / OpenID Connect
+    GOOGLE_CLIENT_ID: str = Field(
+        default="",
+        description="Google OAuth 2.0 Web Client ID for token audience verification.",
+    )
+    GOOGLE_CLIENT_SECRET: str = Field(
+        default="",
+        description="Google OAuth 2.0 Web Client Secret.",
+    )
+    GOOGLE_OFFICIAL_DOMAINS: list[str] = Field(
+        default=["gov.in", "nic.in"],
+        description="Whitelisted email domains granted GOVERNMENT_OFFICIAL role on Google registration.",
+    )
+    GOOGLE_OFFICIAL_EMAILS: list[str] = Field(
+        default=["sabitasinha57@gmail.com"],
+        description="Explicit email addresses granted GOVERNMENT_OFFICIAL role on Google registration.",
+    )
+
     # Login Rate Limiting (Batch E)
     LOGIN_RATE_LIMIT_ENABLED: bool = Field(
         default=True,

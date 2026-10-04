@@ -121,6 +121,7 @@ import type { components } from '../api-types';
 
 export type UserResponse = components['schemas']['UserResponse'];
 export type LoginRequest = components['schemas']['LoginRequest'];
+export type GoogleLoginRequest = components['schemas']['GoogleLoginRequest'];
 export type Role = components['schemas']['Role'];
 export type JurisdictionDTO = components['schemas']['JurisdictionDTO'];
 export type LogoutResponse = components['schemas']['LogoutResponse'];
