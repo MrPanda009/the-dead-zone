@@ -95,12 +95,13 @@ export const Header: React.FC<HeaderProps> = ({
     <header
       ref={containerRef}
       id="app-header"
-      className={`fixed top-4 left-0 right-0 z-40 px-4 sm:px-8 lg:px-12 flex items-center justify-center pointer-events-none ${className}`}
+      className={`fixed top-3 sm:top-4 left-0 right-0 z-40 px-3 sm:px-8 lg:px-12 flex items-center justify-center pointer-events-none ${className}`}
     >
       {/* Floating Dark Pill Dock Container (Material 3 Style) */}
       <div
-        className={`header-dock pointer-events-auto m3-floating-dock px-2 py-1.5 flex items-center justify-between gap-3 sm:gap-6 max-w-6xl w-full ${viewMode === 'login' ? 'shadow-m3-4' : ''
-          } ${classNames.dock ?? ''}`}
+        className={`header-dock pointer-events-auto m3-floating-dock px-2 py-1.5 flex items-center justify-between gap-2.5 sm:gap-6 ${
+          viewMode === 'login' ? 'max-w-4xl shadow-m3-4' : 'max-w-6xl'
+        } w-full ${classNames.dock ?? ''}`}
       >
         {/* Left Brand / Close Button Pill */}
         <div className="header-slot flex items-center shrink-0">
@@ -120,11 +121,13 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Right Portal Access / Auth Controls */}
         <div className="header-slot flex items-center gap-2 shrink-0">
-          <PortalAccessButton
-            href={authTargetHref}
-            label={authLabel}
-            disableAnimation={!animate}
-          />
+          {viewMode !== 'login' && (
+            <PortalAccessButton
+              href={authTargetHref}
+              label={authLabel}
+              disableAnimation={!animate}
+            />
+          )}
           {isAuthenticated && (
             <button
               type="button"

@@ -82,7 +82,7 @@ export const AppHeader = ({
         .join(' ')}
     >
       {/* 1. Left Platform Identity */}
-      <div className="flex items-center gap-3" data-header-item>
+      <div className="flex items-center gap-3 min-w-[200px]" data-header-item>
         <Link
           href={homeHref}
           className="flex items-center gap-2 group cursor-pointer"
@@ -108,8 +108,8 @@ export const AppHeader = ({
         ) : null}
       </div>
 
-      {/* 2. Center Nav Links */}
-      <div className="hidden md:flex items-center gap-1.5" data-header-item>
+      {/* 2. Center Nav Links - Truly Centered */}
+      <div className="hidden md:flex items-center gap-1.5 md:absolute md:left-1/2 md:-translate-x-1/2" data-header-item>
         <Link
           href="/"
           className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono text-text-secondary hover:text-text-primary hover:bg-surface-1 dark:hover:bg-white/5 border border-line dark:border-white/10 transition-colors cursor-pointer"
@@ -137,15 +137,23 @@ export const AppHeader = ({
         <Link
           href="/stories"
           className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono text-text-secondary hover:text-text-primary hover:bg-surface-1 dark:hover:bg-white/5 border border-line dark:border-white/10 transition-colors cursor-pointer"
-          title="Citizen Advisory Stories"
+          title="Assess &amp; Advisory Corridors"
         >
           <span className="material-symbols-outlined text-xs">auto_stories</span>
-          <span>Stories</span>
+          <span>Assess</span>
+        </Link>
+        <Link
+          href="/stats"
+          className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono text-text-secondary hover:text-text-primary hover:bg-surface-1 dark:hover:bg-white/5 border border-line dark:border-white/10 transition-colors cursor-pointer"
+          title="Disaster History &amp; Stats"
+        >
+          <span className="material-symbols-outlined text-xs">query_stats</span>
+          <span>Stats</span>
         </Link>
       </div>
 
       {/* 3. Right Action Tools */}
-      <div className="flex items-center gap-2" data-header-item>
+      <div className="flex items-center gap-2 min-w-[200px] justify-end" data-header-item>
         {actionSlot || (
           <div className="flex items-center gap-2">
             <ThemeToggle />

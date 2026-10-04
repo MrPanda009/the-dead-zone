@@ -32,10 +32,10 @@ export const MapTopControlBar: React.FC<MapTopControlBarProps> = ({
     >
       {/* 1. H3 Resolution Segmented Pills */}
       <div className="flex items-center gap-2">
-        <div className="flex items-center gap-1.5 text-sky-400">
+        <div className="flex items-center gap-1.5 text-[#00e5ff]">
           <span className="material-symbols-outlined text-base">hexagon</span>
-          <span className="text-[10px] font-bold tracking-wider text-text-secondary uppercase hidden md:inline">
-            H3 Resolution
+          <span className="text-[10px] font-bold tracking-wider text-text-secondary uppercase">
+            H3 RESOLUTION
           </span>
         </div>
         <div className="flex items-center p-0.5 rounded-xl bg-surface-1 dark:bg-[#070d18] border border-line dark:border-white/10 shadow-inner">
@@ -46,10 +46,10 @@ export const MapTopControlBar: React.FC<MapTopControlBarProps> = ({
                 key={res}
                 type="button"
                 onClick={() => onResolutionChange?.(res)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-mono font-medium transition-all cursor-pointer ${
+                className={`px-2.5 py-1 rounded-lg text-xs font-mono transition-all cursor-pointer ${
                   isActive
-                    ? 'bg-sky-500 text-white font-bold shadow-md shadow-sky-500/20'
-                    : 'text-text-muted hover:text-text-primary hover:bg-surface-2 dark:hover:bg-white/5'
+                    ? 'bg-[#00e5ff] text-black font-extrabold shadow-md shadow-[#00e5ff]/30'
+                    : 'text-text-muted hover:text-text-primary hover:bg-surface-2 dark:hover:bg-white/5 font-medium'
                 }`}
                 title={`H3 Resolution R${res}`}
               >
@@ -65,10 +65,10 @@ export const MapTopControlBar: React.FC<MapTopControlBarProps> = ({
 
       {/* 2. Layer Opacity Slider */}
       <div className="flex items-center gap-2">
-        <div className="flex items-center gap-1 text-sky-400">
+        <div className="flex items-center gap-1 text-[#00e5ff]">
           <span className="material-symbols-outlined text-base">layers</span>
-          <span className="text-[10px] font-bold tracking-wider text-text-secondary uppercase hidden lg:inline">
-            Layer Opacity
+          <span className="text-[10px] font-bold tracking-wider text-text-secondary uppercase">
+            LAYER OPACITY
           </span>
         </div>
         <input
@@ -78,7 +78,7 @@ export const MapTopControlBar: React.FC<MapTopControlBarProps> = ({
           step={0.05}
           value={opacity}
           onChange={(e) => onOpacityChange?.(parseFloat(e.target.value))}
-          className="w-16 sm:w-20 md:w-24 h-1.5 bg-surface-2 dark:bg-white/15 rounded-lg appearance-none cursor-pointer accent-sky-400"
+          className="w-16 sm:w-20 md:w-24 h-1.5 bg-surface-2 dark:bg-white/15 rounded-lg appearance-none cursor-pointer accent-[#00e5ff]"
           title={`Opacity: ${Math.round(opacity * 100)}%`}
         />
         <span className="text-[11px] font-mono text-text-secondary w-8 text-right tabular-nums">
@@ -97,7 +97,7 @@ export const MapTopControlBar: React.FC<MapTopControlBarProps> = ({
           aria-checked={showConfidenceHatch}
           onClick={() => onConfidenceHatchChange?.(!showConfidenceHatch)}
           className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-            showConfidenceHatch ? 'bg-sky-500' : 'bg-surface-2 dark:bg-white/20'
+            showConfidenceHatch ? 'bg-[#00e5ff]' : 'bg-surface-2 dark:bg-white/20'
           }`}
         >
           <span
@@ -111,7 +111,7 @@ export const MapTopControlBar: React.FC<MapTopControlBarProps> = ({
           <span className="text-[11px] font-semibold text-text-primary leading-tight">
             Confidence hatch
           </span>
-          <span className="text-[9px] font-mono text-text-muted leading-tight hidden sm:inline">
+          <span className="text-[9px] font-mono text-text-muted leading-tight">
             Marks provisional cells (FR-9.3)
           </span>
         </div>

@@ -137,13 +137,13 @@ export const LoginCard: React.FC<LoginCardProps> = ({
   return (
     <div
       ref={containerRef}
-      className={`w-full max-w-xl p-6 sm:p-8 rounded-[24px] bg-surface-0/90 dark:bg-forest-surface/90 border border-line dark:border-white/15 shadow-2xl relative z-20 backdrop-blur-2xl transition-colors duration-200 ${className}`}
+      className={`w-full max-w-xl p-5 sm:p-6 lg:p-7 xl:p-8 rounded-[24px] bg-surface-0/95 dark:bg-forest-surface/95 border border-line dark:border-white/15 shadow-2xl relative z-20 backdrop-blur-2xl transition-colors duration-200 ${className}`}
     >
       {/* Top Header Pill */}
-      <div className="flex items-center justify-between mb-4 sm:mb-5">
-        <span className="pill-badge px-3 py-1 rounded-full text-[11px] font-mono font-semibold text-accent-emerald-bright border border-accent-emerald/30 bg-accent-emerald/10 flex items-center gap-2 shadow-xs">
-          <span className="w-2 h-2 rounded-full bg-accent-emerald-bright animate-ping" />
-          <span>TERRA · Terrain-based Environmental Risk and Relocation Analytics</span>
+      <div className="flex items-center justify-between mb-3.5 sm:mb-4.5">
+        <span className="pill-badge px-2.5 sm:px-3 py-1 rounded-full text-[10px] sm:text-[11px] font-mono font-semibold text-accent-emerald-bright border border-accent-emerald/30 bg-accent-emerald/10 flex items-center gap-2 shadow-xs">
+          <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-accent-emerald-bright animate-ping" />
+          <span>TERRA · Terrain Risk &amp; Relocation Analytics</span>
         </span>
         <Link
           href={overviewHref}
@@ -155,18 +155,18 @@ export const LoginCard: React.FC<LoginCardProps> = ({
       </div>
 
       {/* Title & Subtitle */}
-      <div className="mb-5 sm:mb-6">
-        <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-ink dark:text-text-primary tracking-tight leading-tight">
+      <div className="mb-4 sm:mb-5">
+        <h2 className="font-display text-xl sm:text-2xl xl:text-3xl font-extrabold text-ink dark:text-text-primary tracking-tight leading-tight">
           Sign In to Portal
         </h2>
-        <p className="text-xs sm:text-sm text-text-secondary mt-1.5 leading-relaxed font-sans">
-          TERRA (Terrain-based Environmental Risk and Relocation Analytics) · Official portal for disaster response officials, district administrators, and public safety teams.
+        <p className="text-xs sm:text-xs xl:text-sm text-text-secondary mt-1 sm:mt-1.5 leading-relaxed font-sans">
+          Official portal for disaster response officials, district administrators, and public safety teams.
         </p>
       </div>
 
       {/* Demo Quick-Fill Presets */}
-      <div className="mb-5">
-        <div className="flex items-center justify-between mb-2">
+      <div className="mb-4 sm:mb-5">
+        <div className="flex items-center justify-between mb-1.5 sm:mb-2">
           <span className="text-[10px] font-mono uppercase tracking-wider text-text-muted">
             Fast Access Presets (Click to Fill)
           </span>
@@ -174,7 +174,7 @@ export const LoginCard: React.FC<LoginCardProps> = ({
             Pre-configured
           </span>
         </div>
-        <div className="grid grid-cols-2 gap-2.5">
+        <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
           {DEMO_PRESETS.map((p) => {
             const isSelected = email === p.email;
             return (
@@ -182,7 +182,7 @@ export const LoginCard: React.FC<LoginCardProps> = ({
                 key={p.id}
                 type="button"
                 onClick={() => applyPreset(p)}
-                className={`text-left p-3 rounded-xl border transition-all duration-200 cursor-pointer select-none ${
+                className={`text-left p-2.5 sm:p-3 rounded-xl border transition-all duration-200 cursor-pointer select-none ${
                   isSelected
                     ? 'bg-citron/15 border-citron text-ink dark:text-text-primary shadow-xs ring-1 ring-citron/40'
                     : 'bg-surface-1/80 dark:bg-forest-deep/60 hover:bg-surface-2 dark:hover:bg-forest-deep border-line dark:border-white/10 text-text-secondary hover:text-ink dark:hover:text-text-primary'
@@ -194,7 +194,7 @@ export const LoginCard: React.FC<LoginCardProps> = ({
                     {p.roleBadge}
                   </span>
                 </div>
-                <span className="block text-[11px] text-text-muted truncate mt-1">
+                <span className="block text-[10px] sm:text-[11px] text-text-muted truncate mt-0.5 sm:mt-1">
                   {p.sublabel}
                 </span>
               </button>
@@ -205,7 +205,7 @@ export const LoginCard: React.FC<LoginCardProps> = ({
 
       {/* Error Banner */}
       {errorMessage && (
-        <div className="mb-5 p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-xs flex items-start gap-2.5 animate-fadeIn">
+        <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-xs flex items-start gap-2.5 animate-fadeIn">
           <span className="material-symbols-outlined text-base shrink-0 mt-0.5">
             error
           </span>
@@ -214,11 +214,11 @@ export const LoginCard: React.FC<LoginCardProps> = ({
       )}
 
       {/* Login Form */}
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-3.5">
         <div>
           <label
             htmlFor="auth-email"
-            className="block text-xs font-mono font-medium text-text-secondary mb-1.5"
+            className="block text-xs font-mono font-medium text-text-secondary mb-1 sm:mb-1.5"
           >
             Official Email Address
           </label>
@@ -230,9 +230,9 @@ export const LoginCard: React.FC<LoginCardProps> = ({
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="officer@terra.gov.in"
-              className="auth-input w-full px-3.5 py-2.5 rounded-xl bg-surface-1 dark:bg-forest-deep/80 border border-line dark:border-white/10 focus:border-citron focus:ring-1 focus:ring-citron/30 focus:outline-none text-sm text-ink dark:text-text-primary font-mono transition-colors"
+              className="auth-input w-full px-3.5 py-2 sm:py-2.5 rounded-xl bg-surface-1 dark:bg-forest-deep/80 border border-line dark:border-white/10 focus:border-citron focus:ring-1 focus:ring-citron/30 focus:outline-none text-xs sm:text-sm text-ink dark:text-text-primary font-mono transition-colors"
             />
-            <span className="material-symbols-outlined absolute right-3 top-2.5 text-text-muted text-lg pointer-events-none">
+            <span className="material-symbols-outlined absolute right-3 top-2 sm:top-2.5 text-text-muted text-base sm:text-lg pointer-events-none">
               badge
             </span>
           </div>
@@ -241,7 +241,7 @@ export const LoginCard: React.FC<LoginCardProps> = ({
         <div>
           <label
             htmlFor="auth-password"
-            className="block text-xs font-mono font-medium text-text-secondary mb-1.5"
+            className="block text-xs font-mono font-medium text-text-secondary mb-1 sm:mb-1.5"
           >
             Password
           </label>
@@ -253,9 +253,9 @@ export const LoginCard: React.FC<LoginCardProps> = ({
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••••••"
-              className="auth-input w-full px-3.5 py-2.5 rounded-xl bg-surface-1 dark:bg-forest-deep/80 border border-line dark:border-white/10 focus:border-citron focus:ring-1 focus:ring-citron/30 focus:outline-none text-sm text-ink dark:text-text-primary font-mono transition-colors"
+              className="auth-input w-full px-3.5 py-2 sm:py-2.5 rounded-xl bg-surface-1 dark:bg-forest-deep/80 border border-line dark:border-white/10 focus:border-citron focus:ring-1 focus:ring-citron/30 focus:outline-none text-xs sm:text-sm text-ink dark:text-text-primary font-mono transition-colors"
             />
-            <span className="material-symbols-outlined absolute right-3 top-2.5 text-text-muted text-lg pointer-events-none">
+            <span className="material-symbols-outlined absolute right-3 top-2 sm:top-2.5 text-text-muted text-base sm:text-lg pointer-events-none">
               lock
             </span>
           </div>
@@ -265,24 +265,24 @@ export const LoginCard: React.FC<LoginCardProps> = ({
           ref={submitBtnRef}
           type="submit"
           disabled={isSubmitting}
-          className="w-full mt-2 py-3 px-4 rounded-xl bg-citron text-forest-dark font-display font-bold text-sm shadow-md hover:brightness-105 active:scale-[0.99] disabled:opacity-60 transition-all flex items-center justify-center gap-2 cursor-pointer"
+          className="w-full mt-1.5 sm:mt-2 py-2.5 sm:py-3 px-4 rounded-xl bg-citron text-forest-dark font-display font-bold text-xs sm:text-sm shadow-md hover:brightness-105 active:scale-[0.99] disabled:opacity-60 transition-all flex items-center justify-center gap-2 cursor-pointer"
         >
           {isSubmitting ? (
             <>
-              <span className="w-4 h-4 border-2 border-forest-dark border-t-transparent rounded-full animate-spin" />
+              <span className="w-3.5 h-3.5 sm:w-4 sm:h-4 border-2 border-forest-dark border-t-transparent rounded-full animate-spin" />
               <span>Authenticating…</span>
             </>
           ) : (
             <>
               <span>Sign In to Portal</span>
-              <span className="material-symbols-outlined text-lg">arrow_forward</span>
+              <span className="material-symbols-outlined text-base sm:text-lg">arrow_forward</span>
             </>
           )}
         </button>
       </form>
 
       {/* Footer Security Notice */}
-      <div className="mt-6 pt-4 border-t border-line dark:border-white/[0.08] flex items-center justify-between text-[11px] text-text-muted font-mono">
+      <div className="mt-4 sm:mt-5 pt-3 sm:pt-4 border-t border-line dark:border-white/[0.08] flex items-center justify-between text-[10px] sm:text-[11px] text-text-muted font-mono">
         <span className="flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-accent-emerald-bright" />
           <span>GovCloud Secure Session</span>

@@ -167,7 +167,7 @@ export const ThreePanelLayout: React.FC<ThreePanelLayoutProps> = ({
               'relative z-20 flex h-full shrink-0 flex-col transition-all duration-300 ease-in-out',
               isLeftCollapsed
                 ? 'w-0 max-w-0 opacity-0 overflow-hidden pointer-events-none -translate-x-6'
-                : 'w-[290px] xl:w-[320px] 2xl:w-[350px] opacity-100 translate-x-0',
+                : 'w-[270px] lg:w-[290px] xl:w-[320px] 2xl:w-[350px] opacity-100 translate-x-0',
               classNames.left ?? '',
             ]
               .filter(Boolean)
@@ -194,7 +194,7 @@ export const ThreePanelLayout: React.FC<ThreePanelLayoutProps> = ({
               'relative z-20 flex h-full shrink-0 flex-col transition-all duration-300 ease-in-out',
               isRightCollapsed
                 ? 'w-0 max-w-0 opacity-0 overflow-hidden pointer-events-none translate-x-6'
-                : 'w-[310px] xl:w-[340px] 2xl:w-[380px] opacity-100 translate-x-0',
+                : 'w-[280px] lg:w-[310px] xl:w-[340px] 2xl:w-[380px] opacity-100 translate-x-0',
               classNames.right ?? '',
             ]
               .filter(Boolean)

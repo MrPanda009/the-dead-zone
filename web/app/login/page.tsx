@@ -14,7 +14,7 @@ export default function LoginPage() {
   return (
     <RouteStage
       as="div"
-      className="relative w-full h-screen overflow-hidden bg-bg-base text-text-primary select-none"
+      className="relative w-full h-dvh min-h-screen overflow-x-hidden overflow-y-auto bg-bg-base text-text-primary select-none flex flex-col"
     >
       {/* Misty Forest Background Atmosphere */}
       <div className="fixed inset-0 forest-atmosphere z-0 pointer-events-none" />
@@ -35,9 +35,9 @@ export default function LoginPage() {
         activeTabId=""
       />
 
-      {/* Centered Login Card */}
-      <div className="relative z-10 w-full h-full flex items-center justify-center lg:justify-start px-6 sm:px-12 lg:px-20 pointer-events-none">
-        <div className="w-full max-w-xl pointer-events-auto">
+      {/* Centered Login Card Area with Guaranteed Top Header Clearance */}
+      <div className="relative z-10 w-full flex-1 flex flex-col justify-center items-center lg:items-start pt-24 sm:pt-28 lg:pt-32 pb-8 sm:pb-12 px-4 sm:px-10 lg:px-16 xl:px-24 pointer-events-none">
+        <div className="w-full max-w-lg xl:max-w-xl my-auto pointer-events-auto">
           <LoginCard
             overviewHref={APP_ROUTES.home}
             govHref={APP_ROUTES.gov}

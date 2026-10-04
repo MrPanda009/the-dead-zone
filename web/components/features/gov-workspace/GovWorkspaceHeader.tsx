@@ -73,7 +73,7 @@ export const GovWorkspaceHeader: React.FC<GovWorkspaceHeaderProps> = ({
       className={`flex h-13 shrink-0 items-center justify-between gap-3 border-b border-line dark:border-[#1e2d45] bg-surface-0/95 dark:bg-[#0c1524]/95 backdrop-blur-xl px-4 text-ink dark:text-text-primary transition-colors duration-200 ${className}`}
     >
       {/* 1. Left Platform Identity */}
-      <div className="flex items-center gap-3" data-header-elem>
+      <div className="flex items-center gap-3 min-w-[200px]" data-header-elem>
         <Link
           href={homeHref}
           className="flex items-center gap-2 group cursor-pointer"
@@ -100,8 +100,8 @@ export const GovWorkspaceHeader: React.FC<GovWorkspaceHeaderProps> = ({
         </div>
       </div>
 
-      {/* 2. Center View Switcher & Nav Links */}
-      <div className="flex items-center gap-2" data-header-elem>
+      {/* 2. Center View Switcher & Nav Links - Truly Centered */}
+      <div className="flex items-center gap-2 md:absolute md:left-1/2 md:-translate-x-1/2" data-header-elem>
         {/* Mode Switcher (3D Subcontinent vs 2D View) */}
         <div className="flex items-center p-0.5 rounded-xl bg-surface-1 dark:bg-[#070d18] border border-line dark:border-white/10 shadow-inner">
           <button
@@ -160,16 +160,25 @@ export const GovWorkspaceHeader: React.FC<GovWorkspaceHeaderProps> = ({
           <Link
             href={storiesHref}
             className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono text-text-secondary hover:text-text-primary hover:bg-surface-1 dark:hover:bg-white/5 border border-line dark:border-white/10 transition-colors cursor-pointer"
-            title="Tourist & Citizen Advisory Stories"
+            title="Assess &amp; Advisory Corridors"
           >
             <span className="material-symbols-outlined text-xs">auto_stories</span>
-            <span>Stories</span>
+            <span>Assess</span>
+          </Link>
+
+          <Link
+            href="/stats"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono text-text-secondary hover:text-text-primary hover:bg-surface-1 dark:hover:bg-white/5 border border-line dark:border-white/10 transition-colors cursor-pointer"
+            title="Disaster History &amp; Stats"
+          >
+            <span className="material-symbols-outlined text-xs">query_stats</span>
+            <span>Stats</span>
           </Link>
         </nav>
       </div>
 
       {/* 3. Right Action Tools */}
-      <div className="flex items-center gap-2" data-header-elem>
+      <div className="flex items-center gap-2 min-w-[200px] justify-end" data-header-elem>
         {/* Universal Theme Toggle */}
         <ThemeToggle />
 

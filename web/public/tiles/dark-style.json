@@ -1630,12 +1630,23 @@
       "source-layer": "boundary",
       "maxzoom": 5,
       "filter": [
-        "==",
+        "all",
         [
-          "get",
-          "admin_level"
+          "==",
+          [
+            "get",
+            "admin_level"
+          ],
+          2
         ],
-        2
+        [
+          "!=",
+          [
+            "get",
+            "disputed"
+          ],
+          1
+        ]
       ],
       "layout": {
         "line-cap": "round",
@@ -1667,12 +1678,23 @@
       "source-layer": "boundary",
       "minzoom": 5,
       "filter": [
-        "==",
+        "all",
         [
-          "get",
-          "admin_level"
+          "==",
+          [
+            "get",
+            "admin_level"
+          ],
+          2
         ],
-        2
+        [
+          "!=",
+          [
+            "get",
+            "disputed"
+          ],
+          1
+        ]
       ],
       "layout": {
         "line-cap": "round",
@@ -1723,7 +1745,8 @@
       ],
       "layout": {
         "line-cap": "round",
-        "line-join": "round"
+        "line-join": "round",
+        "visibility": "none"
       },
       "paint": {
         "line-color": "#94a3b8",

@@ -771,6 +771,46 @@ html.light ::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.18);
 }
 
+/* Visible data scrollbar for stats data column */
+.stats-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(212, 241, 93, 0.45) rgba(0, 0, 0, 0.15);
+}
+
+.stats-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.stats-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 9999px;
+}
+
+.stats-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(212, 241, 93, 0.4);
+  border-radius: 9999px;
+}
+
+.stats-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--color-citron);
+}
+
+html.light .stats-scrollbar {
+  scrollbar-color: rgba(22, 101, 52, 0.45) rgba(0, 0, 0, 0.06);
+}
+
+html.light .stats-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+html.light .stats-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(22, 101, 52, 0.35);
+}
+
+html.light .stats-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #166534;
+}
+
 @media (prefers-reduced-motion: reduce) {
 
   *,

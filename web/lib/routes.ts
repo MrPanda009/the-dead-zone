@@ -26,10 +26,10 @@ export type AppRoute = (typeof APP_ROUTES)[AppRouteKey];
  */
 export const NAV_TABS: NavTabItem[] = [
   { id: 'gov', label: '3D & 2D Map', icon: 'view_in_ar', href: APP_ROUTES.gov },
-  { id: 'stats', label: 'Disaster Stats', icon: 'query_stats', href: APP_ROUTES.stats },
-  { id: 'relocation', label: 'Relocation Solver', icon: 'moving', href: APP_ROUTES.relocation },
-  { id: 'stories', label: 'Tourist Stories', icon: 'auto_stories', href: APP_ROUTES.stories },
-  { id: 'about', label: 'About TERRA', icon: 'info', href: APP_ROUTES.about },
+  { id: 'relocation', label: 'Relocation', icon: 'moving', href: APP_ROUTES.relocation },
+  { id: 'stories', label: 'Assess', icon: 'auto_stories', href: APP_ROUTES.stories },
+  { id: 'stats', label: 'Stats', icon: 'query_stats', href: APP_ROUTES.stats },
+  { id: 'about', label: 'About', icon: 'info', href: APP_ROUTES.about },
 ];
 
 /** Maps a pathname back to the tab that should read as selected. */
