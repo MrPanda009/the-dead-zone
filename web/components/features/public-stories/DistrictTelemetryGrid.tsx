@@ -4,12 +4,17 @@ import React, { useRef } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import type { BackendHabitationRecord } from './districtBackendService';
+import type { WeatherState } from '@/lib/api/types';
 
 export interface DistrictTelemetryGridProps {
   /** The currently inspected settlement spot */
   spot: BackendHabitationRecord;
   /** Primary district hazard */
   fallbackHazard?: string;
+  /** Live weather and hazard status */
+  weatherState?: WeatherState;
+  /** District hydrological terrain typology */
+  terrainTypology?: 'hillslope' | 'alluvial_plain' | 'hillslope_debris_flow' | 'alluvial_pluvial_waterlogging';
   /** Custom root className */
   className?: string;
 }
@@ -17,6 +22,8 @@ export interface DistrictTelemetryGridProps {
 export const DistrictTelemetryGrid: React.FC<DistrictTelemetryGridProps> = ({
   spot,
   fallbackHazard = 'Landslide & Hillslope Debris Flow',
+  weatherState,
+  terrainTypology = 'hillslope',
   className = '',
 }) => {
   const gridRef = useRef<HTMLDivElement>(null);
@@ -38,33 +45,44 @@ export const DistrictTelemetryGrid: React.FC<DistrictTelemetryGridProps> = ({
         clearProps: 'opacity,transform',
       }
     );
-  }, { scope: gridRef, dependencies: [spot.id], revertOnUpdate: true });
+  }, { scope: gridRef, dependencies: [spot.id, weatherState], revertOnUpdate: true });
 
+  const isClear = weatherState === 'CLEAR';
   const isHighDanger =
-    spot.tier.toLowerCase().includes('tier 1') ||
-    (spot.przOverlapPct !== undefined && spot.przOverlapPct > 70);
+    !isClear &&
+    (spot.tier.toLowerCase().includes('tier 1') ||
+      (spot.przOverlapPct !== undefined && spot.przOverlapPct > 70) ||
+      weatherState === 'ALERT_ACTIVE');
 
   const hazardName = spot.hazardType || fallbackHazard;
+  const isAlluvial = terrainTypology === 'alluvial_plain' || terrainTypology === 'alluvial_pluvial_waterlogging';
 
-  // Derive civilian-readable road & travel conditions
-  const roadCondition = isHighDanger
-    ? 'Winding Ghat Road • Caution'
-    : spot.type === 'town'
-    ? 'Paved Highway • Normal Transit'
-    : 'Local Estate Road • Drive <30 km/h';
+  // Road & transit dynamic guidance
+  const roadCondition = isClear
+    ? 'All Corridors Open • Normal Transit'
+    : isHighDanger
+    ? isAlluvial
+      ? 'Submerged Causeway • Bypass Flood Plain'
+      : 'Ghat Debris Alert • Caution'
+    : isAlluvial
+    ? 'Alluvial Road • Minor Waterlogging'
+    : 'Winding Ghat Road • Drive <30 km/h';
 
+  // Refuge bases for all 7 operational districts + historical zones
   const safeBase =
-    spot.name === 'Sunil Ward' || spot.name === 'Manohar Bagh' || spot.name.includes('Joshimath')
-      ? 'Bhatoli Plateau Sanctuary'
-      : spot.name.includes('Dhordo') || spot.name.includes('Bhuj') || spot.name.includes('Habo')
-      ? 'Habo Hill & Bhuj High Ridge'
-      : spot.name.includes('Pachmarhi') || spot.name.includes('Pipariya')
-      ? 'Pachmarhi High Plateau'
-      : spot.name === 'Chooralmala' || spot.name === 'Mundakkai' || spot.name === 'Meppadi'
+    spot.name.includes('Kedarnath') || spot.name.includes('Rudraprayag') || spot.name.includes('Gaurikund')
+      ? 'Agastyamuni Ridge Hub'
+      : spot.name.includes('Srinagar') || spot.name.includes('Pauri') || spot.name.includes('Kirtinagar')
+      ? 'Chhapania High Terrace'
+      : spot.name.includes('Dholpur') || spot.name.includes('Bari') || spot.name.includes('Rajakhera')
+      ? 'Dholpur City High Ground'
+      : spot.name.includes('Morena') || spot.name.includes('Ambah') || spot.name.includes('Jora')
+      ? 'Morena High Plain Sanctuary'
+      : spot.name.includes('Chooralmala') || spot.name.includes('Mundakkai') || spot.name.includes('Meppadi')
       ? 'Kalpetta East & Sulthan Bathery'
-      : spot.name === 'Bhagamandala' || spot.name === 'Madikeri' || spot.name === 'Somwarpet'
+      : spot.name.includes('Bhagamandala') || spot.name.includes('Madikeri')
       ? 'Kushalnagar Plain & Madikeri Hub'
-      : spot.name === 'Mandia Char Cluster' || spot.name === 'Baghbar Riparian Reach'
+      : spot.name.includes('Mandia') || spot.name.includes('Baghbar') || spot.name.includes('Barpeta')
       ? 'Barpeta Road & Howly Plateau'
       : 'District Emergency Safe Base';
 
@@ -81,22 +99,30 @@ export const DistrictTelemetryGrid: React.FC<DistrictTelemetryGridProps> = ({
         <div className="mt-2 flex items-center gap-1.5">
           <span
             className={`w-2.5 h-2.5 rounded-full ${
-              isHighDanger ? 'bg-red-500 animate-pulse' : 'bg-amber-400'
+              isClear
+                ? 'bg-emerald-500'
+                : isHighDanger
+                ? 'bg-red-500 animate-pulse'
+                : 'bg-amber-400'
             }`}
           />
           <span
             className={`text-sm sm:text-base font-sans font-bold leading-tight ${
-              isHighDanger
+              isClear
+                ? 'text-emerald-600 dark:text-emerald-400'
+                : isHighDanger
                 ? 'text-red-600 dark:text-red-400'
                 : 'text-amber-600 dark:text-amber-400'
             }`}
           >
-            {isHighDanger ? 'High Hazard Zone' : 'Caution Advised'}
+            {isClear ? 'Clear Weather' : isHighDanger ? 'High Hazard Zone' : 'Caution Advised'}
           </span>
         </div>
         <span className="text-[10px] text-ink-faint dark:text-cream/50 mt-1.5 leading-tight">
-          {isHighDanger
-            ? 'Avoid steep slopes & hiking trails'
+          {isClear
+            ? '0 alerts across 72h window • Route 1 calm'
+            : isHighDanger
+            ? 'Avoid steep slopes & saturated cuts'
             : 'Precaution during heavy rainfall'}
         </span>
       </div>
@@ -115,7 +141,7 @@ export const DistrictTelemetryGrid: React.FC<DistrictTelemetryGridProps> = ({
           </span>
         </div>
         <span className="text-[10px] text-ink-faint dark:text-cream/50 mt-1.5 leading-tight">
-          Monsoon saturation corridor
+          {isAlluvial ? 'Pluvial drainage screening' : 'Hillslope debris threshold'}
         </span>
       </div>
 
@@ -130,7 +156,7 @@ export const DistrictTelemetryGrid: React.FC<DistrictTelemetryGridProps> = ({
           </span>
         </div>
         <span className="text-[10px] text-ink-faint dark:text-cream/50 mt-1.5 leading-tight">
-          Daytime transit recommended
+          {isClear ? 'Verified safe travel window' : 'Daytime transit recommended'}
         </span>
       </div>
 
@@ -153,3 +179,4 @@ export const DistrictTelemetryGrid: React.FC<DistrictTelemetryGridProps> = ({
 };
 
 export default DistrictTelemetryGrid;
+

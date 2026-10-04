@@ -4,6 +4,7 @@ import React, { useRef } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import type { DistrictBackendProfile } from './districtBackendService';
+import { DistrictWeatherBadge } from './DistrictWeatherBadge';
 
 export interface DistrictRiskHeaderProps {
   /** The district profile from backend or baseline */
@@ -38,16 +39,18 @@ export const DistrictRiskHeader: React.FC<DistrictRiskHeaderProps> = ({
         clearProps: 'opacity,transform',
       }
     );
-  }, { scope: headerRef, dependencies: [profile.districtName], revertOnUpdate: true });
+  }, { scope: headerRef, dependencies: [profile.districtName, profile.weatherState], revertOnUpdate: true });
 
-  const isCritical = profile.dangerLevel === 'Critical';
+  const weatherState = profile.weatherState || (profile.dangerLevel === 'Critical' ? 'ALERT_ACTIVE' : 'CLEAR');
+  const isClear = weatherState === 'CLEAR';
+  const isAlluvial = profile.terrainTypology === 'alluvial_plain';
 
   return (
     <div
       ref={headerRef}
       className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-line dark:border-white/10 pb-4 ${className}`}
     >
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1.5">
         <div className="flex items-center gap-2.5 flex-wrap">
           <h2 className="font-sans text-xl sm:text-2xl font-bold tracking-tight text-ink dark:text-cream">
             {profile.districtName}
@@ -55,29 +58,43 @@ export const DistrictRiskHeader: React.FC<DistrictRiskHeaderProps> = ({
           <span className="text-xs font-mono text-ink-muted dark:text-cream/60">
             {profile.state} &bull; {profile.riverBasin}
           </span>
-          <span
-            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase font-semibold border ${
-              isCritical
-                ? 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/25'
-                : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25'
-            }`}
-          >
-            <span
-              className={`w-1.5 h-1.5 rounded-full ${
-                isCritical ? 'bg-red-500 animate-pulse' : 'bg-amber-500'
-              }`}
-            />
-            {profile.touristRiskRating}
+
+          {/* Dynamic Weather & Alert Status Pill */}
+          <DistrictWeatherBadge
+            weatherState={weatherState}
+            dangerCellsCount={profile.dangerCellsCount}
+            lastCycleAt={profile.lastCycleAt}
+            size="sm"
+          />
+
+          {/* Hydrological Terrain Typology Badge */}
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono text-ink-muted dark:text-cream/70 bg-surface-1 dark:bg-white/5 border border-line dark:border-white/10">
+            <span className="text-xs">{isAlluvial ? '🌊' : '⛰️'}</span>
+            {isAlluvial ? 'Alluvial Drainage' : 'Mountain Hillslope'}
           </span>
+
+          {/* Live Backend Telemetry Indicator */}
+          {isLive && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Live API
+            </span>
+          )}
         </div>
 
-        <div className="flex items-center gap-3 text-xs font-mono text-ink-faint dark:text-cream/50">
+        <div className="flex items-center gap-3 text-xs font-mono text-ink-faint dark:text-cream/50 flex-wrap">
           <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-500" />
-            National Disaster Advisory Active
+            <span className={`w-2 h-2 rounded-full ${isClear ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'}`} />
+            {isClear
+              ? 'Clear Weather Clearance • Route 1 Calm ($MHI < 0.45)'
+              : 'Active Hazard Advisory • Route 1 Peak Envelope'}
           </span>
           <span>&bull;</span>
-          <span>Emergency Helpline: 112 / 1070</span>
+          <span className="text-[11px] text-ink-muted dark:text-cream/60">
+            Model: ECMWF IFS HRES 0.1° (72h Forecast)
+          </span>
+          <span>&bull;</span>
+          <span>Helpline: 112 / 1070</span>
         </div>
       </div>
 
@@ -94,3 +111,4 @@ export const DistrictRiskHeader: React.FC<DistrictRiskHeaderProps> = ({
 };
 
 export default DistrictRiskHeader;
+

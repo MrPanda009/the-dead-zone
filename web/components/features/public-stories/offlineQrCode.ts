@@ -77,7 +77,7 @@ const QR_VERSIONS: QrVersionInfo[] = [
 export function generateQrMatrix(text: string): boolean[][] {
   const utf8Bytes: number[] = [];
   for (let i = 0; i < text.length; i++) {
-    let charCode = text.charCodeAt(i);
+    const charCode = text.charCodeAt(i);
     if (charCode < 0x80) {
       utf8Bytes.push(charCode);
     } else if (charCode < 0x800) {

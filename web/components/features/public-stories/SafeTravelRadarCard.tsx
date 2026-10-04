@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { ZoneId } from './storyData';
-import { getEmergencyProfile, DistrictEmergencyProfile } from './touristEmergencyData';
+import { getEmergencyProfile } from './touristEmergencyData';
 import { getBackendProfileForZone } from './districtBackendService';
 import { apiGet } from '@/lib/api/client';
 
@@ -66,10 +66,17 @@ export const SafeTravelRadarCard: React.FC<SafeTravelRadarCardProps> = ({
   }, [backendProfile.adminId, backendProfile.lgdCode, zone]);
 
   // Overall computed status
+  const isClear =
+    (activeAlertsCount === 0 && forecastAlertsCount === 0) ||
+    backendProfile.weatherState === 'CLEAR';
+
   const isHighAlert =
-    (activeAlertsCount !== null && activeAlertsCount > 0) ||
-    emergencyData.currentAlertLevel === 'High Hazard';
+    !isClear &&
+    ((activeAlertsCount !== null && activeAlertsCount > 0) ||
+      emergencyData.currentAlertLevel === 'High Hazard');
+
   const isMonitored =
+    !isClear &&
     !isHighAlert &&
     ((forecastAlertsCount !== null && forecastAlertsCount > 0) ||
       emergencyData.currentAlertLevel === 'Monitored');
@@ -80,7 +87,9 @@ export const SafeTravelRadarCard: React.FC<SafeTravelRadarCardProps> = ({
     ? 'monitored'
     : 'normal';
 
-  const statusPillText = isHighAlert
+  const statusPillText = isClear
+    ? 'Clear Weather • 0 Alerts across 72h Window'
+    : isHighAlert
     ? 'High Hazard Alert — Restrict Non-Essential Travel'
     : isMonitored
     ? 'Monitored Advisory — Ghat Speed Restrictions'
@@ -107,15 +116,15 @@ export const SafeTravelRadarCard: React.FC<SafeTravelRadarCardProps> = ({
   return (
     <div
       ref={containerRef}
-      className={`glass-card p-3 sm:p-3.5 rounded-2xl bg-surface-0/95 dark:bg-[#071912]/95 border border-line dark:border-white/10 shadow-md flex flex-col gap-2.5 text-ink dark:text-cream select-none transition-all ${className}`}
+      className={`glass-card p-2 sm:p-2.5 xl:p-3 rounded-xl sm:rounded-2xl bg-surface-0/95 dark:bg-[#071912]/95 border border-line dark:border-white/10 shadow-md flex flex-col gap-1.5 sm:gap-2 xl:gap-2.5 text-ink dark:text-cream select-none transition-all ${className}`}
     >
       {/* 1. Header with Live Status & Info Tooltip */}
-      <div className="flex items-center justify-between gap-2 border-b border-line/50 dark:border-white/10 pb-2">
-        <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-base text-yellow-500 dark:text-citron">
+      <div className="flex items-center justify-between gap-2 border-b border-line/50 dark:border-white/10 pb-1 sm:pb-1.5">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <span className="material-symbols-outlined text-sm sm:text-base text-yellow-500 dark:text-citron">
             verified_user
           </span>
-          <h3 className="text-xs sm:text-[13px] font-bold tracking-tight text-ink dark:text-cream leading-tight">
+          <h3 className="text-[11.5px] sm:text-xs xl:text-[13px] font-bold tracking-tight text-ink dark:text-cream leading-tight">
             Live Travel Status & 72-Hour &ldquo;Safe Travel Window&rdquo; Radar
           </h3>
         </div>
@@ -124,13 +133,13 @@ export const SafeTravelRadarCard: React.FC<SafeTravelRadarCardProps> = ({
           title="Synthesizes ECMWF 72h precipitation forecast, InSAR slope deformation, and active hydrological triggers into civilian safety windows."
           className="text-ink-muted hover:text-ink dark:text-cream/40 dark:hover:text-cream transition-colors cursor-help"
         >
-          <span className="material-symbols-outlined text-sm">info</span>
+          <span className="material-symbols-outlined text-xs sm:text-sm">info</span>
         </button>
       </div>
 
       {/* 2. Dynamic Status Pill */}
       <div
-        className={`flex items-center gap-2.5 px-3 py-2 rounded-xl border text-xs font-medium tracking-tight shadow-2xs transition-colors ${
+        className={`flex items-center gap-2 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg sm:rounded-xl border text-[11px] sm:text-xs font-medium tracking-tight shadow-2xs transition-colors ${
           statusPillVariant === 'normal'
             ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
             : statusPillVariant === 'monitored'
@@ -139,7 +148,7 @@ export const SafeTravelRadarCard: React.FC<SafeTravelRadarCardProps> = ({
         }`}
       >
         <span
-          className={`w-2 h-2 rounded-full ${
+          className={`w-1.5 sm:w-2 h-1.5 sm:h-2 rounded-full ${
             statusPillVariant === 'normal'
               ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]'
               : statusPillVariant === 'monitored'
@@ -147,13 +156,13 @@ export const SafeTravelRadarCard: React.FC<SafeTravelRadarCardProps> = ({
               : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-pulse'
           }`}
         />
-        <span className="font-semibold text-xs sm:text-[13px]">
+        <span className="font-semibold text-[11px] sm:text-xs xl:text-[12.5px] leading-tight">
           {statusPillText}
         </span>
       </div>
 
       {/* 3. Three 24h/48h/72h Safe Window Segments */}
-      <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
+      <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
         {emergencyData.safeWindowRadar.segments.map((segment) => {
           const isCurrentSegment = segment.hourWindow === currentWindowKey;
           return (
@@ -168,19 +177,19 @@ export const SafeTravelRadarCard: React.FC<SafeTravelRadarCardProps> = ({
                     : 66;
                 setScrubberHour(hourTarget);
               }}
-              className={`radar-segment-card flex flex-col justify-between p-2.5 rounded-xl border cursor-pointer transition-all ${
+              className={`radar-segment-card flex flex-col justify-between p-1.5 sm:p-2 xl:p-2.5 rounded-lg sm:rounded-xl border cursor-pointer transition-all ${
                 isCurrentSegment
                   ? 'bg-surface-2 dark:bg-white/10 border-emerald-500/40 dark:border-citron/40 shadow-xs'
                   : 'bg-surface-1/50 dark:bg-white/5 border-line/60 dark:border-white/5 hover:bg-surface-1 dark:hover:bg-white/10'
               }`}
             >
               {/* Header: Window & Status Badge */}
-              <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center justify-between text-[11px] sm:text-xs">
                 <span className="font-mono font-bold text-ink dark:text-cream">
                   {segment.hourWindow}
                 </span>
                 <span
-                  className={`text-xs font-semibold ${
+                  className={`text-[10px] sm:text-[11px] font-semibold ${
                     segment.status === 'safe'
                       ? 'text-emerald-600 dark:text-emerald-400'
                       : segment.status === 'monitored'
@@ -193,7 +202,7 @@ export const SafeTravelRadarCard: React.FC<SafeTravelRadarCardProps> = ({
               </div>
 
               {/* Solid Risk Bar matching reference screenshot */}
-              <div className="h-1.5 w-full rounded-full overflow-hidden mt-2 bg-black/10 dark:bg-white/10">
+              <div className="h-1 sm:h-1.5 w-full rounded-full overflow-hidden mt-1.5 bg-black/10 dark:bg-white/10">
                 <div
                   className={`h-full w-full rounded-full transition-colors ${
                     segment.status === 'safe'
@@ -210,15 +219,15 @@ export const SafeTravelRadarCard: React.FC<SafeTravelRadarCardProps> = ({
       </div>
 
       {/* 4. Interactive 72-Hour Timeline Scrubber Slider */}
-      <div className="flex flex-col gap-1.5 pt-1">
-        <div className="flex items-center justify-between text-[11px] font-mono">
+      <div className="flex flex-col gap-1 pt-0.5 sm:pt-1">
+        <div className="flex items-center justify-between text-[10px] sm:text-[11px] font-mono">
           <div className="flex items-center gap-1.5 text-yellow-500 dark:text-citron font-medium truncate max-w-[85%]">
             <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 dark:text-citron shrink-0" />
             <span className="truncate">
               T+{scrubberHour}h ({currentSegment.description})
             </span>
           </div>
-          <span className="text-ink-muted dark:text-cream/40 font-mono text-[10px] shrink-0">
+          <span className="text-ink-muted dark:text-cream/40 font-mono text-[9px] sm:text-[10px] shrink-0">
             /72h
           </span>
         </div>
@@ -231,24 +240,24 @@ export const SafeTravelRadarCard: React.FC<SafeTravelRadarCardProps> = ({
             max={72}
             value={scrubberHour}
             onChange={(e) => setScrubberHour(Number(e.target.value))}
-            className="w-full h-1.5 bg-surface-2 dark:bg-white/15 rounded-lg appearance-none cursor-pointer accent-sky-400 transition-all"
+            className="w-full h-1 sm:h-1.5 bg-surface-2 dark:bg-white/15 rounded-lg appearance-none cursor-pointer accent-sky-400 transition-all"
             aria-label="72-Hour timeline scrubber"
           />
         </div>
       </div>
 
       {/* 5. Color Legend (Matching Reference Image) */}
-      <div className="flex items-center justify-between pt-1.5 border-t border-line/40 dark:border-white/5 text-[9px] sm:text-[10px] text-ink-muted dark:text-cream/60">
-        <div className="flex items-center gap-1.5">
-          <span className="w-3.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
-          <span>Safe travel window</span>
+      <div className="flex items-center justify-between pt-1 border-t border-line/40 dark:border-white/5 text-[8.5px] sm:text-[9px] xl:text-[10px] text-ink-muted dark:text-cream/60">
+        <div className="flex items-center gap-1 sm:gap-1.5">
+          <span className="w-2.5 sm:w-3 h-1 sm:h-1.5 rounded-full bg-emerald-500 inline-block" />
+          <span>Safe window</span>
         </div>
-        <div className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
-          <span>Increased risk (heavy rain / landslide)</span>
+        <div className="flex items-center gap-1 sm:gap-1.5">
+          <span className="w-1.5 sm:w-2 h-1.5 sm:h-2 rounded-full bg-amber-400 inline-block" />
+          <span>Increased risk</span>
         </div>
-        <div className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />
+        <div className="flex items-center gap-1 sm:gap-1.5">
+          <span className="w-1.5 sm:w-2 h-1.5 sm:h-2 rounded-full bg-red-500 inline-block" />
           <span>Peak vulnerability</span>
         </div>
       </div>

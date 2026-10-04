@@ -46,33 +46,33 @@ export const StoriesHeaderCoordinates: React.FC<StoriesHeaderCoordinatesProps> =
 
   return (
     <header
-      className={`w-full flex flex-col md:flex-row items-center justify-between gap-3 pointer-events-auto select-none ${className}`}
+      className={`w-full flex flex-col md:flex-row items-center justify-between gap-1.5 sm:gap-2.5 pointer-events-auto select-none ${className}`}
     >
       {/* 1. Left Action Navigation Dock */}
-      <div className="flex items-center gap-2 sm:gap-2.5">
+      <div className="flex items-center gap-1.5 sm:gap-2">
         <button
           type="button"
           aria-label="Menu"
-          className="p-1.5 sm:p-2 rounded-xl bg-surface-0/90 dark:bg-black/35 border border-line dark:border-white/10 shadow-xs hover:bg-surface-1 dark:hover:bg-white/10 transition-all flex items-center justify-center cursor-pointer backdrop-blur-md"
+          className="p-1 sm:p-1.5 rounded-lg sm:rounded-xl bg-surface-0/90 dark:bg-black/35 border border-line dark:border-white/10 shadow-xs hover:bg-surface-1 dark:hover:bg-white/10 transition-all flex items-center justify-center cursor-pointer backdrop-blur-md"
         >
-          <span className="material-symbols-outlined text-base text-ink dark:text-cream">menu</span>
+          <span className="material-symbols-outlined text-sm sm:text-base text-ink dark:text-cream">menu</span>
         </button>
 
         {onBackToOverview ? (
           <button
             type="button"
             onClick={onBackToOverview}
-            className="text-xs font-mono font-medium tracking-wide text-ink hover:text-ink-primary dark:text-cream/80 dark:hover:text-cream px-3 py-1.5 rounded-xl bg-surface-0/90 dark:bg-black/25 border border-line dark:border-white/10 shadow-xs hover:bg-surface-1 dark:hover:bg-white/5 transition-all flex items-center gap-1.5 cursor-pointer backdrop-blur-md"
+            className="text-[11px] sm:text-xs font-mono font-medium tracking-wide text-ink hover:text-ink-primary dark:text-cream/80 dark:hover:text-cream px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl bg-surface-0/90 dark:bg-black/25 border border-line dark:border-white/10 shadow-xs hover:bg-surface-1 dark:hover:bg-white/5 transition-all flex items-center gap-1 sm:gap-1.5 cursor-pointer backdrop-blur-md"
           >
-            <span className="material-symbols-outlined text-sm">arrow_back</span>
+            <span className="material-symbols-outlined text-xs sm:text-sm">arrow_back</span>
             <span>Overview</span>
           </button>
         ) : (
           <Link
             href={overviewHref}
-            className="text-xs font-mono font-medium tracking-wide text-ink hover:text-ink-primary dark:text-cream/80 dark:hover:text-cream px-3 py-1.5 rounded-xl bg-surface-0/90 dark:bg-black/25 border border-line dark:border-white/10 shadow-xs hover:bg-surface-1 dark:hover:bg-white/5 transition-all flex items-center gap-1.5 cursor-pointer backdrop-blur-md"
+            className="text-[11px] sm:text-xs font-mono font-medium tracking-wide text-ink hover:text-ink-primary dark:text-cream/80 dark:hover:text-cream px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl bg-surface-0/90 dark:bg-black/25 border border-line dark:border-white/10 shadow-xs hover:bg-surface-1 dark:hover:bg-white/5 transition-all flex items-center gap-1 sm:gap-1.5 cursor-pointer backdrop-blur-md"
           >
-            <span className="material-symbols-outlined text-sm">arrow_back</span>
+            <span className="material-symbols-outlined text-xs sm:text-sm">arrow_back</span>
             <span>Overview</span>
           </Link>
         )}
@@ -81,17 +81,17 @@ export const StoriesHeaderCoordinates: React.FC<StoriesHeaderCoordinatesProps> =
           <button
             type="button"
             onClick={onSwitchToGovPortal}
-            className="text-xs font-mono font-semibold tracking-wide text-emerald-700 dark:text-citron px-3 py-1.5 rounded-xl bg-emerald-500/10 dark:bg-[#162e24] border border-emerald-500/30 dark:border-citron/30 shadow-xs hover:bg-emerald-500/15 dark:hover:bg-[#1a382c] transition-all flex items-center gap-1.5 cursor-pointer backdrop-blur-md"
+            className="text-[11px] sm:text-xs font-mono font-semibold tracking-wide text-emerald-700 dark:text-citron px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl bg-emerald-500/10 dark:bg-[#162e24] border border-emerald-500/30 dark:border-citron/30 shadow-xs hover:bg-emerald-500/15 dark:hover:bg-[#1a382c] transition-all flex items-center gap-1 sm:gap-1.5 cursor-pointer backdrop-blur-md"
           >
-            <span className="material-symbols-outlined text-sm">verified_user</span>
+            <span className="material-symbols-outlined text-xs sm:text-sm">verified_user</span>
             <span>Official Hex Map</span>
           </button>
         ) : (
           <Link
             href={govHref}
-            className="text-xs font-mono font-semibold tracking-wide text-emerald-700 dark:text-citron px-3 py-1.5 rounded-xl bg-emerald-500/10 dark:bg-[#162e24] border border-emerald-500/30 dark:border-citron/30 shadow-xs hover:bg-emerald-500/15 dark:hover:bg-[#1a382c] transition-all flex items-center gap-1.5 cursor-pointer backdrop-blur-md"
+            className="text-[11px] sm:text-xs font-mono font-semibold tracking-wide text-emerald-700 dark:text-citron px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl bg-emerald-500/10 dark:bg-[#162e24] border border-emerald-500/30 dark:border-citron/30 shadow-xs hover:bg-emerald-500/15 dark:hover:bg-[#1a382c] transition-all flex items-center gap-1 sm:gap-1.5 cursor-pointer backdrop-blur-md"
           >
-            <span className="material-symbols-outlined text-sm">verified_user</span>
+            <span className="material-symbols-outlined text-xs sm:text-sm">verified_user</span>
             <span>Official Hex Map</span>
           </Link>
         )}
@@ -104,10 +104,10 @@ export const StoriesHeaderCoordinates: React.FC<StoriesHeaderCoordinatesProps> =
         ref={centerTextRef}
         className="flex flex-col items-center text-center px-2 py-0.5"
       >
-        <h1 className="text-lg sm:text-xl lg:text-2xl font-bold tracking-tight text-ink dark:text-cream leading-tight">
+        <h1 className="text-sm sm:text-base lg:text-lg xl:text-xl font-bold tracking-tight text-ink dark:text-cream leading-tight">
           Explore hazard intelligence across India
         </h1>
-        <p className="text-xs sm:text-xs text-ink-muted dark:text-cream/70 font-sans mt-0.5">
+        <p className="text-[10px] sm:text-[11px] text-ink-muted dark:text-cream/70 font-sans mt-0.5">
           Select a district to view advisory details and travel guidance.
         </p>
       </div>
@@ -115,16 +115,16 @@ export const StoriesHeaderCoordinates: React.FC<StoriesHeaderCoordinatesProps> =
       {/* 3. Top Right Coordinate Pill Readout */}
       <div
         ref={coordRef}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-surface-0/90 dark:bg-black/25 border border-line dark:border-white/10 shadow-xs font-mono text-xs tracking-wider text-ink dark:text-cream/90 backdrop-blur-md"
+        className="flex items-center gap-1.5 sm:gap-2 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl bg-surface-0/90 dark:bg-black/25 border border-line dark:border-white/10 shadow-xs font-mono text-[10px] sm:text-xs tracking-wider text-ink dark:text-cream/90 backdrop-blur-md"
       >
-        <span className="material-symbols-outlined text-base text-yellow-500 dark:text-citron">
+        <span className="material-symbols-outlined text-sm sm:text-base text-yellow-500 dark:text-citron">
           location_on
         </span>
-        <div className="flex flex-col text-left leading-tight text-[11px] sm:text-xs font-medium">
+        <div className="flex flex-col text-left leading-tight text-[10px] sm:text-[11px] font-medium">
           <span>{latitude}</span>
           <span>{longitude}</span>
         </div>
-        <span className="material-symbols-outlined text-sm text-ink-muted dark:text-cream/40 ml-0.5">
+        <span className="material-symbols-outlined text-xs text-ink-muted dark:text-cream/40 ml-0.5">
           expand_more
         </span>
       </div>

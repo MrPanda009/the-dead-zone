@@ -20,6 +20,8 @@ export * from './DistrictRiskModal';
 export * from './DistrictPhotoShowcase';
 export * from './TouristDistrictCard';
 export * from './PublicStoriesPage';
+export * from './DistrictWeatherBadge';
+export * from './ForecastTriggerButton';
 
 // Tourist Resilience & Emergency Pass Features
 export * from './touristEmergencyData';

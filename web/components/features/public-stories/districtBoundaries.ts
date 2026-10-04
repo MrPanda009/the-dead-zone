@@ -49,7 +49,7 @@ export interface DistrictBoundary {
  * - East: Barpeta (Assam & Teesta basin)
  * - West: Kachchh (Gujarat)
  */
-export const DISTRICT_BOUNDARIES: Record<ZoneId, DistrictBoundary> = {
+export const DISTRICT_BOUNDARIES: Partial<Record<ZoneId, DistrictBoundary>> = {
   North: {
     zone: 'North',
     districtName: 'Chamoli',

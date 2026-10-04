@@ -65,6 +65,34 @@ export const DISTRICT_LIST_ITEMS: DistrictListItem[] = [
     badgeText: 'High Hazard',
     badgeVariant: 'critical',
   },
+  {
+    id: 'Rudraprayag',
+    name: 'Rudraprayag',
+    state: 'Uttarakhand',
+    badgeText: 'Hillslope',
+    badgeVariant: 'warning',
+  },
+  {
+    id: 'Srinagar',
+    name: 'Srinagar',
+    state: 'Uttarakhand',
+    badgeText: 'Alaknanda',
+    badgeVariant: 'monitored',
+  },
+  {
+    id: 'Dholpur',
+    name: 'Dholpur',
+    state: 'Rajasthan',
+    badgeText: 'Chambal',
+    badgeVariant: 'normal',
+  },
+  {
+    id: 'Morena',
+    name: 'Morena',
+    state: 'Madhya Pradesh',
+    badgeText: 'Pluvial',
+    badgeVariant: 'normal',
+  },
 ];
 
 export const ChooseDistrictList: React.FC<ChooseDistrictListProps> = ({

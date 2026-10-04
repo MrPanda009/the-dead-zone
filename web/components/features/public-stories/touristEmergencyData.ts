@@ -89,7 +89,7 @@ export interface DistrictEmergencyProfile {
   };
 }
 
-export const DISTRICT_EMERGENCY_PROFILES: Record<ZoneId, DistrictEmergencyProfile> = {
+export const DISTRICT_EMERGENCY_PROFILES: Partial<Record<ZoneId, DistrictEmergencyProfile>> = {
   Kodagu: {
     zoneId: 'Kodagu',
     districtName: 'Kodagu',
@@ -974,19 +974,28 @@ export const DISTRICT_EMERGENCY_PROFILES: Record<ZoneId, DistrictEmergencyProfil
       ],
     },
   },
-
-  // Aliases for compatibility
-  South: null as any,
-  Barpeta: null as any,
 };
 
 // Fill aliases
 DISTRICT_EMERGENCY_PROFILES.South = DISTRICT_EMERGENCY_PROFILES.Wayanad;
 DISTRICT_EMERGENCY_PROFILES.Barpeta = DISTRICT_EMERGENCY_PROFILES.East;
+DISTRICT_EMERGENCY_PROFILES.Rudraprayag = DISTRICT_EMERGENCY_PROFILES.North;
+DISTRICT_EMERGENCY_PROFILES.Srinagar = DISTRICT_EMERGENCY_PROFILES.North;
+DISTRICT_EMERGENCY_PROFILES.Dholpur = DISTRICT_EMERGENCY_PROFILES.Central;
+DISTRICT_EMERGENCY_PROFILES.Morena = DISTRICT_EMERGENCY_PROFILES.Central;
 
 /**
  * Returns emergency profile for any ZoneId
  */
 export function getEmergencyProfile(zone: ZoneId): DistrictEmergencyProfile {
-  return DISTRICT_EMERGENCY_PROFILES[zone] || DISTRICT_EMERGENCY_PROFILES.Kodagu;
+  return (
+    DISTRICT_EMERGENCY_PROFILES[zone] ||
+    (zone === 'Rudraprayag' || zone === 'Srinagar'
+      ? DISTRICT_EMERGENCY_PROFILES.North
+      : zone === 'Dholpur' || zone === 'Morena'
+      ? DISTRICT_EMERGENCY_PROFILES.Central
+      : undefined) ||
+    DISTRICT_EMERGENCY_PROFILES.Kodagu ||
+    DISTRICT_EMERGENCY_PROFILES.Wayanad!
+  );
 }

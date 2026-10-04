@@ -75,7 +75,7 @@ export const RightPanel = ({
         </div>
       </div>
 
-      <div className={['flex-1 overflow-y-auto p-3', classNames.scroll ?? ''].join(' ')}>
+      <div className={['flex-1 min-h-0 overflow-y-auto custom-scrollbar p-2.5 sm:p-3', classNames.scroll ?? ''].join(' ')}>
         {children}
       </div>
     </aside>

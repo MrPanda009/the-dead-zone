@@ -11,6 +11,7 @@ import { TouristWeatherStrip } from './TouristWeatherStrip';
 import { MapLegendOverlay } from './MapLegendOverlay';
 import { DistrictRiskModal } from './DistrictRiskModal';
 import { OfflineTouristPassModal } from './OfflineTouristPassModal';
+import { useDistrictForecastTelemetry } from '@/lib/hooks/useDistrictForecastTelemetry';
 
 export interface PublicStoriesPageProps {
   /** Target link for returning to landing page / overview (default '/') */
@@ -37,11 +38,17 @@ export const PublicStoriesPage: React.FC<PublicStoriesPageProps> = ({
   const [isRiskModalOpen, setIsRiskModalOpen] = useState(false);
   const [isOfflinePassOpen, setIsOfflinePassOpen] = useState(false);
 
+  // Live forecast telemetry across all operational corridors
+  const { districtMap, getDistrictStatus } = useDistrictForecastTelemetry({
+    pollIntervalMs: 30000,
+  });
+
   const activeStory = REGIONAL_STORIES[selectedZone] || REGIONAL_STORIES.Kodagu;
+  const activeDistrictStatus = getDistrictStatus(selectedZone);
 
   return (
     <div
-      className={`relative w-full min-h-screen lg:h-screen lg:max-h-screen lg:overflow-hidden bg-bg-base text-ink dark:bg-[#05140e] dark:text-cream flex flex-col justify-between p-2.5 sm:p-3 lg:p-4 select-none transition-colors duration-300 overflow-x-hidden ${className}`}
+      className={`relative w-full min-h-screen xl:h-screen xl:max-h-screen flex flex-col justify-between p-2 sm:p-2.5 lg:p-3 xl:p-4 select-none transition-colors duration-300 overflow-x-hidden overflow-y-auto xl:overflow-hidden ${className}`}
     >
       {/* Background Subtle Ambient Vignette matching reference picture */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-emerald-500/5 via-bg-base to-forest-deep/10 dark:from-[#0d2a1f]/40 dark:via-[#061710] dark:to-[#030c08] pointer-events-none" />
@@ -59,24 +66,27 @@ export const PublicStoriesPage: React.FC<PublicStoriesPageProps> = ({
       </div>
 
       {/* 2. MAIN INTERACTION CANVAS: Balanced 3-Column Layout matching screenshot */}
-      <div className="relative z-10 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 items-start gap-3 lg:gap-4 min-h-0 my-auto">
+      <div className="relative z-10 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 items-start gap-2.5 sm:gap-3 xl:gap-4 min-h-0 my-auto py-1 lg:py-0">
         {/* Left Column (Cols 1-4): TERRA Tourist Hazard Advisory Card */}
-        <div className="col-span-1 lg:col-span-4 flex flex-col justify-start items-center lg:items-start w-full">
+        <div className="col-span-1 lg:col-span-4 flex flex-col justify-start items-stretch w-full lg:max-h-[calc(100dvh-5.5rem)] lg:overflow-y-auto custom-scrollbar">
           <TouristDistrictCard
             zone={selectedZone}
+            weatherState={activeDistrictStatus?.weather_state}
+            dangerCellsCount={activeDistrictStatus?.danger_cells}
+            lastCycleAt={activeDistrictStatus?.last_cycle_at || undefined}
             onOpenDetails={() => setIsRiskModalOpen(true)}
             onOpenOfflinePass={() => setIsOfflinePassOpen(true)}
           />
         </div>
 
         {/* Center Column (Cols 5-8): India Map with Legend on top */}
-        <div className="col-span-1 lg:col-span-4 h-full w-full flex flex-col items-center justify-center relative min-h-[340px] lg:min-h-0">
+        <div className="col-span-1 lg:col-span-4 h-full w-full flex flex-col items-center justify-center relative min-h-[300px] lg:min-h-0">
           {/* Map Legend Overlay (Matching Reference Image) */}
-          <div className="mb-2 z-10 shrink-0">
+          <div className="mb-1.5 sm:mb-2 z-10 shrink-0">
             <MapLegendOverlay />
           </div>
 
-          {/* India Map Component (Kept Untouched as per instructions) */}
+          {/* India Map Component */}
           <div className="w-full flex-1 flex items-center justify-center relative min-h-0">
             <IndiaStoriesMap
               selectedZone={selectedZone}
@@ -87,11 +97,13 @@ export const PublicStoriesPage: React.FC<PublicStoriesPageProps> = ({
         </div>
 
         {/* Right Column (Cols 9-12): Dropdown + 72h Radar + 5-Day Weather */}
-        <div className="col-span-1 lg:col-span-4 flex flex-col gap-2.5 sm:gap-3 justify-start w-full">
+        <div className="col-span-1 lg:col-span-4 flex flex-col gap-2 sm:gap-2.5 xl:gap-3 justify-start w-full lg:max-h-[calc(100dvh-5.5rem)] lg:overflow-y-auto custom-scrollbar">
           {/* 1. Choose District Dropdown Menu (Aligned with Left Advisory Box) */}
           <DistrictDropdown
             selectedZone={selectedZone}
             onSelectZone={(zone) => setSelectedZone(zone)}
+            getDistrictStatus={getDistrictStatus}
+            weatherMap={districtMap}
           />
 
           {/* 2. Live Travel Status & 72-Hour Safe Travel Window Radar */}

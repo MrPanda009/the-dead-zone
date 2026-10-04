@@ -56,6 +56,34 @@ export const DROPDOWN_DISTRICTS: DistrictDropdownItem[] = [
     badgeText: 'Flood Alert',
     badgeVariant: 'warning',
   },
+  {
+    id: 'Rudraprayag',
+    name: 'Rudraprayag',
+    state: 'Uttarakhand',
+    badgeText: 'Hillslope',
+    badgeVariant: 'warning',
+  },
+  {
+    id: 'Srinagar',
+    name: 'Srinagar',
+    state: 'Uttarakhand',
+    badgeText: 'Alaknanda',
+    badgeVariant: 'monitored',
+  },
+  {
+    id: 'Dholpur',
+    name: 'Dholpur',
+    state: 'Rajasthan',
+    badgeText: 'Chambal',
+    badgeVariant: 'normal',
+  },
+  {
+    id: 'Morena',
+    name: 'Morena',
+    state: 'Madhya Pradesh',
+    badgeText: 'Pluvial',
+    badgeVariant: 'normal',
+  },
 ];
 
 export interface DistrictDropdownProps {
@@ -63,6 +91,10 @@ export interface DistrictDropdownProps {
   selectedZone: ZoneId;
   /** Callback when user selects a zone */
   onSelectZone: (zone: ZoneId) => void;
+  /** Optional resolver function for live forecast status */
+  getDistrictStatus?: (keyOrId: string | number) => import('@/lib/api/types').DistrictForecastStatus | undefined;
+  /** Optional live forecast telemetry map from useDistrictForecastTelemetry */
+  weatherMap?: Record<string, import('@/lib/api/types').DistrictForecastStatus>;
   /** Custom root className */
   className?: string;
 }
@@ -70,6 +102,8 @@ export interface DistrictDropdownProps {
 export const DistrictDropdown: React.FC<DistrictDropdownProps> = ({
   selectedZone,
   onSelectZone,
+  getDistrictStatus,
+  weatherMap,
   className = '',
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -84,9 +118,29 @@ export const DistrictDropdown: React.FC<DistrictDropdownProps> = ({
       ? 'East'
       : selectedZone;
 
-  const activeDistrict =
+  const activeDistrictBase =
     DROPDOWN_DISTRICTS.find((d) => d.id === normalizedZone) ||
     DROPDOWN_DISTRICTS[0];
+
+  // Helper to resolve live badge
+  const getBadgeDetails = (item: DistrictDropdownItem) => {
+    const liveStatus = getDistrictStatus
+      ? getDistrictStatus(item.id)
+      : weatherMap?.[item.id] || weatherMap?.[item.id.toLowerCase()];
+
+    if (liveStatus) {
+      const state = liveStatus.weather_state || (liveStatus as unknown as { weatherState?: string }).weatherState;
+      if (state === 'CLEAR') {
+        return { variant: 'normal' as const, text: 'Clear (0 Alerts)' };
+      }
+      if (state === 'ALERT_ACTIVE') {
+        return { variant: 'critical' as const, text: 'High Hazard' };
+      }
+    }
+    return { variant: item.badgeVariant, text: item.badgeText };
+  };
+
+  const activeBadge = getBadgeDetails(activeDistrictBase);
 
   // Close on outside click
   useEffect(() => {
@@ -158,7 +212,7 @@ export const DistrictDropdown: React.FC<DistrictDropdownProps> = ({
               CHOOSE DISTRICT
             </span>
             <span className="text-xs sm:text-sm font-bold text-ink dark:text-cream leading-tight mt-0.5">
-              {activeDistrict.name} ({activeDistrict.state})
+              {activeDistrictBase.name} ({activeDistrictBase.state})
             </span>
           </div>
         </div>
@@ -167,23 +221,23 @@ export const DistrictDropdown: React.FC<DistrictDropdownProps> = ({
         <div className="flex items-center gap-2 shrink-0">
           <span
             className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-medium flex items-center gap-1 border ${
-              activeDistrict.badgeVariant === 'normal'
+              activeBadge.variant === 'normal'
                 ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
-                : activeDistrict.badgeVariant === 'critical'
+                : activeBadge.variant === 'critical'
                 ? 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30'
                 : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30'
             }`}
           >
             <span
               className={`w-1.5 h-1.5 rounded-full ${
-                activeDistrict.badgeVariant === 'normal'
+                activeBadge.variant === 'normal'
                   ? 'bg-emerald-500'
-                  : activeDistrict.badgeVariant === 'critical'
+                  : activeBadge.variant === 'critical'
                   ? 'bg-red-500 animate-pulse'
                   : 'bg-amber-400'
               }`}
             />
-            {activeDistrict.badgeText}
+            {activeBadge.text}
           </span>
 
           <span
@@ -204,12 +258,13 @@ export const DistrictDropdown: React.FC<DistrictDropdownProps> = ({
           className="absolute top-full left-0 right-0 mt-1.5 p-1.5 rounded-2xl bg-surface-0/98 dark:bg-[#0b1f17]/98 border border-line dark:border-white/15 shadow-2xl backdrop-blur-xl flex flex-col gap-1 z-50 max-h-72 overflow-y-auto"
         >
           <div className="px-2.5 py-1 text-[10px] font-mono uppercase text-ink-muted dark:text-cream/40 font-semibold border-b border-line/40 dark:border-white/10 flex items-center justify-between">
-            <span>6 MONITORED PILOT CORRIDORS</span>
+            <span>{DROPDOWN_DISTRICTS.length} OPERATIONAL CORRIDORS</span>
             <span>STATUS</span>
           </div>
 
           {DROPDOWN_DISTRICTS.map((item) => {
             const isSelected = normalizedZone === item.id;
+            const itemBadge = getBadgeDetails(item);
             return (
               <button
                 key={item.id}
@@ -229,9 +284,9 @@ export const DistrictDropdown: React.FC<DistrictDropdownProps> = ({
                 <div className="flex items-center gap-2">
                   <span
                     className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                      item.badgeVariant === 'normal'
+                      itemBadge.variant === 'normal'
                         ? 'bg-emerald-500'
-                        : item.badgeVariant === 'critical'
+                        : itemBadge.variant === 'critical'
                         ? 'bg-red-500'
                         : 'bg-amber-500'
                     }`}
@@ -249,14 +304,14 @@ export const DistrictDropdown: React.FC<DistrictDropdownProps> = ({
                 <div className="flex items-center gap-1.5">
                   <span
                     className={`text-[9px] font-mono px-1.5 py-0.5 rounded border ${
-                      item.badgeVariant === 'normal'
+                      itemBadge.variant === 'normal'
                         ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20'
-                        : item.badgeVariant === 'critical'
+                        : itemBadge.variant === 'critical'
                         ? 'bg-red-500/10 text-red-600 dark:text-red-300 border-red-500/20'
                         : 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20'
                     }`}
                   >
-                    {item.badgeText}
+                    {itemBadge.text}
                   </span>
                   {isSelected && (
                     <span className="material-symbols-outlined text-sm text-emerald-600 dark:text-citron">

@@ -12,7 +12,7 @@ export const MapLegendOverlay: React.FC<MapLegendOverlayProps> = ({
 }) => {
   return (
     <div
-      className={`inline-flex items-center gap-3 sm:gap-4 px-3.5 sm:px-4 py-1.5 rounded-full bg-surface-0/90 dark:bg-[#071912]/90 border border-line dark:border-white/10 shadow-sm backdrop-blur-md text-[10px] sm:text-[11px] font-mono text-ink-muted dark:text-cream/80 select-none ${className}`}
+      className={`inline-flex flex-wrap items-center justify-center gap-2 sm:gap-3 xl:gap-4 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-surface-0/90 dark:bg-[#071912]/90 border border-line dark:border-white/10 shadow-sm backdrop-blur-md text-[9px] sm:text-[10px] xl:text-[11px] font-mono text-ink-muted dark:text-cream/80 select-none ${className}`}
     >
       {/* 1. Safe Haven */}
       <div className="flex items-center gap-1.5">

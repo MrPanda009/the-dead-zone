@@ -56,6 +56,14 @@ export const TouristWeatherStrip: React.FC<TouristWeatherStripProps> = ({
       ? 'Barpeta'
       : zone === 'Kodagu'
       ? 'Kodagu'
+      : zone === 'Rudraprayag'
+      ? 'Rudraprayag'
+      : zone === 'Srinagar'
+      ? 'Srinagar'
+      : zone === 'Dholpur'
+      ? 'Dholpur'
+      : zone === 'Morena'
+      ? 'Morena'
       : 'Wayanad';
 
   const [forecast, setForecast] = useState<WeatherDay[]>([]);
@@ -140,9 +148,11 @@ export const TouristWeatherStrip: React.FC<TouristWeatherStripProps> = ({
 
   useGSAP(
     () => {
-      if (!containerRef.current) return;
+      if (!containerRef.current || forecast.length === 0) return;
+      const pills = containerRef.current.querySelectorAll('.mini-weather-pill');
+      if (pills.length === 0) return;
       gsap.fromTo(
-        '.mini-weather-pill',
+        pills,
         { opacity: 0.5, y: 3 },
         { opacity: 1, y: 0, duration: 0.25, stagger: 0.03, ease: 'power2.out' }
       );
@@ -153,43 +163,43 @@ export const TouristWeatherStrip: React.FC<TouristWeatherStripProps> = ({
   return (
     <div
       ref={containerRef}
-      className={`glass-card p-3 sm:p-3.5 rounded-2xl bg-surface-0/95 dark:bg-[#071912]/95 border border-line dark:border-white/10 shadow-md flex flex-col gap-2.5 text-ink dark:text-cream select-none transition-all ${className}`}
+      className={`glass-card p-2 sm:p-2.5 xl:p-3 rounded-xl sm:rounded-2xl bg-surface-0/95 dark:bg-[#071912]/95 border border-line dark:border-white/10 shadow-md flex flex-col gap-1.5 sm:gap-2 xl:gap-2.5 text-ink dark:text-cream select-none transition-all ${className}`}
     >
       {/* Header: 5-Day Weather & Caution Tag */}
-      <div className="flex items-center justify-between text-xs font-mono leading-tight px-0.5">
-        <div className="flex items-center gap-2 text-ink-muted dark:text-cream/70 font-semibold uppercase">
-          <span className="material-symbols-outlined text-base text-yellow-500 dark:text-citron">
+      <div className="flex items-center justify-between text-[10px] sm:text-[11px] xl:text-xs font-mono leading-tight px-0.5">
+        <div className="flex items-center gap-1.5 sm:gap-2 text-ink-muted dark:text-cream/70 font-semibold uppercase">
+          <span className="material-symbols-outlined text-sm sm:text-base text-yellow-500 dark:text-citron">
             cloud
           </span>
           <span className="tracking-wide">5-DAY FORECAST • {districtName.toUpperCase()}</span>
         </div>
 
-        <span className="text-[10px] font-mono font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
-          <span className="material-symbols-outlined text-xs">umbrella</span>
+        <span className="text-[9px] sm:text-[10px] font-mono font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-full flex items-center gap-1">
+          <span className="material-symbols-outlined text-[11px] sm:text-xs">umbrella</span>
           <span>{cautionShort}</span>
         </span>
       </div>
 
       {/* 5 Compact Micro Weather Cards in a Single Horizontal Row */}
-      <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
+      <div className="grid grid-cols-5 gap-1 sm:gap-1.5 xl:gap-2">
         {forecast.map((day, idx) => (
           <div
             key={idx}
-            className="mini-weather-pill flex flex-col items-center justify-between py-2 px-1 rounded-xl bg-surface-1/40 dark:bg-white/5 border border-line/50 dark:border-white/5 text-center transition-all hover:border-emerald-500/30 dark:hover:border-citron/30"
+            className="mini-weather-pill flex flex-col items-center justify-between py-1.5 sm:py-2 px-0.5 sm:px-1 rounded-lg sm:rounded-xl bg-surface-1/40 dark:bg-white/5 border border-line/50 dark:border-white/5 text-center transition-all hover:border-emerald-500/30 dark:hover:border-citron/30"
           >
-            <span className="text-xs font-sans text-ink dark:text-cream font-medium">
+            <span className="text-[10px] sm:text-[11px] font-sans text-ink dark:text-cream font-medium">
               {day.dayLabel}
             </span>
 
-            <span className="material-symbols-outlined text-lg text-yellow-500 dark:text-citron my-1">
+            <span className="material-symbols-outlined text-sm sm:text-base xl:text-lg text-yellow-500 dark:text-citron my-0.5">
               {day.weatherIcon}
             </span>
 
-            <span className="text-xs sm:text-sm font-mono text-ink dark:text-cream font-bold leading-tight">
+            <span className="text-xs sm:text-[13px] xl:text-sm font-mono text-ink dark:text-cream font-bold leading-tight">
               {day.tempMax}°
             </span>
 
-            <span className="text-[10px] sm:text-[11px] font-mono text-sky-500 dark:text-sky-400 font-semibold leading-none mt-1">
+            <span className="text-[8.5px] sm:text-[9.5px] xl:text-[10px] font-mono text-sky-500 dark:text-sky-400 font-semibold leading-none mt-0.5">
               {day.precipProb}%
             </span>
           </div>

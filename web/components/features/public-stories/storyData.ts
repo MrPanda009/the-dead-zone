@@ -2,11 +2,16 @@ export type ZoneId =
   | 'Wayanad'
   | 'Kodagu'
   | 'Barpeta'
+  | 'Rudraprayag'
+  | 'Srinagar'
+  | 'Dholpur'
+  | 'Morena'
   | 'South'
   | 'West'
   | 'Central'
   | 'East'
   | 'North';
+
 
 export interface StorySlide {
   id: string;
@@ -684,5 +689,166 @@ export const REGIONAL_STORIES: Record<ZoneId, ZoneStoryData> = {
       },
     ],
   },
+  Rudraprayag: {
+    id: 'Rudraprayag',
+    label: 'Rudraprayag',
+    regionName: 'Rudraprayag & Alaknanda-Mandakini Gorge, Uttarakhand',
+    adminId: 192,
+    lgdCode: 55,
+    state: 'Uttarakhand',
+    touristRiskRating: 'Level-4 Red Zone Alert (Glacial Surge & Rockfall)',
+    coordinates: {
+      display: {
+        lat: 'N 30° 17\' 06.000"',
+        lng: 'E 78° 58\' 48.000"',
+      },
+      raw: { lat: 30.285, lng: 78.98 },
+    },
+    mapCoords: { x: 41, y: 24 },
+    previewImage: '/stories/north.jpg',
+    primaryHazard: 'Glacial Surge & Highland Rockfall',
+    shortSummary:
+      'High-altitude Himalayan river confluence gateway to the Kedarnath shrine corridor. Steep gorge walls experience rapid debris flows and slope shear failures during cloudburst events.',
+    slides: [
+      {
+        id: 'rudraprayag-1',
+        title: 'Mandakini Gorge & Confluence Slopes',
+        subtitle: 'Kedarnath Yatra Lifeline Corridor',
+        hazardType: 'Hillslope Debris Flow',
+        riskSeverity: 'Critical',
+        image: '/stories/north.jpg',
+        description:
+          'Pilgrim routes along NH 107 wind through narrow V-shaped gorges. High-intensity rainfall triggers rapid gravel-mud runouts across road benches near Kund and Guptkashi.',
+        telemetry: [
+          { label: 'Elevation', value: '895 m – 3,400 m' },
+          { label: 'Slope Gradient', value: '44°' },
+          { label: 'Highway Transit', value: 'NH 107 Day Transit Only' },
+          { label: 'Safe Refuge Base', value: 'Agastyamuni Plain' },
+        ],
+        mitigation: 'Wire-mesh rockfall barriers, automated slope tiltmeters, and real-time radar rain thresholds.',
+      },
+    ],
+  },
+  Srinagar: {
+    id: 'Srinagar',
+    label: 'Srinagar',
+    regionName: 'Srinagar Valley & Jhelum Catchment, Jammu & Kashmir',
+    adminId: 193,
+    lgdCode: 12,
+    state: 'Jammu & Kashmir',
+    touristRiskRating: 'Level-3 Caution (Alluvial Drainage & Waterlogging)',
+    coordinates: {
+      display: {
+        lat: 'N 34° 05\' 02.400"',
+        lng: 'E 74° 47\' 52.800"',
+      },
+      raw: { lat: 34.084, lng: 74.798 },
+    },
+    mapCoords: { x: 34, y: 15 },
+    previewImage: '/stories/north.jpg',
+    primaryHazard: 'Alluvial Drainage Congestion & Pluvial Inundation',
+    shortSummary:
+      'Intermontane lacustrine basin bisected by the meandering Jhelum River. Flat gradients cause rapid urban waterlogging and canal backflow when local 3h rainfall peaks.',
+    slides: [
+      {
+        id: 'srinagar-1',
+        title: 'Jhelum Basin & Dal Lake Fringe',
+        subtitle: 'Alluvial Valley Hydrology',
+        hazardType: 'Pluvial Waterlogging',
+        riskSeverity: 'High',
+        image: '/stories/north.jpg',
+        description:
+          'Lowland tourist zones near Rajbagh and Bemina experience drainage bottlenecks. Dynamic weather warnings monitor localized 3h precipitation for pluvial screening.',
+        telemetry: [
+          { label: 'Elevation', value: '1,585 m' },
+          { label: 'Basin Type', value: 'Alluvial Plain' },
+          { label: 'Jhelum Gauge Mark', value: 'Normal Flow' },
+          { label: 'Safe Tourist Base', value: 'Shankaracharya Ridge' },
+        ],
+        mitigation: 'High-capacity stormwater dewatering pumps and reinforced flood spill channels.',
+      },
+    ],
+  },
+  Dholpur: {
+    id: 'Dholpur',
+    label: 'Dholpur',
+    regionName: 'Dholpur Ravines & Chambal Alluvial Basin, Rajasthan',
+    adminId: 180,
+    lgdCode: 98,
+    state: 'Rajasthan',
+    touristRiskRating: 'Level-3 Caution (Riparian Backwater Surge)',
+    coordinates: {
+      display: {
+        lat: 'N 26° 42\' 00.000"',
+        lng: 'E 77° 54\' 00.000"',
+      },
+      raw: { lat: 26.7, lng: 77.9 },
+    },
+    mapCoords: { x: 38, y: 34 },
+    previewImage: '/stories/central.jpg',
+    primaryHazard: 'Ravine Flash Silt Flow & Chambal Surge',
+    shortSummary:
+      'Chambal alluvial corridor known for dramatic badlands and riparian wildlife. Surging upstream barrage releases inundate low-lying river causeways and ravine trails.',
+    slides: [
+      {
+        id: 'dholpur-1',
+        title: 'Chambal River Sanctuary & Sandstone Escarpment',
+        subtitle: 'Riparian Badlands & Wildlife Corridors',
+        hazardType: 'Riparian Flood Surge',
+        riskSeverity: 'High',
+        image: '/stories/central.jpg',
+        description:
+          'Boat safaris and ravine nature walks are restricted during high discharge. Sandstone ridges provide immediate high ground above flood lines.',
+        telemetry: [
+          { label: 'Chambal Flow', value: 'Regulated Discharge' },
+          { label: 'River Safari', value: 'Open with Precaution' },
+          { label: 'Road Status', value: 'SH 23 Open' },
+          { label: 'Elevated Refuge', value: 'Dholpur Fort Ridge' },
+        ],
+        mitigation: 'Automated barrage release telemetry and riparian setback markers.',
+      },
+    ],
+  },
+  Morena: {
+    id: 'Morena',
+    label: 'Morena',
+    regionName: 'Morena Badlands & Kunwari Basin, Madhya Pradesh',
+    adminId: 181,
+    lgdCode: 417,
+    state: 'Madhya Pradesh',
+    touristRiskRating: 'Level-3 Caution (Badland Slumping & Drainage)',
+    coordinates: {
+      display: {
+        lat: 'N 26° 30\' 00.000"',
+        lng: 'E 77° 59\' 00.000"',
+      },
+      raw: { lat: 26.5, lng: 77.99 },
+    },
+    mapCoords: { x: 39, y: 35 },
+    previewImage: '/stories/central.jpg',
+    primaryHazard: 'Alluvial Bank Slump & Silt Flood',
+    shortSummary:
+      'Gullied alluvial badlands where loose silt banks slump into tributary channels during intense cloudbursts. Elevated plateaus remain completely secure and accessible.',
+    slides: [
+      {
+        id: 'morena-1',
+        title: 'Chambal-Kunwari Badlands & Heritage Belt',
+        subtitle: 'Alluvial Gully Erosion & Riparian Lowlands',
+        hazardType: 'Alluvial Inundation',
+        riskSeverity: 'Moderate',
+        image: '/stories/central.jpg',
+        description:
+          'Heritage tours to Mitawali and Padavali temples operate smoothly on elevated sandstone plateaus, while low riverbank crossings require caution during peak rain.',
+        telemetry: [
+          { label: 'Highway Transit', value: 'NH 44 Completely Clear' },
+          { label: 'Gully Stability', value: 'Dry & Monitored' },
+          { label: 'Heritage Route', value: 'Open for Travel' },
+          { label: 'Safe Refuge Base', value: 'Noorabad Tableland' },
+        ],
+        mitigation: 'Gully check-dams and vegetative bamboo bio-fencing along ravine slopes.',
+      },
+    ],
+  },
 };
+
 

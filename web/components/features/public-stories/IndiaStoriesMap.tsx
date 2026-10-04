@@ -52,15 +52,35 @@ export const IndiaStoriesMap: React.FC<IndiaStoriesMapProps> = ({
   const [hoveredZone, setHoveredZone] = useState<ZoneId | null>(null);
 
   const displayedZone = hoveredZone ?? selectedZone;
-  const activeStory = REGIONAL_STORIES[displayedZone];
-  const activeDistrict = DISTRICT_BOUNDARIES[displayedZone];
+  const normalizedZone: ZoneId =
+    displayedZone === 'Rudraprayag' || displayedZone === 'Srinagar'
+      ? 'North'
+      : displayedZone === 'Dholpur' || displayedZone === 'Morena'
+      ? 'Central'
+      : displayedZone;
+
+  const activeStory = REGIONAL_STORIES[displayedZone] || REGIONAL_STORIES[normalizedZone] || REGIONAL_STORIES.Wayanad;
+  const activeDistrict = DISTRICT_BOUNDARIES[displayedZone] || DISTRICT_BOUNDARIES[normalizedZone] || DISTRICT_BOUNDARIES.North;
 
   const hotspots = useMemo(
     () =>
-      (['North', 'West', 'Central', 'East', 'South', 'Kodagu'] as ZoneId[]).map((zone) => {
-        const { lon, lat, label } = HOTSPOT_LONLAT[zone];
-        const { x, y } = projectLonLat(lon, lat);
-        return { zone, label, cx: x, cy: y };
+      (
+        [
+          'South',
+          'Kodagu',
+          'East',
+          'Rudraprayag',
+          'Srinagar',
+          'Dholpur',
+          'Morena',
+          'North',
+          'West',
+          'Central',
+        ] as ZoneId[]
+      ).map((zone) => {
+        const entry = HOTSPOT_LONLAT[zone] || HOTSPOT_LONLAT.North;
+        const { x, y } = projectLonLat(entry.lon, entry.lat);
+        return { zone, label: entry.label, cx: x, cy: y };
       }),
     [],
   );
@@ -192,7 +212,7 @@ export const IndiaStoriesMap: React.FC<IndiaStoriesMapProps> = ({
     >
       <svg
         viewBox={INDIA_VIEWBOX}
-        className="w-full h-full max-h-[76vh] lg:max-h-[82vh] object-contain drop-shadow-lg dark:drop-shadow-[0_20px_40px_rgba(0,0,0,0.6)]"
+        className="w-full h-full max-h-[50vh] sm:max-h-[60vh] lg:max-h-[68vh] xl:max-h-[76vh] object-contain drop-shadow-lg dark:drop-shadow-[0_20px_40px_rgba(0,0,0,0.6)]"
         preserveAspectRatio="xMidYMid meet"
       >
         <defs>

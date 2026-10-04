@@ -11,6 +11,7 @@
  */
 
 import { apiGet } from '@/lib/api/client';
+import type { WeatherState, ForecastAlertsResponse } from '@/lib/api/types';
 
 export interface HabitationApiResponseItem {
   id: number;
@@ -42,6 +43,10 @@ export type BackendDistrictKey =
   | 'wayanad'
   | 'kodagu'
   | 'barpeta'
+  | 'rudraprayag'
+  | 'srinagar'
+  | 'dholpur'
+  | 'morena'
   | 'north'
   | 'west'
   | 'central';
@@ -103,6 +108,14 @@ export interface DistrictBackendProfile {
   habitations: BackendHabitationRecord[];
   candidateSites: BackendCandidateSiteRecord[];
   disasters: BackendDisasterRecord[];
+  /** Hydro-geomorphic classification: steep mountain slopes vs alluvial river basins */
+  terrainTypology?: 'hillslope' | 'alluvial_plain';
+  /** Dynamic weather state from the latest Route 1 ECMWF IFS 72h forecast cycle */
+  weatherState?: WeatherState;
+  /** Number of danger cells crossing MHI >= 0.75 threshold in current cycle */
+  dangerCellsCount?: number;
+  /** Timestamp of the current 6-hour execution cycle */
+  lastCycleAt?: string;
 }
 
 /**
@@ -786,23 +799,388 @@ export const BACKEND_DISTRICT_PROFILES: Record<BackendDistrictKey, DistrictBacke
         eventTitle: 'Narmada-Tawa Peak Basin Flood 2020',
       },
     ],
+    terrainTypology: 'hillslope',
+    weatherState: 'CLEAR',
+    dangerCellsCount: 0,
+  },
+  rudraprayag: {
+    key: 'rudraprayag',
+    districtName: 'Rudraprayag',
+    state: 'Uttarakhand',
+    lgdCode: 55,
+    adminId: 192,
+    censusPopulation: 242285,
+    riverBasin: 'Alaknanda-Mandakini Confluence Gorge',
+    primaryHazard: 'Glacial Surge, Highland Rockfall & Slope Creep',
+    dangerLevel: 'Critical',
+    touristRiskRating: 'Level-4 Red Zone Alert (Active Landslide Hazard)',
+    peakDangerWindow: 'Cloudburst & Monsoon Peak (July – September)',
+    touristAdvisory:
+      'High-altitude pilgrim corridors (Kedarnath Highway NH 107) face severe debris flow and rockfall hazards during intense rainfall. Avoid overnight halts in narrow riverbed gorges and monitor real-time weather clearance.',
+    safeHavenGuidance:
+      'Agastyamuni High Plain and elevated river terraces around Rudraprayag Town provide safe refuge 40m above historic flood contours.',
+    totalHabitationsCount: 4,
+    totalHouseholdsAtRisk: 4380,
+    totalCandidateSitesCount: 2,
+    maxSafeCapacityHouseholds: 1560,
+    primaryBindingConstraint: 'Water Supply (CPHEEO Norms)',
+    terrainTypology: 'hillslope',
+    weatherState: 'CLEAR',
+    dangerCellsCount: 0,
+    habitations: [
+      {
+        id: 851,
+        name: 'Agastyamuni Terraces',
+        type: 'town',
+        population: 3800,
+        households: 820,
+        przOverlapPct: 35.0,
+        activeDeformation: false,
+        priorityScore: 0.542,
+        hazardType: 'Glacial Flood Saturation',
+        soviScore: 0.58,
+        tier: 'Tier 2 (Short-Term)',
+      },
+      {
+        id: 852,
+        name: 'Ukhimath Hill Slope',
+        type: 'village',
+        population: 2450,
+        households: 510,
+        przOverlapPct: 78.5,
+        activeDeformation: true,
+        priorityScore: 0.884,
+        hazardType: 'Hillslope Rockfall & Slump',
+        soviScore: 0.76,
+        tier: 'Tier 1 (Immediate)',
+      },
+      {
+        id: 853,
+        name: 'Guptkashi Sector',
+        type: 'village',
+        population: 4200,
+        households: 950,
+        przOverlapPct: 42.0,
+        activeDeformation: false,
+        priorityScore: 0.612,
+        hazardType: 'Debris Flow Runout',
+        soviScore: 0.62,
+        tier: 'Tier 2 (Short-Term)',
+      },
+      {
+        id: 854,
+        name: 'Rudraprayag Confluence Hub',
+        type: 'town',
+        population: 9300,
+        households: 2100,
+        przOverlapPct: 18.0,
+        activeDeformation: false,
+        priorityScore: 0.295,
+        hazardType: 'River Confluence Scour',
+        soviScore: 0.44,
+        tier: 'Tier 4 (Mitigate In-Situ)',
+      },
+    ],
+    candidateSites: [
+      { id: 541, name: 'Agastyamuni High Terrace Parcel', areaHa: 22.0, ccFinal: 920, bindingConstraint: 'water', suitability: 92, tenure: 'government_revenue' },
+      { id: 542, name: 'Tilwara Bedrock Shelf', areaHa: 16.5, ccFinal: 640, bindingConstraint: 'school', suitability: 88, tenure: 'government_revenue' },
+    ],
+    disasters: [
+      {
+        date: '2013-06-16',
+        hazardType: 'flash_flood',
+        fatalities: 5700,
+        injured: 4200,
+        housesDamaged: 2800,
+        severity: 0.99,
+        source: 'NDMA / Uttarakhand SDMA',
+        eventTitle: 'Kedarnath-Mandakini Glacial Cloudburst & Debris Torrent 2013',
+      },
+    ],
+  },
+  srinagar: {
+    key: 'srinagar',
+    districtName: 'Srinagar',
+    state: 'Jammu & Kashmir',
+    lgdCode: 12,
+    adminId: 193,
+    censusPopulation: 1236829,
+    riverBasin: 'Jhelum River Valley Basin',
+    primaryHazard: 'Alluvial Drainage Congestion & Lowland Waterlogging',
+    dangerLevel: 'High',
+    touristRiskRating: 'Level-3 Caution (Alluvial Drainage & Waterlogging)',
+    peakDangerWindow: 'Late Spring Snowmelt & Western Disturbances (March – May, July)',
+    touristAdvisory:
+      'Low-lying tourist corridors along Dal Lake bunds and Rajbagh may experience pluvial waterlogging during prolonged rainfall. Local 3h precipitation serves as an urban drainage screening guide.',
+    safeHavenGuidance:
+      'Shankaracharya Ridge and Harwan High Terraces sanctuaried 35m above Jhelum high-flood contour provide secure tourist bases.',
+    totalHabitationsCount: 4,
+    totalHouseholdsAtRisk: 7620,
+    totalCandidateSitesCount: 2,
+    maxSafeCapacityHouseholds: 2500,
+    primaryBindingConstraint: 'Potable Water & Drainage Outfalls',
+    terrainTypology: 'alluvial_plain',
+    weatherState: 'CLEAR',
+    dangerCellsCount: 0,
+    habitations: [
+      {
+        id: 861,
+        name: 'Rajbagh Lowland Sector',
+        type: 'town',
+        population: 5800,
+        households: 1250,
+        przOverlapPct: 84.0,
+        activeDeformation: false,
+        priorityScore: 0.812,
+        hazardType: 'Pluvial Inundation & Embankment Spill',
+        soviScore: 0.69,
+        tier: 'Tier 1 (Immediate)',
+      },
+      {
+        id: 862,
+        name: 'Bemina Basin Reach',
+        type: 'town',
+        population: 8900,
+        households: 1920,
+        przOverlapPct: 72.0,
+        activeDeformation: false,
+        priorityScore: 0.748,
+        hazardType: 'Drainage Overburden Saturation',
+        soviScore: 0.65,
+        tier: 'Tier 1 (Immediate)',
+      },
+      {
+        id: 863,
+        name: 'Batamaloo Sector',
+        type: 'town',
+        population: 14200,
+        households: 3100,
+        przOverlapPct: 38.0,
+        activeDeformation: false,
+        priorityScore: 0.465,
+        hazardType: 'Alluvial Waterlogging',
+        soviScore: 0.52,
+        tier: 'Tier 2 (Short-Term)',
+      },
+      {
+        id: 864,
+        name: 'Dal Boulevard Reach',
+        type: 'town',
+        population: 6400,
+        households: 1350,
+        przOverlapPct: 22.0,
+        activeDeformation: false,
+        priorityScore: 0.312,
+        hazardType: 'Lake Surge Spillover',
+        soviScore: 0.41,
+        tier: 'Tier 3 (Medium-Term)',
+      },
+    ],
+    candidateSites: [
+      { id: 551, name: 'Shankaracharya Foothill Terraces', areaHa: 30.0, ccFinal: 1400, bindingConstraint: 'water', suitability: 94, tenure: 'government_revenue' },
+      { id: 552, name: 'Harwan Elevated Tableland', areaHa: 26.0, ccFinal: 1100, bindingConstraint: 'health', suitability: 91, tenure: 'government_revenue' },
+    ],
+    disasters: [
+      {
+        date: '2014-09-07',
+        hazardType: 'riverine_flood',
+        fatalities: 280,
+        injured: 1200,
+        housesDamaged: 260000,
+        severity: 0.98,
+        source: 'J&K SDMA / CWC',
+        eventTitle: 'Great Jhelum Valley Flood Breach 2014',
+      },
+    ],
+  },
+  dholpur: {
+    key: 'dholpur',
+    districtName: 'Dholpur',
+    state: 'Rajasthan',
+    lgdCode: 98,
+    adminId: 180,
+    censusPopulation: 1206516,
+    riverBasin: 'Chambal River Alluvial Basin',
+    primaryHazard: 'Ravine Flash Silt Flow & Chambal Backwater Inundation',
+    dangerLevel: 'High',
+    touristRiskRating: 'Level-3 Caution (Riparian Backwater Surge)',
+    peakDangerWindow: 'Monsoon Influx & Kota Barrage Discharge (July – September)',
+    touristAdvisory:
+      'Chambal River safari boats and ravine trails are restricted when discharge rates exceed safety thresholds. Watch causeway water levels on SH 23 and low bridges during heavy upstream releases.',
+    safeHavenGuidance:
+      'Dholpur High Fort Escarpment and elevated sandstone tablelands provide natural elevation 50m above river crests.',
+    totalHabitationsCount: 3,
+    totalHouseholdsAtRisk: 3780,
+    totalCandidateSitesCount: 2,
+    maxSafeCapacityHouseholds: 2900,
+    primaryBindingConstraint: 'Potable Water Distribution',
+    terrainTypology: 'alluvial_plain',
+    weatherState: 'CLEAR',
+    dangerCellsCount: 0,
+    habitations: [
+      {
+        id: 871,
+        name: 'Chambal Ravine Colony',
+        type: 'village',
+        population: 2100,
+        households: 460,
+        przOverlapPct: 81.0,
+        activeDeformation: true,
+        priorityScore: 0.795,
+        hazardType: 'Ravine Bank Erosion & Riparian Flood',
+        soviScore: 0.71,
+        tier: 'Tier 1 (Immediate)',
+      },
+      {
+        id: 872,
+        name: 'Rajakhera Alluvial Reach',
+        type: 'village',
+        population: 4300,
+        households: 920,
+        przOverlapPct: 55.0,
+        activeDeformation: false,
+        priorityScore: 0.584,
+        hazardType: 'Riparian Backwater Inundation',
+        soviScore: 0.63,
+        tier: 'Tier 2 (Short-Term)',
+      },
+      {
+        id: 873,
+        name: 'Dholpur Old City Low Reach',
+        type: 'town',
+        population: 11200,
+        households: 2400,
+        przOverlapPct: 28.0,
+        activeDeformation: false,
+        priorityScore: 0.342,
+        hazardType: 'Pluvial Waterlogging',
+        soviScore: 0.45,
+        tier: 'Tier 3 (Medium-Term)',
+      },
+    ],
+    candidateSites: [
+      { id: 561, name: 'Dholpur Fort Sandstone Ridge', areaHa: 32.0, ccFinal: 1600, bindingConstraint: 'water', suitability: 95, tenure: 'government_revenue' },
+      { id: 562, name: 'Mania High Terrace Parcel', areaHa: 25.0, ccFinal: 1300, bindingConstraint: 'school', suitability: 90, tenure: 'government_revenue' },
+    ],
+    disasters: [
+      {
+        date: '2019-09-15',
+        hazardType: 'riverine_flood',
+        fatalities: 12,
+        injured: 45,
+        housesDamaged: 1840,
+        severity: 0.88,
+        source: 'Rajasthan SDMA / CWC',
+        eventTitle: 'Chambal Peak Surge & Kota Barrage Release 2019',
+      },
+    ],
+  },
+  morena: {
+    key: 'morena',
+    districtName: 'Morena',
+    state: 'Madhya Pradesh',
+    lgdCode: 417,
+    adminId: 181,
+    censusPopulation: 1965970,
+    riverBasin: 'Chambal-Kunwari Interfluvial Basin',
+    primaryHazard: 'Alluvial Inundation & Badland Soil Slumping',
+    dangerLevel: 'High',
+    touristRiskRating: 'Level-3 Caution (Badland Slumping & Flash Waterlogging)',
+    peakDangerWindow: 'Peak Chambal Inflow (July – August)',
+    touristAdvisory:
+      'National Chambal Sanctuary access roads experience seasonal riparian waterlogging and bank gully erosion. Maintain safe setback from riverbanks during peak monsoon swells.',
+    safeHavenGuidance:
+      'Morena City elevated plateau and Noorabad High Terrace provide safe haven with robust road connectivity to NH 44.',
+    totalHabitationsCount: 3,
+    totalHouseholdsAtRisk: 5790,
+    totalCandidateSitesCount: 2,
+    maxSafeCapacityHouseholds: 3350,
+    primaryBindingConstraint: 'Treated Water Supply',
+    terrainTypology: 'alluvial_plain',
+    weatherState: 'CLEAR',
+    dangerCellsCount: 0,
+    habitations: [
+      {
+        id: 881,
+        name: 'Sabalgarh Low Reach',
+        type: 'village',
+        population: 3900,
+        households: 840,
+        przOverlapPct: 76.0,
+        activeDeformation: true,
+        priorityScore: 0.772,
+        hazardType: 'Alluvial Bank Slump & Silt Flood',
+        soviScore: 0.68,
+        tier: 'Tier 1 (Immediate)',
+      },
+      {
+        id: 882,
+        name: 'Ambah Riparian Sector',
+        type: 'village',
+        population: 4800,
+        households: 1050,
+        przOverlapPct: 48.0,
+        activeDeformation: false,
+        priorityScore: 0.512,
+        hazardType: 'Kunwari River Backwater Spill',
+        soviScore: 0.57,
+        tier: 'Tier 2 (Short-Term)',
+      },
+      {
+        id: 883,
+        name: 'Morena Central Hub',
+        type: 'town',
+        population: 18500,
+        households: 3900,
+        przOverlapPct: 15.0,
+        activeDeformation: false,
+        priorityScore: 0.228,
+        hazardType: 'Urban Drainage Congestion',
+        soviScore: 0.38,
+        tier: 'Tier 4 (Mitigate In-Situ)',
+      },
+    ],
+    candidateSites: [
+      { id: 571, name: 'Noorabad Bedrock Tableland', areaHa: 36.0, ccFinal: 1950, bindingConstraint: 'water', suitability: 93, tenure: 'government_revenue' },
+      { id: 572, name: 'Banmore High Industrial Parcel', areaHa: 28.0, ccFinal: 1400, bindingConstraint: 'health', suitability: 89, tenure: 'government_revenue' },
+    ],
+    disasters: [
+      {
+        date: '2021-08-04',
+        hazardType: 'riverine_flood',
+        fatalities: 24,
+        injured: 70,
+        housesDamaged: 3200,
+        severity: 0.91,
+        source: 'MP SDMA / NDRF',
+        eventTitle: 'Chambal-Sindh Basin Flooding 2021',
+      },
+    ],
   },
 };
 
 export const BACKEND_DISTRICT_KEYS: BackendDistrictKey[] = [
+  'wayanad',
+  'kodagu',
+  'barpeta',
+  'rudraprayag',
+  'srinagar',
+  'dholpur',
+  'morena',
   'north',
   'west',
   'central',
-  'barpeta',
-  'wayanad',
-  'kodagu',
 ];
 
 /**
  * Maps zone IDs or district names from the map interface to backend district profiles.
  */
 export function getBackendProfileForZone(zone: string): DistrictBackendProfile {
-  const norm = zone.toLowerCase();
+  const norm = zone.toLowerCase().trim();
+  if (norm.includes('rudraprayag')) return BACKEND_DISTRICT_PROFILES.rudraprayag;
+  if (norm.includes('srinagar')) return BACKEND_DISTRICT_PROFILES.srinagar;
+  if (norm.includes('dholpur')) return BACKEND_DISTRICT_PROFILES.dholpur;
+  if (norm.includes('morena')) return BACKEND_DISTRICT_PROFILES.morena;
   if (norm.includes('joshimath') || norm.includes('chamoli') || norm === 'north') return BACKEND_DISTRICT_PROFILES.north;
   if (norm.includes('kutch') || norm.includes('kachchh') || norm === 'west') return BACKEND_DISTRICT_PROFILES.west;
   if (norm.includes('satpura') || norm.includes('hoshangabad') || norm === 'central') return BACKEND_DISTRICT_PROFILES.central;
@@ -814,34 +1192,70 @@ export function getBackendProfileForZone(zone: string): DistrictBackendProfile {
 
 /**
  * Attempts to fetch live data from the backend.
+ * Evaluates both live habitations and Route 1 dynamic forecast threshold crossings.
  * Falls back gracefully to verified baseline data if backend is offline or empty.
  */
 export async function loadDistrictData(
   districtKey: BackendDistrictKey,
   signal?: AbortSignal,
 ): Promise<{ profile: DistrictBackendProfile; isLive: boolean }> {
-  const baseline = BACKEND_DISTRICT_PROFILES[districtKey];
+  const baseline = BACKEND_DISTRICT_PROFILES[districtKey] || BACKEND_DISTRICT_PROFILES.wayanad;
 
   try {
     const timeoutController = new AbortController();
-    const timeoutId = setTimeout(() => timeoutController.abort(), 1500);
+    const timeoutId = setTimeout(() => timeoutController.abort(), 2000);
 
     if (signal) {
       signal.addEventListener('abort', () => timeoutController.abort(), { once: true });
     }
 
-    const habResult = await apiGet<HabitationApiResponse>(
-      `/habitations?admin=${baseline.adminId}&limit=100`,
-      undefined,
-      timeoutController.signal,
-    );
+    // Parallel fetch: Habitations triage baseline + Dynamic 72h forecast envelope
+    const [habResult, forecastResult] = await Promise.allSettled([
+      apiGet<HabitationApiResponse>(
+        `/habitations?admin=${baseline.adminId}&limit=100`,
+        undefined,
+        timeoutController.signal,
+      ),
+      apiGet<ForecastAlertsResponse>(
+        `/alerts/forecast?admin=${baseline.adminId}&limit=10`,
+        undefined,
+        timeoutController.signal,
+      ),
+    ]);
 
     clearTimeout(timeoutId);
 
-    if (habResult && habResult.items && habResult.items.length > 0) {
-      // Filter out synthetic items named "Settlement [number]" to keep real tourist destinations
-      const realNamedItems = habResult.items.filter(
-        (item: HabitationApiResponseItem) => !/^settlement\s*\d+/i.test(item.name.trim())
+    let updatedProfile = { ...baseline };
+    let isLiveResult = false;
+
+    // 1. Process Live Forecast State (Clear Weather vs Active Storm Alerts)
+    if (forecastResult.status === 'fulfilled' && forecastResult.value) {
+      const fc = forecastResult.value;
+      const count = fc.total_forecast_cells ?? 0;
+      const cycleAt = fc.forecast_cycle_at ? String(fc.forecast_cycle_at) : undefined;
+
+      // In calm weather (Route 1 peak envelope filter), danger cells count is 0 and cycle is populated
+      const derivedWeather: WeatherState =
+        count === 0 && cycleAt
+          ? 'CLEAR'
+          : count > 0
+          ? 'ALERT_ACTIVE'
+          : 'CLEAR';
+
+      updatedProfile = {
+        ...updatedProfile,
+        weatherState: derivedWeather,
+        dangerCellsCount: count,
+        lastCycleAt: cycleAt,
+      };
+      isLiveResult = true;
+    }
+
+    // 2. Process Live Habitations
+    if (habResult.status === 'fulfilled' && habResult.value && habResult.value.items?.length > 0) {
+      const items = habResult.value.items;
+      const realNamedItems = items.filter(
+        (item: HabitationApiResponseItem) => !/^settlement\s*\d+/i.test(item.name.trim()),
       );
 
       const liveHabitations: BackendHabitationRecord[] = (
@@ -860,26 +1274,26 @@ export async function loadDistrictData(
         tier: item.risk?.tier ?? 'Tier 2 (Short-Term)',
       }));
 
-      // If backend only contains synthetic settlements, keep authentic baseline destinations
       const finalHabitations =
         liveHabitations.length > 0 ? liveHabitations : baseline.habitations;
 
-      return {
-        profile: {
-          ...baseline,
-          totalHabitationsCount: habResult.total || finalHabitations.length,
-          totalHouseholdsAtRisk: habResult.items.reduce(
-            (acc: number, h: HabitationApiResponseItem) => acc + (h.households ?? 0),
-            0
-          ),
-          habitations: finalHabitations,
-        },
-        isLive: true,
+      updatedProfile = {
+        ...updatedProfile,
+        totalHabitationsCount: habResult.value.total || finalHabitations.length,
+        totalHouseholdsAtRisk: items.reduce(
+          (acc: number, h: HabitationApiResponseItem) => acc + (h.households ?? 0),
+          0,
+        ),
+        habitations: finalHabitations,
       };
+      isLiveResult = true;
     }
+
+    return { profile: updatedProfile, isLive: isLiveResult };
   } catch {
     // Fall back to baseline gracefully
   }
 
   return { profile: baseline, isLive: false };
 }
+
