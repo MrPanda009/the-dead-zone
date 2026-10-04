@@ -603,6 +603,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/relocation/chat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Interactive Relocation Decision Assistant
+         * @description Conversational AI decision assistant for government administrators and NDRF commanders. Answers queries regarding village triage priorities, carrying capacity deficits, and side-by-side comparative evaluations between SETU canonical allocations and external GIS proposals. Strictly grounded with source provenance citations and honest missing data handling.
+         */
+        post: operations["relocation_chat_relocation_chat_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/": {
         parameters: {
             query?: never;
@@ -1190,6 +1210,56 @@ export interface components {
              * @default calc-v1.0
              */
             calculation_version: string;
+        };
+        /**
+         * ChatCitation
+         * @description Grounding citation referencing verified pipeline data.
+         */
+        ChatCitation: {
+            /**
+             * Source
+             * @description Origin source name (e.g. 'SETU PostGIS Engine', 'External Partner GIS').
+             */
+            source: string;
+            /**
+             * Detail
+             * @description Specific metric, row, or rule cited.
+             */
+            detail: string;
+            /**
+             * Metric
+             * @description Quantitative value or threshold cited.
+             */
+            metric?: string | null;
+            /**
+             * Provenance
+             * @description Provenance grade ('authoritative', 'derived_unverified', 'external_gis').
+             * @default authoritative
+             */
+            provenance: string;
+        };
+        /**
+         * ChatMessage
+         * @description Single message in a conversational thread.
+         */
+        ChatMessage: {
+            /**
+             * Role
+             * @description Role of the message sender.
+             * @enum {string}
+             */
+            role: "system" | "user" | "assistant";
+            /**
+             * Content
+             * @description Text content of the message.
+             */
+            content: string;
+            /**
+             * Timestamp
+             * Format: date-time
+             * @description UTC timestamp of the message.
+             */
+            timestamp?: string;
         };
         /**
          * CoverageFlag
@@ -2494,6 +2564,84 @@ export interface components {
             lives_saved_count: number;
             /** Source Uuid */
             source_uuid: string;
+        };
+        /**
+         * RelocationChatRequest
+         * @description Request payload for the relocation AI assistant.
+         */
+        RelocationChatRequest: {
+            /**
+             * Messages
+             * @description Chat history leading up to the current prompt.
+             */
+            messages: components["schemas"]["ChatMessage"][];
+            /**
+             * District
+             * @description Active administrative district in focus.
+             * @default Barpeta
+             */
+            district: string | null;
+            /**
+             * Habitation Id
+             * @description Optional focused habitation ID for targeted analysis.
+             */
+            habitation_id?: number | null;
+            /**
+             * Site Id
+             * @description Optional candidate site ID for targeted capacity analysis.
+             */
+            site_id?: number | null;
+            /**
+             * Screening Mode
+             * @description Whether exploratory screening mode is active (permitting unmeasured lifelines/hazards).
+             * @default false
+             */
+            screening_mode: boolean;
+        };
+        /**
+         * RelocationChatResponse
+         * @description Response payload from the relocation AI assistant.
+         */
+        RelocationChatResponse: {
+            /**
+             * Reply
+             * @description Markdown-formatted, cited plain-English response.
+             */
+            reply: string;
+            /**
+             * Tools Called
+             * @description List of pipeline tool functions executed to answer the query.
+             */
+            tools_called?: string[];
+            /**
+             * Citations
+             * @description Structured citations linking statements to pipeline data.
+             */
+            citations?: components["schemas"]["ChatCitation"][];
+            /**
+             * Grounding Data
+             * @description Raw structured pipeline data retrieved by tools.
+             */
+            grounding_data?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Fallback Used
+             * @description Whether the offline deterministic fallback synthesizer was used (e.g., on LLM timeout).
+             * @default false
+             */
+            fallback_used: boolean;
+            /**
+             * Model
+             * @description LLM model identifier used for completion.
+             * @default llama-3.3-70b-versatile
+             */
+            model: string;
+            /**
+             * District
+             * @description District context of the response.
+             */
+            district?: string | null;
         };
         /**
          * Role
@@ -4960,6 +5108,66 @@ export interface operations {
             };
             /** @description Not Found - Requested resource, cell, or entity does not exist. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Validation Error - Request parameter or payload validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error - An unexpected system or database error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Service Unavailable - No valid serving version is active. Pipeline data is not ready. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    relocation_chat_relocation_chat_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RelocationChatRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelocationChatResponse"];
+                };
+            };
+            /** @description Bad Request - Invalid parameters or malformed input format. */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };

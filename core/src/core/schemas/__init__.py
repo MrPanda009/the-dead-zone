@@ -100,6 +100,12 @@ from core.schemas.explanation import (
     CanonicalExplanationRecord,
     ExplanationBatchDTO,
 )
+from core.schemas.chat import (
+    ChatMessage,
+    ChatCitation,
+    RelocationChatRequest,
+    RelocationChatResponse,
+)
 
 __all__ = [
     "BaseSchema",
@@ -160,6 +166,10 @@ __all__ = [
     "RegisterRequest",
     "UserResponse",
     "LogoutResponse",
+    "ChatMessage",
+    "ChatCitation",
+    "RelocationChatRequest",
+    "RelocationChatResponse",
 ]
 
 

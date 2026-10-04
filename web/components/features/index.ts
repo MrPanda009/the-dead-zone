@@ -6,3 +6,4 @@ export * from './landslide-modal';
 export * from './auth';
 export * from './dashboard';
 export * from './about';
+export * from './chat';
