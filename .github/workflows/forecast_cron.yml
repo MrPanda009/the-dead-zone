@@ -1,0 +1,49 @@
+name: SETU-DRR Multi-District Live Forecast Automation
+
+on:
+  schedule:
+    # Runs twice a day: 00:15 and 12:15 UTC (5:45 AM and 5:45 PM IST)
+    # Aligned 15 mins after ECMWF global forecast model publication
+    - cron: '15 0,12 * * *'
+  workflow_dispatch:
+    inputs:
+      district:
+        description: 'Specific district slug (e.g. wayanad, barpeta) or leave empty for all'
+        required: false
+        default: ''
+      dry_run:
+        description: 'Simulate calculations without persisting database changes'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  trigger-forecast:
+    name: Trigger Live Forecast Ingestion
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send API Trigger Request
+        run: |
+          API_URL="${{ secrets.SETU_API_URL || 'https://the-dead-zone.onrender.com' }}"
+          PAYLOAD='{"live": true, "dry_run": ${{ inputs.dry_run || false }}}'
+          if [ -n "${{ inputs.district }}" ]; then
+            PAYLOAD=$(jq -n --arg d "${{ inputs.district }}" --argjson dr "${{ inputs.dry_run || false }}" '{district: $d, live: true, dry_run: $dr}')
+          fi
+
+          echo "Triggering forecast ingestion at $API_URL/alerts/forecast/trigger..."
+          # max-time 180s accommodates Render Free Tier spin-up from cold sleep
+          RESPONSE=$(curl -s --max-time 180 --retry 2 --retry-delay 5 -w "\n%{http_code}" -X POST "$API_URL/alerts/forecast/trigger" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD")
+
+          HTTP_STATUS=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+
+          echo "HTTP Status: $HTTP_STATUS"
+          echo "Response: $BODY"
+
+          if [ "$HTTP_STATUS" -ne 202 ] && [ "$HTTP_STATUS" -ne 200 ]; then
+            echo "Forecast trigger failed with status $HTTP_STATUS"
+            exit 1
+          fi
+

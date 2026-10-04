@@ -64,3 +64,51 @@ class ForecastAlertsResponse(BaseSchema):
     forecast_cycle_at: Optional[datetime] = None
     horizon_hours: int
     items: List[ForecastAlertItem] = Field(default_factory=list)
+
+
+class ForecastTriggerRequest(BaseSchema):
+    """Payload to trigger an on-demand forecast ingestion cycle."""
+    district: Optional[str] = Field(
+        default=None,
+        description="Target district slug (e.g. 'wayanad', 'barpeta') or null for all operational districts.",
+    )
+    live: bool = Field(
+        default=True,
+        description="Fetch live Open-Meteo ECMWF IFS HRES data (False uses mock/offline data).",
+    )
+    dry_run: bool = Field(
+        default=False,
+        description="Simulate calculations and envelope detection without persisting database modifications.",
+    )
+
+
+class ForecastTriggerResponse(BaseSchema):
+    """Asynchronous acknowledgement for an enqueued forecast ingestion cycle."""
+    status: str = Field(default="ACCEPTED", description="Trigger status ('ACCEPTED', 'REJECTED')")
+    message: str = Field(description="Operational outcome message")
+    run_id: str = Field(description="Unique UUID string identifying the background run")
+    target_districts: List[str] = Field(description="List of district slugs targeted in this cycle")
+    enqueued_at: datetime = Field(description="Timestamp when the execution task was enqueued")
+
+
+class DistrictForecastStatus(BaseSchema):
+    """Real-time operational weather and forecast status for a registered district."""
+    key: str
+    name: str
+    admin_id: int
+    lgd_code: int
+    last_cycle_at: Optional[datetime] = None
+    danger_cells: int = 0
+    weather_state: str = Field(
+        description="Operational alert state: 'CLEAR', 'ALERT_ACTIVE', 'STALE', or 'NO_DATA'",
+    )
+
+
+class ForecastPipelineStatusResponse(BaseSchema):
+    """System-wide telemetry and scheduler health for multi-district live forecasts."""
+    scheduler_enabled: bool
+    schedule_cron: str
+    is_run_in_progress: bool
+    global_latest_cycle_at: Optional[datetime] = None
+    districts: List[DistrictForecastStatus] = Field(default_factory=list)
+

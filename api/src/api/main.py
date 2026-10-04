@@ -21,6 +21,7 @@ from api.routes.recommendations import router as recommendations_router
 from api.routes.scenario import router as scenario_router
 from api.routes.auth import router as auth_router
 from api.routes.stats import router as stats_router
+from api.routes.chat import router as chat_router
 from core.errors import ErrorCode
 
 logging.basicConfig(
@@ -28,6 +29,9 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 logger = logging.getLogger("setu_api")
+
+
+SCHEDULER_LEADER_LOCK_ID = 17855599
 
 
 @asynccontextmanager
@@ -38,8 +42,68 @@ async def lifespan(app: FastAPI):
         f"Database URL configured: {api_settings.DATABASE_URL.split('@')[-1] if '@' in api_settings.DATABASE_URL else 'localhost'}"
     )
     logger.info(f"DEMO_MODE: {api_settings.DEMO_MODE}")
+
+    scheduler = None
+    lock_engine = None
+    lock_conn = None
+
+    if api_settings.FORECAST_SCHEDULER_ENABLED:
+        try:
+            from sqlalchemy import create_engine, text
+            lock_engine = create_engine(api_settings.get_sqlalchemy_url(direct=True), pool_pre_ping=True)
+            lock_conn = lock_engine.connect()
+            # Try non-blocking advisory lock for leader election across workers
+            is_leader = lock_conn.execute(
+                text("SELECT pg_try_advisory_lock(:lock_id);"),
+                {"lock_id": SCHEDULER_LEADER_LOCK_ID},
+            ).scalar()
+
+            if is_leader:
+                logger.info("Elected as Multi-District Forecast Scheduler Leader. Initializing APScheduler...")
+                from apscheduler.schedulers.background import BackgroundScheduler
+                from apscheduler.triggers.cron import CronTrigger
+                from pipeline.jobs.run_district_forecast import run_all_districts
+
+                scheduler = BackgroundScheduler(timezone="UTC")
+                cron_str = api_settings.FORECAST_SCHEDULE_CRON
+                scheduler.add_job(
+                    lambda: run_all_districts(live=True),
+                    trigger=CronTrigger.from_crontab(cron_str, timezone="UTC"),
+                    id="multi_district_forecast_job",
+                    name="SETU Multi-District Live Forecast Pipeline",
+                    max_instances=1,
+                    coalesce=True,
+                    misfire_grace_time=3600,
+                )
+                scheduler.start()
+                logger.info(f"Multi-District Forecast Scheduler running (cron='{cron_str}').")
+            else:
+                logger.info("Another worker holds the forecast scheduler lock. Standing by.")
+        except Exception as exc:
+            logger.warning("Could not initialize embedded forecast scheduler: %s", exc)
+    else:
+        logger.info("Forecast background scheduler is disabled (FORECAST_SCHEDULER_ENABLED=False).")
+
     yield
-    logger.info("Shutting down SETU-DRR API service.")
+
+    logger.info("Shutting down SETU-DRR API service...")
+    if scheduler and scheduler.running:
+        logger.info("Shutting down forecast scheduler...")
+        scheduler.shutdown(wait=False)
+
+    if lock_conn:
+        try:
+            from sqlalchemy import text
+            lock_conn.execute(
+                text("SELECT pg_advisory_unlock(:lock_id);"),
+                {"lock_id": SCHEDULER_LEADER_LOCK_ID},
+            )
+            lock_conn.close()
+        except Exception:
+            pass
+    if lock_engine:
+        lock_engine.dispose()
+
 
 
 app = FastAPI(
@@ -111,6 +175,7 @@ app.include_router(recommendations_router)
 app.include_router(scenario_router)
 app.include_router(auth_router)
 app.include_router(stats_router)
+app.include_router(chat_router)
 
 
 @app.get("/", tags=["General"])

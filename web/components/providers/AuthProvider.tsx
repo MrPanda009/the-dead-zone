@@ -22,6 +22,8 @@ export interface AuthContextValue {
   error: string | null;
   /** Authenticates user with email and password via POST /auth/login. */
   login: (credentials: LoginRequest) => Promise<UserResponse>;
+  /** Authenticates user with Google OIDC ID token via POST /auth/google. */
+  loginWithGoogle: (idToken: string) => Promise<UserResponse>;
   /** Revokes active session via POST /auth/logout and clears local user state. */
   logout: () => Promise<void>;
   /** Re-evaluates active session cookie via GET /auth/me. */
@@ -112,6 +114,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     [],
   );
 
+  const loginWithGoogle = useCallback(
+    async (idToken: string): Promise<UserResponse> => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const authenticatedUser = await apiPost<UserResponse>('/auth/google', { id_token: idToken });
+        if (authenticatedUser.access_token) {
+          setStoredToken(authenticatedUser.access_token);
+        }
+        const sanitized = sanitizeUser(authenticatedUser) ?? authenticatedUser;
+        setUser(sanitized);
+        return sanitized;
+      } catch (err) {
+        const message = err instanceof ApiError ? err.message : 'Google authentication failed.';
+        setError(message);
+        throw err;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [],
+  );
+
   const logout = useCallback(async (): Promise<void> => {
     setIsLoading(true);
     try {
@@ -133,10 +158,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       isAuthenticated: user !== null,
       error,
       login,
+      loginWithGoogle,
       logout,
       refreshUser,
     }),
-    [user, isLoading, error, login, logout, refreshUser],
+    [user, isLoading, error, login, loginWithGoogle, logout, refreshUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -3,8 +3,9 @@ import type {
   DisasterCaseStudyDTO,
   DisasterStatsResponse,
   DistrictHazardSummaryDTO,
-  StateDisasterComparisonDTO,
 } from '@/lib/api/stats';
+import type { AsyncResource } from '@/lib/hooks/useAsyncResource';
+import type { UseHazardLayerResult } from '@/lib/hooks/useHazardLayer';
 
 export interface BaseStatsProps {
   className?: string;
@@ -39,26 +40,9 @@ export interface LossTimeSeriesChartProps extends BaseStatsProps {
   stats: DisasterStatsResponse | null;
   isLoading?: boolean;
   selectedMetric?: 'lives' | 'houses' | 'cattle' | 'crop';
+  /** Stacks the header and shortens the chart for narrow columns. */
+  compact?: boolean;
   onMetricChange?: (metric: 'lives' | 'houses' | 'cattle' | 'crop') => void;
-}
-
-export interface HazardCasualtyBreakdownProps extends BaseStatsProps {
-  stats: DisasterStatsResponse | null;
-  isLoading?: boolean;
-}
-
-export interface DistrictFloodRollupCardProps extends BaseStatsProps {
-  summary: DistrictHazardSummaryDTO | null;
-  isLoading?: boolean;
-  districtName: string;
-  lgdCode?: number;
-  onSelectDistrict?: (lgdCode: number) => void;
-}
-
-export interface FloodModelVsHistoryCardProps extends BaseStatsProps {
-  summary: DistrictHazardSummaryDTO | null;
-  stats: DisasterStatsResponse | null;
-  isLoading?: boolean;
 }
 
 export interface ResponseCapacityCardProps extends BaseStatsProps {
@@ -73,26 +57,19 @@ export interface NoneyCaseStudyCardProps extends BaseStatsProps {
 
 export type StatsTabId = 'history' | 'brief' | 'comparison' | 'sources';
 
-export interface PilotDistrict {
+/**
+ * A district offered on the District Brief and Model vs History tabs.
+ *
+ * Identity and map framing only. Every number shown for a district comes from the API
+ * (`DistrictHazardSummaryDTO` and the hazard cell layer).
+ */
+export interface StatsDistrict {
   name: string;
   state: string;
   lgdCode: number;
   lat: number;
   lng: number;
   zoom?: number;
-  highSharePct: number;
-  habitationsAtRisk: number;
-  populationAtRisk: number;
-  nearestPhcKm: number;
-  highwaysDamaged: number;
-  bridgesDamaged: number;
-  schoolsDamaged: number;
-  drivers: {
-    handPct: number;
-    slopePct: number;
-    croplandPct: number;
-    rainfallPct: number;
-  };
 }
 
 export interface DatasetProvenanceItem {
@@ -101,9 +78,11 @@ export interface DatasetProvenanceItem {
   ministry: string;
   years: string;
   granularity: string;
+  /** Neutral label such as "Snapshot". Never an asserted date unless the ingest date is recorded. */
   freshness: string;
   limitations: string;
-  hasApi: boolean;
+  /** True when the data is loaded into our database and served by our API. */
+  integrated: boolean;
   icon: string;
   sourceUrl?: string;
 }
@@ -114,42 +93,41 @@ export interface StatsSubNavProps extends BaseStatsProps {
 }
 
 export interface DisasterHistoryTabProps extends BaseStatsProps {
-  stats: DisasterStatsResponse | null;
+  stats: AsyncResource<DisasterStatsResponse>;
   selectedState: string;
   onSelectState: (state: string) => void;
   availableStates: string[];
-  caseStudy?: DisasterCaseStudyDTO | null;
-  isLoading?: boolean;
-  onOpenCaseStudyModal?: (caseStudy: DisasterCaseStudyDTO) => void;
 }
 
 export interface DistrictBriefTabProps extends BaseStatsProps {
-  districts: PilotDistrict[];
-  selectedDistrict: PilotDistrict;
-  onSelectDistrict: (district: PilotDistrict) => void;
-  summary: DistrictHazardSummaryDTO | null;
-  isLoading?: boolean;
+  districts: StatsDistrict[];
+  selectedDistrict: StatsDistrict;
+  onSelectDistrict: (district: StatsDistrict) => void;
+  summary: AsyncResource<DistrictHazardSummaryDTO>;
+  layer: UseHazardLayerResult;
 }
 
 export interface ModelVsHistoryTabProps extends BaseStatsProps {
-  districts: PilotDistrict[];
-  selectedDistrict: PilotDistrict;
-  onSelectDistrict: (district: PilotDistrict) => void;
-  summary: DistrictHazardSummaryDTO | null;
-  stats: DisasterStatsResponse | null;
-  onNavigateToSources?: () => void;
-  isLoading?: boolean;
+  districts: StatsDistrict[];
+  selectedDistrict: StatsDistrict;
+  onSelectDistrict: (district: StatsDistrict) => void;
+  summary: AsyncResource<DistrictHazardSummaryDTO>;
+  layer: UseHazardLayerResult;
+  stats: AsyncResource<DisasterStatsResponse>;
+  /**
+   * Slot for a measured validation result. Phase U always leaves it empty, which renders the
+   * "Not yet validated" notice. A later phase passes a metrics card here once a validation
+   * run exists; nothing on this page may show an agreement figure without one.
+   */
+  validationSlot?: React.ReactNode;
 }
 
 export interface DataProvenanceTabProps extends BaseStatsProps {
   datasets?: DatasetProvenanceItem[];
-  lastUpdated?: string;
-  onSelectDataset?: (item: DatasetProvenanceItem) => void;
 }
 
 export interface StatsDonutChartProps extends BaseStatsProps {
   stats: DisasterStatsResponse | null;
-  totalLives?: number;
   isLoading?: boolean;
 }
 
@@ -159,7 +137,3 @@ export interface CaseStudyModalProps {
   caseStudy: DisasterCaseStudyDTO | null;
 }
 
-export interface DataSourcesFooterProps extends BaseStatsProps {
-  caveats?: string[];
-  lastUpdated?: string;
-}

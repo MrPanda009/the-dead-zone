@@ -46,6 +46,20 @@ class Settings(BaseSettings):
         description="Maximum dynamic live trigger age in hours to qualify as active alert.",
     )
 
+    # Groq / LLM Decision Support Assistant
+    GROQ_API_KEY: str | None = Field(
+        default=None,
+        description="Groq API key for LLM-powered decision support assistant.",
+    )
+    GROQ_MODEL: str = Field(
+        default="openai/gpt-oss-120b",
+        description="Model identifier for Groq LLM completion.",
+    )
+    GROQ_BASE_URL: str = Field(
+        default="https://api.groq.com/openai/v1",
+        description="Base URL for Groq OpenAI-compatible API.",
+    )
+
     # Forecast Scheduler & Retention (Phase B8)
     FORECAST_SCHEDULER_ENABLED: bool = Field(
         default=False,
@@ -92,7 +106,7 @@ class Settings(BaseSettings):
     API_PORT: int = Field(default=8000)
     API_HOST: str = Field(default="0.0.0.0")
     ALLOWED_ORIGINS: list[str] = Field(
-        default=["http://localhost:3000", "http://127.0.0.1:3000"],
+        default=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3001", "http://127.0.0.1:3001"],
         description="Allowed CORS origins for credentialed cookie-based requests.",
     )
 
@@ -112,6 +126,24 @@ class Settings(BaseSettings):
     SESSION_COOKIE_SAMESITE: str = Field(
         default="lax",
         description="SameSite cookie policy (lax, strict, none).",
+    )
+
+    # Google OAuth 2.0 / OpenID Connect
+    GOOGLE_CLIENT_ID: str = Field(
+        default="",
+        description="Google OAuth 2.0 Web Client ID for token audience verification.",
+    )
+    GOOGLE_CLIENT_SECRET: str = Field(
+        default="",
+        description="Google OAuth 2.0 Web Client Secret.",
+    )
+    GOOGLE_OFFICIAL_DOMAINS: list[str] = Field(
+        default=["gov.in", "nic.in"],
+        description="Whitelisted email domains granted GOVERNMENT_OFFICIAL role on Google registration.",
+    )
+    GOOGLE_OFFICIAL_EMAILS: list[str] = Field(
+        default=["sabitasinha57@gmail.com"],
+        description="Explicit email addresses granted GOVERNMENT_OFFICIAL role on Google registration.",
     )
 
     # Login Rate Limiting (Batch E)

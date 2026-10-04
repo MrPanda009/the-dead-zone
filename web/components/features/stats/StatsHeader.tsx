@@ -8,7 +8,7 @@ import type { StatsHeaderProps } from './types';
 
 export const StatsHeader: React.FC<StatsHeaderProps> = ({
   title = 'Disaster History & Recorded Impact',
-  subtitle = 'Decadal hydro-meteorological loss analysis, casualty distributions, and empirical flood model alignment.',
+  subtitle = 'Decadal hydro-meteorological loss analysis and casualty distributions, with computed flood susceptibility shown separately.',
   selectedState,
   onSelectState,
   availableStates,

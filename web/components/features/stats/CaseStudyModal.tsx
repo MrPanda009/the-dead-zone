@@ -71,7 +71,7 @@ export const CaseStudyModal: React.FC<CaseStudyModalProps> = ({
         <div className="space-y-2 pr-8">
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-rose-500/15 text-rose-500 border border-rose-500/30">
-              {caseStudy.disaster_type} • Verified Ground Truth
+              {caseStudy.disaster_type} • Documented case study
             </span>
             <span className="text-xs font-mono text-text-muted">{caseStudy.event_date}</span>
           </div>
@@ -129,7 +129,7 @@ export const CaseStudyModal: React.FC<CaseStudyModalProps> = ({
         {caseStudy.response_actions && caseStudy.response_actions.length > 0 && (
           <div className="space-y-3">
             <div className="text-xs font-mono font-semibold uppercase text-text-muted flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-sm text-emerald-500">verified_user</span>
+              <span className="material-symbols-outlined text-sm text-emerald-500">groups</span>
               <span>Multi-Agency Operational Deployment</span>
             </div>
 

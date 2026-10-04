@@ -271,6 +271,9 @@ class AllocationService:
         unverified = sum(
             1 for i in assigned_ids if str(sites_by_id.get(i, {}).get("tenure")) == "tenure_unverified"
         )
+        unmeasured_hazard = sum(
+            1 for i in assigned_ids if sites_by_id.get(i, {}).get("hazard_basis") == "unmeasured"
+        )
         caveats: list[str] = []
         if provisional:
             caveats.append(
@@ -281,6 +284,11 @@ class AllocationService:
             caveats.append(
                 f"{unverified} assigned site(s) have unverified land tenure; allotment requires a "
                 "cadastral check."
+            )
+        if unmeasured_hazard:
+            caveats.append(
+                f"{unmeasured_hazard} assigned site(s) have unmeasured multi-hazard index (MHI): "
+                "exploratory screening only — ground geotechnical and hydraulic verification required prior to allotment."
             )
         return caveats
 
@@ -320,6 +328,7 @@ class AllocationService:
             site_rows=raw_site_rows,
             distance_rows=raw_distance_rows,
             max_search_radius_km=max_search_radius_km,
+            policy=active_policy,
         )
 
         site_capacities: list[CandidateSiteCapacity] = [

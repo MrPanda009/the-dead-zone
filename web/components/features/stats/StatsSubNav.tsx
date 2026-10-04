@@ -39,7 +39,7 @@ const TABS: TabConfig[] = [
     id: 'sources',
     number: '04',
     label: 'Sources & Data Provenance',
-    icon: 'verified',
+    icon: 'menu_book',
     description: 'Transparent dataset matrix & limitations',
   },
 ];

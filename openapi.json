@@ -1755,6 +1755,120 @@
         }
       }
     },
+    "/alerts/forecast/trigger": {
+      "post": {
+        "tags": [
+          "Dynamic Alerts & Forecasts"
+        ],
+        "summary": "Trigger an immediate multi-district forecast ingestion cycle",
+        "description": "Dispatches an asynchronous Route 1 forecast ingestion run across specified or all operational districts. Returns HTTP 202 Accepted immediately. Concurrency locks prevent duplicate overlapping runs.",
+        "operationId": "trigger_forecast_cycle_alerts_forecast_trigger_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForecastTriggerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForecastTriggerResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid parameters or malformed input format.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error - Request parameter or payload validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error - An unexpected system or database error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable - No valid serving version is active. Pipeline data is not ready.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/alerts/forecast/status": {
+      "get": {
+        "tags": [
+          "Dynamic Alerts & Forecasts"
+        ],
+        "summary": "Get multi-district forecast telemetry, scheduler health, and per-district states",
+        "description": "Retrieves real-time operational status for all 7 registered districts, including latest forecast cycle timestamps, active danger cell counts, weather state (CLEAR vs ALERT_ACTIVE vs STALE), and scheduler health.",
+        "operationId": "get_forecast_pipeline_status_alerts_forecast_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForecastPipelineStatusResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error - An unexpected system or database error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable - No valid serving version is active. Pipeline data is not ready.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/plan/allocate": {
       "post": {
         "tags": [
@@ -2144,6 +2258,98 @@
           },
           "503": {
             "description": "Service Unavailable - No valid serving version is active. Pipeline data is not ready.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/google": {
+      "post": {
+        "tags": [
+          "Authentication & Identity"
+        ],
+        "summary": "Authenticate with Google Identity Services ID token",
+        "description": "Verifies a Google OpenID Connect ID token, auto-provisions or links user identity, and sets a secure HTTP-only session cookie. Returns safe user identity and bearer access token.",
+        "operationId": "login_with_google_auth_google_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoogleLoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid parameters or malformed input format.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated - Missing, invalid, expired, or revoked session cookie.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Insufficient permissions or role.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error - Request parameter or payload validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests - Rate limit exceeded. Please try again later.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error - An unexpected system or database error occurred.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2711,6 +2917,78 @@
           },
           "404": {
             "description": "Not Found - Requested resource, cell, or entity does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error - Request parameter or payload validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error - An unexpected system or database error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable - No valid serving version is active. Pipeline data is not ready.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/relocation/chat": {
+      "post": {
+        "tags": [
+          "Relocation Assistant"
+        ],
+        "summary": "Interactive Relocation Decision Assistant",
+        "description": "Conversational AI decision assistant for government administrators and NDRF commanders. Answers queries regarding village triage priorities, carrying capacity deficits, and side-by-side comparative evaluations between SETU canonical allocations and external GIS proposals. Strictly grounded with source provenance citations and honest missing data handling.",
+        "operationId": "relocation_chat_relocation_chat_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RelocationChatRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RelocationChatResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid parameters or malformed input format.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3857,6 +4135,77 @@
         "title": "CapacityBreakdownDTO",
         "description": "Structured breakdown of independent resource capacity dimensions."
       },
+      "ChatCitation": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "description": "Origin source name (e.g. 'SETU PostGIS Engine', 'External Partner GIS')."
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail",
+            "description": "Specific metric, row, or rule cited."
+          },
+          "metric": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metric",
+            "description": "Quantitative value or threshold cited."
+          },
+          "provenance": {
+            "type": "string",
+            "title": "Provenance",
+            "description": "Provenance grade ('authoritative', 'derived_unverified', 'external_gis').",
+            "default": "authoritative"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source",
+          "detail"
+        ],
+        "title": "ChatCitation",
+        "description": "Grounding citation referencing verified pipeline data."
+      },
+      "ChatMessage": {
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "system",
+              "user",
+              "assistant"
+            ],
+            "title": "Role",
+            "description": "Role of the message sender."
+          },
+          "content": {
+            "type": "string",
+            "title": "Content",
+            "description": "Text content of the message."
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp",
+            "description": "UTC timestamp of the message."
+          }
+        },
+        "type": "object",
+        "required": [
+          "role",
+          "content"
+        ],
+        "title": "ChatMessage",
+        "description": "Single message in a conversational thread."
+      },
       "CoverageFlag": {
         "type": "string",
         "enum": [
@@ -4089,6 +4438,58 @@
         ],
         "title": "DisasterStatsResponse",
         "description": "Complete disaster history dossier for a state (GET /stats/disasters)."
+      },
+      "DistrictForecastStatus": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "admin_id": {
+            "type": "integer",
+            "title": "Admin Id"
+          },
+          "lgd_code": {
+            "type": "integer",
+            "title": "Lgd Code"
+          },
+          "last_cycle_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Cycle At"
+          },
+          "danger_cells": {
+            "type": "integer",
+            "title": "Danger Cells",
+            "default": 0
+          },
+          "weather_state": {
+            "type": "string",
+            "title": "Weather State",
+            "description": "Operational alert state: 'CLEAR', 'ALERT_ACTIVE', 'STALE', or 'NO_DATA'"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "name",
+          "admin_id",
+          "lgd_code",
+          "weather_state"
+        ],
+        "title": "DistrictForecastStatus",
+        "description": "Real-time operational weather and forecast status for a registered district."
       },
       "DistrictHazardSummaryDTO": {
         "properties": {
@@ -4823,6 +5224,143 @@
           "horizon_hours"
         ],
         "title": "ForecastAlertsResponse"
+      },
+      "ForecastPipelineStatusResponse": {
+        "properties": {
+          "scheduler_enabled": {
+            "type": "boolean",
+            "title": "Scheduler Enabled"
+          },
+          "schedule_cron": {
+            "type": "string",
+            "title": "Schedule Cron"
+          },
+          "is_run_in_progress": {
+            "type": "boolean",
+            "title": "Is Run In Progress"
+          },
+          "global_latest_cycle_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Global Latest Cycle At"
+          },
+          "districts": {
+            "items": {
+              "$ref": "#/components/schemas/DistrictForecastStatus"
+            },
+            "type": "array",
+            "title": "Districts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "scheduler_enabled",
+          "schedule_cron",
+          "is_run_in_progress"
+        ],
+        "title": "ForecastPipelineStatusResponse",
+        "description": "System-wide telemetry and scheduler health for multi-district live forecasts."
+      },
+      "ForecastTriggerRequest": {
+        "properties": {
+          "district": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "District",
+            "description": "Target district slug (e.g. 'wayanad', 'barpeta') or null for all operational districts."
+          },
+          "live": {
+            "type": "boolean",
+            "title": "Live",
+            "description": "Fetch live Open-Meteo ECMWF IFS HRES data (False uses mock/offline data).",
+            "default": true
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run",
+            "description": "Simulate calculations and envelope detection without persisting database modifications.",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "ForecastTriggerRequest",
+        "description": "Payload to trigger an on-demand forecast ingestion cycle."
+      },
+      "ForecastTriggerResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Trigger status ('ACCEPTED', 'REJECTED')",
+            "default": "ACCEPTED"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "Operational outcome message"
+          },
+          "run_id": {
+            "type": "string",
+            "title": "Run Id",
+            "description": "Unique UUID string identifying the background run"
+          },
+          "target_districts": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Target Districts",
+            "description": "List of district slugs targeted in this cycle"
+          },
+          "enqueued_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Enqueued At",
+            "description": "Timestamp when the execution task was enqueued"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message",
+          "run_id",
+          "target_districts",
+          "enqueued_at"
+        ],
+        "title": "ForecastTriggerResponse",
+        "description": "Asynchronous acknowledgement for an enqueued forecast ingestion cycle."
+      },
+      "GoogleLoginRequest": {
+        "properties": {
+          "id_token": {
+            "type": "string",
+            "minLength": 10,
+            "title": "Id Token",
+            "description": "OpenID Connect ID token (JWT) returned by Google Identity Services.",
+            "examples": [
+              "eyJhbGciOiJSUzI1NiIs..."
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id_token"
+        ],
+        "title": "GoogleLoginRequest",
+        "description": "Request payload for Google Identity Services authentication."
       },
       "HabitationListItem": {
         "properties": {
@@ -6153,6 +6691,129 @@
         "title": "ReliefAllocationDTO",
         "description": "SDRF and NDRF disaster response allocations and lives saved."
       },
+      "RelocationChatRequest": {
+        "properties": {
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/ChatMessage"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Messages",
+            "description": "Chat history leading up to the current prompt."
+          },
+          "district": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "District",
+            "description": "Active administrative district in focus.",
+            "default": "Barpeta"
+          },
+          "habitation_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Habitation Id",
+            "description": "Optional focused habitation ID for targeted analysis."
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id",
+            "description": "Optional candidate site ID for targeted capacity analysis."
+          },
+          "screening_mode": {
+            "type": "boolean",
+            "title": "Screening Mode",
+            "description": "Whether exploratory screening mode is active (permitting unmeasured lifelines/hazards).",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "messages"
+        ],
+        "title": "RelocationChatRequest",
+        "description": "Request payload for the relocation AI assistant."
+      },
+      "RelocationChatResponse": {
+        "properties": {
+          "reply": {
+            "type": "string",
+            "title": "Reply",
+            "description": "Markdown-formatted, cited plain-English response."
+          },
+          "tools_called": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tools Called",
+            "description": "List of pipeline tool functions executed to answer the query."
+          },
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/ChatCitation"
+            },
+            "type": "array",
+            "title": "Citations",
+            "description": "Structured citations linking statements to pipeline data."
+          },
+          "grounding_data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Grounding Data",
+            "description": "Raw structured pipeline data retrieved by tools."
+          },
+          "fallback_used": {
+            "type": "boolean",
+            "title": "Fallback Used",
+            "description": "Whether the offline deterministic fallback synthesizer was used (e.g., on LLM timeout).",
+            "default": false
+          },
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "LLM model identifier used for completion.",
+            "default": "llama-3.3-70b-versatile"
+          },
+          "district": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "District",
+            "description": "District context of the response."
+          }
+        },
+        "type": "object",
+        "required": [
+          "reply"
+        ],
+        "title": "RelocationChatResponse",
+        "description": "Response payload from the relocation AI assistant."
+      },
       "Role": {
         "type": "string",
         "enum": [
@@ -6978,6 +7639,24 @@
             "type": "boolean",
             "title": "Is Active",
             "description": "Whether user account is active."
+          },
+          "avatar_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Url",
+            "description": "User avatar image URL."
+          },
+          "auth_provider": {
+            "type": "string",
+            "title": "Auth Provider",
+            "description": "Authentication provider used (google, local).",
+            "default": "google"
           },
           "created_at": {
             "type": "string",
