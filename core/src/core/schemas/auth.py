@@ -45,6 +45,18 @@ class RegisterRequest(BaseModel):
     full_name: str = Field(..., min_length=1, max_length=200, description="Full name of the user.", examples=["Asha Nair"])
 
 
+class GoogleLoginRequest(BaseModel):
+    """Request payload for Google Identity Services authentication."""
+    model_config = ConfigDict(extra="forbid")
+
+    id_token: str = Field(
+        ...,
+        min_length=10,
+        description="OpenID Connect ID token (JWT) returned by Google Identity Services.",
+        examples=["eyJhbGciOiJSUzI1NiIs..."],
+    )
+
+
 class JurisdictionDTO(BaseModel):
     """Authoritative administrative jurisdiction assignment."""
     model_config = ConfigDict(from_attributes=True)
@@ -67,6 +79,8 @@ class UserResponse(BaseModel):
     full_name: str = Field(..., description="Full name of user.")
     role: Role = Field(..., description="User role (CIVILIAN, GOVERNMENT_OFFICIAL, SYSTEM_ADMIN).")
     is_active: bool = Field(..., description="Whether user account is active.")
+    avatar_url: Optional[str] = Field(default=None, description="User avatar image URL.")
+    auth_provider: str = Field(default="google", description="Authentication provider used (google, local).")
     created_at: datetime = Field(..., description="Account creation timestamp.")
     last_login_at: Optional[datetime] = Field(None, description="Timestamp of most recent successful login.")
     jurisdiction: Optional[JurisdictionDTO] = Field(

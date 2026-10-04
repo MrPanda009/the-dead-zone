@@ -31,6 +31,19 @@ class AuthRepository:
         )
         return self.db.execute(stmt).scalars().first()
 
+    def get_user_by_google_sub(self, google_sub: str) -> Optional[AppUser]:
+        """Retrieves user by Google OpenID Connect subject identifier."""
+        stmt = (
+            select(AppUser)
+            .options(
+                joinedload(AppUser.admin_boundary)
+                .defer(AdminBoundary.geom)
+                .defer(AdminBoundary.bbox)
+            )
+            .where(AppUser.google_sub == google_sub)
+        )
+        return self.db.execute(stmt).scalars().first()
+
     def get_user_by_id(self, user_id: uuid.UUID) -> Optional[AppUser]:
         """Retrieves user by UUID primary key."""
         stmt = (
@@ -43,6 +56,58 @@ class AuthRepository:
             .where(AppUser.id == user_id)
         )
         return self.db.execute(stmt).scalars().first()
+
+    def create_google_user(
+        self,
+        email: str,
+        google_sub: str,
+        full_name: str,
+        role: str,
+        avatar_url: Optional[str] = None,
+        is_active: bool = True,
+    ) -> AppUser:
+        """Provisions a new user authenticated via Google OAuth 2.0."""
+        now = datetime.now(timezone.utc)
+        user = AppUser(
+            id=uuid.uuid4(),
+            email=email.strip().lower(),
+            google_sub=google_sub,
+            password_hash=None,
+            full_name=full_name.strip(),
+            role=role,
+            avatar_url=avatar_url,
+            auth_provider="google",
+            is_active=is_active,
+            created_at=now,
+            updated_at=now,
+        )
+        self.db.add(user)
+        self.db.commit()
+        self.db.refresh(user)
+        return user
+
+    def link_google_account(
+        self,
+        user_id: uuid.UUID,
+        google_sub: str,
+        avatar_url: Optional[str] = None,
+    ) -> AppUser:
+        """Links an existing user account to Google OAuth identity."""
+        now = datetime.now(timezone.utc)
+        values_to_update: dict[str, object] = {
+            "google_sub": google_sub,
+            "updated_at": now,
+        }
+        if avatar_url:
+            values_to_update["avatar_url"] = avatar_url
+
+        stmt = update(AppUser).where(AppUser.id == user_id).values(**values_to_update)
+        self.db.execute(stmt)
+        self.db.commit()
+        user = self.get_user_by_id(user_id)
+        if user is None:
+            raise ValueError(f"User {user_id} not found after linking Google account.")
+        return user
 
     def create_user(
         self,

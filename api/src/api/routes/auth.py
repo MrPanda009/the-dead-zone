@@ -14,12 +14,14 @@ from sqlalchemy.orm import Session
 from api.dependencies import get_db, require_authenticated, get_login_rate_limiter
 from api.routes.common import error_responses
 from api.services.auth_service import AuthService
+from api.services.google_auth_service import GoogleAuthService
 from core.config import settings
 from core.db_models import AppUser
 from core.domain.rate_limit import LoginRateLimiter
 from core.schemas.auth import (
     LoginRequest,
     RegisterRequest,
+    GoogleLoginRequest,
     UserResponse,
     LogoutResponse,
 )
@@ -36,6 +38,44 @@ def _extract_client_ip(request: Request) -> str:
     if request.client and request.client.host:
         return request.client.host
     return "127.0.0.1"
+
+
+@router.post(
+    "/google",
+    response_model=UserResponse,
+    responses=error_responses(400, 401, 403, 422, 429, 500),
+    summary="Authenticate with Google Identity Services ID token",
+    description=(
+        "Verifies a Google OpenID Connect ID token, auto-provisions or links user identity, "
+        "and sets a secure HTTP-only session cookie. Returns safe user identity and bearer access token."
+    ),
+)
+def login_with_google(
+    payload: GoogleLoginRequest,
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db),
+    rate_limiter: LoginRateLimiter = Depends(get_login_rate_limiter),
+) -> UserResponse:
+    client_ip = _extract_client_ip(request)
+    service = GoogleAuthService(db, rate_limiter=rate_limiter)
+    user, raw_token = service.authenticate_google_token(payload.id_token, client_ip=client_ip)
+
+    # Set HTTP-only, SameSite session cookie
+    response.set_cookie(
+        key=settings.SESSION_COOKIE_NAME,
+        value=raw_token,
+        max_age=settings.SESSION_DURATION_DAYS * 86400,
+        httponly=True,
+        secure=settings.SESSION_COOKIE_SECURE,
+        samesite=settings.SESSION_COOKIE_SAMESITE,
+        path="/",
+    )
+
+    user_resp = UserResponse.model_validate(user)
+    user_resp.access_token = raw_token
+    user_resp.token_type = "bearer"
+    return user_resp
 
 
 @router.post(
