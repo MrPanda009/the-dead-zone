@@ -5,44 +5,42 @@ import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import type { ChatPromptSuggestionsProps } from './types';
 
-export const ChatPromptSuggestions: React.FC<ChatPromptSuggestionsProps> = ({
+export interface ExtendedChatPromptSuggestionsProps extends ChatPromptSuggestionsProps {
+  /** Optional message count to conditionally render only during active chat */
+  messagesCount?: number;
+}
+
+export const ChatPromptSuggestions: React.FC<ExtendedChatPromptSuggestionsProps> = ({
   onSelectPrompt,
   district = 'Barpeta',
+  messagesCount = 0,
   className = '',
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // If there are no messages, the ChatEmptyState already displays the full prompt cards
+  if (messagesCount === 0) {
+    return null;
+  }
+
   const prompts = [
     `Compare SETU vs External recommendation for ${district}`,
-    `Why was Habitation #775 prioritized for short-term relocation?`,
-    `What infrastructure is missing at Candidate Site #1752?`,
+    'Why was Habitation #775 prioritized for short-term relocation?',
+    'What infrastructure is missing at Candidate Site #1752?',
     `Which sites have unverified land tenure in ${district}?`,
   ];
-
-  useGSAP(
-    () => {
-      gsap.from('.prompt-chip', {
-        y: 8,
-        opacity: 0,
-        stagger: 0.05,
-        duration: 0.3,
-        ease: 'power2.out',
-      });
-    },
-    { scope: containerRef },
-  );
 
   return (
     <div
       ref={containerRef}
-      className={`px-4 py-2 border-t border-line/40 dark:border-white/10 flex flex-wrap gap-1.5 ${className}`}
+      className={`relative z-20 px-3 py-2 border-t border-emerald-100/60 dark:border-white/10 bg-white/70 dark:bg-[#071a12]/80 backdrop-blur-xs flex items-center gap-1.5 overflow-x-auto no-scrollbar ${className}`}
     >
       {prompts.map((p) => (
         <button
           key={p}
           type="button"
           onClick={() => onSelectPrompt(p)}
-          className="prompt-chip text-left text-xs px-2.5 py-1.5 rounded-lg border border-line dark:border-white/10 bg-surface-1 dark:bg-forest-surface text-text-secondary hover:text-ink dark:hover:text-white hover:border-emerald-500/40 transition-all cursor-pointer"
+          className="prompt-chip shrink-0 text-left text-[11px] font-sans px-2.5 py-1.5 rounded-full border border-emerald-200/80 dark:border-emerald-500/30 bg-white dark:bg-[#0c261b] text-text-secondary hover:text-emerald-900 dark:hover:text-emerald-100 hover:border-emerald-500 hover:shadow-xs hover:shadow-emerald-500/20 transition-all cursor-pointer select-none"
         >
           {p}
         </button>
@@ -50,3 +48,5 @@ export const ChatPromptSuggestions: React.FC<ChatPromptSuggestionsProps> = ({
     </div>
   );
 };
+
+export default ChatPromptSuggestions;

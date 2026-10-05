@@ -9,6 +9,7 @@ import gsap from 'gsap';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useTheme } from '@/components/providers';
 import { ApiError } from '@/lib/api/client';
+import { GoogleAuthButton } from './GoogleAuthButton';
 
 export interface LoginCardProps {
   /** Target link for returning to overview (default '/') */
@@ -263,25 +264,34 @@ export const LoginCard: React.FC<LoginCardProps> = ({
 
       {/* Google OAuth Single Sign-On */}
       <div className="mb-4 sm:mb-5">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-[10px] font-mono uppercase tracking-wider text-text-muted">
-            Instant Single Sign-On
+        <div className="flex items-center justify-between mb-2.5 px-0.5">
+          <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 font-semibold">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
+            <span>ENCRYPTED MESH GATEWAY</span>
           </span>
-          <span className="text-[10px] font-mono text-accent-emerald-bright flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-accent-emerald-bright animate-pulse" />
-            Verified OIDC
+          <span className="text-[10px] font-mono uppercase tracking-wider text-cyan-600 dark:text-cyan-400 font-semibold">
+            INSTANT HANDOFF
           </span>
         </div>
 
-        <div className="p-3 sm:p-3.5 rounded-xl bg-surface-1/90 dark:bg-forest-deep/60 border border-line dark:border-white/10 flex flex-col items-center justify-center transition-all duration-200 shadow-xs">
-          <div ref={googleBtnRef} className="flex justify-center min-h-[44px] w-full" />
-          {isGoogleSubmitting && (
-            <div className="flex items-center gap-2 text-xs font-mono text-accent-emerald-bright mt-2 animate-pulse">
-              <span className="w-3.5 h-3.5 border-2 border-accent-emerald-bright border-t-transparent rounded-full animate-spin" />
-              <span>Verifying Google identity…</span>
-            </div>
-          )}
-        </div>
+        <GoogleAuthButton
+          gsiContainerRef={googleBtnRef}
+          isLoading={isGoogleSubmitting}
+          onClick={() => {
+            if (typeof window !== 'undefined') {
+              const google = (window as unknown as {
+                google?: {
+                  accounts?: {
+                    id?: {
+                      prompt: () => void;
+                    };
+                  };
+                };
+              })?.google;
+              google?.accounts?.id?.prompt();
+            }
+          }}
+        />
 
         {/* Subtle Divider */}
         <div className="relative my-4 flex items-center justify-center">
