@@ -2,6 +2,8 @@
 
 export * from './types';
 export * from './ChatCitationBadge';
+export * from './ChatToolExecutionBadge';
+export * from './ChatToolLoadingSteps';
 export * from './ChatMessageMarkdown';
 export * from './ChatCopyButton';
 export * from './ChatMessageItem';

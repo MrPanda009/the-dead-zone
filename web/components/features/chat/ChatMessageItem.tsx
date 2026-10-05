@@ -6,6 +6,8 @@ import { ChatCitationBadge } from './ChatCitationBadge';
 import { ChatMessageMarkdown } from './ChatMessageMarkdown';
 import { ChatCopyButton } from './ChatCopyButton';
 
+import { ChatToolExecutionBadge } from './ChatToolExecutionBadge';
+
 export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
   message,
   className = '',
@@ -44,18 +46,30 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
           <ChatMessageMarkdown content={message.content} />
         )}
 
-        {/* Tools executed pill */}
-        {!isUser && message.toolsCalled && message.toolsCalled.length > 0 && (
-          <div className="mt-3 pt-3 border-t border-line/50 dark:border-white/10 flex flex-wrap items-center gap-1.5 text-xs text-text-muted">
-            <span className="font-mono text-[11px] opacity-75">Tools executed:</span>
-            {message.toolsCalled.map((tool) => (
-              <span
-                key={tool}
-                className="px-2 py-0.5 rounded bg-black/5 dark:bg-white/5 font-mono text-[10px] text-text-secondary"
-              >
-                {tool}()
-              </span>
-            ))}
+        {/* Tools executed trace */}
+        {!isUser && ((message.toolExecutions && message.toolExecutions.length > 0) || (message.toolsCalled && message.toolsCalled.length > 0)) && (
+          <div className="mt-3 pt-3 border-t border-line/50 dark:border-white/10 space-y-1.5">
+            <div className="flex items-center gap-1.5 text-xs text-text-muted">
+              <span className="font-mono text-[11px] opacity-75">Tools executed in pipeline:</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {message.toolExecutions && message.toolExecutions.length > 0
+                ? message.toolExecutions.map((exec, idx) => (
+                    <ChatToolExecutionBadge key={`${exec.name}-${idx}`} execution={exec} />
+                  ))
+                : message.toolsCalled?.map((tool) => (
+                    <ChatToolExecutionBadge
+                      key={tool}
+                      execution={{
+                        name: tool,
+                        description: `Executed pipeline tool ${tool}`,
+                        arguments: {},
+                        status: 'completed',
+                        data_source: 'PostgreSQL / PostGIS',
+                      }}
+                    />
+                  ))}
+            </div>
           </div>
         )}
 
@@ -68,11 +82,26 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
           </div>
         )}
 
+        {/* Fallback reason indicator */}
+        {!isUser && message.fallbackUsed && (
+          <div className="mt-3 px-3 py-2 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 text-xs flex items-start gap-2">
+            <span className="text-sm leading-none mt-0.5">ℹ️</span>
+            <div className="flex-1">
+              <span className="font-semibold font-mono text-[11px] block text-amber-800 dark:text-amber-300">
+                Deterministic Database Synthesis (Offline Guard)
+              </span>
+              <span className="text-[11px] opacity-90 leading-tight">
+                {message.fallbackReason || 'Grounded strictly via PostGIS queries because the upstream LLM service was unreachable or rate-limited.'}
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Assistant action footer (Copy to clipboard button) */}
         {!isUser && (
           <div className="mt-3 pt-2.5 border-t border-line/40 dark:border-white/10 flex items-center justify-between">
             <div className="text-[11px] font-mono text-text-muted">
-              Grounded Resettlement Brief
+              {message.fallbackUsed ? 'PostGIS Verified Data' : 'Grounded Resettlement Brief'}
             </div>
             <ChatCopyButton text={message.content} />
           </div>

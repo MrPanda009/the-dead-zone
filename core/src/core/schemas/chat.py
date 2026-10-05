@@ -13,13 +13,15 @@ from core.schemas.common import BaseSchema
 
 class ChatMessage(BaseSchema):
     """Single message in a conversational thread."""
-    role: Literal["system", "user", "assistant"] = Field(
+    role: Literal["user", "assistant"] = Field(
         ...,
-        description="Role of the message sender.",
+        description="Role of the message sender. System role is restricted to internal prompts.",
     )
     content: str = Field(
         ...,
-        description="Text content of the message.",
+        min_length=1,
+        max_length=3000,
+        description="Text content of the message (max 3000 chars).",
     )
     timestamp: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
@@ -52,7 +54,8 @@ class RelocationChatRequest(BaseSchema):
     messages: List[ChatMessage] = Field(
         ...,
         min_length=1,
-        description="Chat history leading up to the current prompt.",
+        max_length=20,
+        description="Chat history leading up to the current prompt (max 20 messages).",
     )
     district: Optional[str] = Field(
         default="Barpeta",
@@ -72,6 +75,30 @@ class RelocationChatRequest(BaseSchema):
     )
 
 
+class ToolExecutionRecord(BaseSchema):
+    """Detailed execution trace of a tool called by the assistant."""
+    name: str = Field(
+        ...,
+        description="Tool function name (e.g. 'get_village_priority').",
+    )
+    description: str = Field(
+        default="",
+        description="Human-readable description of what this tool checked.",
+    )
+    arguments: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Parameters passed to the tool.",
+    )
+    status: str = Field(
+        default="completed",
+        description="Status of the tool execution ('completed' | 'failed').",
+    )
+    data_source: str = Field(
+        default="PostgreSQL / PostGIS",
+        description="Database or engine queried.",
+    )
+
+
 class RelocationChatResponse(BaseSchema):
     """Response payload from the relocation AI assistant."""
     reply: str = Field(
@@ -81,6 +108,10 @@ class RelocationChatResponse(BaseSchema):
     tools_called: List[str] = Field(
         default_factory=list,
         description="List of pipeline tool functions executed to answer the query.",
+    )
+    tool_executions: List[ToolExecutionRecord] = Field(
+        default_factory=list,
+        description="Detailed trace of tools executed with arguments and data sources.",
     )
     citations: List[ChatCitation] = Field(
         default_factory=list,
@@ -93,6 +124,10 @@ class RelocationChatResponse(BaseSchema):
     fallback_used: bool = Field(
         default=False,
         description="Whether the offline deterministic fallback synthesizer was used (e.g., on LLM timeout).",
+    )
+    fallback_reason: Optional[str] = Field(
+        default=None,
+        description="Reason why offline synthesis was triggered, if applicable (e.g. rate limit, timeout).",
     )
     model: str = Field(
         default="llama-3.3-70b-versatile",
