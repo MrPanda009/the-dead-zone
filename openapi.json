@@ -4179,17 +4179,18 @@
           "role": {
             "type": "string",
             "enum": [
-              "system",
               "user",
               "assistant"
             ],
             "title": "Role",
-            "description": "Role of the message sender."
+            "description": "Role of the message sender. System role is restricted to internal prompts."
           },
           "content": {
             "type": "string",
+            "maxLength": 3000,
+            "minLength": 1,
             "title": "Content",
-            "description": "Text content of the message."
+            "description": "Text content of the message (max 3000 chars)."
           },
           "timestamp": {
             "type": "string",
@@ -6698,9 +6699,10 @@
               "$ref": "#/components/schemas/ChatMessage"
             },
             "type": "array",
+            "maxItems": 20,
             "minItems": 1,
             "title": "Messages",
-            "description": "Chat history leading up to the current prompt."
+            "description": "Chat history leading up to the current prompt (max 20 messages)."
           },
           "district": {
             "anyOf": [
@@ -6768,6 +6770,14 @@
             "title": "Tools Called",
             "description": "List of pipeline tool functions executed to answer the query."
           },
+          "tool_executions": {
+            "items": {
+              "$ref": "#/components/schemas/ToolExecutionRecord"
+            },
+            "type": "array",
+            "title": "Tool Executions",
+            "description": "Detailed trace of tools executed with arguments and data sources."
+          },
           "citations": {
             "items": {
               "$ref": "#/components/schemas/ChatCitation"
@@ -6787,6 +6797,18 @@
             "title": "Fallback Used",
             "description": "Whether the offline deterministic fallback synthesizer was used (e.g., on LLM timeout).",
             "default": false
+          },
+          "fallback_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fallback Reason",
+            "description": "Reason why offline synthesis was triggered, if applicable (e.g. rate limit, timeout)."
           },
           "model": {
             "type": "string",
@@ -7612,6 +7634,45 @@
         ],
         "title": "Tier",
         "description": "Four-tier triage categorization for relocation planning (PRD \u00a76.7)."
+      },
+      "ToolExecutionRecord": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Tool function name (e.g. 'get_village_priority')."
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "Human-readable description of what this tool checked.",
+            "default": ""
+          },
+          "arguments": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Arguments",
+            "description": "Parameters passed to the tool."
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Status of the tool execution ('completed' | 'failed').",
+            "default": "completed"
+          },
+          "data_source": {
+            "type": "string",
+            "title": "Data Source",
+            "description": "Database or engine queried.",
+            "default": "PostgreSQL / PostGIS"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "ToolExecutionRecord",
+        "description": "Detailed execution trace of a tool called by the assistant."
       },
       "UserResponse": {
         "properties": {

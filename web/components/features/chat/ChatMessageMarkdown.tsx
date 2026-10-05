@@ -133,6 +133,7 @@ export const ChatMessageMarkdown: React.FC<ChatMessageMarkdownProps> = ({
           hr: () => (
             <hr className="my-3 border-line/60 dark:border-white/10" />
           ),
+          img: () => null,
         }}
       >
         {sanitizedContent}

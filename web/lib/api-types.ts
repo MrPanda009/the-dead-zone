@@ -1305,13 +1305,13 @@ export interface components {
         ChatMessage: {
             /**
              * Role
-             * @description Role of the message sender.
+             * @description Role of the message sender. System role is restricted to internal prompts.
              * @enum {string}
              */
-            role: "system" | "user" | "assistant";
+            role: "user" | "assistant";
             /**
              * Content
-             * @description Text content of the message.
+             * @description Text content of the message (max 3000 chars).
              */
             content: string;
             /**
@@ -2742,7 +2742,7 @@ export interface components {
         RelocationChatRequest: {
             /**
              * Messages
-             * @description Chat history leading up to the current prompt.
+             * @description Chat history leading up to the current prompt (max 20 messages).
              */
             messages: components["schemas"]["ChatMessage"][];
             /**
@@ -2784,6 +2784,11 @@ export interface components {
              */
             tools_called?: string[];
             /**
+             * Tool Executions
+             * @description Detailed trace of tools executed with arguments and data sources.
+             */
+            tool_executions?: components["schemas"]["ToolExecutionRecord"][];
+            /**
              * Citations
              * @description Structured citations linking statements to pipeline data.
              */
@@ -2801,6 +2806,11 @@ export interface components {
              * @default false
              */
             fallback_used: boolean;
+            /**
+             * Fallback Reason
+             * @description Reason why offline synthesis was triggered, if applicable (e.g. rate limit, timeout).
+             */
+            fallback_reason?: string | null;
             /**
              * Model
              * @description LLM model identifier used for completion.
@@ -3253,6 +3263,42 @@ export interface components {
          * @enum {string}
          */
         Tier: "immediate" | "short_term" | "medium_term" | "mitigate_in_situ";
+        /**
+         * ToolExecutionRecord
+         * @description Detailed execution trace of a tool called by the assistant.
+         */
+        ToolExecutionRecord: {
+            /**
+             * Name
+             * @description Tool function name (e.g. 'get_village_priority').
+             */
+            name: string;
+            /**
+             * Description
+             * @description Human-readable description of what this tool checked.
+             * @default
+             */
+            description: string;
+            /**
+             * Arguments
+             * @description Parameters passed to the tool.
+             */
+            arguments?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Status
+             * @description Status of the tool execution ('completed' | 'failed').
+             * @default completed
+             */
+            status: string;
+            /**
+             * Data Source
+             * @description Database or engine queried.
+             * @default PostgreSQL / PostGIS
+             */
+            data_source: string;
+        };
         /**
          * UserResponse
          * @description Safe authenticated identity DTO.

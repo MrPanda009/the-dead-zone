@@ -1,18 +1,36 @@
 /** Types and interfaces for the Relocation Decision Assistant Chat feature. */
 
 import React from 'react';
-import type { ChatCitation, ChatMessage, RelocationChatResponse } from '@/lib/api/chat';
+import type { ChatCitation, ChatMessage, RelocationChatResponse, ToolExecutionRecord } from '@/lib/api/chat';
 
 export interface ChatMessageItemData extends ChatMessage {
   id: string;
   toolsCalled?: string[];
+  toolExecutions?: ToolExecutionRecord[];
   citations?: ChatCitation[];
   fallbackUsed?: boolean;
+  fallbackReason?: string;
 }
 
 export interface ChatCitationBadgeProps {
   /** The citation payload */
   citation: ChatCitation;
+  /** Optional custom CSS classes */
+  className?: string;
+}
+
+export interface ChatToolExecutionBadgeProps {
+  /** The tool execution trace record */
+  execution: ToolExecutionRecord;
+  /** Optional custom CSS classes */
+  className?: string;
+}
+
+export interface ChatToolLoadingStepsProps {
+  /** The latest user question being processed */
+  userQuestion?: string;
+  /** Optional active district context */
+  district?: string;
   /** Optional custom CSS classes */
   className?: string;
 }
@@ -29,6 +47,8 @@ export interface ChatMessageListProps {
   messages: ChatMessageItemData[];
   /** Whether the assistant is currently generating a reply */
   isLoading?: boolean;
+  /** Optional active district */
+  district?: string;
   /** Optional custom CSS classes */
   className?: string;
 }
@@ -64,6 +84,8 @@ export interface ChatHeaderProps {
   model?: string;
   /** Whether offline fallback was used */
   isFallback?: boolean;
+  /** On district change callback */
+  onDistrictChange?: (district: string) => void;
   /** On close drawer callback */
   onClose: () => void;
   /** On clear conversation callback */

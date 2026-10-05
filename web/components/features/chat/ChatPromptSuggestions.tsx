@@ -13,10 +13,11 @@ export const ChatPromptSuggestions: React.FC<ChatPromptSuggestionsProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
 
   const prompts = [
+    'I need detailed site by site suitability assessment',
+    'Which candidate sites are safest across districts?',
+    `How many people are in danger in ${district}?`,
+    'Which district has the highest population at risk?',
     `Compare SETU vs External recommendation for ${district}`,
-    `Why was Habitation #775 prioritized for short-term relocation?`,
-    `What infrastructure is missing at Candidate Site #1752?`,
-    `Which sites have unverified land tenure in ${district}?`,
   ];
 
   useGSAP(

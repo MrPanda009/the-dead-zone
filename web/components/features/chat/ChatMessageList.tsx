@@ -3,10 +3,12 @@
 import React, { useEffect, useRef } from 'react';
 import type { ChatMessageListProps } from './types';
 import { ChatMessageItem } from './ChatMessageItem';
+import { ChatToolLoadingSteps } from './ChatToolLoadingSteps';
 
 export const ChatMessageList: React.FC<ChatMessageListProps> = ({
   messages,
   isLoading = false,
+  district = 'Barpeta',
   className = '',
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -19,6 +21,8 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
       });
     }
   }, [messages, isLoading]);
+
+  const lastUserMsg = messages.filter((m) => m.role === 'user').slice(-1)[0]?.content;
 
   return (
     <div
@@ -44,13 +48,13 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
       ))}
 
       {isLoading && (
-        <div className="flex items-center gap-2 text-sm text-text-muted bg-surface-0 dark:bg-forest-dark border border-line dark:border-white/10 rounded-xl p-3 w-fit">
-          <span className="flex gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-bounce" />
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-bounce [animation-delay:0.2s]" />
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-bounce [animation-delay:0.4s]" />
-          </span>
-          <span className="text-xs font-mono">Querying PostGIS pipeline & reasoning...</span>
+        <div className="flex flex-col items-start gap-1">
+          <div className="flex items-center gap-2 text-xs text-text-muted mb-1">
+            <span>SETU Relocation Assistant</span>
+            <span>•</span>
+            <span className="text-emerald-600 dark:text-emerald-400 font-mono text-[10px]">Processing Question...</span>
+          </div>
+          <ChatToolLoadingSteps userQuestion={lastUserMsg} district={district} />
         </div>
       )}
     </div>
