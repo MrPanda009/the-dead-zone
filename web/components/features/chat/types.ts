@@ -47,8 +47,10 @@ export interface ChatMessageListProps {
   messages: ChatMessageItemData[];
   /** Whether the assistant is currently generating a reply */
   isLoading?: boolean;
-  /** Optional active district */
+  /** Active district context */
   district?: string;
+  /** Callback triggered when user selects a suggested prompt */
+  onSelectPrompt?: (prompt: string) => void;
   /** Optional custom CSS classes */
   className?: string;
 }
@@ -58,6 +60,35 @@ export interface ChatPromptSuggestionsProps {
   onSelectPrompt: (prompt: string) => void;
   /** Active district context */
   district?: string;
+  /** Number of active messages in the conversation */
+  messagesCount?: number;
+  /** Optional custom CSS classes */
+  className?: string;
+}
+
+export interface ChatPromptCardProps {
+  /** The prompt text */
+  prompt: string;
+  /** Leading icon type */
+  iconType?: 'scale' | 'home' | 'building' | 'map';
+  /** Callback triggered when the prompt card is clicked */
+  onClick: (prompt: string) => void;
+  /** Optional index for staggered entrances */
+  index?: number;
+  /** Custom root className */
+  className?: string;
+}
+
+export interface ChatEmptyStateProps {
+  /** Active district context */
+  district?: string;
+  /** Callback when user clicks a prompt */
+  onSelectPrompt: (prompt: string) => void;
+  /** Custom root className */
+  className?: string;
+}
+
+export interface ChatScenicBackgroundProps {
   /** Optional custom CSS classes */
   className?: string;
 }

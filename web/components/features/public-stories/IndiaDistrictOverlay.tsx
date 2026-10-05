@@ -45,7 +45,14 @@ export const IndiaDistrictOverlay: React.FC<IndiaDistrictOverlayProps> = ({
   const isInitializedRef = useRef(false);
 
   const displayedZone = hoveredZone ?? selectedZone;
-  const activeDistrict = DISTRICT_BOUNDARIES[displayedZone];
+  const normalizedZone: ZoneId =
+    displayedZone === 'Rudraprayag' || displayedZone === 'Srinagar'
+      ? 'North'
+      : displayedZone === 'Dholpur' || displayedZone === 'Morena'
+      ? 'Central'
+      : displayedZone;
+
+  const activeDistrict = DISTRICT_BOUNDARIES[displayedZone] || DISTRICT_BOUNDARIES[normalizedZone] || DISTRICT_BOUNDARIES.South;
 
   useGSAP(
     () => {
@@ -115,12 +122,15 @@ export const IndiaDistrictOverlay: React.FC<IndiaDistrictOverlayProps> = ({
     { scope: containerRef, dependencies: [displayedZone] },
   );
 
+  const availableDistricts = Object.values(DISTRICT_BOUNDARIES).filter(
+    (d): d is NonNullable<typeof d> => Boolean(d)
+  );
+
   return (
     <g ref={containerRef} className={`district-overlay-group ${className}`}>
       <defs>
         {/* District polygon clipPaths for photographic image masking */}
-        {(Object.keys(DISTRICT_BOUNDARIES) as ZoneId[]).map((zone) => {
-          const district = DISTRICT_BOUNDARIES[zone];
+        {availableDistricts.map((district) => {
           return (
             <clipPath key={district.zone} id={`clip-district-${district.zone}`}>
               <path d={district.d} />
@@ -148,10 +158,9 @@ export const IndiaDistrictOverlay: React.FC<IndiaDistrictOverlayProps> = ({
       </defs>
 
       {/* Layer 1: Ground 1:1 District Outlines & Interactive Hit Areas on India Map */}
-      {(Object.keys(DISTRICT_BOUNDARIES) as ZoneId[]).map((zone) => {
-        const district = DISTRICT_BOUNDARIES[zone];
-        const isSelected = zone === selectedZone;
-        const isDisplayed = zone === displayedZone;
+      {availableDistricts.map((district) => {
+        const isSelected = district.zone === selectedZone;
+        const isDisplayed = district.zone === displayedZone;
 
         return (
           <g

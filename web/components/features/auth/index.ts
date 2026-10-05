@@ -3,3 +3,4 @@ export * from './BiometricScanner';
 export * from './BiometricCapsuleButton';
 export * from './TelemetrySyncDashboard';
 export * from './BiometricVerificationModal';
+export * from './GoogleAuthButton';

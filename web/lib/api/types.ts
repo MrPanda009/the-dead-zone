@@ -202,6 +202,41 @@ export type ActiveAlertsResponse = components['schemas']['ActiveAlertsResponse']
 export type ForecastAlertItem = components['schemas']['ForecastAlertItem'];
 export type ForecastAlertsResponse = components['schemas']['ForecastAlertsResponse'];
 
+export type WeatherState = 'CLEAR' | 'ALERT_ACTIVE' | 'STALE' | 'NO_DATA';
+
+export interface DistrictForecastStatus {
+  key: string;
+  name: string;
+  admin_id: number;
+  lgd_code: number;
+  last_cycle_at?: string | null;
+  danger_cells: number;
+  weather_state: WeatherState;
+}
+
+export interface ForecastPipelineStatusResponse {
+  scheduler_enabled: boolean;
+  schedule_cron: string;
+  is_run_in_progress: boolean;
+  global_latest_cycle_at?: string | null;
+  districts: DistrictForecastStatus[];
+}
+
+export interface ForecastTriggerRequest {
+  district?: string | null;
+  live?: boolean;
+  dry_run?: boolean;
+}
+
+export interface ForecastTriggerResponse {
+  status: string;
+  message: string;
+  run_id: string;
+  target_districts: string[];
+  enqueued_at: string;
+}
+
+
 /* ---- Supplementary Healthcare Facilities (GeoJSON) ---- */
 
 export interface HealthFacilityProperties {

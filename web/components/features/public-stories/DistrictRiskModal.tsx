@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { ZoneId, REGIONAL_STORIES } from './storyData';
@@ -17,6 +17,7 @@ import { DistrictTelemetryGrid } from './DistrictTelemetryGrid';
 import { DistrictDisasterHistory } from './DistrictDisasterHistory';
 import { TravelAdvisoryBanner } from './TravelAdvisoryBanner';
 import { DistrictPhotoShowcase } from './DistrictPhotoShowcase';
+import { ForecastTriggerButton } from './ForecastTriggerButton';
 
 export interface DistrictRiskModalProps {
   /** Modal open state */
@@ -56,11 +57,8 @@ export const DistrictRiskModal: React.FC<DistrictRiskModalProps> = ({
     setIsLive(false);
   }
 
-  // Fetch live backend data when opened or zone changes
-  useEffect(() => {
-    if (!isOpen) return;
+  const reloadData = useCallback(() => {
     const base = getBackendProfileForZone(zone);
-
     const controller = new AbortController();
     loadDistrictData(base.key as BackendDistrictKey, controller.signal).then(
       ({ profile: loaded, isLive: live }) => {
@@ -74,9 +72,14 @@ export const DistrictRiskModal: React.FC<DistrictRiskModalProps> = ({
         }
       }
     );
-
     return () => controller.abort();
-  }, [zone, isOpen]);
+  }, [zone]);
+
+  // Fetch live backend data when opened or zone changes
+  useEffect(() => {
+    if (!isOpen) return;
+    return reloadData();
+  }, [isOpen, reloadData]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -110,7 +113,15 @@ export const DistrictRiskModal: React.FC<DistrictRiskModalProps> = ({
   if (!isOpen) return null;
 
   const normalizedKey: ZoneId =
-    zone === 'North' || profile.districtName.includes('Joshimath') || profile.districtName.includes('Chamoli')
+    zone === 'Rudraprayag' || profile.districtName.includes('Rudraprayag')
+      ? 'Rudraprayag'
+      : zone === 'Srinagar' || profile.districtName.includes('Srinagar')
+      ? 'Srinagar'
+      : zone === 'Dholpur' || profile.districtName.includes('Dholpur')
+      ? 'Dholpur'
+      : zone === 'Morena' || profile.districtName.includes('Morena')
+      ? 'Morena'
+      : zone === 'North' || profile.districtName.includes('Joshimath') || profile.districtName.includes('Chamoli')
       ? 'North'
       : zone === 'Central' || profile.districtName.includes('Satpura') || profile.districtName.includes('Hoshangabad')
       ? 'Central'
@@ -153,6 +164,23 @@ export const DistrictRiskModal: React.FC<DistrictRiskModalProps> = ({
           onClose={onClose}
         />
 
+        {/* Live Forecast Telemetry Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-3.5 py-2 rounded-xl bg-surface-1/70 dark:bg-white/5 border border-line dark:border-white/10 text-xs font-mono">
+          <div className="flex items-center gap-2 text-ink-muted dark:text-cream/70 flex-wrap">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>ECMWF IFS HRES 0.1° Live Pipeline</span>
+            <span>&bull;</span>
+            <span className="text-[11px] text-ink-faint dark:text-cream/50">
+              {profile.lastCycleAt ? `Last Cycle: ${new Date(profile.lastCycleAt).toLocaleTimeString()}` : 'Forecast Horizon: 72h'}
+            </span>
+          </div>
+          <ForecastTriggerButton
+            district={profile.key}
+            onSuccess={reloadData}
+            size="sm"
+          />
+        </div>
+
         {/* 2. Main Visual & Telemetry Showcase Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4.5 items-start">
           {/* Left Column: Visual Photography Showcase & Travel Advisory */}
@@ -180,6 +208,8 @@ export const DistrictRiskModal: React.FC<DistrictRiskModalProps> = ({
             <DistrictTelemetryGrid
               spot={activeSpot}
               fallbackHazard={profile.primaryHazard}
+              weatherState={profile.weatherState}
+              terrainTypology={profile.terrainTypology}
             />
 
             <DistrictDisasterHistory
@@ -193,3 +223,4 @@ export const DistrictRiskModal: React.FC<DistrictRiskModalProps> = ({
 };
 
 export default DistrictRiskModal;
+

@@ -9,13 +9,8 @@ import { usePrefersReducedMotion } from '@/lib/hooks/usePrefersReducedMotion';
 import type { AboutHeroProps } from './types';
 
 export const AboutHero: React.FC<AboutHeroProps> = ({
-  headline = (
-    <>
-      Precision Intelligence.
-      <br />
-      <span className="italic font-normal">Humane Relocation.</span>
-    </>
-  ),
+  headline = 'About TERRA',
+  description = 'Terrain-based Environmental Risk and Relocation Analytics',
   isGlobeRotating = true,
   className = '',
   classNames = {},
@@ -94,8 +89,17 @@ export const AboutHero: React.FC<AboutHeroProps> = ({
         { y: 28, opacity: 0 },
         { y: 0, opacity: 1, duration, ease: 'power3.out' }
       );
+
+      if (description) {
+        tl.fromTo(
+          '.about-hero-subtext',
+          { y: 16, opacity: 0 },
+          { y: 0, opacity: 1, duration: duration * 0.85, ease: 'power3.out' },
+          '-=0.45'
+        );
+      }
     },
-    { scope: textRef, dependencies: [shouldAnimate, delay, duration] }
+    { scope: textRef, dependencies: [shouldAnimate, delay, duration, description] }
   );
 
   return (
@@ -131,7 +135,7 @@ export const AboutHero: React.FC<AboutHeroProps> = ({
         aria-hidden="true"
       />
 
-      {/* Hero Headline Content */}
+      {/* Hero Headline & Subtext Content */}
       <div
         ref={textRef}
         className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 flex flex-col items-center pointer-events-none will-change-transform -mt-6 sm:-mt-8"
@@ -144,6 +148,17 @@ export const AboutHero: React.FC<AboutHeroProps> = ({
         >
           {headline}
         </h1>
+
+        {/* Italicized Full Form Subtext */}
+        {description && (
+          <p
+            className={`about-hero-subtext mt-3 sm:mt-4 text-base sm:text-lg md:text-xl italic font-normal tracking-wide text-white/90 max-w-2xl text-center leading-relaxed drop-shadow-[0_2px_18px_rgba(0,0,0,0.85)] font-editorial ${
+              classNames.description ?? ''
+            }`}
+          >
+            {description}
+          </p>
+        )}
       </div>
 
       {/* Multi-Stage Eased Ombre Gradient Transition into the 2D Picture */}

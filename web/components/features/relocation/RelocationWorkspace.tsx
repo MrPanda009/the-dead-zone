@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 
@@ -73,6 +73,14 @@ export const RelocationWorkspace = ({
   // Collapsible panels state
   const [isLeftCollapsed, setIsLeftCollapsed] = useState(false);
   const [isRightCollapsed, setIsRightCollapsed] = useState(false);
+
+  // Auto-collapse panels on initial mount for small screens / tablets (< 1024px)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      setIsLeftCollapsed(true);
+      setIsRightCollapsed(true);
+    }
+  }, []);
 
   // Capacity simulation modal state
   const [simulationSite, setSimulationSite] = useState<CandidateSiteItem | null>(null);

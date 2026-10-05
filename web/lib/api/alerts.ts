@@ -1,7 +1,13 @@
 /** Alert-zone endpoints: active dynamic triggers and forecast threshold crossings. */
 
-import { apiGet } from './client';
-import type { ActiveAlertsResponse, ForecastAlertsResponse } from './types';
+import { apiGet, apiPost } from './client';
+import type {
+  ActiveAlertsResponse,
+  ForecastAlertsResponse,
+  ForecastPipelineStatusResponse,
+  ForecastTriggerRequest,
+  ForecastTriggerResponse,
+} from './types';
 
 export interface FetchForecastAlertsParams {
   /** Admin id or LGD code (Wayanad pilot = 555). Omit for the national view. */
@@ -64,3 +70,25 @@ export function fetchActiveAlerts(
     signal,
   );
 }
+
+/**
+ * Multi-district forecast telemetry, scheduler health, and per-district states.
+ * Retrieves real-time status across all 7 operational pilot districts.
+ */
+export function fetchForecastPipelineStatus(
+  signal?: AbortSignal,
+): Promise<ForecastPipelineStatusResponse> {
+  return apiGet<ForecastPipelineStatusResponse>('/alerts/forecast/status', undefined, signal);
+}
+
+/**
+ * Dispatches an on-demand forecast recalculation cycle in the background.
+ * Returns HTTP 202 Accepted with the run ID and targeted districts.
+ */
+export function triggerForecastRecalculation(
+  payload: ForecastTriggerRequest = {},
+  signal?: AbortSignal,
+): Promise<ForecastTriggerResponse> {
+  return apiPost<ForecastTriggerResponse>('/alerts/forecast/trigger', payload, signal);
+}
+

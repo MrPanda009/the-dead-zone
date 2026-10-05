@@ -82,10 +82,10 @@ export const AppHeader = ({
         .join(' ')}
     >
       {/* 1. Left Platform Identity */}
-      <div className="flex items-center gap-3 min-w-[200px]" data-header-item>
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0 md:min-w-[170px] lg:min-w-[200px]" data-header-item>
         <Link
           href={homeHref}
-          className="flex items-center gap-2 group cursor-pointer"
+          className="flex items-center gap-2 group cursor-pointer shrink-0"
           title="Return to Global Overview"
         >
           <span className="material-symbols-outlined text-citron text-xl group-hover:rotate-90 transition-transform">
@@ -95,14 +95,14 @@ export const AppHeader = ({
             <span className="text-xs font-mono font-bold tracking-wider text-citron">
               TERRA
             </span>
-            <span className="text-[9px] font-mono text-text-muted tracking-tight">
+            <span className="text-[9px] font-mono text-text-muted tracking-tight hidden sm:inline">
               TERRAIN RISK & RELOCATION ANALYTICS
             </span>
           </div>
         </Link>
 
         {metaSlot ? (
-          <div className={['flex items-center gap-1.5 ml-1', classNames.meta ?? ''].join(' ')}>
+          <div className={['hidden sm:flex items-center gap-1.5 ml-1', classNames.meta ?? ''].join(' ')}>
             {metaSlot}
           </div>
         ) : null}
@@ -153,7 +153,7 @@ export const AppHeader = ({
       </div>
 
       {/* 3. Right Action Tools */}
-      <div className="flex items-center gap-2 min-w-[200px] justify-end" data-header-item>
+      <div className="flex items-center gap-2 min-w-0 md:min-w-[170px] lg:min-w-[200px] justify-end" data-header-item>
         {actionSlot || (
           <div className="flex items-center gap-2">
             <ThemeToggle />

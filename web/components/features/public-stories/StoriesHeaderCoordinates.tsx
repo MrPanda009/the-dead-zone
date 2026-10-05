@@ -24,8 +24,8 @@ export interface StoriesHeaderCoordinatesProps {
 }
 
 export const StoriesHeaderCoordinates: React.FC<StoriesHeaderCoordinatesProps> = ({
-  latitude = 'N 28° 36\' 23.047"',
-  longitude = 'E 77° 12\' 23.906"',
+  latitude = 'N 12° 25\' 26.400"',
+  longitude = 'E 75° 44\' 16.800"',
   govHref = '/gov',
   overviewHref = '/',
   onSwitchToGovPortal,
@@ -33,6 +33,7 @@ export const StoriesHeaderCoordinates: React.FC<StoriesHeaderCoordinatesProps> =
   className = '',
 }) => {
   const coordRef = useRef<HTMLDivElement>(null);
+  const centerTextRef = useRef<HTMLDivElement>(null);
 
   useGSAP(() => {
     if (!coordRef.current) return;
@@ -44,26 +45,34 @@ export const StoriesHeaderCoordinates: React.FC<StoriesHeaderCoordinatesProps> =
   }, { dependencies: [latitude, longitude] });
 
   return (
-    <div
-      className={`w-full flex items-center justify-between pointer-events-auto select-none ${className}`}
+    <header
+      className={`w-full flex flex-col md:flex-row items-center justify-between gap-1.5 sm:gap-2.5 pointer-events-auto select-none ${className}`}
     >
-      {/* Left Action Buttons: Overview, Switch to Gov, Theme Toggle */}
-      <div className="flex items-center gap-2 sm:gap-3">
+      {/* 1. Left Action Navigation Dock */}
+      <div className="flex items-center gap-1.5 sm:gap-2">
+        <button
+          type="button"
+          aria-label="Menu"
+          className="p-1 sm:p-1.5 rounded-lg sm:rounded-xl bg-surface-0/90 dark:bg-black/35 border border-line dark:border-white/10 shadow-xs hover:bg-surface-1 dark:hover:bg-white/10 transition-all flex items-center justify-center cursor-pointer backdrop-blur-md"
+        >
+          <span className="material-symbols-outlined text-sm sm:text-base text-ink dark:text-cream">menu</span>
+        </button>
+
         {onBackToOverview ? (
           <button
             type="button"
             onClick={onBackToOverview}
-            className="text-xs font-mono tracking-wider text-ink-muted hover:text-ink dark:text-cream/70 dark:hover:text-cream px-3 py-1.5 rounded-lg bg-surface-1/80 hover:bg-surface-2 dark:bg-black/20 dark:hover:bg-black/40 border border-line dark:border-cream/10 transition-all flex items-center gap-1.5 cursor-pointer backdrop-blur-md"
+            className="text-[11px] sm:text-xs font-mono font-medium tracking-wide text-ink hover:text-ink-primary dark:text-cream/80 dark:hover:text-cream px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl bg-surface-0/90 dark:bg-black/25 border border-line dark:border-white/10 shadow-xs hover:bg-surface-1 dark:hover:bg-white/5 transition-all flex items-center gap-1 sm:gap-1.5 cursor-pointer backdrop-blur-md"
           >
-            <span className="material-symbols-outlined text-sm">arrow_back</span>
+            <span className="material-symbols-outlined text-xs sm:text-sm">arrow_back</span>
             <span>Overview</span>
           </button>
         ) : (
           <Link
             href={overviewHref}
-            className="text-xs font-mono tracking-wider text-ink-muted hover:text-ink dark:text-cream/70 dark:hover:text-cream px-3 py-1.5 rounded-lg bg-surface-1/80 hover:bg-surface-2 dark:bg-black/20 dark:hover:bg-black/40 border border-line dark:border-cream/10 transition-all flex items-center gap-1.5 cursor-pointer backdrop-blur-md"
+            className="text-[11px] sm:text-xs font-mono font-medium tracking-wide text-ink hover:text-ink-primary dark:text-cream/80 dark:hover:text-cream px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl bg-surface-0/90 dark:bg-black/25 border border-line dark:border-white/10 shadow-xs hover:bg-surface-1 dark:hover:bg-white/5 transition-all flex items-center gap-1 sm:gap-1.5 cursor-pointer backdrop-blur-md"
           >
-            <span className="material-symbols-outlined text-sm">arrow_back</span>
+            <span className="material-symbols-outlined text-xs sm:text-sm">arrow_back</span>
             <span>Overview</span>
           </Link>
         )}
@@ -72,17 +81,17 @@ export const StoriesHeaderCoordinates: React.FC<StoriesHeaderCoordinatesProps> =
           <button
             type="button"
             onClick={onSwitchToGovPortal}
-            className="text-xs font-mono tracking-wider text-m3-accent-foliage hover:opacity-80 px-3 py-1.5 rounded-lg bg-surface-1/90 hover:bg-surface-2 dark:bg-[#162522]/70 dark:hover:bg-[#162522] border border-line hover:border-citron dark:border-[#a3e635]/30 dark:hover:border-[#a3e635] transition-all flex items-center gap-1.5 cursor-pointer shadow-sm backdrop-blur-md"
+            className="text-[11px] sm:text-xs font-mono font-semibold tracking-wide text-emerald-700 dark:text-citron px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl bg-emerald-500/10 dark:bg-[#162e24] border border-emerald-500/30 dark:border-citron/30 shadow-xs hover:bg-emerald-500/15 dark:hover:bg-[#1a382c] transition-all flex items-center gap-1 sm:gap-1.5 cursor-pointer backdrop-blur-md"
           >
-            <span className="material-symbols-outlined text-sm">verified_user</span>
+            <span className="material-symbols-outlined text-xs sm:text-sm">verified_user</span>
             <span>Official Hex Map</span>
           </button>
         ) : (
           <Link
             href={govHref}
-            className="text-xs font-mono tracking-wider text-m3-accent-foliage hover:opacity-80 px-3 py-1.5 rounded-lg bg-surface-1/90 hover:bg-surface-2 dark:bg-[#162522]/70 dark:hover:bg-[#162522] border border-line hover:border-citron dark:border-[#a3e635]/30 dark:hover:border-[#a3e635] transition-all flex items-center gap-1.5 cursor-pointer shadow-sm backdrop-blur-md"
+            className="text-[11px] sm:text-xs font-mono font-semibold tracking-wide text-emerald-700 dark:text-citron px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl bg-emerald-500/10 dark:bg-[#162e24] border border-emerald-500/30 dark:border-citron/30 shadow-xs hover:bg-emerald-500/15 dark:hover:bg-[#1a382c] transition-all flex items-center gap-1 sm:gap-1.5 cursor-pointer backdrop-blur-md"
           >
-            <span className="material-symbols-outlined text-sm">verified_user</span>
+            <span className="material-symbols-outlined text-xs sm:text-sm">verified_user</span>
             <span>Official Hex Map</span>
           </Link>
         )}
@@ -90,15 +99,36 @@ export const StoriesHeaderCoordinates: React.FC<StoriesHeaderCoordinatesProps> =
         <ThemeToggle variant="button" size="sm" showLabel={false} />
       </div>
 
-      {/* Top Right Monospace Coordinates Readout */}
+      {/* 2. Center Prominent Page Title matching Reference Image */}
+      <div
+        ref={centerTextRef}
+        className="flex flex-col items-center text-center px-2 py-0.5"
+      >
+        <h1 className="text-sm sm:text-base lg:text-lg xl:text-xl font-bold tracking-tight text-ink dark:text-cream leading-tight">
+          Explore hazard intelligence across India
+        </h1>
+        <p className="text-[10px] sm:text-[11px] text-ink-muted dark:text-cream/70 font-sans mt-0.5">
+          Select a district to view advisory details and travel guidance.
+        </p>
+      </div>
+
+      {/* 3. Top Right Coordinate Pill Readout */}
       <div
         ref={coordRef}
-        className="text-right font-mono text-xs sm:text-sm tracking-wider text-cream/80 leading-snug"
+        className="flex items-center gap-1.5 sm:gap-2 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl bg-surface-0/90 dark:bg-black/25 border border-line dark:border-white/10 shadow-xs font-mono text-[10px] sm:text-xs tracking-wider text-ink dark:text-cream/90 backdrop-blur-md"
       >
-        <div>{latitude}</div>
-        <div>{longitude}</div>
+        <span className="material-symbols-outlined text-sm sm:text-base text-yellow-500 dark:text-citron">
+          location_on
+        </span>
+        <div className="flex flex-col text-left leading-tight text-[10px] sm:text-[11px] font-medium">
+          <span>{latitude}</span>
+          <span>{longitude}</span>
+        </div>
+        <span className="material-symbols-outlined text-xs text-ink-muted dark:text-cream/40 ml-0.5">
+          expand_more
+        </span>
       </div>
-    </div>
+    </header>
   );
 };
 

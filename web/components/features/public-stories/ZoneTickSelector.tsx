@@ -4,47 +4,49 @@ import React, { useRef } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { ZoneId } from './storyData';
-
-export interface ZoneTickSelectorProps {
-  /** Currently selected zone */
-  selectedZone: ZoneId;
-  /** Callback when zone changes */
-  onSelectZone: (zone: ZoneId) => void;
-  /** Custom root className */
-  className?: string;
-}
+import type { WeatherState } from '@/lib/api/types';
 
 export interface DistrictItem {
   id: ZoneId;
   name: string;
   state: string;
   riskTag: string;
+  backendKey: string;
+}
+
+export interface ZoneTickSelectorProps {
+  /** Currently selected zone */
+  selectedZone: ZoneId;
+  /** Callback when zone changes */
+  onSelectZone: (zone: ZoneId) => void;
+  /** Live weather states indexed by district key */
+  districtWeatherMap?: Record<string, WeatherState>;
+  /** Custom root className */
+  className?: string;
 }
 
 const DISTRICT_ITEMS: DistrictItem[] = [
-  { id: 'North', name: 'Joshimath', state: 'Uttarakhand', riskTag: 'Subsidence' },
-  { id: 'West', name: 'Kachchh', state: 'Gujarat', riskTag: 'Seismic' },
-  { id: 'Central', name: 'Satpura', state: 'Madhya Pradesh', riskTag: 'Monitored' },
-  { id: 'East', name: 'Barpeta', state: 'Assam', riskTag: 'Flood Alert' },
-  { id: 'Kodagu', name: 'Kodagu', state: 'Karnataka', riskTag: 'Slope Warning' },
-  { id: 'South', name: 'Wayanad', state: 'Kerala', riskTag: 'High Hazard' },
+  { id: 'Wayanad', name: 'Wayanad', state: 'Kerala', riskTag: 'Hillslope', backendKey: 'wayanad' },
+  { id: 'Kodagu', name: 'Kodagu', state: 'Karnataka', riskTag: 'Slope', backendKey: 'kodagu' },
+  { id: 'Barpeta', name: 'Barpeta', state: 'Assam', riskTag: 'Alluvial', backendKey: 'barpeta' },
+  { id: 'Rudraprayag', name: 'Rudraprayag', state: 'Uttarakhand', riskTag: 'Mandakini', backendKey: 'rudraprayag' },
+  { id: 'Srinagar', name: 'Srinagar', state: 'Uttarakhand', riskTag: 'Alaknanda', backendKey: 'srinagar' },
+  { id: 'Dholpur', name: 'Dholpur', state: 'Rajasthan', riskTag: 'Chambal', backendKey: 'dholpur' },
+  { id: 'Morena', name: 'Morena', state: 'Madhya Pradesh', riskTag: 'Pluvial', backendKey: 'morena' },
+  { id: 'North', name: 'Joshimath', state: 'Uttarakhand', riskTag: 'Subsidence', backendKey: 'joshimath' },
 ];
 
 export const ZoneTickSelector: React.FC<ZoneTickSelectorProps> = ({
   selectedZone,
   onSelectZone,
+  districtWeatherMap = {},
   className = '',
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const activeTickRef = useRef<HTMLDivElement>(null);
 
-  // Normalize selectedZone to match primary story regions
   const normalizedZone: ZoneId =
-    selectedZone === 'Wayanad'
-      ? 'South'
-      : selectedZone === 'Barpeta'
-      ? 'East'
-      : selectedZone;
+    selectedZone === 'South' ? 'Wayanad' : selectedZone === 'East' ? 'Barpeta' : selectedZone;
 
   const selectedIndex = Math.max(
     0,
@@ -66,30 +68,43 @@ export const ZoneTickSelector: React.FC<ZoneTickSelectorProps> = ({
       ref={containerRef}
       className={`select-none pointer-events-auto flex flex-col items-end ${className}`}
     >
-      {/* Title */}
-      <span className="text-[10px] sm:text-xs font-mono tracking-[0.25em] text-ink-muted/80 dark:text-cream/50 uppercase mb-4">
-        CHOOSE DISTRICT
+      <span className="text-[10px] sm:text-xs font-mono tracking-[0.25em] text-ink-muted/80 dark:text-cream/50 uppercase mb-3">
+        OPERATIONAL DISTRICTS
       </span>
 
-      {/* District list with ruler */}
       <div className="relative flex items-center gap-3">
-        {/* District Names & State sublabels */}
-        <div className="flex flex-col gap-2.5 text-right">
+        <div className="flex flex-col gap-1.5 text-right">
           {DISTRICT_ITEMS.map((district) => {
             const isSelected = district.id === normalizedZone;
+            const weather = districtWeatherMap[district.backendKey];
+            const isClear = weather === 'CLEAR';
+            const isAlert = weather === 'ALERT_ACTIVE';
+
             return (
               <button
                 key={district.id}
                 type="button"
                 onClick={() => onSelectZone(district.id)}
                 onMouseEnter={() => onSelectZone(district.id)}
-                className={`group flex flex-col items-end px-3 py-1.5 rounded-lg transition-all duration-200 cursor-pointer ${
+                className={`group flex flex-col items-end px-3 py-1 rounded-lg transition-all duration-200 cursor-pointer ${
                   isSelected
                     ? 'bg-surface-2 dark:bg-white/10 shadow-sm scale-105'
                     : 'hover:bg-surface-1 dark:hover:bg-white/5 hover:translate-x-[-2px]'
                 }`}
               >
                 <div className="flex items-center gap-2">
+                  {weather && (
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        isClear
+                          ? 'bg-emerald-500'
+                          : isAlert
+                          ? 'bg-red-500 animate-pulse'
+                          : 'bg-amber-400'
+                      }`}
+                      title={`Weather status: ${weather}`}
+                    />
+                  )}
                   <span
                     className={`text-sm sm:text-base font-sans tracking-wide transition-colors ${
                       isSelected
@@ -118,12 +133,9 @@ export const ZoneTickSelector: React.FC<ZoneTickSelectorProps> = ({
         </div>
 
         {/* Vertical Tick-Mark Ruler */}
-        <div className="relative h-[240px] w-4 flex flex-col justify-between py-1">
-          {/* Subtle vertical spine line */}
+        <div className="relative h-[370px] w-4 flex flex-col justify-between py-1">
           <div className="absolute top-1 bottom-1 right-[2px] w-[1px] bg-ink/15 dark:bg-cream/15" />
-
-          {/* Individual ruler ticks */}
-          {Array.from({ length: 24 }).map((_, i) => (
+          {Array.from({ length: 32 }).map((_, i) => (
             <div
               key={i}
               className={`h-[1px] ml-auto ${
@@ -133,8 +145,6 @@ export const ZoneTickSelector: React.FC<ZoneTickSelectorProps> = ({
               }`}
             />
           ))}
-
-          {/* Active Highlight Notch */}
           <div
             ref={activeTickRef}
             className="absolute top-0 right-0 w-3.5 h-[2px] bg-m3-accent-foliage shadow-[0_0_8px_currentColor] transition-transform"
@@ -146,3 +156,4 @@ export const ZoneTickSelector: React.FC<ZoneTickSelectorProps> = ({
 };
 
 export default ZoneTickSelector;
+

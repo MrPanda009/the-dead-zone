@@ -24,12 +24,17 @@ export const HOTSPOT_LONLAT = {
   Wayanad: { lon: 76.126, lat: 11.554, label: 'Wayanad (Meppadi)' },
   Kodagu: { lon: 75.738, lat: 12.424, label: 'Kodagu (Madikeri)' },
   Barpeta: { lon: 91.01, lat: 26.32, label: 'Barpeta (Assam)' },
+  Rudraprayag: { lon: 78.98, lat: 30.285, label: 'Rudraprayag (Kedarnath Corridor)' },
+  Srinagar: { lon: 74.798, lat: 34.084, label: 'Srinagar (Jhelum Basin)' },
+  Dholpur: { lon: 77.9, lat: 26.7, label: 'Dholpur (Chambal Alluvial)' },
+  Morena: { lon: 77.99, lat: 26.5, label: 'Morena (Kunwari Basin)' },
   North: { lon: 79.567, lat: 30.556, label: 'Joshimath (Chamoli)' },
   Central: { lon: 77.761, lat: 22.505, label: 'Satpura Plateau' },
   South: { lon: 76.126, lat: 11.554, label: 'Wayanad (Meppadi)' },
   East: { lon: 91.01, lat: 26.32, label: 'Barpeta & Teesta' },
   West: { lon: 69.821, lat: 23.342, label: 'Kachchh (Kutch)' },
 } as const;
+
 
 /** Mainland + island polygons (index 0 = mainland with complete J&K crown). */
 export const INDIA_OUTLINE_PATHS: string[] = [
